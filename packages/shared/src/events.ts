@@ -3,8 +3,8 @@ import type { Card, ChatMessage, GameState, Player, PlayerAction, TableInfo, Tab
 // Client → Server
 export interface ClientToServerEvents {
   // Table management
-  'table:create': (playerName: string, options: TableOptions) => void
-  'table:join': (tableId: string, playerName: string) => void
+  'table:create': (options: TableOptions) => void
+  'table:join': (inviteCode: string) => void
   'table:leave': () => void
 
   // Admin-only

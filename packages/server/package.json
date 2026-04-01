@@ -1,5 +1,5 @@
 {
-  "name": "@poker/server",
+  "name": "@cpc/server",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -8,13 +8,19 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@poker/shared": "*",
-    "@poker/poker-engine": "*",
+    "@cpc/poker-engine": "*",
+    "@cpc/shared": "*",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.8.0",
     "express": "^4.19.0",
+    "jsonwebtoken": "^9.0.3",
     "socket.io": "^4.7.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"

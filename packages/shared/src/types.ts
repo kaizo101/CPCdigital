@@ -55,6 +55,12 @@ export interface GameState {
   smallBlind: number
 }
 
+export interface JwtPayload {
+  userId: number
+  username: string
+  role: UserRole
+}
+
 export interface ChatMessage {
   playerId: PlayerId
   playerName: string

@@ -1,12 +1,12 @@
 {
-  "name": "poker",
+  "name": "cpc-online",
   "private": true,
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha.1",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w @poker/server\" \"npm run dev -w @poker/client\"",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w @cpc/server\" \"npm run dev -w @cpc/client\"",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },

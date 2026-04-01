@@ -1,4 +1,4 @@
-import type { Card, GameState, Player, PlayerAction } from '@poker/shared'
+import type { Card, GameState, Player, PlayerAction } from '@cpc/shared'
 import { createDeck, shuffleDeck, dealCards } from './deck.js'
 
 export interface GameConfig {

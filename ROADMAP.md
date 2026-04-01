@@ -1,4 +1,4 @@
-# Poker — Roadmap
+# CPC-Online — Roadmap
 
 Digitale Heimpokerrunde · Texas Hold'em · Electron Desktop · Home-Server / Cloudflare Tunnel
 
@@ -78,14 +78,14 @@ ein einzelner Tisch, echte User-Accounts, kein Lobby-Browser, kein Monetarisieru
 ### 0.1.0-alpha.1 — Projektfundament ✓
 
 - npm workspaces Monorepo
-- `@poker/shared` — Typen, Rollen (`admin`/`player`), Socket.IO-Events
-- `@poker/poker-engine` — isolierte Game-Logik, Vitest-Setup
-- `@poker/server` — Express + Socket.IO Skeleton
-- `@poker/client` — React + Vite Skeleton
+- `@cpc/shared` — Typen, Rollen (`admin`/`player`), Socket.IO-Events
+- `@cpc/poker-engine` — isolierte Game-Logik, Vitest-Setup
+- `@cpc/server` — Express + Socket.IO Skeleton
+- `@cpc/client` — React + Vite Skeleton
 
 ---
 
-### 0.2.0-alpha.1 — Auth + Tischverwaltung
+### 0.2.0-alpha.1 — Auth + Tischverwaltung ✓
 
 **Ziel:** Spieler melden sich mit Account an, Admin erstellt Session, alle kommen rein.
 

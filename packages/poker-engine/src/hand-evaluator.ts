@@ -1,4 +1,4 @@
-import type { Card } from '@poker/shared'
+import type { Card } from '@cpc/shared'
 
 export interface HandResult {
   rank: number   // higher = better hand

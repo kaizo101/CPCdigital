@@ -1,4 +1,4 @@
-import type { Card, Rank, Suit } from '@poker/shared'
+import type { Card, Rank, Suit } from '@cpc/shared'
 
 const SUITS: Suit[] = ['clubs', 'diamonds', 'hearts', 'spades']
 const RANKS: Rank[] = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
