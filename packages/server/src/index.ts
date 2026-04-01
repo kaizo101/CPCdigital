@@ -64,10 +64,12 @@ io.on('connection', (socket) => {
 
   socket.on('table:create', (options) => {
     try {
-      const { inviteCode } = tableManager.createTable(userId, username, options)
+      tableManager.createTable(userId, username, options)
       const info = tableManager.getTableInfo()!
-      socket.emit('table:created', info, inviteCode)
-      console.log(`[server] table created by ${username}, invite: ${inviteCode}`)
+      const adminPlayer = tableManager.getPlayer(userId)!
+      socket.emit('table:created', info, info.inviteCode)
+      socket.emit('table:joined', info, adminPlayer)
+      console.log(`[server] table created by ${username}, invite: ${info.inviteCode}`)
     } catch (err) {
       socket.emit('error', (err as Error).message)
     }

@@ -37,6 +37,7 @@ export interface TableOptions {
 
 export interface TableInfo {
   id: string
+  inviteCode: string
   playerCount: number
   maxPlayers: number
   bigBlind: number

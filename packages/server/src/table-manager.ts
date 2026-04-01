@@ -137,6 +137,7 @@ export class TableManager {
     if (!this.table) return null
     return {
       id: this.table.id,
+      inviteCode: this.table.inviteCode,
       playerCount: this.table.players.size,
       maxPlayers: this.table.options.maxPlayers,
       bigBlind: this.table.options.bigBlind,
