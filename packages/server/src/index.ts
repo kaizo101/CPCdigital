@@ -22,24 +22,34 @@ app.get('/health', (_req, res) => {
 io.on('connection', (socket) => {
   console.log('[server] client connected:', socket.id)
 
-  socket.on('lobby:list', () => {
-    // TODO 0.2.0-alpha.1: return real lobby list from lobby manager
-    socket.emit('lobby:list', [])
+  socket.on('table:create', (_playerName, _options) => {
+    // TODO 0.2.0-alpha.1: create table, assign admin role, return invite code
+    socket.emit('error', 'Table management not yet implemented')
   })
 
-  socket.on('lobby:create', (_name, _options) => {
+  socket.on('table:join', (_tableId, _playerName) => {
     // TODO 0.2.0-alpha.1
-    socket.emit('error', 'Lobbies not yet implemented')
+    socket.emit('error', 'Table management not yet implemented')
   })
 
-  socket.on('lobby:join', (_lobbyId, _playerName) => {
-    // TODO 0.2.0-alpha.1
-    socket.emit('error', 'Lobbies not yet implemented')
+  socket.on('table:kick', (_playerId) => {
+    // TODO 0.2.0-alpha.1: validate admin role
+    socket.emit('error', 'Not yet implemented')
+  })
+
+  socket.on('table:set-chips', (_playerId, _chips) => {
+    // TODO 0.2.0-alpha.1: validate admin role
+    socket.emit('error', 'Not yet implemented')
   })
 
   socket.on('game:action', (_action) => {
     // TODO 0.3.0-alpha.1
     socket.emit('error', 'Game actions not yet implemented')
+  })
+
+  socket.on('chat:message', (_text) => {
+    // TODO 0.4.0-alpha.1
+    socket.emit('error', 'Chat not yet implemented')
   })
 
   socket.on('disconnect', (reason) => {

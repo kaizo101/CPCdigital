@@ -8,9 +8,12 @@ export interface Card {
 
 export type PlayerId = string
 
+export type UserRole = 'admin' | 'player'
+
 export interface Player {
   id: PlayerId
   name: string
+  role: UserRole
   chips: number
   seatIndex: number
   isConnected: boolean
@@ -25,6 +28,22 @@ export type PlayerAction =
   | { type: 'raise'; amount: number }
   | { type: 'all-in' }
 
+export interface TableOptions {
+  bigBlind: number
+  smallBlind: number
+  maxPlayers: number
+  startingChips: number
+}
+
+export interface TableInfo {
+  id: string
+  playerCount: number
+  maxPlayers: number
+  bigBlind: number
+  smallBlind: number
+  phase: GamePhase
+}
+
 export interface GameState {
   phase: GamePhase
   players: Player[]
@@ -36,11 +55,9 @@ export interface GameState {
   smallBlind: number
 }
 
-export interface LobbyInfo {
-  id: string
-  name: string
-  playerCount: number
-  maxPlayers: number
-  bigBlind: number
-  smallBlind: number
+export interface ChatMessage {
+  playerId: PlayerId
+  playerName: string
+  text: string
+  timestamp: number
 }

@@ -1,19 +1,56 @@
 # Poker — Roadmap
 
-Texas Hold'em · Private Lobbys · Electron Desktop · Home-Server / Cloudflare Tunnel
+Digitale Heimpokerrunde · Texas Hold'em · Electron Desktop · Home-Server / Cloudflare Tunnel
 
 ---
 
-## Änderungen gegenüber dem ursprünglichen Plan
+## Produkt in einem Satz
 
-| Thema | Original | Hier |
+Eine werbefreie, open-source Electron-App, die eine private Pokerrunde unter Freunden digitalisiert —
+ohne Lobby-System, ohne Monetarisierung, mit mehreren Pokervarianten und einem Hand-Replayer.
+
+---
+
+## Feature-Scope v1.0
+
+**Must-have**
+- Texas Hold'em (vollständige Regellogik inkl. Side Pots, All-in)
+- Tischverwaltung ohne Lobby-Browser: Admin erstellt Tisch, teilt Invite-Code
+- User-Accounts mit Rollen: `admin` (erstellt Tisch, verteilt Chips, kickt) / `player`
+- Admin kann Chips zuteilen und Spieler kicken
+- Table-Talk (Chat während laufendem Spiel)
+- Hand-History (persistiert pro Session)
+- Session-Stats (Gewinne/Verluste, VPIP, Hands gespielt)
+- PokerStars-inspiriertes UI — eigener Stil, keine 1:1-Kopie
+
+**Should-have**
+- Bomb Pot als optionale Tischeinstellung
+- Zweite Pokervariante (Omaha) — Architektur für Varianten von Anfang an einplanen
+- Docker + Cloudflare Tunnel für ZimaOS-Betrieb
+
+**Nice-to-have**
+- Hand-Replayer (Event-Sourcing macht das günstig)
+- Side Bets
+- Volumenstatistiken pro Spieler
+
+**Post-1.0**
+- Tournament-Modus (Blindstruktur, Bustout, Ranking)
+- Weitere Pokervarianten
+- Android via Capacitor
+- Casual-Bot für Solo-Tests / Tischauffüllung
+
+---
+
+## Architektur-Entscheidungen
+
+| Thema | Entscheidung | Begründung |
 |---|---|---|
-| Electron | 0.1.0 | 0.6.0 — Web-first iterieren, Wrapper erst wenn Core stabil |
-| Poker-Engine | Teil des Servers | Eigenes isoliertes Package ab Tag 1 |
-| Hand-Evaluator | Nicht explizit | Explizit als Task in 0.3.0 (komplexe Kicker-/Tie-Regeln) |
-| Unit-Tests | Nur Bot-QA | Engine-Tests ab 0.3.0, Bots testen Netzwerk/Integration |
-| Docker | 0.7.0 | 0.5.0 — früher, damit lokale und Container-Umgebung sich nicht unterscheiden |
-| Game State | Implizit | Event-Sourcing von Anfang an (`PlayerBet`, `CardDealt`, ...) |
+| Kein Lobby-System | Nur Tischverwaltung | Ziel ist eine feste Runde, kein offenes Matchmaking |
+| Web-first | Electron-Wrapper erst 0.6.0 | Schnellerer Dev-Loop im Browser |
+| poker-engine isoliert | Eigenes Package, kein IO | Unit-testbar, später für Varianten wiederverwendbar |
+| Event-Sourcing | Jede Aktion als Event | Macht Hand-History und Replayer günstig |
+| Docker früh | Ab 0.5.0 | Lokal ≠ Container vermeiden |
+| RNG | `node:crypto` auf dem Server | Client shuffled nie |
 
 ---
 
@@ -27,29 +64,24 @@ Texas Hold'em · Private Lobbys · Electron Desktop · Home-Server / Cloudflare 
 
 ### 0.1.0-alpha.1 — Projektfundament ✓
 
-**Ziel:** Monorepo-Skeleton, alle Packages angelegt, erste Socket.IO-Verbindung steht.
-
-- pnpm/npm workspaces Monorepo
-- `@poker/shared` — Typen + Socket.IO Event-Interface
-- `@poker/poker-engine` — isolierte Game-Logik, framework-agnostisch
+- npm workspaces Monorepo
+- `@poker/shared` — Typen, Rollen (`admin`/`player`), Socket.IO-Events (ohne Lobby)
+- `@poker/poker-engine` — isolierte Game-Logik, Vitest-Setup
 - `@poker/server` — Express + Socket.IO Skeleton
 - `@poker/client` — React + Vite Skeleton
-- Socket-Verbindung Client↔Server funktioniert
-- Vitest-Setup in `poker-engine`
-
-**Bot:** Keiner.
 
 ---
 
-### 0.2.0-alpha.1 — Netzwerkbasis
+### 0.2.0-alpha.1 — Tischverwaltung
 
-**Ziel:** Lobby erstellen/beitreten, Session-Management, Event-Protokoll final.
+**Ziel:** Tisch erstellen, beitreten, Admin-Rolle, Invite-Code-Flow.
 
-- LobbyManager auf dem Server (in-memory)
-- Lobby erstellen / beitreten / verlassen
-- Player-Sessions (Socket-ID ↔ Player-State)
+- `TableManager` auf dem Server (in-memory)
+- Admin erstellt Tisch → erhält Invite-Code
+- Spieler joinen per Code → bekommen `player`-Rolle
+- Admin kann Chips setzen, Spieler kicken
+- Disconnect-State: Spieler bleibt im Tisch, markiert als offline
 - Alle Socket-Events aus `shared/events.ts` implementiert
-- Bot-Schnittstelle mitgedacht (Socket-Client von außen joinbar)
 
 **Bot:** Keiner.
 
@@ -57,149 +89,142 @@ Texas Hold'em · Private Lobbys · Electron Desktop · Home-Server / Cloudflare 
 
 ### 0.3.0-alpha.1 — Erste spielbare Hand
 
-**Ziel:** Eine komplette Hold'em-Hand läuft technisch durch. Unit-Tests greifen.
+**Ziel:** Eine komplette Hold'em-Hand läuft durch. Unit-Tests greifen.
 
-- Deck, Fisher-Yates mit `node:crypto`
+- Deck mit `node:crypto` RNG
 - Dealer-Button, Blinds, Preflop → Flop → Turn → River → Showdown
-- Hand-Evaluator: `pokersolver` oder eigene Implementierung
+- Hand-Evaluator: `pokersolver` integrieren
   - Kicker-Regeln, Split-Pots, alle Hand-Rankings
-- Gewinnerermittlung, Pot-Verteilung
-- Side-Pots (All-in) als expliziter Task
-- Unit-Tests für Engine: Deck, Evaluator, Blind-Posting, Side-Pot-Berechnung
-- Event-Sourcing: Spielzüge als Events (`PlayerActed`, `CardDealt`, `HandEnded`)
+- Side-Pot-Berechnung (All-in)
+- Unit-Tests: Deck, Evaluator, Blind-Posting, Side-Pots
+- Event-Sourcing: `PlayerActed`, `CardDealt`, `HandEnded`, `PotAwarded`
+- Hand-History: Events werden pro Hand persistiert (in-memory zunächst)
 
-**Bot:** **Dummy-Bot v0** — verbindet sich als Socket-Client, macht zufällige gültige Aktionen.
+**Bot:** **Dummy-Bot v0** — Socket-Client, zufällige gültige Aktionen.
 
 ---
 
-### 0.4.0-alpha.1 — Grund-UX
+### 0.4.0-alpha.1 — Grund-UX + Chat
 
-**Ziel:** Das Spiel ist spielbar im Browser, ohne dass es hässlich ist.
+**Ziel:** Spielbar im Browser, Chat funktioniert.
 
 - Tischansicht, Spielerplätze, Community Cards
 - Action-Bar (Fold/Check/Call/Raise-Slider)
-- Pot-Anzeige, Chip-Counts, Dealer-Button
-- Timer-Anzeige für aktiven Spieler
-- Basic Chat
+- Pot-Anzeige, Chip-Counts, Dealer-Button, Timeout-Timer
+- Table-Talk Chat (während laufendem Spiel)
+- Admin-Panel: Chips zuteilen, Spieler kicken
 
-**Bot:** **Szenario-Bots v1** — `always-call`, `always-fold`, `min-raise`, `slow-player` (für reproduzierbare Tests).
+**Bot:** **Szenario-Bots v1** — `always-call`, `always-fold`, `min-raise`, `slow-player`.
 
 ---
 
 ### 0.5.0-alpha.1 — Robustheit + Docker
 
-**Ziel:** Edge-Cases abgesichert, lokale Container-Umgebung steht.
+**Ziel:** Edge-Cases abgesichert, Container-Umgebung steht.
 
-- Disconnect-Handling: Auto-Fold nach Timeout, Rejoin-Mechanismus
+- Disconnect: Auto-Fold nach Timeout, Rejoin-Mechanismus
 - Illegale Aktionen sauber ablehnen
-- Reconnect: Client erhält aktuellen GameState nach Reconnect
-- `docker-compose.yml` für Server (development + production)
-- Regression-Tests: Bot-Suite läuft als CI-Smoke-Test
+- Reconnect: Client erhält aktuellen GameState
+- `docker-compose.yml` für Server (dev + prod)
+- QA-Bot-Suite als CI-Smoke-Test
 
-**Bot:** **QA-Bot-Suite** — `disconnect-after-flop`, `timeout-bot`, `invalid-action-bot`.
+**Bot:** **QA-Bots** — `disconnect-after-flop`, `timeout-bot`, `invalid-action-bot`.
 
 ---
 
-### 0.6.0-alpha.1 — Electron
+### 0.6.0-alpha.1 — Electron + Session-Stats
 
-**Ziel:** App läuft als Desktop-App, Dev-Loop bleibt schnell.
+**Ziel:** Desktop-App läuft, erste Statistiken sichtbar.
 
-- Electron-Wrapper mit `contextIsolation: true`
+- Electron-Wrapper (`contextIsolation: true`)
 - Vite-Dev-Server ↔ Electron in Development
-- Gepackte App für lokalen Test
-- Dev-Tools: Event-Log-Viewer, GameState-Inspector
-
-**Bot:** Bots laufen weiterhin standalone (kein Electron nötig).
+- Session-Stats: Chips gewonnen/verloren, Hands gespielt, VPIP
+- Stats werden in SQLite persistiert (ersetzt in-memory)
 
 ---
 
-### 0.7.0-alpha.1 — Home-Server
+### 0.7.0-alpha.1 — Home-Server + Variantenarchitektur
 
-**Ziel:** Freunde können von außen joinen.
+**Ziel:** Freunde können von außen joinen. Omaha spielbar.
 
-- SQLite für persistente Sessions (optional Postgres)
-- Cloudflare Tunnel via `docker-compose`
-- ZimaOS-Deployment-Anleitung
-- Echte externe Sessions mit Freunden
+- SQLite für Sessions, Hand-History, Stats
+- Cloudflare Tunnel via docker-compose
+- ZimaOS-Deployment
+- Varianten-Architektur: `GameVariant`-Interface, Texas Hold'em als erste Implementierung
+- **Omaha** als zweite Variante (Hold'em-Engine wiederverwenden, nur Dealing + Handauswertung anpassen)
+- Bomb Pot als optionale Tischregel
 
-**Bot:** Bots testen über echten Netzwerkpfad (Tunnel, Reconnect).
+**Bot:** Bots testen über echten Netzwerkpfad.
 
 ---
 
-### 0.8.0-beta.1 — Geschlossene Testphase
+### 0.8.0-beta.1 — Hand-Replayer + geschlossene Testphase
 
-**Ziel:** Freunde testen, alles fliegt auf.
+**Ziel:** Freunde testen. Hand-Replayer läuft.
 
+- Hand-Replayer: Events aus History Schritt für Schritt abspielen
 - Bugfixing aus echten Sessions
-- Performance unter echtem Netzwerk
-- UI-Feinschliff: Animationen sparsam, Fehlertext verständlich
-- Settings (Blind-Größen, Startchips, Timeout)
+- UI-Feinschliff, Settings (Blinds, Startchips, Timeout, Variante)
 - Table-Theme-Basis
 
-**Bot:** **Casual-Bot optional** — grobe Handstärke-Heuristik für Solo-Test.
+**Bot:** **Casual-Bot optional** — grobe Handstärke-Heuristik.
 
 ---
 
-### 0.8.5-beta.2 — UX-Polish
+### 0.8.5-beta.2 — UX-Polish + Regression
 
-- Lobby-Filter, Sound, bessere Fehlermeldungen
-- Stabilitäts- und Regressionstests
-- QA-Bots fest im Regressionsworkflow
+- Sound, Animationen sparsam
+- Bessere Fehlermeldungen
+- QA-Bots im Regressionsworkflow verankert
 
 ---
 
 ### 0.9.0-rc.1 — Release Candidate
 
 - Feature Freeze
-- Packaging für Desktop (Windows/macOS/Linux)
-- Install/Update-Flow testen
+- Packaging Windows / macOS / Linux
 - README, Server-Setup-Doku, Cloudflare Tunnel Guide
-- Open-Source-Hinweise (Lizenz)
-
-**Bot:** Nur noch Smoke Tests.
+- Lizenz (MIT oder ähnlich)
 
 ---
 
 ### 0.9.5-rc.2 — Finalisierung
 
 - Letzte Bugfixes, Crash-/Reconnect-Probleme
-- Volltisch-Simulation mit Bots für Netzwerk-Check
-- Stabile Builds auf allen Plattformen
+- Volltisch-Simulation mit Bots
 
 ---
 
 ### 1.0.0 — Erste stabile Release
 
-- Electron Desktop (Windows / macOS / Linux)
-- Texas Hold'em, Private Lobbys
+- Electron Desktop
+- Texas Hold'em + Omaha
+- Tischverwaltung mit Admin-Rolle
+- Table Talk, Hand-History, Replayer, Session-Stats
 - Home-Server / ZimaOS / Cloudflare Tunnel
-- Keine Werbung, keine Monetarisierung
-- Open Source
-- Test-Bots enthalten
+- Keine Werbung · Open Source
 
 ---
 
 ## Bot-Plan
 
-| Typ | Ab | Zweck | Verhalten |
-|---|---|---|---|
-| **Dummy-Bot** | 0.3.0 | Tische füllen, Flows testen | Zufällige gültige Aktionen |
-| **Szenario-Bot** | 0.4.0 | Reproduzierbare Fehlerfälle | Feste Profile: `always-call`, `disconnect-after-flop`, ... |
-| **QA-Bot-Suite** | 0.5.0 | Server härten | Timeout, Invalid-Action, Reconnect-Abuse |
-| **Casual-Bot** | 0.8.0 | Solo-Test, Tischauffüllung | Grobe Handstärke + Position-Heuristik |
-
-Casual-Bot ist für v1.0 **optional** — kein Blocker.
+| Typ | Ab | Zweck |
+|---|---|---|
+| **Dummy-Bot** | 0.3.0 | Tische füllen, Flows testen |
+| **Szenario-Bots** | 0.4.0 | Reproduzierbare Fehlerfälle |
+| **QA-Suite** | 0.5.0 | Server härten (Disconnect, Timeout, Invalid-Action) |
+| **Casual-Bot** | 0.8.0 (optional) | Solo-Test, Tischauffüllung |
 
 ---
 
 ## Meilensteine
 
-- **M1:** Client und Server verbunden (0.1.0 ✓)
-- **M2:** Eine komplette Hold'em-Hand läuft durch (0.3.0)
-- **M3:** Dummy-Bots füllen Tische automatisch (0.3.0)
-- **M4:** Regellogik + Sonderfälle stabil genug für Freunde (0.5.0)
-- **M5:** Docker + Cloudflare Tunnel läuft (0.7.0)
-- **M6:** Beta mit Freunden (0.8.0)
+- **M1:** Tisch erstellen + beitreten, Admin-Rolle (0.2.0)
+- **M2:** Komplette Hold'em-Hand läuft durch (0.3.0)
+- **M3:** Spielbar im Browser mit Chat (0.4.0)
+- **M4:** Docker + Cloudflare Tunnel läuft (0.5.0–0.7.0)
+- **M5:** Omaha spielbar (0.7.0)
+- **M6:** Hand-Replayer + Beta mit Freunden (0.8.0)
 - **M7:** RC mit Packaging und Doku (0.9.0)
 - **M8:** 1.0.0 Desktop Release
 
@@ -207,8 +232,7 @@ Casual-Bot ist für v1.0 **optional** — kein Blocker.
 
 ## Post-1.0
 
-- **1.1.0** — Omaha
-- **1.2.0** — Freundesliste, bessere Lobby-Filter, Table-Customization
-- **1.3.0** — Capacitor/Android-Port (experimentell)
-- **1.4.0** — Casual-Bot deutlich besser
-- **2.0.0** — Bei größerem Architekturbruch
+- **1.1.0** — Tournament-Modus (Blindstruktur, Bustout, Ranking)
+- **1.2.0** — Weitere Varianten, bessere Stats
+- **1.3.0** — Android via Capacitor (experimentell)
+- **1.4.0** — Casual-Bot verbessern

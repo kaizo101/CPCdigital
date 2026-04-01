@@ -1,24 +1,42 @@
-import type { Card, GameState, LobbyInfo, Player, PlayerAction } from './types.js'
+import type { Card, ChatMessage, GameState, Player, PlayerAction, TableInfo, TableOptions } from './types.js'
 
 // Client → Server
 export interface ClientToServerEvents {
-  'lobby:create': (name: string, options: { bigBlind: number; smallBlind: number; maxPlayers: number }) => void
-  'lobby:join': (lobbyId: string, playerName: string) => void
-  'lobby:leave': () => void
-  'lobby:list': () => void
+  // Table management
+  'table:create': (playerName: string, options: TableOptions) => void
+  'table:join': (tableId: string, playerName: string) => void
+  'table:leave': () => void
+
+  // Admin-only
+  'table:kick': (playerId: string) => void
+  'table:set-chips': (playerId: string, chips: number) => void
+  'table:start-game': () => void
+
+  // Game
   'game:action': (action: PlayerAction) => void
   'game:ready': () => void
+
+  // Chat
+  'chat:message': (text: string) => void
 }
 
 // Server → Client
 export interface ServerToClientEvents {
-  'lobby:created': (lobby: LobbyInfo) => void
-  'lobby:joined': (lobby: LobbyInfo, player: Player) => void
-  'lobby:list': (lobbies: LobbyInfo[]) => void
-  'lobby:player-joined': (player: Player) => void
-  'lobby:player-left': (playerId: string) => void
+  // Table management
+  'table:created': (table: TableInfo, inviteCode: string) => void
+  'table:joined': (table: TableInfo, player: Player) => void
+  'table:player-joined': (player: Player) => void
+  'table:player-left': (playerId: string) => void
+  'table:player-kicked': (playerId: string) => void
+  'table:chips-updated': (playerId: string, chips: number) => void
+
+  // Game
   'game:state': (state: GameState) => void
   'game:action': (playerId: string, action: PlayerAction) => void
   'game:your-cards': (cards: [Card, Card]) => void
+
+  // Chat
+  'chat:message': (message: ChatMessage) => void
+
   error: (message: string) => void
 }
