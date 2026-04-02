@@ -1,21 +1,41 @@
+/// <reference path="./pokersolver.d.ts" />
+import { Hand } from 'pokersolver'
 import type { Card } from '@cpc/shared'
 
+const SUIT_MAP: Record<string, string> = {
+  clubs: 'c',
+  diamonds: 'd',
+  hearts: 'h',
+  spades: 's',
+}
+
+function toPokersolverCard(card: Card): string {
+  return `${card.rank}${SUIT_MAP[card.suit]}`
+}
+
 export interface HandResult {
-  rank: number   // higher = better hand
+  rank: number   // higher = better (1=high card … 9=straight flush)
   name: string   // e.g. 'Full House'
-  cards: Card[]  // best 5 cards used
+}
+
+export function evaluateHand(holeCards: [Card, Card], communityCards: Card[]): HandResult {
+  const cards = [...holeCards, ...communityCards].map(toPokersolverCard)
+  const hand = Hand.solve(cards)
+  return { rank: hand.rank, name: hand.descr }
 }
 
 /**
- * Evaluates the best 5-card hand from hole cards + community cards.
- *
- * TODO 0.3.0-alpha.1: integrate pokersolver or implement evaluation.
- * Needs to handle: kicker rules, split pots on equal hands, all hand rankings.
+ * Given multiple hands (hole cards + shared community cards),
+ * returns the indices of the winner(s). Handles ties correctly.
  */
-export function evaluateHand(_holeCards: [Card, Card], _communityCards: Card[]): HandResult {
-  throw new Error('Not implemented — planned for 0.3.0-alpha.1')
-}
-
-export function compareHands(a: HandResult, b: HandResult): number {
-  return a.rank - b.rank
+export function findWinnerIndices(
+  hands: { holeCards: [Card, Card]; communityCards: Card[] }[]
+): number[] {
+  const solved = hands.map(h =>
+    Hand.solve([...h.holeCards, ...h.communityCards].map(toPokersolverCard))
+  )
+  const winners = Hand.winners(solved)
+  return solved
+    .map((h, i) => (winners.includes(h) ? i : -1))
+    .filter(i => i !== -1)
 }

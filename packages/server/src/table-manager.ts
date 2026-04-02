@@ -41,9 +41,11 @@ export class TableManager {
       id: String(adminUserId),
       name: adminUsername,
       role: 'admin',
-      chips: options.startingChips,
+      chips: 0,
       seatIndex: 0,
       isConnected: true,
+      status: 'waiting',
+      roundBet: 0,
     }
 
     const players = new Map<number, PlayerEntry>()
@@ -73,9 +75,11 @@ export class TableManager {
       id: String(userId),
       name: username,
       role: 'player',
-      chips: this.table.options.startingChips,
+      chips: 0,
       seatIndex: this.table.nextSeatIndex++,
       isConnected: true,
+      status: 'waiting',
+      roundBet: 0,
     }
 
     this.table.players.set(userId, { player, userId, socketId: null })

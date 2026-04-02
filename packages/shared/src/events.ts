@@ -1,4 +1,4 @@
-import type { Card, ChatMessage, GameState, Player, PlayerAction, TableInfo, TableOptions } from './types.js'
+import type { Card, ChatMessage, GameState, HandResult, Player, PlayerAction, TableInfo, TableOptions } from './types.js'
 
 // Client → Server
 export interface ClientToServerEvents {
@@ -14,7 +14,6 @@ export interface ClientToServerEvents {
 
   // Game
   'game:action': (action: PlayerAction) => void
-  'game:ready': () => void
 
   // Chat
   'chat:message': (text: string) => void
@@ -32,8 +31,8 @@ export interface ServerToClientEvents {
 
   // Game
   'game:state': (state: GameState) => void
-  'game:action': (playerId: string, action: PlayerAction) => void
   'game:your-cards': (cards: [Card, Card]) => void
+  'game:hand-result': (results: HandResult[]) => void
 
   // Chat
   'chat:message': (message: ChatMessage) => void

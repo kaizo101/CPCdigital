@@ -10,6 +10,8 @@ export type PlayerId = string
 
 export type UserRole = 'admin' | 'player'
 
+export type PlayerStatus = 'waiting' | 'active' | 'folded' | 'all-in'
+
 export interface Player {
   id: PlayerId
   name: string
@@ -17,6 +19,9 @@ export interface Player {
   chips: number
   seatIndex: number
   isConnected: boolean
+  status: PlayerStatus
+  /** Chips bet in the current betting round (for UI display) */
+  roundBet: number
 }
 
 export type GamePhase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
@@ -25,8 +30,13 @@ export type PlayerAction =
   | { type: 'fold' }
   | { type: 'check' }
   | { type: 'call' }
-  | { type: 'raise'; amount: number }
+  | { type: 'raise'; amount: number }  // amount = total bet this round
   | { type: 'all-in' }
+
+export interface SidePot {
+  amount: number
+  eligiblePlayerIds: PlayerId[]
+}
 
 export interface TableOptions {
   bigBlind: number
@@ -50,10 +60,19 @@ export interface GameState {
   players: Player[]
   communityCards: Card[]
   pot: number
+  sidePots: SidePot[]
   currentPlayerId: PlayerId | null
-  dealerIndex: number
+  dealerIndex: number        // index into players array
   bigBlind: number
   smallBlind: number
+  currentBet: number         // amount to call
+  minRaise: number           // minimum raise size
+}
+
+export interface HandResult {
+  playerId: PlayerId
+  amount: number
+  handName: string           // e.g. 'Full House', '' if uncontested
 }
 
 export interface JwtPayload {

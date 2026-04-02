@@ -11,7 +11,8 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@cpc/shared": "*"
+    "@cpc/shared": "*",
+    "pokersolver": "^2.1.4"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

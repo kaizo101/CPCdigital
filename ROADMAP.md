@@ -101,7 +101,7 @@ ein einzelner Tisch, echte User-Accounts, kein Lobby-Browser, kein Monetarisieru
 
 ---
 
-### 0.3.0-alpha.1 — Erste spielbare Hand
+### 0.3.0-alpha.1 — Erste spielbare Hand ✓
 
 **Ziel:** Eine komplette Hold'em-Hand läuft durch. Unit-Tests greifen. Events werden gespeichert.
 
