@@ -1,260 +1,403 @@
-# CPC-Online — Roadmap
+# CPC-Offline — Roadmap
 
-Digitale Heimpokerrunde · Texas Hold'em · Electron Desktop · Home-Server / Cloudflare Tunnel
-
----
-
-## Produkt in einem Satz
-
-Eine werbefreie, open-source Electron-App, die eine private Pokerrunde unter Freunden digitalisiert —
-ein einzelner Tisch, echte User-Accounts, kein Lobby-Browser, kein Monetarisierungsgedanke.
+**Offline Poker App · Electron Desktop · Single-Player gegen glaubwürdige Bots · später Lern- und Trainingsplattform für Pokervarianten**
 
 ---
 
-## Geklärte Rahmenbedingungen
+## Vision
 
-| Frage | Entscheidung |
-|---|---|
-| Authentifizierung | User-Accounts mit Username + Passwort |
-| Chip-Persistenz | Nur innerhalb einer Session — neuer Abend, frische Startchips |
-| Anzahl Tische | Genau ein aktiver Tisch zur Zeit |
-| Omaha | Post-1.0 (v1.1.0) |
-| Android / Capacitor | Post-1.0, explizit nicht trivial |
+CPC-Offline soll ein zugänglicher Ort sein, an dem Spieler bekannte und seltene Pokervarianten ohne Echtgeld, Wartezeiten oder chaotische öffentliche Tische ausprobieren können.
 
----
+Der erste Schwerpunkt liegt auf einem stabilen, unterhaltsamen Singleplayer-Pokerspiel mit glaubwürdigen Bots. Ab Version 1.0 wird darauf eine Lernschicht aufgebaut: Wiki, Tutorials, Session-Analysen und Poker-Rätsel anhand konkreter Hände.
 
-## Feature-Scope v1.0
+## Kernprinzipien
 
-**Must-have**
-- Texas Hold'em (vollständige Regellogik inkl. Side Pots, All-in)
-- User-Accounts mit Passwort — Rollen: `admin` / `player`
-- Admin erstellt Session, teilt Invite-Code; Spieler joinen per Code
-- Admin kann Chips zuteilen und Spieler kicken
-- Table-Talk (Chat während laufendem Spiel)
-- Hand-History (in-memory während Session, SQLite ab 0.6.0)
-- Hand-Replayer (Events ab 0.3.0 gespeichert → Replayer in 0.6.0 günstig)
-- Session-Stats: Chips +/−, Hands gespielt, VPIP
-- PokerStars-inspiriertes UI — funktional zuerst, polished danach
-
-**Should-have**
-- Bomb Pot als optionale Tischregel
-- Docker + Cloudflare Tunnel für ZimaOS-Betrieb
-
-**Post-1.0 (nicht v1.0)**
-- Side Bets — interagieren mit Side-Pot-Berechnung auf nicht-triviale Weise
-- Omaha (v1.1.0)
-- Tournament-Modus (v1.1.0) — nicht nur "Blindlevel hinzufügen", sondern Bustout, Rebuys, Payouts
-- Android via Capacitor (v1.2.0) — Electron und Capacitor teilen React-Code, aber nicht das
-  Verbindungsverhalten; Socket.IO im mobilen Background wird vom OS gekillt, braucht eigene Adapter
-- Weitere Pokervarianten (v1.2.0+)
+- **Offline First** — kein Server und kein Internet notwendig
+- **Glaubwürdige Bots** — Persönlichkeiten, Reads, Gewohnheiten und mentale Zustände
+- **Fair Play** — Bots sehen nur Informationen, die auch ein realer Spieler kennen könnte
+- **Variantenfähige Architektur** — Community-Card-, Draw- und später Stud-Spiele
+- **Erklärbare Entscheidungen** — Bot-Aktionen und Spielerentscheidungen sollen später analysierbar sein
+- **Learning-ready, nicht Learning-first** — Lernoberflächen kommen später, die notwendigen Daten werden von Anfang an erfasst
+- **Casual statt Solver** — Spielspaß und menschlich wirkende Gegner sind wichtiger als GTO-Perfektion
 
 ---
 
-## Architektur-Entscheidungen
+# Phase 1 — Spielbares Fundament
 
-| Thema | Entscheidung | Begründung |
-|---|---|---|
-| Kein Lobby-System | Ein Tisch, Invite-Code | Feste Runde, kein Matchmaking |
-| Web-first | Electron-Wrapper erst 0.6.0 | Schnellerer Dev-Loop im Browser |
-| poker-engine isoliert | Eigenes Package, kein IO | Unit-testbar; `GameVariant`-Interface früh anlegen, auch ohne Omaha |
-| Event-Sourcing | Jede Aktion als Event | Hand-History und Replayer kommen fast gratis |
-| Client State | Zustand | Minimal, kein Boilerplate, gut mit Socket.IO kombinierbar |
-| Auth | JWT bei Login, mitgeschickt bei Socket-Connect | Einfach, kein Session-Cookie-Overhead |
-| RNG | `node:crypto` — nur auf dem Server | Client sieht nie das komplette Deck; jeder Spieler erhält nur seine eigenen 2 Karten |
-| Chip-Persistenz | In-memory pro Session | Kein cross-session State, vereinfacht das Datenbankmodell erheblich |
-| Docker früh | Ab 0.5.0 | Lokal ≠ Container frühzeitig ausschließen |
-| Tisch-UI | Funktional zuerst | Ein polished Pokertisch-UI (Animationen, kreisförmige Seats, Chips) ist teurer als er aussieht — erst polishen wenn die Logik stabil ist |
+## ✅ 0.1.0 — Offline-Fundament
+
+**Ziel:** Eine vollständig lokal laufende Poker-App als technische Basis.
+
+- [x] Electron-App mit eigenem Fenster
+- [x] NLHE gegen Dummy-Bots
+- [x] Setup-Screen für Blinds, Chips und Bot-Anzahl
+- [x] Pokertisch-UI mit Action-Buttons
+- [x] automatischer Start der nächsten Hand
+- [x] grundlegendes Komponenten-Refactoring
 
 ---
 
-## Versioning
+## ✅ 0.2.0 — Engine-Härtung und Observability
 
-`0.x.y-alpha.n` → `0.x.y-beta.n` → `0.9.x-rc.n` → `1.0.0`
+**Ziel:** Die Engine wird zur stabilen Grundlage für Bots, Replays, Analysen und weitere Varianten.
 
----
+- [x] Legal Actions vollständig durch die Engine bestimmen
+- [x] vollständigen Betting Context bereitstellen: Pot inklusive aktueller Street-Bets, To Call, Betgröße relativ zum Pot, Min Raise und Max Raise
+- [x] eigenen und effektiven Stack sowie SPR für jede Entscheidung korrekt bestimmen
+- [x] Pot-Odds-Berechnung und Betting Context mit gezielten Szenariotests absichern
+- [x] korrekte Min-Raise-, All-in- und Reopen-Logik
+- [x] Side Pots und Split Pots umfassend testen
+- [x] vollständige Action History als Events speichern
+- [x] deterministische Hand-Replays ermöglichen
+- [x] seedbaren RNG für Tests und reproduzierbare Sessions einführen
+- [x] Decision Snapshots für jeden Spielerzug speichern
+- [x] öffentliche und private Informationen sauber trennen
+- [x] variantenneutrale Phasen- und Betting-Struktur definieren
+- [x] Unit- und Integrationstests für zentrale Betting-Sonderfälle
 
-## Roadmap
+### Decision Snapshot
 
-### 0.1.0-alpha.1 — Projektfundament ✓
+Jede Entscheidung sollte mindestens festhalten:
 
-- npm workspaces Monorepo
-- `@cpc/shared` — Typen, Rollen (`admin`/`player`), Socket.IO-Events
-- `@cpc/poker-engine` — isolierte Game-Logik, Vitest-Setup
-- `@cpc/server` — Express + Socket.IO Skeleton
-- `@cpc/client` — React + Vite Skeleton
+- sichtbarer Spielzustand
+- eigene Karten
+- legale Aktionen
+- Pot, To Call, Min Raise und Max Raise
+- Position und effektiver Stack
+- bisherige Action History
+- gewählte Aktion
+- später optional: Handbewertung, Reads und Action Scores
 
----
-
-### 0.2.0-alpha.1 — Auth + Tischverwaltung ✓
-
-**Ziel:** Spieler melden sich mit Account an, Admin erstellt Session, alle kommen rein.
-
-- User-Accounts: Registrierung + Login (Username + Passwort, bcrypt, SQLite)
-- JWT-Ausstellung bei Login; Socket.IO-Handshake verifiziert Token server-seitig
-- `TableManager` (in-memory): Admin erstellt Tisch → Invite-Code
-- Spieler joinen per Code, bekommen `player`-Rolle
-- Admin kann Chips setzen und Spieler kicken (mit Rollenprüfung auf dem Server)
-- Disconnect-State: Spieler bleibt im Tisch, markiert als offline
-
-> **Warum Auth in 0.2.0 und nicht später:** Admin-Rollen müssen server-seitig verifiziert werden.
-> Rollenprüfung ohne Auth nachzurüsten ist ein Refactor — besser von Anfang an sauber.
-
----
-
-### 0.3.0-alpha.1 — Erste spielbare Hand ✓
-
-**Ziel:** Eine komplette Hold'em-Hand läuft durch. Unit-Tests greifen. Events werden gespeichert.
-
-- Deck mit `node:crypto` RNG — Shuffling ausschließlich server-seitig
-- Server hält vollständiges Deck; jeder Spieler erhält via `game:your-cards` nur seine 2 Karten
-- Dealer-Button, Blinds, Preflop → Flop → Turn → River → Showdown
-- Hand-Evaluator via `pokersolver` — Kicker-Regeln, Split-Pots, alle Hand-Rankings
-- Side-Pot-Berechnung für All-in-Szenarien
-- Unit-Tests: Deck, Evaluator, Blind-Posting, Side-Pot-Logik
-- Event-Sourcing: `PlayerActed`, `CardDealt`, `HandEnded`, `PotAwarded`
-- Hand-History: Events in-memory pro Hand gesammelt (Grundlage für Replayer)
-- `GameVariant`-Interface als leeres Konzept anlegen — Texas Hold'em als erste Implementierung
-  (Omaha kommt erst in 1.1.0, aber das Interface jetzt zu designen spart später einen Refactor)
-
-**Bot:** **Dummy-Bot v0** — verbindet sich als Socket-Client mit gültigem JWT, macht zufällige gültige Aktionen.
+Diese Daten dienen zunächst dem Debugging und Replay. Später bilden sie die Grundlage für Session-Analysen und persönliche Rätsel.
 
 ---
 
-### 0.4.0-alpha.1 — Grund-UX + Chat
+# Phase 2 — Glaubwürdige Bots
 
-**Ziel:** Spielbar im Browser. Funktionales UI, noch kein polished Design.
+## 🎯 0.3.0 — Allgemeine Bot-Architektur
 
-- **Zustand** als State-Management einführen (ersetzt lokalen useState-Wildwuchs)
-- Tischansicht: Spielerplätze, Community Cards, Pot-Anzeige, Chip-Counts
-- Action-Bar: Fold / Check / Call / Raise-Slider
-- Dealer-Button-Visualisierung, Timeout-Timer für aktiven Spieler
-- Table-Talk Chat
-- Admin-Panel: Chips zuteilen, Spieler kicken
+**Ziel:** Bots entscheiden über ein gemeinsames, erklärbares Utility-System.
 
-> **UI-Hinweis:** Spielersitze kreisförmig anordnen, Chip-Animationen und Card-Flips sind
-> überraschend teuer. Hier erst funktional bauen — das polishing kommt in 0.8.5.
+- [ ] allgemeines `BotContext` ohne versteckte Informationen
+- [ ] Betgröße, Pot Odds, effektiven Stack und SPR in die Bewertung der Aktionen einbeziehen
+- [ ] Stack- und Sizing-Sensitivität mit vergleichbaren Entscheidungsszenarien testen
+- [ ] Trennung von Variantenevaluation und Decision Engine
+- [ ] Bewertung aller legalen Aktionen über Utility Scores
+- [ ] Gründe und Einflussfaktoren zu jedem Action Score erfassen
+- [ ] Skill als Wahrnehmungs- und Bewertungsungenauigkeit modellieren
+- [ ] Personality, Mental State, Reads und Memory trennen
+- [ ] gewichtete Auswahl zwischen plausiblen Aktionen
+- [ ] globale Zufallsfehler durch nachvollziehbare Fehlbewertungen ersetzen
+- [ ] künstliche Reaktionszeit von tatsächlicher Rechenzeit trennen
+- [ ] Debug Inspector für Kontext, Scores und Entscheidungsgründe
 
-**Bot:** **Szenario-Bots v1** — `always-call`, `always-fold`, `min-raise`, `slow-player`.
+### Bot-Architektur
 
----
-
-### 0.5.0-alpha.1 — Robustheit + Docker
-
-**Ziel:** Edge-Cases abgesichert. Lokale und Container-Umgebung sind identisch.
-
-- Disconnect: Auto-Fold nach Timeout, Rejoin-Mechanismus
-- Reconnect: Client erhält vollständigen GameState nach Reconnect (kein verlorener Spielzug)
-- Illegale Aktionen werden server-seitig hart abgelehnt (nicht client-seitig verhindert)
-- `docker-compose.yml` für Server (dev + prod)
-- QA-Bot-Suite als erster CI-Smoke-Test
-
-**Bot:** **QA-Suite** — `disconnect-after-flop`, `timeout-bot`, `invalid-action-bot`.
-
----
-
-### 0.6.0-alpha.1 — Electron + Hand-Replayer + Session-Stats
-
-**Ziel:** Desktop-App läuft. Replayer und Stats nutzbar.
-
-- Electron-Wrapper (`contextIsolation: true`, kein `nodeIntegration`)
-- Vite-Dev-Server ↔ Electron in Development, gepackte App für lokalen Test
-- **Hand-Replayer:** Events aus History Schritt für Schritt abspielen
-  (günstig, weil Event-Sourcing seit 0.3.0 aktiv ist)
-- Session-Stats: Chips +/−, Hands gespielt, VPIP
-- SQLite für Hand-History und Stats (ersetzt in-memory)
+```text
+PokerPlayer
+ ├── Personality       konstant, mit Session-Varianz
+ ├── Skill             konstant, bestimmt Bewertungsqualität
+ ├── MentalState       dynamisch: Tilt, Confidence, Patience, Momentum
+ ├── Reads             subjektive Einschätzungen mit Unsicherheit
+ ├── SessionMemory     beobachtete Hände und relevante Ereignisse
+ └── DecisionEngine    allgemeine Utility-basierte Aktionswahl
+```
 
 ---
 
-### 0.7.0-alpha.1 — Home-Server + Bomb Pot
+## 🎯 0.4.0 — Erste Bot-Persönlichkeiten
 
-**Ziel:** Freunde können von außen joinen. Bomb Pot spielbar.
+**Ziel:** Mehrere klar unterscheidbare, aber nicht starre Gegner.
 
-- Cloudflare Tunnel via docker-compose
-- ZimaOS-Deployment-Anleitung
-- Echte externe Sessions mit Freunden
-- Bomb Pot als optionale Tischregel (Admin aktiviert vor Hand)
-- Bots testen über echten Netzwerkpfad (Tunnel, Reconnect)
+- [ ] TAG als Referenzbot stabilisieren
+- [ ] Nit
+- [ ] Calling Station
+- [ ] Maniac
+- [ ] Skill und Persönlichkeit frei kombinierbar machen
+- [ ] Session-Varianz innerhalb eines Archetyps
+- [ ] individuelle Tilt-Reaktionen
+- [ ] unterschiedliche Beobachtungsfähigkeit
+- [ ] Reads mit Stichprobengröße und Konfidenz
+- [ ] falsche und überhastete Reads ermöglichen
+- [ ] Bot-Gewohnheiten statt nur VPIP-/Aggressionsregler
+- [ ] Balancing über längere Test-Sessions
 
----
+### Zielbild
 
-### 0.8.0-beta.1 — Geschlossene Testphase
+Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch unterscheiden können:
 
-**Ziel:** Freunde testen, alles fliegt auf.
-
-- Bugfixing aus echten Sessions
-- Settings-Screen: Blinds, Startchips, Timeout, Bomb-Pot-Toggle
-- Table-Theme-Basis (Farben, Tischdesign)
-- Performance unter echtem Netzwerk
-
-**Bot:** Casual-Bot optional — grobe Handstärke-Heuristik für Solo-Test.
-
----
-
-### 0.8.5-beta.2 — UX-Polish
-
-- Animationen: Card-Flip, Chip-Movement — sparsam und sinnvoll
-- Sounds
-- Bessere Fehlermeldungen
-- QA-Bots im Regressionsworkflow verankert
+- vorsichtiger Beobachter
+- überheblicher Schnellurteiler
+- emotional stabiler Grinder
+- solider Spieler mit Angst vor großen Pots
 
 ---
 
-### 0.9.0-rc.1 — Release Candidate
+# Phase 3 — Variantenfähiges Kernspiel
 
-- Feature Freeze
-- Packaging Windows / macOS / Linux
-- README, Server-Setup-Doku, Cloudflare Tunnel Guide
-- Lizenz (MIT)
+## 🎯 0.5.0 — NLHE vollständig spielbar
 
----
+**Ziel:** Die erste Variante dient als Referenz für Community-Card-Poker und No Limit.
 
-### 0.9.5-rc.2 — Finalisierung
-
-- Letzte Bugfixes, Crash- und Reconnect-Probleme
-- Volltisch-Simulation mit Bots für Netzwerk-Checks
-
----
-
-### 1.0.0 — Erste stabile Release
-
-- Electron Desktop (Windows / macOS / Linux)
-- Texas Hold'em, ein Tisch, Invite-Code-Flow
-- User-Accounts mit Admin-Rolle
-- Table Talk, Hand-History, Hand-Replayer, Session-Stats
-- Bomb Pot optional
-- Home-Server / ZimaOS / Cloudflare Tunnel
-- Keine Werbung · Open Source
+- [ ] positionsabhängige Preflop-Situationen
+- [ ] Hand- und Board-Assessment
+- [ ] relative Handstärke statt nur Handkategorie
+- [ ] Draws, Outs, Blocker und Verwundbarkeit
+- [ ] Postflop-Initiative und Action History
+- [ ] Range-Schätzungen in vereinfachter Form
+- [ ] No-Limit-Bet-Sizing
+- [ ] Multiway-Entscheidungen
+- [ ] glaubwürdige Bot-Lines über mehrere Streets
+- [ ] umfassende Tests und Bot-Test-Sessions
 
 ---
 
-## Bot-Plan
+## 🎯 0.6.0 — Omaha High
 
-| Typ | Ab | Zweck |
-|---|---|---|
-| **Dummy-Bot** | 0.3.0 | Tisch füllen, Flows testen |
-| **Szenario-Bots** | 0.4.0 | Reproduzierbare Fehlerfälle (`always-call`, etc.) |
-| **QA-Suite** | 0.5.0 | Server härten (Disconnect, Timeout, Invalid-Action) |
-| **Casual-Bot** | 0.8.0 (optional) | Solo-Test, Tischauffüllung |
+**Ziel:** Pot Limit und variantenspezifische Handregeln testen.
 
----
+- [ ] exakt zwei Hole Cards und drei Board Cards verwenden
+- [ ] Omaha-spezifische Hand-Evaluation
+- [ ] Pot-Limit-Minimum und -Maximum korrekt berechnen
+- [ ] Draw-Dichte und Nut-Potenzial bewerten
+- [ ] Omaha-spezifischer Variant Context
+- [ ] Bots auf stärkere Draws und häufigere Multiway-Pots anpassen
+- [ ] NLHE- und Omaha-Logik ohne Duplizierung betreiben
 
-## Meilensteine
-
-- **M1:** Login funktioniert, Tisch erstellen + beitreten, Admin-Rolle (0.2.0)
-- **M2:** Komplette Hold'em-Hand läuft durch (0.3.0)
-- **M3:** Spielbar im Browser mit Chat (0.4.0)
-- **M4:** Docker läuft, Edge-Cases stabil (0.5.0)
-- **M5:** Desktop-App + Hand-Replayer + Session-Stats (0.6.0)
-- **M6:** Cloudflare Tunnel, erste externe Session (0.7.0)
-- **M7:** Beta mit Freunden (0.8.0)
-- **M8:** RC mit Packaging und Doku (0.9.0)
-- **M9:** 1.0.0 Desktop Release
+Omaha dient als Architekturtest dafür, dass die Decision Engine allgemein bleibt und nur die Variantenevaluation ausgetauscht wird.
 
 ---
 
-## Post-1.0
+## 🎯 0.7.0 — 2-7 Single Draw als Varianten-Proof
 
-- **1.1.0** — Omaha + Tournament-Modus
-- **1.2.0** — Android via Capacitor (mit realistischer Einschätzung des Aufwands)
-- **1.3.0** — Side Bets, weitere Varianten
-- **1.4.0** — Casual-Bot verbessern
+**Ziel:** Früh prüfen, ob die Architektur auch außerhalb von Community-Card-Spielen funktioniert.
+
+- [ ] 2-7-Lowball-Handrangfolge
+- [ ] Draw-Phase und Kartentausch
+- [ ] Pat- und Draw-Status
+- [ ] Roughness und Smoothness
+- [ ] Anzahl gezogener Karten als öffentliche Information
+- [ ] Draw-spezifische Action History
+- [ ] erste einfache Snowing- und Bluffcatch-Logik
+- [ ] Bots mit variantenspezifischem Wissen
+- [ ] grundlegende Regelhinweise in der UI
+
+Triple Draw folgt erst, wenn Single Draw stabil ist.
+
+---
+
+# Phase 4 — Spielkomfort und v1.0
+
+## 🎯 0.8.0 — Hand History, Replay und Sessiondaten
+
+**Ziel:** Hände nachvollziehen und die spätere Learning-Schicht vorbereiten.
+
+- [ ] persistente Hand History
+- [ ] Hand-Replayer Schritt für Schritt
+- [ ] Filter nach Variante, Session, Bot und Potgröße
+- [ ] Session-Stats: Hände, Gewinn/Verlust, VPIP, PFR und Aggression
+- [ ] variantenspezifische Statistiken
+- [ ] interessante Entscheidungen automatisch markieren
+- [ ] Bot-Entscheidungsgründe im Debug-Modus anzeigen
+- [ ] Export und Import von Sessions
+- [ ] gespeicherte Hände für spätere Analysen stabil versionieren
+- [ ] PokerStars-artiges Dealer-/Sessionlog links unten aus den strukturierten Hand-Events darstellen
+
+---
+
+## 🎯 0.9.0 — UX, Polish und Plattformstabilität
+
+**Ziel:** Die App soll sich wie ein fertiges Casual-Spiel anfühlen.
+
+- [ ] Animationen für Karten und Chips
+- [ ] Sound-Effekte und Lautstärkeeinstellungen
+- [ ] verständliche Anzeige von Setzrunde und Spielphase
+- [ ] Min-/Max-Bet direkt in der Oberfläche
+- [ ] optional kompakte Regelhinweise
+- [ ] Touch-freundliche Bedienelemente vorbereiten
+- [ ] Bot-Namen, Avatare und erkennbare Tischidentität
+- [ ] Session-Setup mit Variante, Bots und Schwierigkeitsmix
+- [ ] Performance und lange Sessions testen
+- [ ] Barrierefreiheit und skalierbare UI
+
+---
+
+## 🎯 1.0.0 — Stable Core Release
+
+**Ziel:** Ein stabiles Offline-Pokerspiel und belastbares Fundament für die Learning-Erweiterung.
+
+### Enthalten
+
+- [ ] NLHE vollständig spielbar
+- [ ] Omaha High vollständig spielbar
+- [ ] 2-7 Single Draw als erste seltene Variante
+- [ ] mehrere unterscheidbare Bot-Persönlichkeiten
+- [ ] Skill, Reads und Mental State
+- [ ] vollständige Hand History und Replay
+- [ ] Decision Records und erklärbare Bot-Scores
+- [ ] robuste Engine- und Bot-Tests
+- [ ] stabiles Desktop-Packaging
+- [ ] Dokumentation für Architektur und Variantenmodule
+
+### Packaging
+
+- [ ] Windows
+- [ ] Linux / AppImage
+- [ ] macOS, soweit Build-Umgebung verfügbar
+
+---
+
+# Phase 5 — Learning Layer ab v1.x
+
+## 🎯 1.1.0 — Wiki und Glossar
+
+**Ziel:** Eine gemeinsame Wissensbasis für Regeln, Begriffe und Grundlagen.
+
+- [ ] variantenspezifische Regelübersichten
+- [ ] Handrangfolgen
+- [ ] Glossar für Pokerbegriffe
+- [ ] grundlegende Strategiekonzepte
+- [ ] typische Anfängerfehler
+- [ ] Beispiele mit konkreten Händen
+- [ ] Querverweise zwischen verwandten Begriffen
+- [ ] kontextbezogene Links aus Tisch, Replay und Analyse
+
+---
+
+## 🎯 1.2.0 — Tutorial-Modus
+
+**Ziel:** Spieler schrittweise vom Regelverständnis zum freien Spiel führen.
+
+- [ ] interaktive Grundregel-Tutorials
+- [ ] geführte Beispielhände
+- [ ] Erklärung der aktuellen Setzrunde
+- [ ] Erklärung erlaubter Aktionen und Bet-Limits
+- [ ] Draw- und Showdown-Tutorials
+- [ ] optionale Strategiehinweise
+- [ ] Lernpfade pro Variante
+- [ ] Einsteiger-, Standard- und Puristen-Hilfestufe
+
+---
+
+## 🎯 1.3.0 — Session-Analyse anhand konkreter Hände
+
+**Ziel:** Entscheidungen statt bloßer Ergebnisse erklären.
+
+- [ ] wenige interessante Hände pro Session auswählen
+- [ ] Entscheidungssicht und Ergebnissicht trennen
+- [ ] relevante Faktoren zum Entscheidungszeitpunkt anzeigen
+- [ ] gute Entscheidungen trotz schlechtem Ergebnis hervorheben
+- [ ] schlechte Entscheidungen trotz gewonnenem Pot erklären
+- [ ] knappe und gegnerabhängige Spots kennzeichnen
+- [ ] alternative Aktionen verständlich einordnen
+- [ ] übertragbare Lektion pro Beispielhand
+- [ ] passende Wiki-Begriffe verlinken
+- [ ] keine falsche GTO-Exaktheit vortäuschen
+
+### Analyseformat
+
+```text
+Was ist passiert?
+→ Welche Informationen waren bekannt?
+→ Welche Faktoren waren entscheidend?
+→ Wie ist die Aktion einzuordnen?
+→ Welche Alternativen gab es?
+→ Was lässt sich daraus lernen?
+```
+
+---
+
+## 🎯 1.4.0 — Poker-Rätsel
+
+**Ziel:** Konkrete Situationen ähnlich wie bei Schachaufgaben trainieren.
+
+- [ ] feste Grundlagenrätsel
+- [ ] Fold-, Call-, Raise- und Bet-Sizing-Aufgaben
+- [ ] Draw- und Pat-Entscheidungen
+- [ ] Range- und Read-Aufgaben
+- [ ] Fehler in einer Hand finden
+- [ ] mehrstufige Hände nachspielen
+- [ ] Schwierigkeitsgrade
+- [ ] Bewertung mit Abstufungen statt nur richtig/falsch
+- [ ] persönliche Rätsel aus eigenen Sessions generieren
+
+---
+
+# Weitere Varianten und Plattformen
+
+## 🎯 1.5.0 — 2-7 Triple Draw
+
+- [ ] drei Draw- und vier Setzrunden
+- [ ] Fixed-Limit-Struktur
+- [ ] Draw-History über mehrere Runden
+- [ ] angepasste Bot-Strategien
+- [ ] Tutorial- und Rätselmaterial
+
+## 🎯 1.6.0 — Omaha Hi-Lo
+
+- [ ] High-/Low-Auswertung
+- [ ] Qualifier-Regeln
+- [ ] Split- und Quarter-Pot-Logik
+- [ ] Low-Draw- und Scoop-Bewertung
+
+## 🎯 1.7.0 — Badugi
+
+- [ ] Badugi-Handrangfolge
+- [ ] Draw-Regeln
+- [ ] Pat-Signale und Snowing
+- [ ] botseitige Draw- und Blufflogik
+
+## 🎯 1.8.0 — Android
+
+- [ ] Capacitor-Setup
+- [ ] Touch-Optimierung
+- [ ] Android-spezifische Navigation
+- [ ] APK- und Release-Pipeline
+
+## Später
+
+- Razz
+- Seven Card Stud
+- Stud Hi-Lo
+- Mixed Games
+- Tournament-Modus
+- Short Deck
+- weitere Draw-Varianten
+- optionaler lokaler Multiplayer
+- Online-Multiplayer nur als langfristige Option
+
+---
+
+# Technische Struktur
+
+```text
+packages/
+├── client/              React UI
+├── poker-engine/        Regeln, State Machine, Commands und Events
+├── variant-modules/     NLHE, Omaha, 2-7 Draw usw.
+├── bots/                Decision Engine, Personality, Reads und Mental State
+├── analysis/            Decision Records, Replay und spätere Session-Analyse
+├── knowledge/           Wiki-, Tutorial- und Rätselinhalte
+├── shared/              gemeinsame Typen
+└── electron/            Desktop-Wrapper
+```
+
+Die Pakete `analysis` und `knowledge` müssen vor v1.0 noch keine vollständige Benutzeroberfläche besitzen. Ihre Datenmodelle und Schnittstellen sollten jedoch früh berücksichtigt werden.
+
+---
+
+# Wichtigste Änderung gegenüber der alten Roadmap
+
+Die App bleibt bis Version 1.0 primär ein stabiles Singleplayer-Pokerspiel. Sie wird aber bereits so gebaut, dass jede Entscheidung später erklärt, wiederholt und als Lerninhalt verwendet werden kann.
+
+```text
+Vor v1.0:
+spielen, Bots testen, Hände speichern, Entscheidungen nachvollziehbar machen
+
+Ab v1.0:
+erklären, trainieren, analysieren und persönliche Rätsel erzeugen
+```
+
+## Leitgedanke
+
+> Erst ein gutes Pokerspiel bauen. Dabei aber keine Daten oder Architekturentscheidungen verlieren, die später für eine gute Lernplattform notwendig sind.

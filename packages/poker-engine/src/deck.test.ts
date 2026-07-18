@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { createDeck, shuffleDeck, dealCards } from './deck.js'
+import { createDeck, shuffleDeck, dealCards } from './deck'
+import { createSeededRandom } from './random'
 
 describe('createDeck', () => {
   it('creates 52 cards', () => {
@@ -30,6 +31,29 @@ describe('shuffleDeck', () => {
     const shuffled = shuffleDeck(deck)
     const isSameOrder = deck.every((c, i) => c.rank === shuffled[i].rank && c.suit === shuffled[i].suit)
     expect(isSameOrder).toBe(false)
+  })
+
+  it('produces the same order from independent sources with the same seed', () => {
+    const first = shuffleDeck(createDeck(), createSeededRandom('same-session'))
+    const second = shuffleDeck(createDeck(), createSeededRandom('same-session'))
+
+    expect(first).toEqual(second)
+  })
+
+  it('isolates seeded streams and advances each stream independently', () => {
+    const firstStream = createSeededRandom('multi-hand')
+    const secondStream = createSeededRandom('multi-hand')
+
+    const firstHand = shuffleDeck(createDeck(), firstStream)
+    const secondHand = shuffleDeck(createDeck(), firstStream)
+    expect(firstHand).not.toEqual(secondHand)
+    expect(shuffleDeck(createDeck(), secondStream)).toEqual(firstHand)
+    expect(shuffleDeck(createDeck(), secondStream)).toEqual(secondHand)
+  })
+
+  it('rejects random sources outside the unit interval', () => {
+    expect(() => shuffleDeck(createDeck(), () => 1)).toThrow(/\[0, 1\)/)
+    expect(() => shuffleDeck(createDeck(), () => Number.NaN)).toThrow(/\[0, 1\)/)
   })
 })
 

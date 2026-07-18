@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateHand, findWinnerIndices } from './hand-evaluator.js'
+import { describeWinningHand, evaluateHand, findWinnerIndices } from './hand-evaluator'
 import type { Card } from '@cpc/shared'
 
 const c = (rank: string, suit: string): Card =>
@@ -41,6 +41,24 @@ describe('evaluateHand', () => {
       [c('2', 'clubs'), c('5', 'spades'), c('9', 'hearts'), c('3', 'diamonds'), c('7', 'clubs')]
     )
     expect(pair.rank).toBeGreaterThan(highCard.rank)
+  })
+
+  it('mentions a kicker only when it decides between the same made hand', () => {
+    const community = [
+      c('A', 'clubs'), c('9', 'spades'), c('7', 'hearts'), c('4', 'diamonds'), c('2', 'clubs'),
+    ]
+
+    expect(describeWinningHand(
+      [c('A', 'hearts'), c('K', 'diamonds')],
+      community,
+      [[c('A', 'diamonds'), c('Q', 'spades')]],
+    )).toMatch(/K kicker/i)
+
+    expect(describeWinningHand(
+      [c('A', 'hearts'), c('K', 'diamonds')],
+      community,
+      [[c('Q', 'diamonds'), c('Q', 'spades')]],
+    )).not.toMatch(/kicker/i)
   })
 })
 

@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { calculateSidePots } from './side-pot.js'
+import { calculateSidePots } from './side-pot'
 
 describe('calculateSidePots', () => {
+  it('returns no pots without contributions', () => {
+    expect(calculateSidePots([
+      { playerId: 'A', totalBet: 0, inHand: true },
+      { playerId: 'B', totalBet: 0, inHand: true },
+    ])).toEqual([])
+  })
+
   it('single pot when no all-ins', () => {
     const pots = calculateSidePots([
       { playerId: 'A', totalBet: 100, inHand: true },
@@ -68,5 +75,35 @@ describe('calculateSidePots', () => {
     const pots = calculateSidePots(contributions)
     const potTotal = pots.reduce((s, p) => s + p.amount, 0)
     expect(potTotal).toBe(total)
+  })
+
+  it('merges layers created by a folded player when eligibility is unchanged', () => {
+    const pots = calculateSidePots([
+      { playerId: 'A', totalBet: 100, inHand: true },
+      { playerId: 'B', totalBet: 200, inHand: false },
+      { playerId: 'C', totalBet: 300, inHand: true },
+      { playerId: 'D', totalBet: 300, inHand: true },
+    ])
+
+    expect(pots).toEqual([
+      { amount: 400, eligiblePlayerIds: ['A', 'C', 'D'] },
+      { amount: 500, eligiblePlayerIds: ['C', 'D'] },
+    ])
+  })
+
+  it('calculates decimal side pots in integer cents without leakage', () => {
+    const contributions = [
+      { playerId: 'A', totalBet: 0.03, inHand: true },
+      { playerId: 'B', totalBet: 0.02, inHand: true },
+      { playerId: 'C', totalBet: 0.01, inHand: true },
+    ]
+    const pots = calculateSidePots(contributions)
+
+    expect(pots).toEqual([
+      { amount: 0.03, eligiblePlayerIds: ['A', 'B', 'C'] },
+      { amount: 0.02, eligiblePlayerIds: ['A', 'B'] },
+      { amount: 0.01, eligiblePlayerIds: ['A'] },
+    ])
+    expect(pots.reduce((sum, pot) => sum + pot.amount, 0)).toBeCloseTo(0.06, 8)
   })
 })

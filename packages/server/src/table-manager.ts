@@ -33,7 +33,6 @@ export class TableManager {
     if (this.table) {
       throw new Error('A table already exists. Only one active table is supported.')
     }
-
     const tableId = randomId()
     const inviteCode = randomInviteCode()
 
@@ -44,6 +43,7 @@ export class TableManager {
       chips: 0,
       seatIndex: 0,
       isConnected: true,
+      isSittingOut: false,
       status: 'waiting',
       roundBet: 0,
     }
@@ -78,6 +78,7 @@ export class TableManager {
       chips: 0,
       seatIndex: this.table.nextSeatIndex++,
       isConnected: true,
+      isSittingOut: false,
       status: 'waiting',
       roundBet: 0,
     }
@@ -95,8 +96,7 @@ export class TableManager {
     if (!table.players.has(targetUserId)) throw new Error('Player not found')
     if (targetUserId === table.adminUserId) throw new Error('Cannot kick the admin')
 
-    table.players.delete(targetUserId)
-    this.userTableMap.delete(targetUserId)
+    this.removePlayer(targetUserId)
   }
 
   setChips(requestingUserId: number, targetUserId: number, chips: number): void {
@@ -110,26 +110,47 @@ export class TableManager {
     entry.player.chips = chips
   }
 
-  onConnect(userId: number, socketId: string): void {
+  setSittingOut(userId: number, sittingOut: boolean): Player {
+    const table = this.requireTable()
+    const entry = table.players.get(userId)
+    if (!entry) throw new Error('Player not found')
+    entry.player.isSittingOut = sittingOut
+    return entry.player
+  }
+
+  removePlayer(userId: number): Player | undefined {
     const table = this.getTableForUser(userId)
-    if (!table) return
+    const player = table?.players.get(userId)?.player
+    if (!table || !player) return undefined
+    table.players.delete(userId)
+    this.userTableMap.delete(userId)
+    return player
+  }
+
+  onConnect(userId: number, socketId: string): Player | undefined {
+    const table = this.getTableForUser(userId)
+    if (!table) return undefined
 
     const entry = table.players.get(userId)
     if (entry) {
       entry.socketId = socketId
       entry.player.isConnected = true
+      return entry.player
     }
+    return undefined
   }
 
-  onDisconnect(userId: number): void {
+  onDisconnect(userId: number): Player | undefined {
     const table = this.getTableForUser(userId)
-    if (!table) return
+    if (!table) return undefined
 
     const entry = table.players.get(userId)
     if (entry) {
       entry.socketId = null
       entry.player.isConnected = false
+      return entry.player
     }
+    return undefined
   }
 
   getSocketId(userId: number): string | null {
@@ -150,6 +171,10 @@ export class TableManager {
     }
   }
 
+  getTableOptions(): TableOptions | null {
+    return this.table?.options ?? null
+  }
+
   getPlayers(): Player[] {
     if (!this.table) return []
     return Array.from(this.table.players.values()).map(e => e.player)
@@ -162,6 +187,10 @@ export class TableManager {
 
   isAdmin(userId: number): boolean {
     return this.table?.adminUserId === userId
+  }
+
+  getAdminUserId(): number | null {
+    return this.table?.adminUserId ?? null
   }
 
   getUserRole(userId: number): UserRole | undefined {

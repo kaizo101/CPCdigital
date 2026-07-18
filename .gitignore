@@ -6,3 +6,7 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+.tmp-frames/
+.tmp-ps-frames/
+*.mp4
+*.webm
