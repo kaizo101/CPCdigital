@@ -8,7 +8,7 @@ export function PokerTable({ children }: { children: React.ReactNode }) {
     <div style={{
       position: 'relative',
       width: '100%',
-      maxWidth: 'min(1680px, calc(100vw - 36px))',
+      maxWidth: 'none',
       aspectRatio: '2.38 / 1',
       margin: '0 auto',
       background: 'radial-gradient(circle at 50% 48%, #2e3137 0%, #141619 68%, #090a0c 100%)',
@@ -63,7 +63,7 @@ export function PokerTable({ children }: { children: React.ReactNode }) {
 export function TablePot({ pot, sidePots }: { pot: number; sidePots?: { amount: number }[] }) {
   return (
     <div style={{
-      position: 'absolute', left: '50%', top: '39%', transform: 'translate(-50%, -50%)',
+      position: 'absolute', left: '50%', top: '34%', transform: 'translate(-50%, -50%)',
       textAlign: 'center', zIndex: 10,
     }}>
       <div style={{
@@ -93,7 +93,7 @@ export function CommunityCards({ cards, phase }: { cards: Card[]; phase: string 
     <div style={{
       position: 'absolute',
       left: '50%',
-      top: '57%',
+      top: '50%',
       transform: 'translate(-50%, -50%)',
       display: 'flex',
       gap: 8,
@@ -154,18 +154,14 @@ export function TablePositionButtons({
     }}>
       {labels.map(label => (
         <div key={label} style={{
-          minWidth: label === 'D' ? 24 : 28,
+          minWidth: 24,
           height: 24,
           padding: '0 5px',
           boxSizing: 'border-box',
           display: 'grid',
           placeItems: 'center',
           borderRadius: 999,
-          background: label === 'D'
-            ? 'radial-gradient(circle at 35% 30%, #ffffff 0%, #c8c8c8 82%)'
-            : label === 'SB'
-              ? 'radial-gradient(circle at 35% 30%, #ffe89a 0%, #d5a72a 82%)'
-              : 'radial-gradient(circle at 35% 30%, #b9ddff 0%, #4383be 82%)',
+          background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #c8c8c8 82%)',
           border: '1px solid rgba(20,20,20,0.68)',
           boxShadow: '0 4px 9px rgba(0,0,0,0.34)',
           color: '#171717',

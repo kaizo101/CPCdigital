@@ -393,7 +393,7 @@ io.use((socket, next) => {
 const PORT = process.env.PORT ?? 3001
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', version: '0.2.0' })
+  res.json({ status: 'ok', version: '0.2.1' })
 })
 
 app.get('/history', (_req, res) => {

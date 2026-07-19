@@ -42,7 +42,7 @@ export function PlayerSeat({
       <div style={{
         position: 'relative',
         isolation: 'isolate',
-        opacity: isFolded ? 0.68 : 1,
+        opacity: isPeekingFoldedCards ? 0.88 : isFolded ? 0.68 : 1,
         transition: 'opacity 140ms ease',
       }}>
         {showHoleCards && (
@@ -54,7 +54,8 @@ export function PlayerSeat({
             display: 'flex',
             gap: 1,
             zIndex: 0,
-            filter: isPeekingFoldedCards ? 'grayscale(0.62) saturate(0.55)' : 'none',
+            filter: isPeekingFoldedCards ? 'grayscale(0.18) saturate(0.82) brightness(0.9)' : 'none',
+            transition: 'filter 140ms ease',
           }}>
             {visibleCards ? (
               <>

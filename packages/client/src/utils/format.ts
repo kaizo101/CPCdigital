@@ -6,6 +6,34 @@ export function formatChips(value: number): string {
   })}`
 }
 
+/** Editable chip amount without currency sign, grouping, or redundant zeroes. */
+export function formatChipInput(value: number): string {
+  const rounded = roundToCents(value)
+  if (!Number.isFinite(rounded)) return ''
+  return rounded.toLocaleString('de-DE', {
+    useGrouping: false,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
+}
+
+export function sanitizeChipInput(rawValue: string): string {
+  const raw = rawValue.replace(/[^\d,.]/g, '')
+  const separatorIndex = raw.search(/[,.]/)
+  const whole = separatorIndex < 0 ? raw : raw.slice(0, separatorIndex)
+  const decimals = separatorIndex < 0
+    ? ''
+    : raw.slice(separatorIndex + 1).replace(/[,.]/g, '').slice(0, 2)
+  const separator = separatorIndex < 0 ? '' : raw[separatorIndex]
+  return `${whole}${separator}${decimals}`
+}
+
+export function parseChipInput(value: string): number | null {
+  if (value.trim() === '') return null
+  const parsed = Number(value.replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }

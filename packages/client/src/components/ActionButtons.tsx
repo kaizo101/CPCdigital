@@ -1,6 +1,14 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PlayerAction } from '@cpc/shared'
-import { clamp, roundToCents, formatChips, snapToChipUnit } from '../utils/format'
+import {
+  clamp,
+  formatChipInput,
+  formatChips,
+  parseChipInput,
+  roundToCents,
+  sanitizeChipInput,
+  snapToChipUnit,
+} from '../utils/format'
 
 const miniControlButton = (disabled = false): React.CSSProperties => ({
   padding: '7px 14px',
@@ -51,17 +59,42 @@ export function ActionButtons({
   const normalizedStep = Math.max(roundToCents(stepSize), 0.01)
   const sliderMax = Math.max(minRaise, maxRaise)
   const canMakeFullRaise = canRaise && maxRaise >= minRaise
+  const [raiseInput, setRaiseInput] = useState(() => formatChipInput(raiseAmount || minRaise))
+  const [isEditingRaise, setIsEditingRaise] = useState(false)
   const snapRaise = (amount: number, mode: 'nearest' | 'up' | 'down' = 'nearest') => {
     const bounded = clamp(roundToCents(amount), minRaise, sliderMax)
     return clamp(snapToChipUnit(bounded, minRaise, normalizedStep, mode), minRaise, sliderMax)
   }
   const sliderValue = snapRaise(raiseAmount || minRaise)
-  const applyRaise = (amount: number, mode: 'nearest' | 'up' | 'down' = 'nearest') => setRaiseAmount(snapRaise(amount, mode))
+  const applyRaise = (amount: number, mode: 'nearest' | 'up' | 'down' = 'nearest') => {
+    const nextAmount = snapRaise(amount, mode)
+    setRaiseAmount(nextAmount)
+    setRaiseInput(formatChipInput(nextAmount))
+  }
   const setPotRaise = () => applyRaise(potRaiseTo, 'up')
   const setThreeBlindRaise = () => applyRaise(bigBlind * 3, 'up')
   const setMaxRaise = () => applyRaise(sliderMax, 'up')
 
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!isEditingRaise) setRaiseInput(formatChipInput(sliderValue))
+  }, [sliderValue, isEditingRaise])
+
+  const commitRaiseInput = (): number | null => {
+    const parsed = parseChipInput(raiseInput)
+    if (parsed == null) {
+      setRaiseInput(formatChipInput(sliderValue))
+      setIsEditingRaise(false)
+      return null
+    }
+
+    const committedAmount = snapRaise(parsed)
+    setRaiseAmount(committedAmount)
+    setRaiseInput(formatChipInput(committedAmount))
+    setIsEditingRaise(false)
+    return committedAmount
+  }
 
   useEffect(() => {
     if (!isMyTurn || !canAct) return
@@ -114,24 +147,27 @@ export function ActionButtons({
           ref={inputRef}
           type="text"
           inputMode="decimal"
-          value={raiseAmount.toFixed(2)}
-          onChange={e => {
-            let raw = e.target.value.replace(/[^\d,.]/g, '')
-            raw = raw.replaceAll(',', '.')
-            const parts = raw.split('.')
-            let sanitized = raw
-            if (parts.length > 2) {
-              sanitized = parts[0] + '.' + parts.slice(1).join('')
-            } else if (parts.length === 2 && parts[1].length > 2) {
-              sanitized = parts[0] + '.' + parts[1].slice(0, 2)
-            }
-            const num = Number(sanitized)
-            if (!Number.isNaN(num) && sanitized !== '') setRaiseAmount(num)
+          value={raiseInput}
+          onFocus={e => {
+            setIsEditingRaise(true)
+            e.currentTarget.select()
           }}
-          onBlur={e => {
-            const raw = e.target.value.replaceAll(',', '.')
-            const num = Number(raw)
-            if (!Number.isNaN(num)) applyRaise(num)
+          onChange={e => {
+            setRaiseInput(sanitizeChipInput(e.target.value))
+          }}
+          onBlur={commitRaiseInput}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              const committedAmount = commitRaiseInput()
+              if (committedAmount != null && canAct && canMakeFullRaise) {
+                onAction({ type: 'raise', amount: committedAmount })
+              }
+            } else if (e.key === 'Escape') {
+              setRaiseInput(formatChipInput(sliderValue))
+              setIsEditingRaise(false)
+              e.currentTarget.blur()
+            }
           }}
           disabled={!canAct || !canMakeFullRaise}
           style={{

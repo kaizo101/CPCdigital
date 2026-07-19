@@ -23,16 +23,24 @@ export default function App() {
   }, [runner])
 
   const localState = runner.state
+  const gameState = localState.gameState
+  const bettingContext = gameState?.bettingContext
 
   useEffect(() => {
-    const gs = localState.gameState
-    if (!gs) return
-    const context = gs.bettingContext
-    if (gs.phase !== 'waiting' && context?.playerId === 'hero') {
-      const raise = context.legalActions.raise
-      setRaiseAmount(raise?.minAmount ?? context.legalActions.allInAmount ?? 0)
+    if (gameState?.phase !== 'waiting' && bettingContext?.playerId === 'hero') {
+      const raise = bettingContext.legalActions.raise
+      setRaiseAmount(raise?.minAmount ?? bettingContext.legalActions.allInAmount ?? 0)
     }
-  }, [localState.gameState])
+  }, [
+    gameState?.phase,
+    gameState?.currentPlayerId,
+    gameState?.currentBet,
+    bettingContext?.totalPot,
+    bettingContext?.toCall,
+    bettingContext?.minRaiseTo,
+    bettingContext?.maxRaiseTo,
+    bettingContext?.playerStack,
+  ])
 
   function handleStartGame() {
     runner.setupTable(options, botCount)
@@ -59,7 +67,7 @@ export default function App() {
 
   return (
     <TableScreen
-      gameState={localState.gameState}
+      gameState={gameState}
       myCards={localState.myCards}
       lastResults={localState.lastResults}
       isMyTurn={localState.isMyTurn}

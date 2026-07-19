@@ -155,7 +155,7 @@ export function getTableButtonPosition(index: number, count: number): { left: st
   }
 }
 
-export type TableButtonLabel = 'D' | 'SB' | 'BB'
+export type TableButtonLabel = 'D'
 
 export function getTableButtonAssignments(state: Readonly<PublicGameState>): Readonly<Record<string, TableButtonLabel[]>> {
   const inHandPlayers = state.players.filter(player => player.status !== 'waiting')
@@ -165,24 +165,9 @@ export function getTableButtonAssignments(state: Readonly<PublicGameState>): Rea
   const dealerIndex = inHandPlayers.findIndex(player => player.id === dealer?.id)
   if (dealerIndex < 0) return {}
 
-  const smallBlindIndex = inHandPlayers.length === 2
-    ? dealerIndex
-    : (dealerIndex + 1) % inHandPlayers.length
-  const bigBlindIndex = (dealerIndex + (inHandPlayers.length === 2 ? 1 : 2)) % inHandPlayers.length
-  const assignments: Record<string, TableButtonLabel[]> = {
+  return {
     [inHandPlayers[dealerIndex].id]: ['D'],
   }
-
-  assignments[inHandPlayers[smallBlindIndex].id] = [
-    ...(assignments[inHandPlayers[smallBlindIndex].id] ?? []),
-    'SB',
-  ]
-  assignments[inHandPlayers[bigBlindIndex].id] = [
-    ...(assignments[inHandPlayers[bigBlindIndex].id] ?? []),
-    'BB',
-  ]
-
-  return assignments
 }
 
 export function rotatePlayersForTable(players: Player[], myPlayerId?: string): Player[] {

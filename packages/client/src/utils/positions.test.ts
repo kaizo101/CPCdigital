@@ -37,20 +37,17 @@ describe('table button assignments', () => {
     expect(getTableButtonPosition(0, 6)).toEqual({ left: '50%', top: '86.95%' })
   })
 
-  it('places dealer, small blind and big blind clockwise', () => {
+  it('shows only the dealer button', () => {
     const players = Array.from({ length: 6 }, (_, index) => player(`p${index}`, index))
     expect(getTableButtonAssignments(state(players, 2))).toEqual({
       p2: ['D'],
-      p3: ['SB'],
-      p4: ['BB'],
     })
   })
 
-  it('gives the dealer the small blind heads-up and skips waiting seats', () => {
+  it('keeps the dealer button heads-up and skips waiting seats', () => {
     const players = [player('dealer', 0), player('empty', 1, 'waiting'), player('opponent', 2)]
     expect(getTableButtonAssignments(state(players, 0))).toEqual({
-      dealer: ['D', 'SB'],
-      opponent: ['BB'],
+      dealer: ['D'],
     })
   })
 })
