@@ -1,9 +1,12 @@
-export function formatChips(value: number): string {
+export type DisplayCurrency = 'EUR' | 'USD'
+
+export function formatChips(value: number, currency: DisplayCurrency = 'EUR'): string {
   const rounded = Math.round((value + Number.EPSILON) * 100) / 100
-  return `€${rounded.toLocaleString('de-DE', {
+  const amount = rounded.toLocaleString('de-DE', {
     minimumFractionDigits: rounded % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
-  })}`
+  })
+  return currency === 'USD' ? `$${amount}` : `${amount}\u00a0€`
 }
 
 /** Editable chip amount without currency sign, grouping, or redundant zeroes. */
@@ -40,6 +43,15 @@ export function clamp(value: number, min: number, max: number): number {
 
 export function roundToCents(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
+export function calculateStartingStack(bigBlind: number, stackSizeBb: number = 100): number {
+  return roundToCents(Math.max(0, bigBlind) * Math.max(0, stackSizeBb))
+}
+
+/** Treats cent-equivalent values at the player's maximum as an all-in selection. */
+export function isMaximumChipAmount(value: number, maximum: number): boolean {
+  return roundToCents(value) >= roundToCents(maximum)
 }
 
 /** 3 BB when unopened; three times the current raise-to amount after action. */

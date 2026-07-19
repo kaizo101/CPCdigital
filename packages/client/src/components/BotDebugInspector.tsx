@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import type { Card, PlayerAction } from '@cpc/shared'
 import type { BotDebugDecision } from '../bot-debug'
-import { formatChips } from '../utils/format'
+import { formatChips, type DisplayCurrency } from '../utils/format'
 
 const panelColor = '#11151a'
 const borderColor = 'rgba(255,255,255,0.12)'
 
 export function BotDebugInspector({
   decisions,
+  currency,
 }: {
   decisions: readonly BotDebugDecision[]
+  currency: DisplayCurrency
 }) {
   const [open, setOpen] = useState(false)
   const [selectedSequence, setSelectedSequence] = useState<number | null>(null)
@@ -79,7 +81,7 @@ export function BotDebugInspector({
           </div>
 
           <div style={{ overflowY: 'auto', padding: 12 }}>
-            {selected ? <DecisionDetails debug={selected} /> : (
+            {selected ? <DecisionDetails debug={selected} currency={currency} /> : (
               <div style={{ padding: '24px 8px', textAlign: 'center', color: '#89939e' }}>
                 Noch keine Bot-Entscheidung in dieser Session.
               </div>
@@ -111,7 +113,7 @@ export function BotDebugInspector({
   )
 }
 
-function DecisionDetails({ debug }: { debug: BotDebugDecision }) {
+function DecisionDetails({ debug, currency }: { debug: BotDebugDecision; currency: DisplayCurrency }) {
   const { context, evaluation, metrics, decision, complexity, timing, profile } = debug
   const chosenIndex = findChosenIndex(debug)
 
@@ -129,7 +131,7 @@ function DecisionDetails({ debug }: { debug: BotDebugDecision }) {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ color: '#fbbf24', fontWeight: 900, fontSize: 14 }}>
-              {formatAction(decision.action, debug)}
+              {formatAction(decision.action, debug, currency)}
             </div>
             <div style={{ color: '#9ca8b4', fontSize: 10 }}>
               Utility {formatNumber(decision.chosenUtility)}
@@ -167,7 +169,7 @@ function DecisionDetails({ debug }: { debug: BotDebugDecision }) {
               }}>
                 <span>
                   <strong style={{ color: index === chosenIndex ? '#fbbf24' : '#dce5ed' }}>
-                    {formatAction(action.action, debug)}
+                    {formatAction(action.action, debug, currency)}
                   </strong>
                   <span style={{ marginLeft: 7, color: '#83909d', fontSize: 10 }}>{action.intent}</span>
                   {index === chosenIndex && <span style={{ marginLeft: 7, color: '#fbbf24', fontSize: 9 }}>GEWÄHLT</span>}
@@ -199,19 +201,19 @@ function DecisionDetails({ debug }: { debug: BotDebugDecision }) {
 
       <Section title="Spiel- und Betting-Kontext">
         <MetricGrid entries={[
-          ['Pot', formatChips(metrics.totalPot)],
-          ['Zu callen', formatChips(metrics.callAmount)],
+          ['Pot', formatChips(metrics.totalPot, currency)],
+          ['Zu callen', formatChips(metrics.callAmount, currency)],
           ['Pot Odds', formatPercent(metrics.potOdds)],
           ['Bet / Pot', formatNumber(metrics.toCallPotRatio)],
-          ['Eff. Stack', `${formatChips(metrics.effectiveStack)} · ${formatNumber(metrics.effectiveStackBb)} BB`],
+          ['Eff. Stack', `${formatChips(metrics.effectiveStack, currency)} · ${formatNumber(metrics.effectiveStackBb)} BB`],
           ['SPR', formatNumber(metrics.spr)],
           ['Commitment', formatPercent(metrics.callCommitment)],
-          ['Raise-Grenzen', `${formatChips(metrics.minRaiseTo)} – ${formatChips(metrics.maxRaiseTo)}`],
+          ['Raise-Grenzen', `${formatChips(metrics.minRaiseTo, currency)} – ${formatChips(metrics.maxRaiseTo, currency)}`],
           ['Tischgröße', `${context.position.tableSize} Spieler`],
           ['Action History', `${context.actionHistory.length} Events`],
         ]} />
         <div style={{ marginTop: 7, color: '#93a0ac', fontSize: 10 }}>
-          Legal: {formatLegalActions(debug)}
+          Legal: {formatLegalActions(debug, currency)}
         </div>
       </Section>
 
@@ -325,28 +327,28 @@ function isAggressive(action: PlayerAction): boolean {
   return action.type === 'raise' || action.type === 'all-in'
 }
 
-function formatAction(action: PlayerAction, debug: BotDebugDecision): string {
+function formatAction(action: PlayerAction, debug: BotDebugDecision, currency: DisplayCurrency): string {
   if (action.type === 'raise') {
     const verb = debug.context.publicState.currentBet > 0 ? 'Raise auf' : 'Bet'
-    return `${verb} ${formatChips(action.amount)}`
+    return `${verb} ${formatChips(action.amount, currency)}`
   }
   if (action.type === 'all-in') {
     const amount = debug.context.bettingContext.legalActions.allInAmount
-    return amount == null ? 'All-in' : `All-in ${formatChips(amount)}`
+    return amount == null ? 'All-in' : `All-in ${formatChips(amount, currency)}`
   }
-  if (action.type === 'call') return `Call ${formatChips(debug.metrics.callAmount)}`
+  if (action.type === 'call') return `Call ${formatChips(debug.metrics.callAmount, currency)}`
   if (action.type === 'check') return 'Check'
   return 'Fold'
 }
 
-function formatLegalActions(debug: BotDebugDecision): string {
+function formatLegalActions(debug: BotDebugDecision, currency: DisplayCurrency): string {
   const legal = debug.context.bettingContext.legalActions
   const actions: string[] = []
   if (legal.fold) actions.push('Fold')
   if (legal.check) actions.push('Check')
-  if (legal.callAmount != null) actions.push(`Call ${formatChips(legal.callAmount)}`)
-  if (legal.raise) actions.push(`Raise ${formatChips(legal.raise.minAmount)}–${formatChips(legal.raise.maxAmount)}`)
-  if (legal.allInAmount != null) actions.push(`All-in ${formatChips(legal.allInAmount)}`)
+  if (legal.callAmount != null) actions.push(`Call ${formatChips(legal.callAmount, currency)}`)
+  if (legal.raise) actions.push(`Raise ${formatChips(legal.raise.minAmount, currency)}–${formatChips(legal.raise.maxAmount, currency)}`)
+  if (legal.allInAmount != null) actions.push(`All-in ${formatChips(legal.allInAmount, currency)}`)
   return actions.join(' · ') || 'keine'
 }
 

@@ -3,6 +3,7 @@ import type { PlayerAction, TableOptions } from '@cpc/shared'
 import { LocalGameRunner } from './LocalGameRunner'
 import { SetupScreen } from './screens/SetupScreen'
 import { TableScreen } from './screens/TableScreen'
+import type { DisplayCurrency } from './utils/format'
 
 type Screen = 'setup' | 'table'
 
@@ -12,10 +13,11 @@ export default function App() {
 
   const [screen, setScreen] = useState<Screen>('setup')
   const [options, setOptions] = useState<TableOptions>({
-    bigBlind: 20, smallBlind: 10, maxPlayers: 6, startingChips: 1000,
+    bigBlind: 20, smallBlind: 10, maxPlayers: 6, startingChips: 2000,
   })
   const [botCount, setBotCount] = useState(5)
   const [raiseAmount, setRaiseAmount] = useState(0)
+  const [currency, setCurrency] = useState<DisplayCurrency>('EUR')
 
   useEffect(() => {
     const unsub = runner.subscribe(() => forceRender(n => n + 1))
@@ -43,7 +45,9 @@ export default function App() {
   ])
 
   function handleStartGame() {
-    runner.setupTable(options, botCount)
+    const tableOptions = { ...options, maxPlayers: botCount + 1 }
+    setOptions(tableOptions)
+    runner.setupTable(tableOptions, botCount)
     runner.startHand()
     setScreen('table')
   }
@@ -61,6 +65,8 @@ export default function App() {
         botCount={botCount}
         setBotCount={setBotCount}
         onStart={handleStartGame}
+        currency={currency}
+        setCurrency={setCurrency}
       />
     )
   }
@@ -74,11 +80,14 @@ export default function App() {
       playerActionLabels={localState.playerActionLabels}
       showdownCards={localState.showdownCards}
       botDebugDecisions={runner.getBotDebugDecisions()}
+      pendingRebuyPlayerIds={localState.pendingRebuyPlayerIds}
       raiseAmount={raiseAmount}
       setRaiseAmount={setRaiseAmount}
       onAction={(action: PlayerAction) => runner.playerAction(action)}
       onBack={handleBackToSetup}
       options={options}
+      currency={currency}
+      onRebuy={playerId => runner.requestRebuy(playerId)}
     />
   )
 }

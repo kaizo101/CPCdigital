@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   calculateChipUnit,
+  calculateStartingStack,
   calculateThreeXRaise,
   formatChipInput,
   formatChips,
+  isMaximumChipAmount,
   parseChipInput,
   sanitizeChipInput,
   snapToChipUnit,
@@ -11,12 +13,12 @@ import {
 
 describe('chip formatting', () => {
   it('omits redundant decimals from whole chip values', () => {
-    expect(formatChips(100)).toBe('€100')
+    expect(formatChips(100)).toBe('100\u00a0€')
     expect(formatChipInput(100)).toBe('100')
   })
 
   it('keeps only decimals that are actually part of the amount', () => {
-    expect(formatChips(0.1)).toBe('€0,10')
+    expect(formatChips(0.1)).toBe('0,10\u00a0€')
     expect(formatChipInput(0.1)).toBe('0,1')
     expect(formatChipInput(0.15)).toBe('0,15')
   })
@@ -28,6 +30,11 @@ describe('chip formatting', () => {
     expect(parseChipInput('0,15')).toBe(0.15)
     expect(parseChipInput('0.15')).toBe(0.15)
     expect(parseChipInput('')).toBeNull()
+  })
+
+  it('places the dollar sign before and the euro sign after the amount', () => {
+    expect(formatChips(1234.5, 'USD')).toBe('$1.234,50')
+    expect(formatChips(1234.5, 'EUR')).toBe('1.234,50\u00a0€')
   })
 })
 
@@ -45,6 +52,13 @@ describe('calculateChipUnit', () => {
   })
 })
 
+describe('calculateStartingStack', () => {
+  it('derives a 100 BB stack from whole and micro-stakes blinds', () => {
+    expect(calculateStartingStack(20)).toBe(2000)
+    expect(calculateStartingStack(0.05)).toBe(5)
+  })
+})
+
 describe('calculateThreeXRaise', () => {
   it('uses three big blinds for an unopened pot', () => {
     expect(calculateThreeXRaise(5, 5)).toBe(15)
@@ -56,5 +70,16 @@ describe('calculateThreeXRaise', () => {
 
   it('keeps micro-stakes values cent-accurate', () => {
     expect(calculateThreeXRaise(0.15, 0.05)).toBe(0.45)
+  })
+})
+
+describe('isMaximumChipAmount', () => {
+  it('recognizes the rightmost slider value as the maximum', () => {
+    expect(isMaximumChipAmount(1000, 1000)).toBe(true)
+    expect(isMaximumChipAmount(999, 1000)).toBe(false)
+  })
+
+  it('compares micro-stakes values at cent precision', () => {
+    expect(isMaximumChipAmount(0.30000000000000004, 0.30)).toBe(true)
   })
 })

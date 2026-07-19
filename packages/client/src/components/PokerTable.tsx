@@ -1,6 +1,6 @@
 import type { Card } from '@cpc/shared'
 import { CardView } from './Card'
-import { formatChips } from '../utils/format'
+import { formatChips, type DisplayCurrency } from '../utils/format'
 import { getBetPosition, getTableButtonPosition, type TableButtonLabel } from '../utils/positions'
 
 export function PokerTable({ children }: { children: React.ReactNode }) {
@@ -60,7 +60,7 @@ export function PokerTable({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function TablePot({ pot, sidePots }: { pot: number; sidePots?: { amount: number }[] }) {
+export function TablePot({ pot, sidePots, currency }: { pot: number; sidePots?: { amount: number }[]; currency: DisplayCurrency }) {
   return (
     <div style={{
       position: 'absolute', left: '50%', top: '34%', transform: 'translate(-50%, -50%)',
@@ -77,11 +77,11 @@ export function TablePot({ pot, sidePots }: { pot: number; sidePots?: { amount: 
         letterSpacing: 0.4,
         boxShadow: '0 8px 16px rgba(0,0,0,0.28)',
       }}>
-        Pot: {formatChips(pot)}
+        Pot: {formatChips(pot, currency)}
       </div>
       {sidePots && sidePots.length > 1 && (
         <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.75)', letterSpacing: 0.3 }}>
-          {sidePots.slice(1).map((sp, i) => <span key={i}>Side {i + 1}: {formatChips(sp.amount)} </span>)}
+          {sidePots.slice(1).map((sp, i) => <span key={i}>Side {i + 1}: {formatChips(sp.amount, currency)} </span>)}
         </div>
       )}
     </div>
@@ -176,7 +176,7 @@ export function TablePositionButtons({
   )
 }
 
-export function BetStack({ amount, seatIndex, seatCount }: { amount: number; seatIndex: number; seatCount: number }) {
+export function BetStack({ amount, seatIndex, seatCount, currency }: { amount: number; seatIndex: number; seatCount: number; currency: DisplayCurrency }) {
   if (amount <= 0) return null
   const position = getBetPosition(seatIndex, seatCount)
 
@@ -224,7 +224,7 @@ export function BetStack({ amount, seatIndex, seatCount }: { amount: number; sea
         fontSize: 10,
         fontWeight: 700,
       }}>
-        {formatChips(amount)}
+        {formatChips(amount, currency)}
       </span>
     </div>
   )

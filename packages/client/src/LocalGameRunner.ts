@@ -27,10 +27,12 @@ import type { DecisionComplexity } from './bot-decision-complexity'
 import type { BotContext } from './bot-context'
 import type { TagDecision } from './bot-tag'
 import type { BotDebugDecision } from './bot-debug'
+import { getRunoutRevealStages } from './community-runout'
 
 export type Listener = () => void
 
 export const SHOWDOWN_DISPLAY_MS = 6000
+export const RUNOUT_STAGE_DELAY_MS = 800
 const UNCONTESTED_RESULT_DISPLAY_MS = 3000
 
 export interface SessionHistoryEvent {
@@ -51,7 +53,10 @@ export interface LocalGameState {
   playerActionLabels: Readonly<Record<string, PlayerActionLabel>>
   showdownCards: Readonly<Record<string, [Card, Card]>>
   sessionHistory: readonly SessionHistoryEvent[]
+  pendingRebuyPlayerIds: readonly string[]
 }
+
+export type RebuyRequestStatus = 'applied' | 'queued' | 'not-needed' | 'unavailable'
 
 export class LocalGameRunner {
   private game: PokerGame | null = null
@@ -64,6 +69,7 @@ export class LocalGameRunner {
   private listeners: Set<Listener> = new Set()
   private botTimer: ReturnType<typeof setTimeout> | null = null
   private autoStartTimer: ReturnType<typeof setTimeout> | null = null
+  private runoutTimer: ReturnType<typeof setTimeout> | null = null
   private _lastResults: HandResult[] | null = null
   private playerActionLabels: Record<string, PlayerActionLabel> = {}
   private showdownCards: Record<string, [Card, Card]> = {}
@@ -71,6 +77,10 @@ export class LocalGameRunner {
   private sessionDecisionSnapshots: SessionDecisionSnapshot[] = []
   private botDebugDecisions: BotDebugDecision[] = []
   private nextBotDebugSequence = 1
+  private pendingRebuyPlayerIds = new Set<string>()
+  private startingChips = 0
+  private runoutStartCardCount: number | null = null
+  private visibleCommunityCardCount: number | null = null
   private currentHandNumber = 0
   private capturedHandEventCount = 0
   private capturedDecisionSnapshotCount = 0
@@ -87,10 +97,17 @@ export class LocalGameRunner {
         playerActionLabels: {},
         showdownCards: {},
         sessionHistory: [...this.sessionHistory],
+        pendingRebuyPlayerIds: [...this.pendingRebuyPlayerIds],
       }
     }
     const playerView = this.game.getPlayerView(this.heroId)
-    const gs = playerView.state
+    const sourceGameState = playerView.state
+    const gs = this.visibleCommunityCardCount == null
+      ? sourceGameState
+      : {
+          ...sourceGameState,
+          communityCards: sourceGameState.communityCards.slice(0, this.visibleCommunityCardCount),
+        }
     return {
       gameState: gs,
       myCards: playerView.ownCards,
@@ -99,6 +116,7 @@ export class LocalGameRunner {
       playerActionLabels: { ...this.playerActionLabels },
       showdownCards: { ...this.showdownCards },
       sessionHistory: [...this.sessionHistory],
+      pendingRebuyPlayerIds: [...this.pendingRebuyPlayerIds],
     }
   }
 
@@ -169,6 +187,10 @@ export class LocalGameRunner {
     this.sessionDecisionSnapshots = []
     this.botDebugDecisions = []
     this.nextBotDebugSequence = 1
+    this.pendingRebuyPlayerIds.clear()
+    this.startingChips = options.startingChips
+    this.runoutStartCardCount = null
+    this.visibleCommunityCardCount = null
     this.currentHandNumber = 0
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0
@@ -205,10 +227,14 @@ export class LocalGameRunner {
     if (!this.game) return
     if (this.game.getPublicState().phase !== 'waiting') return
 
+    this.applyPendingRebuys()
+
     const eligible = this.players.filter(p => p.chips > 0 && !p.isSittingOut)
     if (eligible.length < 2) return
 
     this._lastResults = null
+    this.runoutStartCardCount = null
+    this.visibleCommunityCardCount = null
     this.playerActionLabels = {}
     this.showdownCards = {}
     this.observedEventCountByBot.clear()
@@ -345,12 +371,21 @@ export class LocalGameRunner {
   private applyAction(playerId: string, action: PlayerAction): void {
     if (!this.game) return
 
-    const phaseBeforeAction = this.game.getPublicState().phase
+    const stateBeforeAction = this.game.getPublicState()
+    const phaseBeforeAction = stateBeforeAction.phase
     const label = getPlayerActionLabel(action, this.game.getPublicState().currentBet)
     this.game.applyAction(playerId, action)
     this.captureSessionHistory()
     this.captureDecisionSnapshots()
     const phaseAfterAction = this.game.getPublicState().phase
+    const stateAfterAction = this.game.getPublicState()
+    if (
+      stateAfterAction.phase === 'waiting'
+      && stateAfterAction.communityCards.length > stateBeforeAction.communityCards.length
+    ) {
+      this.runoutStartCardCount = stateBeforeAction.communityCards.length
+      this.visibleCommunityCardCount = stateBeforeAction.communityCards.length
+    }
 
     if (phaseAfterAction !== phaseBeforeAction) {
       this.playerActionLabels = {}
@@ -411,7 +446,6 @@ export class LocalGameRunner {
     if (gs.phase !== 'waiting') return
 
     const results = this.game.getLastHandResults()
-    this._lastResults = results
     this.showdownCards = { ...this.game.getRevealedCards() }
     const bigBlind = this.game?.getPublicState().bigBlind ?? 20
 
@@ -428,12 +462,51 @@ export class LocalGameRunner {
     }
 
     this.syncChips()
-    this.notify()
-
-    if (this.autoStartTimer) clearTimeout(this.autoStartTimer)
     const resultDisplayMs = Object.keys(this.showdownCards).length > 0
       ? SHOWDOWN_DISPLAY_MS
       : UNCONTESTED_RESULT_DISPLAY_MS
+    const revealStages = this.runoutStartCardCount == null
+      ? []
+      : getRunoutRevealStages(this.runoutStartCardCount, gs.communityCards.length)
+
+    if (revealStages.length > 0) {
+      this._lastResults = null
+      this.notify()
+      this.revealRunoutStages(revealStages, 0, results, resultDisplayMs)
+      return
+    }
+
+    this.finishHandPresentation(results, resultDisplayMs)
+  }
+
+  private revealRunoutStages(
+    stages: readonly number[],
+    stageIndex: number,
+    results: HandResult[],
+    resultDisplayMs: number,
+  ): void {
+    if (this.runoutTimer) clearTimeout(this.runoutTimer)
+    this.runoutTimer = setTimeout(() => {
+      this.runoutTimer = null
+      this.visibleCommunityCardCount = stages[stageIndex]
+      this.notify()
+
+      if (stageIndex + 1 < stages.length) {
+        this.revealRunoutStages(stages, stageIndex + 1, results, resultDisplayMs)
+        return
+      }
+
+      this.finishHandPresentation(results, resultDisplayMs)
+    }, RUNOUT_STAGE_DELAY_MS)
+  }
+
+  private finishHandPresentation(results: HandResult[], resultDisplayMs: number): void {
+    this.visibleCommunityCardCount = null
+    this.runoutStartCardCount = null
+    this._lastResults = results
+    this.notify()
+
+    if (this.autoStartTimer) clearTimeout(this.autoStartTimer)
     this.autoStartTimer = setTimeout(() => {
       this.startHand()
     }, resultDisplayMs)
@@ -498,11 +571,43 @@ export class LocalGameRunner {
     this.capturedDecisionSnapshotCount = snapshots.length
   }
 
+  requestRebuy(playerId: string): RebuyRequestStatus {
+    if (!this.game || this.startingChips <= 0) return 'unavailable'
+    const player = this.game.getPublicState().players.find(candidate => candidate.id === playerId)
+    if (!player) return 'unavailable'
+    if (player.chips >= this.startingChips) return 'not-needed'
+
+    this.pendingRebuyPlayerIds.add(playerId)
+    if (this.game.getPublicState().phase === 'waiting') {
+      this.applyPendingRebuys()
+      this.notify()
+      return 'applied'
+    }
+
+    this.notify()
+    return 'queued'
+  }
+
+  private applyPendingRebuys(): void {
+    if (!this.game || this.game.getPublicState().phase !== 'waiting') return
+
+    for (const playerId of this.pendingRebuyPlayerIds) {
+      const player = this.players.find(candidate => candidate.id === playerId)
+      if (player && player.chips < this.startingChips) {
+        player.chips = this.startingChips
+        this.game.setPlayerChips(playerId, this.startingChips)
+      }
+    }
+    this.pendingRebuyPlayerIds.clear()
+  }
+
   cleanup(): void {
     if (this.botTimer) clearTimeout(this.botTimer)
     if (this.autoStartTimer) clearTimeout(this.autoStartTimer)
+    if (this.runoutTimer) clearTimeout(this.runoutTimer)
     this.botTimer = null
     this.autoStartTimer = null
+    this.runoutTimer = null
     this.game = null
     this._lastResults = null
     this.showdownCards = {}
@@ -510,6 +615,10 @@ export class LocalGameRunner {
     this.sessionDecisionSnapshots = []
     this.botDebugDecisions = []
     this.nextBotDebugSequence = 1
+    this.pendingRebuyPlayerIds.clear()
+    this.startingChips = 0
+    this.runoutStartCardCount = null
+    this.visibleCommunityCardCount = null
     this.currentHandNumber = 0
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0

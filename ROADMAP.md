@@ -115,6 +115,11 @@ PokerPlayer
 - [ ] Maniac
 - [ ] Skill und Persönlichkeit frei kombinierbar machen
 - [ ] Session-Varianz innerhalb eines Archetyps
+- [ ] `BotIdentity` mit Name, Avatar und stabilen Grundtendenzen getrennt von Archetyp und Skill modellieren
+- [ ] persistenten lokalen Bot-Roster mit über mehrere Sessions wiederkehrenden Identitäten aufbauen
+- [ ] Identitäts-Seed, Session-Varianz und Hand-/Decision-RNG getrennt und reproduzierbar verwenden
+- [ ] wiedererkennbare Gewohnheiten ermöglichen, ohne Entscheidungen vollständig vorhersehbar zu machen
+- [ ] Archetyp und Skill nicht durch Namen oder offen sichtbare Kategorien verraten
 - [ ] individuelle Tilt-Reaktionen
 - [ ] unterschiedliche Beobachtungsfähigkeit
 - [ ] Reads mit Stichprobengröße und Konfidenz
@@ -196,7 +201,14 @@ Triple Draw folgt erst, wenn Single Draw stabil ist.
 - [ ] persistente Hand History
 - [ ] Hand-Replayer Schritt für Schritt
 - [ ] Filter nach Variante, Session, Bot und Potgröße
-- [ ] Session-Stats: Hände, Gewinn/Verlust, VPIP, PFR und Aggression
+- [ ] reduzierte Live-Session-Statistik mit Händen, VPIP, PFR und Ergebnis in BB
+- [ ] Live-Statistiken erst nach abgeschlossenen Händen aktualisieren und Prozentwerte immer zusammen mit ihrer Rohstichprobe anzeigen
+- [ ] Live-Statistiken über einen kompakten, einklappbaren Zugang in der Kopfzeile anzeigen, ohne das spätere Sessionlog links unten zu verdrängen
+- [ ] Rebuys als strukturierte Session-Events erfassen und im Nettoergebnis korrekt berücksichtigen
+- [ ] separate, lokal persistente und versionierte Globalstatistik aufbauen
+- [ ] globale Statistiken um Sessions, 3-Bet, Aggression, WTSD, W$SD, Gewinn/Verlust, BB/100 und zeitliche Verläufe erweitern
+- [ ] globale Statistiken nach Variante, Tischgröße, Stakes und Zeitraum filtern; Stichprobengrößen immer sichtbar halten
+- [ ] Ergebnisse über verschiedene Stakes hinweg primär in BB und BB/100 vergleichen statt rohe Geldbeträge zu vermischen
 - [ ] variantenspezifische Statistiken
 - [ ] interessante Entscheidungen automatisch markieren
 - [ ] Bot-Entscheidungsgründe im Debug-Modus anzeigen
@@ -206,20 +218,54 @@ Triple Draw folgt erst, wenn Single Draw stabil ist.
 
 ---
 
-## 🎯 0.9.0 — UX, Polish und Plattformstabilität
+## 🎯 0.9.0 — Tischkomfort und optionale Hilfen
 
-**Ziel:** Die App soll sich wie ein fertiges Casual-Spiel anfühlen.
+**Ziel:** Der Tisch zeigt relevante Informationen klar an und lässt sich an persönliche Spielgewohnheiten anpassen.
 
-- [ ] Animationen für Karten und Chips
-- [ ] Sound-Effekte und Lautstärkeeinstellungen
 - [ ] verständliche Anzeige von Setzrunde und Spielphase
 - [ ] Min-/Max-Bet direkt in der Oberfläche
 - [ ] optional kompakte Regelhinweise
-- [ ] Touch-freundliche Bedienelemente vorbereiten
-- [ ] Bot-Namen, Avatare und erkennbare Tischidentität
+- [ ] optional zuschaltbare, standardmäßig deaktivierte Anzeige der aktuellen Hero-Hand
+- [ ] Handbeschreibung variantenspezifisch erzeugen, ohne Odds oder Handlungsempfehlungen vorwegzunehmen
+- [ ] am Tisch zwischen Geldbeträgen und Big-Blind-Anzeige umschalten
+- [ ] im BB-Modus Stacks, Bets, Pot, Aktionen, Showdown, Rebuy und Debug-Werte konsistent in BB darstellen
+- [ ] Bet- und Raise-Eingaben im BB-Modus in Big Blinds annehmen und sicher auf Engine-Chips sowie gültige Chip-Schritte umrechnen
+- [ ] zwischen klassischem 2-Color-Deck und optionalem 4-Color-Deck umschalten
+- [ ] Deck-Theme lokal speichern und kontrastreiche Suit-Farben bei weiterhin klar erkennbaren Symbolen verwenden
+
+---
+
+## 🎯 0.9.1 — Session-Anpassung und Tischidentität
+
+**Ziel:** Sessions, Gegner und Buy-ins lassen sich flexibel konfigurieren, ohne die Offline-First-Struktur aufzuweichen.
+
+- [ ] wiedererkennbare Bot-Namen, Avatare und Tischidentitäten aus dem lokalen Bot-Roster darstellen
 - [ ] Session-Setup mit Variante, Bots und Schwierigkeitsmix
+- [ ] standardmäßig deaktivierte Setup-Option `Dynamischer Tisch` für Botwechsel anbieten
+- [ ] Bots im dynamischen Modus ausschließlich zwischen Händen gehen und zeitversetzt durch andere Identitäten ersetzen lassen
+- [ ] mindestens einen Bot garantieren und die im Setup gewählte Botanzahl als Maximum verwenden
+- [ ] Reads und Erinnerungen an die Bot-Identität binden, damit zurückkehrende Gegner wiedererkennbar bleiben
+- [ ] jedem Bot im Session-Setup einen individuellen Starting Stack zuweisen
+- [x] einfacher Rechtsklick-Rebuy auf den konfigurierten Startstack zwischen zwei Händen
+- [ ] frei wählbare Rebuy-Beträge
+- [ ] konfigurierbare Buy-in-Grenzen, beispielsweise 40–250 BB
+- [ ] Auto-Rebuy pro Bot beziehungsweise Spieler sowie für den gesamten Tisch
+- [ ] touch- und barrierefreie Alternative zum Rechtsklick-Rebuy
+
+---
+
+## 🎯 0.9.2 — Präsentation und Plattformstabilität
+
+**Ziel:** Die App wirkt lebendig, bleibt bei langen Sessions stabil und ist auf unterschiedlichen Eingabegeräten gut bedienbar.
+
+- [ ] Animationen für Karten und Chips
+- [x] All-in-Runouts mit zeitversetztem Flop, Turn und River präsentieren
+- [ ] Sound-Effekte und Lautstärkeeinstellungen
+- [ ] Touch-freundliche Bedienelemente vorbereiten
 - [ ] Performance und lange Sessions testen
 - [ ] Barrierefreiheit und skalierbare UI
+
+Rein dekorative Punkte aus 0.9.2 dürfen notfalls nach v1.0 verschoben werden, solange Bedienbarkeit und Plattformstabilität gewährleistet sind.
 
 ---
 
@@ -355,6 +401,28 @@ Was ist passiert?
 - [ ] Android-spezifische Navigation
 - [ ] APK- und Release-Pipeline
 
+## 🎯 1.9.0 — Table Rules und Multiplayer-Readiness
+
+**Ziel:** Sonderregeln werden als allgemeine, deterministische Engine-Erweiterungen vorbereitet, ohne vorzeitig eine Online-Infrastruktur einzuführen.
+
+- [ ] allgemeines `TableRules`-Framework getrennt von Variantenregeln definieren
+- [ ] Kompatibilitätsprüfung zwischen Pokervariante, Betting-Struktur und Sonderregel
+- [ ] Pflichtbeiträge, übersprungene Phasen, zusätzliche Boards sowie Bonusabrechnungen modellieren
+- [ ] Main- und Side-Pots bei mehreren Boards beziehungsweise zusätzlichen Auszahlungen korrekt abrechnen
+- [ ] Sonderregeln vollständig in Hand History, Decision Snapshots und deterministischen Replays erfassen
+- [ ] protokollneutrale Zustimmungs-, Timeout- und Ablehnungs-Events für spätere Spielerentscheidungen vorbereiten
+- [ ] betroffene Sonderregeln im `BotContext` sichtbar machen, damit Offline-Tests fair bleiben
+- [ ] Single-Board Bomb Pot als erster offline testbarer Proof
+- [ ] Schnittstellen für 7-2-Game/Bounty und Run It Twice vorbereiten
+- [ ] noch keine vollständige Multiplayer-Oberfläche oder Serverabhängigkeit einführen
+
+### Freigabe ab v2.x
+
+- Sonderregeln in Lobbys beziehungsweise Tisch-Setups für echte Spieler auswählbar machen
+- Run It Twice mit Zustimmung aller beteiligten Spieler, Timeouts und Disconnect-Regeln umsetzen
+- Bomb Pots und 7-2-Game/Bounty mit synchronisierter Abrechnung im Multiplayer freigeben
+- Online-Multiplayer frühestens ab v2.0 und weiterhin nur als langfristige Option behandeln
+
 ## Später
 
 - Razz
@@ -365,7 +433,7 @@ Was ist passiert?
 - Short Deck
 - weitere Draw-Varianten
 - optionaler lokaler Multiplayer
-- Online-Multiplayer nur als langfristige Option
+- weitere Multiplayer-Sonderformen nach stabiler v2.x-Infrastruktur
 
 ---
 

@@ -2,6 +2,10 @@ import type { PlayerAction } from '@cpc/shared'
 
 export type PlayerActionLabel = 'Bet' | 'Raise' | 'Call' | 'Check' | 'All-in'
 
+export function getAggressiveActionLabel(currentBet: number): 'Bet' | 'Raise' {
+  return currentBet === 0 ? 'Bet' : 'Raise'
+}
+
 export function getPlayerActionLabel(action: PlayerAction, currentBet: number): PlayerActionLabel | null {
   switch (action.type) {
     case 'fold':
@@ -11,7 +15,7 @@ export function getPlayerActionLabel(action: PlayerAction, currentBet: number): 
     case 'call':
       return 'Call'
     case 'raise':
-      return currentBet === 0 ? 'Bet' : 'Raise'
+      return getAggressiveActionLabel(currentBet)
     case 'all-in':
       return 'All-in'
   }

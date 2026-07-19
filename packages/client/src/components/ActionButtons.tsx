@@ -5,11 +5,14 @@ import {
   calculateThreeXRaise,
   formatChipInput,
   formatChips,
+  isMaximumChipAmount,
   parseChipInput,
   roundToCents,
   sanitizeChipInput,
   snapToChipUnit,
+  type DisplayCurrency,
 } from '../utils/format'
+import { getAggressiveActionLabel } from '../action-display'
 
 const miniControlButton = (disabled = false): React.CSSProperties => ({
   padding: '7px 14px',
@@ -40,7 +43,7 @@ const primaryActionButton = (disabled = false): React.CSSProperties => ({
 })
 
 export function ActionButtons({
-  isMyTurn, canCheck, canRaise, canFold, canAct, toCall, currentBet, minRaise, maxRaise, potRaiseTo, stepSize, bigBlind, raiseAmount, setRaiseAmount, onAction,
+  isMyTurn, canCheck, canRaise, canFold, canAct, toCall, currentBet, minRaise, maxRaise, potRaiseTo, stepSize, bigBlind, raiseAmount, setRaiseAmount, onAction, currency,
 }: {
   isMyTurn: boolean
   canCheck: boolean
@@ -57,6 +60,7 @@ export function ActionButtons({
   raiseAmount: number
   setRaiseAmount: (n: number) => void
   onAction: (a: PlayerAction) => void
+  currency: DisplayCurrency
 }) {
   const normalizedStep = Math.max(roundToCents(stepSize), 0.01)
   const sliderMax = Math.max(minRaise, maxRaise)
@@ -77,6 +81,13 @@ export function ActionButtons({
   const setThreeXRaise = () => applyRaise(calculateThreeXRaise(currentBet, bigBlind), 'up')
   const threeXLabel = currentBet > bigBlind ? '3×' : '3 BB'
   const setMaxRaise = () => applyRaise(sliderMax, 'up')
+  const isAllInSelected = !canMakeFullRaise || isMaximumChipAmount(sliderValue, maxRaise)
+  const aggressiveActionLabel = getAggressiveActionLabel(currentBet)
+  const actionForAmount = (amount: number): PlayerAction => (
+    isMaximumChipAmount(amount, maxRaise)
+      ? { type: 'all-in' }
+      : { type: 'raise', amount }
+  )
 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -164,7 +175,7 @@ export function ActionButtons({
               e.preventDefault()
               const committedAmount = commitRaiseInput()
               if (committedAmount != null && canAct && canMakeFullRaise) {
-                onAction({ type: 'raise', amount: committedAmount })
+                onAction(actionForAmount(committedAmount))
               }
             } else if (e.key === 'Escape') {
               setRaiseInput(formatChipInput(sliderValue))
@@ -192,10 +203,17 @@ export function ActionButtons({
           value={sliderValue}
           disabled={!canAct || !canMakeFullRaise}
           onChange={e => applyRaise(Number(e.target.value))}
+          onKeyDown={e => {
+            if (e.key !== 'Enter') return
+            e.preventDefault()
+            if (!canAct || !canMakeFullRaise) return
+            const keyboardAmount = snapRaise(Number(e.currentTarget.value))
+            onAction(actionForAmount(keyboardAmount))
+          }}
           style={{ width: '100%' }}
         />
         <div style={{ color: '#8f98a4', fontSize: 10, minWidth: 74, textAlign: 'right' }}>
-          {formatChips(sliderValue)}
+          {formatChips(sliderValue, currency)}
         </div>
       </div>
 
@@ -212,14 +230,16 @@ export function ActionButtons({
           disabled={!canAct}
           style={primaryActionButton(!canAct)}
         >
-          {canCheck ? 'Check' : `Call ${formatChips(toCall)}`}
+          {canCheck ? 'Check' : `Call ${formatChips(toCall, currency)}`}
         </button>
         <button
-          onClick={() => onAction(canMakeFullRaise ? { type: 'raise', amount: sliderValue } : { type: 'all-in' })}
+          onClick={() => onAction(isAllInSelected ? { type: 'all-in' } : { type: 'raise', amount: sliderValue })}
           disabled={!canAct || !canRaise}
           style={primaryActionButton(!canAct || !canRaise)}
         >
-          {canMakeFullRaise ? `Raise ${formatChips(sliderValue)}` : `All-in ${formatChips(maxRaise)}`}
+          {isAllInSelected
+            ? `All-in ${formatChips(maxRaise, currency)}`
+            : `${aggressiveActionLabel} ${formatChips(sliderValue, currency)}`}
         </button>
       </div>
     </div>

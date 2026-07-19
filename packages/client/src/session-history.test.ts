@@ -89,4 +89,51 @@ describe('LocalGameRunner session history', () => {
     first.cleanup()
     second.cleanup()
   })
+
+  it('queues rebuys during a hand and applies them before the next hand', () => {
+    vi.useFakeTimers()
+    const runner = new LocalGameRunner()
+    runner.setupTable({
+      smallBlind: 10,
+      bigBlind: 20,
+      startingChips: 1000,
+      maxPlayers: 2,
+      seed: 'rebuy-session',
+    }, 1)
+    runner.startHand()
+
+    const chipsAfterBlinds = runner.state.gameState?.players.map(player => player.chips)
+    expect(runner.requestRebuy('hero')).toBe('queued')
+    expect(runner.requestRebuy('bot-0')).toBe('queued')
+    expect(runner.state.gameState?.players.map(player => player.chips)).toEqual(chipsAfterBlinds)
+    expect(runner.state.pendingRebuyPlayerIds).toEqual(expect.arrayContaining(['hero', 'bot-0']))
+
+    for (let step = 0; step < 20; step++) {
+      const secondHand = runner.state.sessionHistory.find(entry =>
+        entry.handNumber === 2 && entry.event.type === 'HandStarted'
+      )
+      if (secondHand?.event.type === 'HandStarted') {
+        expect(secondHand.event.players.every(player => player.startingChips >= 1000)).toBe(true)
+        break
+      }
+
+      const gameState = runner.state.gameState
+      if (!gameState) throw new Error('Expected game state')
+      if (gameState.phase === 'waiting') {
+        vi.advanceTimersByTime(SHOWDOWN_DISPLAY_MS)
+      } else if (runner.state.isMyTurn) {
+        const legal = gameState.bettingContext?.legalActions
+        if (!legal) throw new Error('Expected hero legal actions')
+        runner.playerAction(legal.fold ? { type: 'fold' } : { type: 'check' })
+      } else {
+        vi.advanceTimersByTime(6000)
+      }
+    }
+
+    expect(runner.state.sessionHistory.some(entry =>
+      entry.handNumber === 2 && entry.event.type === 'HandStarted'
+    )).toBe(true)
+    expect(runner.state.pendingRebuyPlayerIds).toEqual([])
+    runner.cleanup()
+  })
 })

@@ -3,11 +3,12 @@ import type { Card, HandResult, Player, PlayerAction, PublicGameState, TableOpti
 import { PokerTable, TablePot, CommunityCards, BetStack, TablePositionButtons } from '../components/PokerTable'
 import { PlayerSeat } from '../components/PlayerSeat'
 import { ActionButtons } from '../components/ActionButtons'
-import { calculateChipUnit, formatChips } from '../utils/format'
+import { calculateChipUnit, formatChips, type DisplayCurrency } from '../utils/format'
 import { getTableButtonAssignments, rotatePlayersForTable } from '../utils/positions'
 import type { PlayerActionLabel } from '../action-display'
 import type { BotDebugDecision } from '../bot-debug'
 import { BotDebugInspector } from '../components/BotDebugInspector'
+import { APP_VERSION } from '../app-version'
 
 const actionButtonStyle = (bg: string, disabled = false): React.CSSProperties => ({
   padding: '10px 18px',
@@ -22,7 +23,7 @@ const actionButtonStyle = (bg: string, disabled = false): React.CSSProperties =>
   opacity: disabled ? 0.55 : 1,
 })
 
-function HandResultOverlay({ results, players }: { results: HandResult[]; players: Player[] }) {
+function HandResultOverlay({ results, players, currency }: { results: HandResult[]; players: Player[]; currency: DisplayCurrency }) {
   if (!results || results.length === 0) return null
 
   const grouped = results
@@ -49,7 +50,7 @@ function HandResultOverlay({ results, players }: { results: HandResult[]; player
         const p = players.find(pl => pl.id === r.playerId)
         return (
           <div key={i} style={{ color: '#fff', fontSize: 14 }}>
-            {p?.name} wins {formatChips(r.amount)} {r.handName && `(${r.handName})`}
+            {p?.name} wins {formatChips(r.amount, currency)} {r.handName && `(${r.handName})`}
           </div>
         )
       })}
@@ -65,11 +66,14 @@ export function TableScreen({
   playerActionLabels,
   showdownCards,
   botDebugDecisions,
+  pendingRebuyPlayerIds,
   raiseAmount,
   setRaiseAmount,
   onAction,
   onBack,
   options,
+  currency,
+  onRebuy,
 }: {
   gameState: Readonly<PublicGameState> | null
   myCards: [Card, Card] | null
@@ -78,11 +82,14 @@ export function TableScreen({
   playerActionLabels: Readonly<Record<string, PlayerActionLabel>>
   showdownCards: Readonly<Record<string, [Card, Card]>>
   botDebugDecisions: readonly BotDebugDecision[]
+  pendingRebuyPlayerIds: readonly string[]
   raiseAmount: number
   setRaiseAmount: (n: number) => void
   onAction: (a: PlayerAction) => void
   onBack: () => void
   options: TableOptions
+  currency: DisplayCurrency
+  onRebuy: (playerId: string) => void
 }) {
   const players = gameState?.players ?? []
   const heroId = 'hero'
@@ -235,7 +242,7 @@ export function TableScreen({
         <div>
           <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 2, letterSpacing: 0.3, color: '#f3f4f6' }}>CPC-Offline</div>
           <div style={{ color: '#8f98a4', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
-            NLHE · Blinds {options.smallBlind}/{options.bigBlind} · {players.length} Spieler
+            v{APP_VERSION} · NLHE · Blinds {options.smallBlind}/{options.bigBlind} · {players.length} Spieler
           </div>
         </div>
         <button onClick={onBack} style={actionButtonStyle('#30343c', false)}>Zurück zum Setup</button>
@@ -251,12 +258,12 @@ export function TableScreen({
                 padding: '8px 10px 0',
               }}>
                 <PokerTable>
-                  <TablePot pot={pot} sidePots={gameState?.sidePots} />
+                  <TablePot pot={pot} sidePots={gameState?.sidePots} currency={currency} />
                   <CommunityCards cards={community} phase={phase} />
-                  <HandResultOverlay results={lastResults ?? []} players={players} />
+                  <HandResultOverlay results={lastResults ?? []} players={players} currency={currency} />
                   {orderedPlayers.map((player: Player, index: number) => (
                     <Fragment key={player.id}>
-                      <BetStack amount={player.roundBet} seatIndex={index} seatCount={orderedPlayers.length} />
+                      <BetStack amount={player.roundBet} seatIndex={index} seatCount={orderedPlayers.length} currency={currency} />
                       <TablePositionButtons
                         labels={tableButtonAssignments[player.id] ?? []}
                         seatIndex={index}
@@ -276,6 +283,10 @@ export function TableScreen({
                           showdownCards[player.id]
                           || (inActiveHand && player.status !== 'folded' && player.status !== 'waiting')
                         )}
+                        currency={currency}
+                        startingChips={options.startingChips}
+                        rebuyPending={pendingRebuyPlayerIds.includes(player.id)}
+                        onRebuy={() => onRebuy(player.id)}
                       />
                     </Fragment>
                   ))}
@@ -302,10 +313,11 @@ export function TableScreen({
             raiseAmount={raiseAmount}
             setRaiseAmount={setRaiseAmount}
             onAction={onAction}
+            currency={currency}
           />
         </div>
         <div className="debug-dock">
-          <BotDebugInspector decisions={botDebugDecisions} />
+          <BotDebugInspector decisions={botDebugDecisions} currency={currency} />
         </div>
       </div>
     </div>

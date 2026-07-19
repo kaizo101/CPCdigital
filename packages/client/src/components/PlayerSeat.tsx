@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Card, Player } from '@cpc/shared'
 import { CardView, CardBack } from './Card'
-import { formatChips } from '../utils/format'
+import { formatChips, type DisplayCurrency } from '../utils/format'
 import { getSeatPosition } from '../utils/positions'
 import type { PlayerActionLabel } from '../action-display'
 
 export function PlayerSeat({
   player, seatIndex, seatCount, isMe, isCurrent, actionLabel, myCards, revealedCards, showCards,
+  currency, startingChips, rebuyPending, onRebuy,
 }: {
   player: Player
   seatIndex: number
@@ -17,14 +19,48 @@ export function PlayerSeat({
   myCards?: [Card, Card] | null
   revealedCards?: [Card, Card]
   showCards: boolean
+  currency: DisplayCurrency
+  startingChips: number
+  rebuyPending: boolean
+  onRebuy: () => void
 }) {
   const [isHovering, setIsHovering] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const position = getSeatPosition(seatIndex, seatCount)
   const isFolded = player.status === 'folded'
   const visibleCards = revealedCards ?? (isMe ? myCards : null)
   const canPeekFoldedCards = isMe && isFolded && !!myCards
   const isPeekingFoldedCards = canPeekFoldedCards && isHovering
   const showHoleCards = (showCards && (!isMe || !!visibleCards)) || isPeekingFoldedCards
+  const canRebuy = player.chips < startingChips && !rebuyPending
+
+  useEffect(() => {
+    if (!contextMenu) return
+    const close = () => setContextMenu(null)
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close()
+    }
+    document.addEventListener('pointerdown', close)
+    window.addEventListener('keydown', closeOnEscape)
+    window.addEventListener('resize', close)
+    return () => {
+      document.removeEventListener('pointerdown', close)
+      window.removeEventListener('keydown', closeOnEscape)
+      window.removeEventListener('resize', close)
+    }
+  }, [contextMenu])
+
+  const openRebuyMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const menuWidth = 248
+    const menuHeight = 142
+    const padding = 10
+    setContextMenu({
+      x: Math.max(padding, Math.min(event.clientX, window.innerWidth - menuWidth - padding)),
+      y: Math.max(padding, Math.min(event.clientY, window.innerHeight - menuHeight - padding)),
+    })
+  }
 
   return (
     <div style={{
@@ -38,6 +74,8 @@ export function PlayerSeat({
     }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
+      onContextMenu={openRebuyMenu}
+      title="Rechtsklick für Rebuy"
     >
       <div style={{
         position: 'relative',
@@ -95,7 +133,7 @@ export function PlayerSeat({
             {player.name}
           </div>
           <div style={{ color: '#d8dde3', fontSize: 13, fontWeight: 700 }}>
-            {formatChips(player.chips)}
+            {formatChips(player.chips, currency)}
           </div>
           {(player.status !== 'waiting' || player.isSittingOut) && (
             <div style={{
@@ -129,6 +167,67 @@ export function PlayerSeat({
         }}>
           Am Zug
         </div>
+      )}
+
+      {contextMenu && createPortal(
+        <div
+          role="menu"
+          aria-label={`Rebuy für ${player.name}`}
+          onPointerDown={event => event.stopPropagation()}
+          onContextMenu={event => event.preventDefault()}
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            width: 228,
+            padding: 10,
+            zIndex: 1000,
+            borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'linear-gradient(180deg, rgba(27,31,37,0.99) 0%, rgba(10,12,15,0.99) 100%)',
+            boxShadow: '0 18px 45px rgba(0,0,0,0.58)',
+            color: '#e5e7eb',
+            fontFamily: 'monospace',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#f3f4f6' }}>{player.name}</div>
+          <div style={{ marginTop: 3, fontSize: 10, color: '#8f98a4' }}>
+            Stack {formatChips(player.chips, currency)} · Ziel {formatChips(startingChips, currency)}
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={!canRebuy}
+            onClick={onRebuy}
+            style={{
+              width: '100%',
+              marginTop: 9,
+              padding: '9px 10px',
+              borderRadius: 7,
+              border: rebuyPending
+                ? '1px solid rgba(74,222,128,0.45)'
+                : '1px solid rgba(255,255,255,0.12)',
+              background: canRebuy
+                ? 'linear-gradient(180deg, #256b42 0%, #17472c 100%)'
+                : rebuyPending
+                  ? 'rgba(22,101,52,0.22)'
+                  : '#252a31',
+              color: canRebuy ? '#f0fdf4' : rebuyPending ? '#86efac' : '#77818c',
+              fontFamily: 'inherit',
+              fontSize: 11,
+              fontWeight: 800,
+              cursor: canRebuy ? 'pointer' : 'default',
+            }}
+          >
+            {rebuyPending
+              ? 'Für nächste Hand vorgemerkt'
+              : player.chips >= startingChips
+                ? 'Bereits mindestens Startstack'
+                : 'Auf Startstack auffüllen'}
+          </button>
+        </div>,
+        document.body,
       )}
     </div>
   )
