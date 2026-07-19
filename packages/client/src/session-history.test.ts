@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { LocalGameRunner } from './LocalGameRunner'
+import { LocalGameRunner, SHOWDOWN_DISPLAY_MS } from './LocalGameRunner'
 
 describe('LocalGameRunner session history', () => {
   afterEach(() => {
@@ -53,7 +53,10 @@ describe('LocalGameRunner session history', () => {
       if (!gameState) throw new Error('Expected an active game')
 
       if (gameState.phase === 'waiting') {
-        vi.advanceTimersByTime(3000)
+        const waitTime = Object.keys(first.state.showdownCards).length > 0
+          ? SHOWDOWN_DISPLAY_MS
+          : 3000
+        vi.advanceTimersByTime(waitTime)
         continue
       }
 
@@ -73,6 +76,12 @@ describe('LocalGameRunner session history', () => {
     expect(first.getPrivateDecisionSnapshots()).toEqual(second.getPrivateDecisionSnapshots())
     expect(first.getPrivateDecisionSnapshots().length).toBeGreaterThan(0)
     expect('decisionSnapshots' in first.state).toBe(false)
+    const debugDecision = first.getBotDebugDecisions().at(-1)
+    expect(debugDecision).toBeDefined()
+    expect(debugDecision?.playerId).toMatch(/^bot-/)
+    expect(debugDecision?.decision.allActions.length).toBeGreaterThan(1)
+    expect(debugDecision?.decision.allActions.some(action => action.contributions.length > 0)).toBe(true)
+    expect('botDebugDecisions' in first.state).toBe(false)
     expect(first.state.sessionHistory.some(entry =>
       entry.event.type === 'PlayerActed' && entry.event.playerId.startsWith('bot-')
     )).toBe(true)

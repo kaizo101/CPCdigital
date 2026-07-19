@@ -1,0 +1,272 @@
+import { describe, expect, it } from 'vitest'
+import type { BettingContext, Card, LegalActions } from '@cpc/shared'
+import { createBotState } from './bot-state'
+import { deriveDecisionMetrics } from './bot-decision-metrics'
+import { decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
+import { applySkillPerception } from './bot-skill-perception'
+import { TAG_PERSONALITY } from './bot-tag'
+
+const cards: [Card, Card] = [
+  { rank: 'A', suit: 'spades' },
+  { rank: 'K', suit: 'spades' },
+]
+
+function context(
+  legalActions: LegalActions,
+  overrides: Partial<BettingContext> = {},
+): DecisionContext {
+  const bettingContext: BettingContext = {
+    playerId: 'bot',
+    totalPot: 100,
+    toCall: legalActions.callAmount ?? 0,
+    callAmount: legalActions.callAmount ?? 0,
+    potOdds: legalActions.callAmount ? legalActions.callAmount / (100 + legalActions.callAmount) : 0,
+    toCallPotRatio: legalActions.callAmount ? legalActions.callAmount / 100 : 0,
+    potRaiseTo: 300,
+    minRaiseTo: legalActions.raise?.minAmount ?? 0,
+    maxRaiseTo: legalActions.raise?.maxAmount ?? 1000,
+    playerStack: 1000,
+    effectiveStack: 1000,
+    spr: 10,
+    legalActions,
+    ...overrides,
+  }
+
+  return {
+    gameView: {
+      myCards: cards,
+      board: [],
+      pot: bettingContext.totalPot,
+      currentBet: bettingContext.toCall,
+      minRaiseTo: bettingContext.minRaiseTo,
+      maxRaiseTo: bettingContext.maxRaiseTo,
+      canRaise: legalActions.raise != null,
+      bigBlind: 20,
+      smallBlind: 10,
+      phase: 'flop',
+      players: [],
+      dealerIndex: 0,
+    },
+    botId: 'bot',
+    botState: createBotState(TAG_PERSONALITY, 50, () => 0.5),
+    position: 'late',
+    playerCount: 2,
+    boardTexture: 'neutral',
+    handAssessment: {
+      category: 'strong',
+      rank: 4,
+      made: true,
+      relativeStrength: 80,
+      showdownValue: 75,
+      nutPotential: 'strong',
+      vulnerability: 30,
+      drawQuality: 0,
+      cleanOuts: 0,
+      blockerValue: 0,
+      drawTypes: [],
+    },
+    metrics: deriveDecisionMetrics(bettingContext, 20),
+    legalActions,
+  }
+}
+
+describe('bot utility candidates', () => {
+  it('scores exactly every action exposed by the engine', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: 1000,
+    }
+
+    expect(scoreActions(context(legalActions)).map(candidate => candidate.action.type))
+      .toEqual(['fold', 'call', 'raise', 'all-in'])
+  })
+
+  it('does not invent actions absent from the engine context', () => {
+    const legalActions: LegalActions = {
+      fold: false,
+      check: true,
+      callAmount: null,
+      raise: null,
+      allInAmount: null,
+    }
+
+    expect(scoreActions(context(legalActions)).map(candidate => candidate.action.type))
+      .toEqual(['check'])
+  })
+
+  it('values a strong-hand shove more at low SPR than deep stacked', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: 1000,
+    }
+    const lowSpr = context(legalActions, { effectiveStack: 150, spr: 1.5 })
+    const deep = context(legalActions, { effectiveStack: 2400, playerStack: 2400, spr: 10 })
+    const utility = (candidateContext: DecisionContext) => scoreActions(candidateContext)
+      .find(candidate => candidate.action.type === 'all-in')!.utility
+
+    expect(utility(lowSpr)).toBeGreaterThan(utility(deep))
+  })
+
+  it('records an aggressive all-in as a bet and a short all-in as a call', () => {
+    const aggressiveActions: LegalActions = {
+      fold: false,
+      check: false,
+      callAmount: null,
+      raise: null,
+      allInAmount: 500,
+    }
+    const shortCallActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 30,
+      raise: null,
+      allInAmount: 30,
+    }
+
+    expect(decideAction(context(aggressiveActions), { random: () => 0 }).stateUpdates.lastAction).toBe('bet')
+    expect(decideAction(context(shortCallActions), { random: () => 0 }).stateUpdates.lastAction).toBe('call')
+  })
+
+  it('records an explicit intent and additive reasons for every base score', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'air',
+      relativeStrength: 10,
+      nutPotential: 'weak',
+    }
+    decisionContext.boardTexture = 'dry'
+
+    const actions = scoreActions(decisionContext)
+    const raise = actions.find(candidate => candidate.action.type === 'raise')!
+    const call = actions.find(candidate => candidate.action.type === 'call')!
+
+    expect(raise.intent).toBe('bluff')
+    expect(raise.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ category: 'hand-strength', label: expect.stringMatching(/raise with air/i) }),
+      expect.objectContaining({ category: 'position' }),
+      expect.objectContaining({ category: 'board-texture', label: expect.stringMatching(/bluff/i) }),
+    ]))
+    expect(call.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ category: 'betting-context', label: expect.stringMatching(/pot odds/i) }),
+      expect.objectContaining({ category: 'betting-context', label: expect.stringMatching(/bet\/pot ratio/i) }),
+    ]))
+
+    for (const candidate of actions) {
+      const explainedUtility = Math.max(0, Math.min(100,
+        50 + candidate.contributions.reduce((sum, contribution) => sum + contribution.value, 0)
+      ))
+      expect(candidate.utility).toBeCloseTo(explainedUtility)
+    }
+  })
+
+  it('keeps personality and skill perception as separate score reasons', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const result = decideAction(context(legalActions), { random: () => 0.5 })
+    const raise = result.allActions.find(candidate => candidate.action.type === 'raise')!
+
+    expect(result.perceptionErrors.length).toBeGreaterThan(0)
+    expect(raise.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ category: 'personality', label: 'Aggression' }),
+      expect.objectContaining({ category: 'skill-perception', label: expect.stringMatching(/→/) }),
+    ]))
+    for (const candidate of result.allActions) {
+      const explainedUtility = 50 + candidate.contributions
+        .reduce((sum, contribution) => sum + contribution.value, 0)
+      expect(candidate.utility).toBeCloseTo(explainedUtility)
+    }
+  })
+
+  it('gives a perfect-skill bot exact perception without consuming fair data', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: null,
+      allInAmount: null,
+    }
+    const actual = context(legalActions)
+    actual.botState.skill.level = 100
+    const perception = applySkillPerception(actual, { random: () => 0.2 })
+
+    expect(perception.errors).toEqual([])
+    expect(perception.context).toBe(actual)
+  })
+
+  it('models concrete low-skill errors without mutating engine-derived context', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const actual = context(legalActions)
+    actual.botState.skill.level = 0
+    actual.handAssessment = {
+      ...actual.handAssessment,
+      relativeStrength: 70,
+      drawQuality: 60,
+      cleanOuts: 9,
+      drawTypes: ['flush-draw'],
+    }
+    const originalHand = { ...actual.handAssessment, drawTypes: [...actual.handAssessment.drawTypes] }
+    const originalMetrics = { ...actual.metrics }
+
+    const perception = applySkillPerception(actual, { random: () => 0.2 })
+
+    expect(perception.errors.map(error => error.field)).toEqual(expect.arrayContaining([
+      'relative-strength',
+      'draws',
+      'clean-outs',
+      'pot-odds',
+      'bet-size',
+      'spr',
+    ]))
+    expect(perception.context.handAssessment).not.toEqual(originalHand)
+    expect(perception.context.metrics).not.toEqual(originalMetrics)
+    expect(actual.handAssessment).toEqual(originalHand)
+    expect(actual.metrics).toEqual(originalMetrics)
+    expect(perception.context.legalActions).toBe(actual.legalActions)
+    expect(perception.context.gameView).toBe(actual.gameView)
+  })
+
+  it('makes perception errors smaller as skill rises', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: null,
+      allInAmount: null,
+    }
+    const lowSkill = context(legalActions)
+    const highSkill = context(legalActions)
+    lowSkill.botState.skill.level = 20
+    highSkill.botState.skill.level = 80
+
+    const low = applySkillPerception(lowSkill, { random: () => 0.2 }).context.handAssessment.relativeStrength
+    const high = applySkillPerception(highSkill, { random: () => 0.2 }).context.handAssessment.relativeStrength
+    const actual = lowSkill.handAssessment.relativeStrength
+
+    expect(Math.abs(high - actual)).toBeLessThan(Math.abs(low - actual))
+  })
+})

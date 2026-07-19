@@ -6,6 +6,8 @@ import { ActionButtons } from '../components/ActionButtons'
 import { calculateChipUnit, formatChips } from '../utils/format'
 import { getTableButtonAssignments, rotatePlayersForTable } from '../utils/positions'
 import type { PlayerActionLabel } from '../action-display'
+import type { BotDebugDecision } from '../bot-debug'
+import { BotDebugInspector } from '../components/BotDebugInspector'
 
 const actionButtonStyle = (bg: string, disabled = false): React.CSSProperties => ({
   padding: '10px 18px',
@@ -62,6 +64,7 @@ export function TableScreen({
   isMyTurn,
   playerActionLabels,
   showdownCards,
+  botDebugDecisions,
   raiseAmount,
   setRaiseAmount,
   onAction,
@@ -74,6 +77,7 @@ export function TableScreen({
   isMyTurn: boolean
   playerActionLabels: Readonly<Record<string, PlayerActionLabel>>
   showdownCards: Readonly<Record<string, [Card, Card]>>
+  botDebugDecisions: readonly BotDebugDecision[]
   raiseAmount: number
   setRaiseAmount: (n: number) => void
   onAction: (a: PlayerAction) => void
@@ -173,6 +177,13 @@ export function TableScreen({
           padding: 0 16px 16px;
           z-index: 35;
         }
+        .debug-dock {
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          z-index: 45;
+          padding: 0 0 16px 16px;
+        }
         @media (max-width: 860px) {
           .game-layout {
             height: auto;
@@ -201,6 +212,10 @@ export function TableScreen({
             display: flex;
             flex-direction: column;
             padding: 0;
+          }
+          .debug-dock {
+            position: fixed;
+            padding: 0 0 10px 10px;
           }
         }
       `}</style>
@@ -276,6 +291,7 @@ export function TableScreen({
             canAct={canAct}
             canFold={canFold}
             toCall={toCall}
+            currentBet={gameState?.currentBet ?? 0}
             canCheck={canCheck}
             canRaise={canRaise}
             minRaise={minRaise}
@@ -287,6 +303,9 @@ export function TableScreen({
             setRaiseAmount={setRaiseAmount}
             onAction={onAction}
           />
+        </div>
+        <div className="debug-dock">
+          <BotDebugInspector decisions={botDebugDecisions} />
         </div>
       </div>
     </div>

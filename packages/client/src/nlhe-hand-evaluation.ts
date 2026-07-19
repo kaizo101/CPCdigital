@@ -1,44 +1,92 @@
 import type { Card } from '@cpc/shared'
 import { evaluateHand, type EvalResult } from '@cpc/poker-engine'
+import type {
+  BoardTexture,
+  VariantEvaluator,
+  VariantHandAssessment,
+} from './bot-variant-evaluation'
+import { cardsToHandPattern, getPreflopAction, getPreflopSituation } from './preflop-ranges'
 
-// Enhanced hand assessment with all fixes
-export interface HandAssessment {
-  category: 'air' | 'weak' | 'medium' | 'strong' | 'nuts'
-  rank: number  // 0-9: absolute hand ranking
-  made: boolean
-
-  // Relative strength (0-100): how good is this hand given the board?
-  relativeStrength: number
-
-  // Showdown value (0-100): can this hand win at showdown?
-  showdownValue: number
-
-  // Nut potential (categorical, not precise percentage)
-  nutPotential: 'nuts' | 'near-nuts' | 'strong' | 'medium' | 'weak'
-
-  // Vulnerability (0-100): how likely is this hand to be outdrawn?
-  vulnerability: number
-
-  // Draw quality (0-100): how good are the draws?
-  drawQuality: number
-
-  // Clean outs: how many outs improve to likely best hand?
-  cleanOuts: number
-
-  // Blocker value (0-100): how much do our cards block opponent value?
-  blockerValue: number
-
-  // Detailed info
+export interface NlheHandAssessment extends VariantHandAssessment {
   pairType?: 'top' | 'middle' | 'bottom' | 'over' | 'under' | 'pocket'
   kickerStrength?: 'top' | 'medium' | 'weak'
-  drawTypes: string[]
+}
+
+export type HandAssessment = NlheHandAssessment
+
+export const nlheVariantEvaluator: VariantEvaluator = {
+  variantId: 'texas-holdem',
+  evaluate(context) {
+    if (context.publicState.phase === 'preflop') {
+      return evaluatePreflop(context)
+    }
+    return {
+      variantId: this.variantId,
+      handAssessment: assessHand(context.ownCards, context.publicState.communityCards),
+      boardTexture: analyzeBoardTexture(context.publicState.communityCards),
+    }
+  },
+}
+
+function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
+  const { publicState: state, ownCards, position, bettingContext } = context
+  const situation = getPreflopSituation(state, position.category)
+  const rangeAction = getPreflopAction(ownCards, position.category, situation)
+  const pattern = cardsToHandPattern(ownCards)
+  const premium = ['AA', 'KK', 'QQ', 'AKs'].includes(pattern)
+  const category = premium ? 'nuts' : rangeAction === 'raise' ? 'strong' : rangeAction === 'call' ? 'medium' : 'air'
+  const relativeStrength = premium ? 92 : rangeAction === 'raise' ? 75 : rangeAction === 'call' ? 55 : 15
+
+  return {
+    variantId: nlheVariantEvaluator.variantId,
+    handAssessment: {
+      category,
+      rank: 0,
+      made: false,
+      relativeStrength,
+      showdownValue: relativeStrength,
+      nutPotential: premium ? 'near-nuts' : rangeAction === 'raise' ? 'strong' : rangeAction === 'call' ? 'medium' : 'weak',
+      vulnerability: 0,
+      drawQuality: 0,
+      cleanOuts: 0,
+      blockerValue: ownCards.some(card => card.rank === 'A' || card.rank === 'K') ? 10 : 0,
+      drawTypes: [],
+    } satisfies NlheHandAssessment,
+    boardTexture: 'neutral' as const,
+    preferredRaiseTo: calculatePreflopRaiseTo(context, situation, bettingContext.legalActions.check),
+  }
+}
+
+function calculatePreflopRaiseTo(
+  context: Parameters<VariantEvaluator['evaluate']>[0],
+  situation: ReturnType<typeof getPreflopSituation>,
+  canCheck: boolean,
+): number {
+  const { publicState: state, position, bettingContext } = context
+  let target: number
+
+  if (situation === 'unopened') {
+    if (canCheck) target = state.bigBlind * 4
+    else if (position.category === 'early') target = state.bigBlind * 3
+    else if (position.category === 'middle') target = state.bigBlind * 2.75
+    else if (position.category === 'blinds') target = state.bigBlind * 3
+    else target = state.bigBlind * 2.5
+  } else if (situation === 'facing-open') {
+    if (position.category === 'late') target = state.currentBet * 3
+    else if (position.category === 'blinds') target = state.currentBet * 4
+    else target = state.currentBet * 3.5
+  } else {
+    target = state.currentBet * (position.category === 'blinds' ? 2.5 : 2.3)
+  }
+
+  return Math.max(bettingContext.minRaiseTo, Math.min(bettingContext.maxRaiseTo, target))
 }
 
 // Evaluate hand with full assessment
 export function assessHand(
   holeCards: [Card, Card],
   communityCards: Card[]
-): HandAssessment {
+): NlheHandAssessment {
   // Preflop: return minimal assessment
   if (communityCards.length < 3) {
     return {
@@ -61,7 +109,7 @@ export function assessHand(
   const isRiver = communityCards.length === 5
 
   // Build assessment
-  const assessment: HandAssessment = {
+  const assessment: NlheHandAssessment = {
     category: categorizeHand(rank),
     rank,
     made: rank >= 2,
@@ -478,7 +526,7 @@ function rankValue(rank: string): number {
 }
 
 // Fix #19: Board texture is more detailed
-export function analyzeBoardTexture(cards: Card[]): 'dry' | 'neutral' | 'wet' {
+export function analyzeBoardTexture(cards: Card[]): BoardTexture {
   if (cards.length < 3) return 'neutral'
 
   const suits = cards.map(c => c.suit)

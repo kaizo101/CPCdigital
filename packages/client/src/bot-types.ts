@@ -34,31 +34,47 @@ export interface MentalState {
   momentum: number          // -100 to +100: "hot" or "cold" streak
 }
 
-// Bot state (combines personality, mental state, and tracking)
-export interface BotState {
-  personality: BotPersonality
-  // Individual values (rolled from distribution at session start)
+/** Immutable rolled traits for one bot in this session. */
+export interface BotPersonalityState {
+  archetype: BotPersonality
   aggression: number
   bluffFrequency: number
   riskTolerance: number
   patience: number
-  observationSkill: number
   tiltSensitivity: number
   tiltRecovery: number
   emotionality: number
-  // Mental state (changes during session)
-  mentalState: MentalState
-  // Skill
-  skill: number             // 0-100 (higher = fewer mistakes)
-  // Stats
-  handsPlayed: number
-  handsWon: number
-  // Hand tracking (for c-bets, delayed bluffs)
-  raisedPreflop: boolean    // Raised pre-flop this hand?
+}
+
+/** Immutable evaluation and observation ability. */
+export interface BotSkillState {
+  level: number
+  observation: number
+}
+
+export interface BotReadsState {
+  opponents: Map<string, OpponentRead>
+}
+
+export interface BotHandMemory {
+  raisedPreflop: boolean
   lastAction: 'bet' | 'check' | 'call' | 'fold' | null
   lastStreet: 'preflop' | 'flop' | 'turn' | 'river' | null
-  // Player reads (simple opponent modeling)
-  opponentReads: Map<string, OpponentRead>
+}
+
+export interface BotSessionMemory {
+  handsPlayed: number
+  handsWon: number
+  hand: BotHandMemory
+}
+
+/** Composition root; each concern owns a separate state object. */
+export interface BotState {
+  personality: BotPersonalityState
+  skill: BotSkillState
+  mentalState: MentalState
+  reads: BotReadsState
+  memory: BotSessionMemory
 }
 
 // Opponent read with Beta distribution

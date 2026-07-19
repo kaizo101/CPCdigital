@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   calculateChipUnit,
+  calculateThreeXRaise,
   formatChipInput,
   formatChips,
   parseChipInput,
@@ -41,5 +42,19 @@ describe('calculateChipUnit', () => {
   it('keeps natural whole-chip steps for larger blinds', () => {
     expect(calculateChipUnit(10, 20)).toBe(10)
     expect(calculateChipUnit(0.05, 0.10)).toBe(0.05)
+  })
+})
+
+describe('calculateThreeXRaise', () => {
+  it('uses three big blinds for an unopened pot', () => {
+    expect(calculateThreeXRaise(5, 5)).toBe(15)
+  })
+
+  it('uses three times the previous raise-to amount for a reraise', () => {
+    expect(calculateThreeXRaise(15, 5)).toBe(45)
+  })
+
+  it('keeps micro-stakes values cent-accurate', () => {
+    expect(calculateThreeXRaise(0.15, 0.05)).toBe(0.45)
   })
 })

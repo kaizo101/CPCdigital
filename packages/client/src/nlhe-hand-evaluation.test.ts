@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Card, GameState, Player } from '@cpc/shared'
-import { assessHand } from './bot-hand-evaluation'
+import { assessHand } from './nlhe-hand-evaluation'
 import { createBotState, decideTagAction, TAG_PERSONALITY } from './bot-tag'
+import { createBotContext } from './bot-context'
 
 const card = (rank: Card['rank'], suit: Card['suit']): Card => ({ rank, suit })
 
@@ -76,7 +77,11 @@ function withBotBettingContext(state: GameState): GameState {
   }
 }
 
-describe('bot hand assessment', () => {
+function contextFor(state: GameState, ownCards: [Card, Card]) {
+  return createBotContext('bot', { state, ownCards }, [])
+}
+
+describe('NLHE bot hand assessment', () => {
   it('uses the numeric engine rank for descriptive hand names', () => {
     const assessment = assessHand(
       [card('A', 'hearts'), card('A', 'diamonds')],
@@ -90,10 +95,9 @@ describe('bot hand assessment', () => {
 
   it('turns a raise into an all-in when a full raise is unaffordable', () => {
     const action = decideTagAction(
-      preflopState(true),
-      'bot',
-      [card('A', 'hearts'), card('A', 'diamonds')],
+      contextFor(preflopState(true), [card('A', 'hearts'), card('A', 'diamonds')]),
       createBotState(TAG_PERSONALITY),
+      () => 0.5,
     )
 
     expect(action).toEqual({ type: 'all-in' })
@@ -101,10 +105,9 @@ describe('bot hand assessment', () => {
 
   it('does not raise when action has not been reopened', () => {
     const action = decideTagAction(
-      preflopState(false),
-      'bot',
-      [card('A', 'hearts'), card('A', 'diamonds')],
+      contextFor(preflopState(false), [card('A', 'hearts'), card('A', 'diamonds')]),
       createBotState(TAG_PERSONALITY),
+      () => 0.5,
     )
 
     expect(action).toEqual({ type: 'call' })
@@ -112,10 +115,9 @@ describe('bot hand assessment', () => {
 
   it('snaps raises to the table chip step', () => {
     const action = decideTagAction(
-      preflopState(true, 1000),
-      'bot',
-      [card('A', 'hearts'), card('A', 'diamonds')],
+      contextFor(preflopState(true, 1000), [card('A', 'hearts'), card('A', 'diamonds')]),
       createBotState(TAG_PERSONALITY),
+      () => 0.5,
     )
 
     expect(action.type).toBe('raise')
@@ -133,10 +135,9 @@ describe('bot hand assessment', () => {
     })
 
     const action = decideTagAction(
-      gameState,
-      'bot',
-      [card('A', 'hearts'), card('A', 'diamonds')],
+      contextFor(gameState, [card('A', 'hearts'), card('A', 'diamonds')]),
       createBotState(TAG_PERSONALITY),
+      () => 0.5,
     )
 
     expect(action).toEqual({ type: 'raise', amount: 150 })
@@ -154,13 +155,12 @@ describe('bot hand assessment', () => {
       canRaise: false,
     })
     const botState = createBotState(TAG_PERSONALITY)
-    botState.raisedPreflop = true
+    botState.memory.hand.raisedPreflop = true
 
     const action = decideTagAction(
-      gameState,
-      'bot',
-      [card('7', 'clubs'), card('2', 'diamonds')],
+      contextFor(gameState, [card('7', 'clubs'), card('2', 'diamonds')]),
       botState,
+      () => 0.5,
     )
 
     expect(action).toEqual({ type: 'call' })

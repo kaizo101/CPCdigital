@@ -73,6 +73,7 @@ export default function App() {
       isMyTurn={localState.isMyTurn}
       playerActionLabels={localState.playerActionLabels}
       showdownCards={localState.showdownCards}
+      botDebugDecisions={runner.getBotDebugDecisions()}
       raiseAmount={raiseAmount}
       setRaiseAmount={setRaiseAmount}
       onAction={(action: PlayerAction) => runner.playerAction(action)}

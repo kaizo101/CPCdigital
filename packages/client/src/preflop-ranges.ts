@@ -1,5 +1,5 @@
-import type { Card } from '@cpc/shared'
-import type { Position } from './bot-tag'
+import type { Card, PublicGameState } from '@cpc/shared'
+import type { Position } from './bot-types'
 
 // Preflop situation types
 export type PreflopSituation = 'unopened' | 'facing-open' | 'facing-3bet'
@@ -182,7 +182,10 @@ export function getPreflopAction(
 }
 
 // Determine preflop situation
-export function getPreflopSituation(state: any, position: Position): PreflopSituation {
+export function getPreflopSituation(
+  state: Pick<PublicGameState, 'currentBet' | 'bigBlind'>,
+  position: Position,
+): PreflopSituation {
   const currentBet = state.currentBet
   const bigBlind = state.bigBlind
 

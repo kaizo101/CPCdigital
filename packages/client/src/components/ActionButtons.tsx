@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PlayerAction } from '@cpc/shared'
 import {
   clamp,
+  calculateThreeXRaise,
   formatChipInput,
   formatChips,
   parseChipInput,
@@ -39,7 +40,7 @@ const primaryActionButton = (disabled = false): React.CSSProperties => ({
 })
 
 export function ActionButtons({
-  isMyTurn, canCheck, canRaise, canFold, canAct, toCall, minRaise, maxRaise, potRaiseTo, stepSize, bigBlind, raiseAmount, setRaiseAmount, onAction,
+  isMyTurn, canCheck, canRaise, canFold, canAct, toCall, currentBet, minRaise, maxRaise, potRaiseTo, stepSize, bigBlind, raiseAmount, setRaiseAmount, onAction,
 }: {
   isMyTurn: boolean
   canCheck: boolean
@@ -47,6 +48,7 @@ export function ActionButtons({
   canFold: boolean
   canAct: boolean
   toCall: number
+  currentBet: number
   minRaise: number
   maxRaise: number
   potRaiseTo: number
@@ -72,7 +74,8 @@ export function ActionButtons({
     setRaiseInput(formatChipInput(nextAmount))
   }
   const setPotRaise = () => applyRaise(potRaiseTo, 'up')
-  const setThreeBlindRaise = () => applyRaise(bigBlind * 3, 'up')
+  const setThreeXRaise = () => applyRaise(calculateThreeXRaise(currentBet, bigBlind), 'up')
+  const threeXLabel = currentBet > bigBlind ? '3×' : '3 BB'
   const setMaxRaise = () => applyRaise(sliderMax, 'up')
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -129,7 +132,7 @@ export function ActionButtons({
         gap: 8,
       }}>
         <button onClick={() => applyRaise(minRaise)} disabled={!canAct || !canMakeFullRaise} style={miniControlButton(!canAct || !canMakeFullRaise)}>Min</button>
-        <button onClick={setThreeBlindRaise} disabled={!canAct || !canMakeFullRaise} style={miniControlButton(!canAct || !canMakeFullRaise)}>3 BB</button>
+        <button onClick={setThreeXRaise} disabled={!canAct || !canMakeFullRaise} style={miniControlButton(!canAct || !canMakeFullRaise)}>{threeXLabel}</button>
         <button onClick={setPotRaise} disabled={!canAct || !canMakeFullRaise} style={miniControlButton(!canAct || !canMakeFullRaise)}>Pot</button>
         <button onClick={setMaxRaise} disabled={!canAct || !canRaise} style={miniControlButton(!canAct || !canRaise)}>Max</button>
       </div>

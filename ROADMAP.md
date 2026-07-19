@@ -78,18 +78,18 @@ Diese Daten dienen zunächst dem Debugging und Replay. Später bilden sie die Gr
 
 **Ziel:** Bots entscheiden über ein gemeinsames, erklärbares Utility-System.
 
-- [ ] allgemeines `BotContext` ohne versteckte Informationen
-- [ ] Betgröße, Pot Odds, effektiven Stack und SPR in die Bewertung der Aktionen einbeziehen
-- [ ] Stack- und Sizing-Sensitivität mit vergleichbaren Entscheidungsszenarien testen
-- [ ] Trennung von Variantenevaluation und Decision Engine
-- [ ] Bewertung aller legalen Aktionen über Utility Scores
-- [ ] Gründe und Einflussfaktoren zu jedem Action Score erfassen
-- [ ] Skill als Wahrnehmungs- und Bewertungsungenauigkeit modellieren
-- [ ] Personality, Mental State, Reads und Memory trennen
-- [ ] gewichtete Auswahl zwischen plausiblen Aktionen
-- [ ] globale Zufallsfehler durch nachvollziehbare Fehlbewertungen ersetzen
-- [ ] künstliche Reaktionszeit von tatsächlicher Rechenzeit trennen
-- [ ] Debug Inspector für Kontext, Scores und Entscheidungsgründe
+- [x] allgemeines `BotContext` ohne versteckte Informationen
+- [x] Betgröße, Pot Odds, effektiven Stack und SPR in die Bewertung der Aktionen einbeziehen
+- [x] Stack- und Sizing-Sensitivität mit vergleichbaren Entscheidungsszenarien testen
+- [x] Trennung von Variantenevaluation und Decision Engine
+- [x] Bewertung aller legalen Aktionen über Utility Scores
+- [x] Gründe und Einflussfaktoren zu jedem Action Score erfassen
+- [x] Skill als Wahrnehmungs- und Bewertungsungenauigkeit modellieren
+- [x] Personality, Mental State, Reads und Memory trennen
+- [x] gewichtete Auswahl zwischen plausiblen Aktionen
+- [x] globale Zufallsfehler durch nachvollziehbare Fehlbewertungen ersetzen
+- [x] künstliche Reaktionszeit von tatsächlicher Rechenzeit trennen und situationsabhängig modellieren
+- [x] Debug Inspector für Kontext, Scores und Entscheidungsgründe
 
 ### Bot-Architektur
 
@@ -146,6 +146,7 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] Postflop-Initiative und Action History
 - [ ] Range-Schätzungen in vereinfachter Form
 - [ ] No-Limit-Bet-Sizing
+- [ ] variantengerechte Sizing-Kandidaten inklusive Overbets, sofern die Setzstruktur sie erlaubt
 - [ ] Multiway-Entscheidungen
 - [ ] glaubwürdige Bot-Lines über mehrere Streets
 - [ ] umfassende Tests und Bot-Test-Sessions

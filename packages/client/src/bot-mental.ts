@@ -1,64 +1,14 @@
-import type { BotState, MentalEvent, MentalState } from './bot-types'
-
-// Prior distribution for Beta distribution (represents prior belief)
-const PRIOR_VPIP = { successes: 2.5, failures: 7.5 }
-const PRIOR_AGGRESSION = { successes: 3, failures: 7 }
-const PRIOR_FOLD_TO_BET = { successes: 5, failures: 5 }
-
-// Roll a value from a normal distribution
-export function rollFromDistribution(
-  dist: { mean: number; stddev: number },
-  random: () => number = Math.random,
-): number {
-  // Box-Muller transform for normal distribution
-  const u1 = Math.max(random(), Number.EPSILON)
-  const u2 = random()
-  const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
-  return Math.max(0, Math.min(100, dist.mean + z0 * dist.stddev))
-}
-
-// Create initial bot state
-export function createBotState(personality: any, skill: number = 50, random: () => number = Math.random): BotState {
-  const aggression = rollFromDistribution(personality.aggression, random)
-  const bluffFrequency = rollFromDistribution(personality.bluffFrequency, random)
-  const riskTolerance = rollFromDistribution(personality.riskTolerance, random)
-  const patience = rollFromDistribution(personality.patience, random)
-  const observationSkill = rollFromDistribution(personality.observationSkill, random)
-  const tiltSensitivity = rollFromDistribution(personality.tiltSensitivity, random)
-  const tiltRecovery = rollFromDistribution(personality.tiltRecovery, random)
-  const emotionality = rollFromDistribution(personality.emotionality, random)
-
-  return {
-    personality,
-    aggression,
-    bluffFrequency,
-    riskTolerance,
-    patience,
-    observationSkill,
-    tiltSensitivity,
-    tiltRecovery,
-    emotionality,
-    mentalState: {
-      tilt: 0,
-      confidence: 50,
-      patience: patience,  // Initialize from rolled patience
-      frustration: new Map(),  // Empty map - no frustration yet
-      momentum: 0,
-    },
-    skill,
-    handsPlayed: 0,
-    handsWon: 0,
-    raisedPreflop: false,
-    lastAction: null,
-    lastStreet: null,
-    opponentReads: new Map(),
-  }
-}
+import type { BotPersonalityState, MentalEvent, MentalState } from './bot-types'
 
 // Update mental state based on event
-export function updateMentalState(state: BotState, event: MentalEvent, bigBlind: number): void {
-  const { tiltSensitivity, tiltRecovery, emotionality, patience } = state
-  const ms = state.mentalState
+export function updateMentalState(
+  state: MentalState,
+  personality: Readonly<BotPersonalityState>,
+  event: MentalEvent,
+  _bigBlind: number,
+): void {
+  const { tiltSensitivity, tiltRecovery, emotionality } = personality
+  const ms = state
 
   // Calculate event severity (0-1)
   const severity = Math.min(1, event.potBb / 20)  // 20BB = max severity
@@ -151,68 +101,4 @@ export function updateMentalState(state: BotState, event: MentalEvent, bigBlind:
   }
   ms.momentum = ms.momentum * 0.95  // Regress to 0
 
-  state.handsPlayed++
-}
-
-// Get opponent stats from Beta distribution
-export function getOpponentStats(read: any): { vpip: number; aggression: number; foldToBet: number; confidence: number } {
-  const vpip = betaMean(read.vpipEstimate) * 100
-  const aggression = betaMean(read.aggressionEstimate) * 100
-  const foldToBet = betaMean(read.foldToBetEstimate) * 100
-  // Confidence increases with sample size
-  const totalSamples = read.vpipEstimate.successes + read.vpipEstimate.failures
-  const confidence = Math.min(1, totalSamples / 20) // 20 hands = 100% confidence
-  return { vpip, aggression, foldToBet, confidence }
-}
-
-// Calculate mean from Beta distribution
-function betaMean(estimate: { successes: number; failures: number }): number {
-  const total = estimate.successes + estimate.failures
-  return total > 0 ? estimate.successes / total : 0.5
-}
-
-// Update opponent read based on action
-export function updateOpponentRead(
-  state: BotState,
-  opponentId: string,
-  action: 'vpip' | 'aggression' | 'foldToBet' | 'no-vpip' | 'no-aggression' | 'no-fold',
-  observationSkill: number
-): void {
-  let read = state.opponentReads.get(opponentId)
-  if (!read) {
-    read = {
-      playerId: opponentId,
-      vpipEstimate: { ...PRIOR_VPIP },
-      aggressionEstimate: { ...PRIOR_AGGRESSION },
-      foldToBetEstimate: { ...PRIOR_FOLD_TO_BET },
-      handsSampled: 0,
-    }
-    state.opponentReads.set(opponentId, read)
-  }
-
-  // Learning rate based on observation skill
-  const learningMultiplier = 0.5 + (observationSkill / 100) * 1.5
-
-  switch (action) {
-    case 'vpip':
-      read.vpipEstimate.successes += learningMultiplier
-      read.handsSampled++
-      break
-    case 'no-vpip':
-      read.vpipEstimate.failures += learningMultiplier
-      read.handsSampled++
-      break
-    case 'aggression':
-      read.aggressionEstimate.successes += learningMultiplier
-      break
-    case 'no-aggression':
-      read.aggressionEstimate.failures += learningMultiplier
-      break
-    case 'foldToBet':
-      read.foldToBetEstimate.successes += learningMultiplier
-      break
-    case 'no-fold':
-      read.foldToBetEstimate.failures += learningMultiplier
-      break
-  }
 }

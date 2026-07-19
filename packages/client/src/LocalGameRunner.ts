@@ -8,11 +8,30 @@ import type {
   TableOptions,
   HandResult,
 } from '@cpc/shared'
-import { decideTagAction, createBotState, updateMentalState, updateOpponentRead, TAG_PERSONALITY } from './bot-tag'
+import {
+  createBotState,
+  decideTagDecision,
+  getOpponentStats,
+  recordHandResult,
+  resetHandMemory,
+  TAG_PERSONALITY,
+  updateMentalState,
+  updateOpponentRead,
+} from './bot-tag'
 import type { BotState, MentalEvent } from './bot-tag'
 import { getPlayerActionLabel, type PlayerActionLabel } from './action-display'
+import { createBotContext } from './bot-context'
+import { planBotDecisionTiming, sampleTargetReactionMs } from './bot-timing'
+import { assessDecisionComplexity } from './bot-decision-complexity'
+import type { DecisionComplexity } from './bot-decision-complexity'
+import type { BotContext } from './bot-context'
+import type { TagDecision } from './bot-tag'
+import type { BotDebugDecision } from './bot-debug'
 
 export type Listener = () => void
+
+export const SHOWDOWN_DISPLAY_MS = 6000
+const UNCONTESTED_RESULT_DISPLAY_MS = 3000
 
 export interface SessionHistoryEvent {
   handNumber: number
@@ -50,6 +69,8 @@ export class LocalGameRunner {
   private showdownCards: Record<string, [Card, Card]> = {}
   private sessionHistory: SessionHistoryEvent[] = []
   private sessionDecisionSnapshots: SessionDecisionSnapshot[] = []
+  private botDebugDecisions: BotDebugDecision[] = []
+  private nextBotDebugSequence = 1
   private currentHandNumber = 0
   private capturedHandEventCount = 0
   private capturedDecisionSnapshotCount = 0
@@ -89,6 +110,11 @@ export class LocalGameRunner {
   /** Private debug/analysis data; deliberately excluded from public UI state. */
   getPrivateDecisionSnapshots(): readonly SessionDecisionSnapshot[] {
     return [...this.sessionDecisionSnapshots]
+  }
+
+  /** Private local-only bot analysis; never included in public game state. */
+  getBotDebugDecisions(): readonly BotDebugDecision[] {
+    return [...this.botDebugDecisions]
   }
 
   private notify(): void {
@@ -141,6 +167,8 @@ export class LocalGameRunner {
     this.playerActionLabels = {}
     this.sessionHistory = []
     this.sessionDecisionSnapshots = []
+    this.botDebugDecisions = []
+    this.nextBotDebugSequence = 1
     this.currentHandNumber = 0
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0
@@ -187,9 +215,7 @@ export class LocalGameRunner {
     this.observedVpipPlayersByBot.clear()
 
     for (const botState of this.botStates.values()) {
-      botState.raisedPreflop = false
-      botState.lastAction = null
-      botState.lastStreet = null
+      resetHandMemory(botState.memory)
     }
 
     for (const p of this.players) {
@@ -232,22 +258,78 @@ export class LocalGameRunner {
     if (gs.phase === 'waiting' || gs.phase === 'showdown') return
     if (!gs.currentPlayerId || !this.botIds.has(gs.currentPlayerId)) return
 
-    const delay = 600 + this.timingRandom() * 1200
+    const decisionStartedAt = monotonicNow()
+    const botView = this.game.getPlayerView(gs.currentPlayerId)
+    const currentGs = botView.state
+    if (currentGs.currentPlayerId !== gs.currentPlayerId) return
+
+    const botId = gs.currentPlayerId
+    const holeCards = botView.ownCards
+    const botState = this.botStates.get(botId)
+    if (!holeCards || !botState) return
+
+    this.updateOpponentReads(botId, botState)
+
+    let action: PlayerAction
+    let botContext: BotContext
+    let decision: TagDecision
+    let complexity: DecisionComplexity
+    try {
+      botContext = createBotContext(botId, botView, this.game.getPublicHandHistory())
+      decision = decideTagDecision(botContext, botState, this.botRandom)
+      action = decision.action
+      complexity = assessDecisionComplexity(botContext, decision.decisionResult)
+    } catch (err) {
+      console.error('[LocalGameRunner] bot decision failed:', (err as Error).message)
+      return
+    }
+
+    const targetReactionMs = sampleTargetReactionMs(this.timingRandom, complexity)
+    const timing = planBotDecisionTiming(targetReactionMs, monotonicNow() - decisionStartedAt)
+    this.botDebugDecisions.push({
+      sequence: this.nextBotDebugSequence++,
+      handNumber: this.currentHandNumber,
+      playerId: botId,
+      playerName: currentGs.players.find(player => player.id === botId)?.name ?? botId,
+      profile: {
+        archetype: botState.personality.archetype.name,
+        personality: {
+          aggression: botState.personality.aggression,
+          bluffFrequency: botState.personality.bluffFrequency,
+          riskTolerance: botState.personality.riskTolerance,
+          patience: botState.personality.patience,
+        },
+        skill: { ...botState.skill },
+        mentalState: {
+          tilt: botState.mentalState.tilt,
+          confidence: botState.mentalState.confidence,
+          patience: botState.mentalState.patience,
+          momentum: botState.mentalState.momentum,
+        },
+        memory: {
+          handsPlayed: botState.memory.handsPlayed,
+          handsWon: botState.memory.handsWon,
+          raisedPreflop: botState.memory.hand.raisedPreflop,
+          lastAction: botState.memory.hand.lastAction,
+        },
+        reads: [...botState.reads.opponents.values()].map(read => ({
+          playerId: read.playerId,
+          handsSampled: read.handsSampled,
+          ...getOpponentStats(read),
+        })),
+      },
+      context: botContext,
+      evaluation: decision.evaluation,
+      metrics: decision.metrics,
+      decision: decision.decisionResult,
+      complexity,
+      timing,
+    })
+    if (this.botDebugDecisions.length > 50) this.botDebugDecisions.shift()
+    this.notify()
     this.botTimer = setTimeout(() => {
       if (!this.game) return
-      const botView = this.game.getPlayerView(gs.currentPlayerId!)
-      const currentGs = botView.state
-      if (currentGs.currentPlayerId !== gs.currentPlayerId) return
-
-      const botId = gs.currentPlayerId!
-      const holeCards = botView.ownCards
-      const botState = this.botStates.get(botId)
-      if (!holeCards || !botState) return
-
-      // Update opponent reads based on recent actions
-      this.updateOpponentReads(botId, botState)
-
-      const action = decideTagAction(currentGs, botId, holeCards, botState, this.botRandom)
+      if (this.game.getPublicState().currentPlayerId !== botId) return
       try {
         this.applyAction(botId, action)
         this.syncChips()
@@ -257,7 +339,7 @@ export class LocalGameRunner {
       } catch (err) {
         console.error('[LocalGameRunner] bot action failed:', (err as Error).message)
       }
-    }, delay)
+    }, timing.remainingDelayMs)
   }
 
   private applyAction(playerId: string, action: PlayerAction): void {
@@ -281,7 +363,7 @@ export class LocalGameRunner {
 
   private updateOpponentReads(botId: string, botState: BotState): void {
     const history = this.game?.getPublicHandHistory() ?? []
-    const observationSkill = botState.observationSkill
+    const observationSkill = botState.skill.observation
 
     const startIndex = this.observedEventCountByBot.get(botId) ?? 0
     const newEvents = history.slice(startIndex)
@@ -298,24 +380,24 @@ export class LocalGameRunner {
 
         // VPIP tracking
         if ((action.type === 'call' || action.type === 'raise' || action.type === 'all-in') && !observedVpipPlayers.has(actionPlayerId)) {
-          updateOpponentRead(botState, actionPlayerId, 'vpip', observationSkill)
+          updateOpponentRead(botState.reads, actionPlayerId, 'vpip', observationSkill)
           observedVpipPlayers.add(actionPlayerId)
         } else if (action.type === 'fold' && event.phase === 'preflop' && !observedVpipPlayers.has(actionPlayerId)) {
-          updateOpponentRead(botState, actionPlayerId, 'no-vpip', observationSkill)
+          updateOpponentRead(botState.reads, actionPlayerId, 'no-vpip', observationSkill)
           observedVpipPlayers.add(actionPlayerId)
         }
 
         // Aggression tracking
         if (action.type === 'raise') {
-          updateOpponentRead(botState, actionPlayerId, 'aggression', observationSkill)
+          updateOpponentRead(botState.reads, actionPlayerId, 'aggression', observationSkill)
         } else if (action.type === 'call' || action.type === 'check') {
-          updateOpponentRead(botState, actionPlayerId, 'no-aggression', observationSkill)
+          updateOpponentRead(botState.reads, actionPlayerId, 'no-aggression', observationSkill)
         }
 
         if (action.type === 'fold') {
-          updateOpponentRead(botState, actionPlayerId, 'foldToBet', observationSkill)
+          updateOpponentRead(botState.reads, actionPlayerId, 'foldToBet', observationSkill)
         } else if (action.type === 'call' || action.type === 'raise') {
-          updateOpponentRead(botState, actionPlayerId, 'no-fold', observationSkill)
+          updateOpponentRead(botState.reads, actionPlayerId, 'no-fold', observationSkill)
         }
       }
     }
@@ -336,8 +418,12 @@ export class LocalGameRunner {
     // Update mental state for all bots based on hand results
     for (const [botId, botState] of this.botStates) {
       const event = this.detectMentalEvent(botId, results, bigBlind, gs)
+      recordHandResult(
+        botState.memory,
+        results.some(result => result.playerId === botId && result.amount > 0),
+      )
       if (event) {
-        updateMentalState(botState, event, bigBlind)
+        updateMentalState(botState.mentalState, botState.personality, event, bigBlind)
       }
     }
 
@@ -345,9 +431,12 @@ export class LocalGameRunner {
     this.notify()
 
     if (this.autoStartTimer) clearTimeout(this.autoStartTimer)
+    const resultDisplayMs = Object.keys(this.showdownCards).length > 0
+      ? SHOWDOWN_DISPLAY_MS
+      : UNCONTESTED_RESULT_DISPLAY_MS
     this.autoStartTimer = setTimeout(() => {
       this.startHand()
-    }, 3000)
+    }, resultDisplayMs)
   }
 
   private detectMentalEvent(botId: string, results: HandResult[], bigBlind: number, gameState: any): MentalEvent | null {
@@ -419,6 +508,8 @@ export class LocalGameRunner {
     this.showdownCards = {}
     this.sessionHistory = []
     this.sessionDecisionSnapshots = []
+    this.botDebugDecisions = []
+    this.nextBotDebugSequence = 1
     this.currentHandNumber = 0
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0
@@ -438,4 +529,8 @@ export class LocalGameRunner {
     if (p) p.isSittingOut = sittingOut
     this.notify()
   }
+}
+
+function monotonicNow(): number {
+  return globalThis.performance?.now() ?? Date.now()
 }

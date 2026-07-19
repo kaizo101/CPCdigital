@@ -5,6 +5,8 @@ import { createSeededRandom, PokerGame } from '@cpc/poker-engine'
 import type { Player, PlayerAction, PublicGameState } from '@cpc/shared'
 import { createBotState, decideTagAction, TAG_PERSONALITY } from './bot-tag'
 import type { BotState, Position } from './bot-tag'
+import { createBotContext, getPositionCategory } from './bot-context'
+import { resetHandMemory } from './bot-memory'
 
 const HANDS_PER_FORMAT = 10_000
 const BIG_BLIND = 20
@@ -81,9 +83,7 @@ function createStats(): SimulationStats {
 }
 
 function resetBotForHand(botState: BotState): void {
-  botState.raisedPreflop = false
-  botState.lastAction = null
-  botState.lastStreet = null
+  resetHandMemory(botState.memory)
 }
 
 function isAggressiveAction(state: Readonly<PublicGameState>, action: PlayerAction): boolean {
@@ -143,13 +143,15 @@ function simulateFormat(format: FormatConfig, numHands = HANDS_PER_FORMAT): Simu
 
       const botId = state.currentPlayerId
       const player = state.players.find(candidate => candidate.id === botId)
-      const holeCards = game.getPlayerView(botId).ownCards
+      const botView = game.getPlayerView(botId)
+      const holeCards = botView.ownCards
       const botState = botStates.get(botId)
       if (!player || !holeCards || !botState) throw new Error(`${format.name}: missing state for ${botId}`)
 
       let action: PlayerAction
       try {
-        action = decideTagAction(state, botId, holeCards, botState, decisionRandom)
+        const botContext = createBotContext(botId, botView, game.getPublicHandHistory())
+        action = decideTagAction(botContext, botState, decisionRandom)
         game.applyAction(botId, action)
       } catch {
         stats.actionErrors++
@@ -208,12 +210,7 @@ function getPosition(state: Readonly<PublicGameState>, playerId: string): Positi
 
   const playerCount = players.length
   const positionsFromDealer = (playerIndex - dealerIndex + playerCount) % playerCount
-
-  if (positionsFromDealer === 0) return 'late'
-  if (positionsFromDealer === 1 || (playerCount > 2 && positionsFromDealer === 2)) return 'blinds'
-  if (positionsFromDealer === playerCount - 1) return 'late'
-  if (positionsFromDealer <= Math.floor(playerCount / 2)) return 'early'
-  return 'middle'
+  return getPositionCategory(positionsFromDealer, playerCount)
 }
 
 function percentage(count: number, total: number): number {

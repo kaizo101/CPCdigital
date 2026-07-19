@@ -42,6 +42,11 @@ export function roundToCents(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100
 }
 
+/** 3 BB when unopened; three times the current raise-to amount after action. */
+export function calculateThreeXRaise(currentBet: number, bigBlind: number): number {
+  return roundToCents(Math.max(currentBet, bigBlind) * 3)
+}
+
 /** Smallest cent-based chip unit that divides both blinds exactly. */
 export function calculateChipUnit(smallBlind: number, bigBlind: number): number {
   const smallBlindCents = Math.max(1, Math.round(Math.abs(smallBlind) * 100))
