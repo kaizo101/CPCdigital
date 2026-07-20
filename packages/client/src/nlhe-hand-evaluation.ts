@@ -80,19 +80,9 @@ function calculatePreflopRaiseTo(
     else if (position.category === 'blinds') target = state.bigBlind * 3
     else target = state.bigBlind * 2.5
   } else if (situation === 'facing-open') {
-    const coldCallers = context.actionHistory.filter(
-      e => e.type === 'PlayerActed' && e.phase === 'preflop' && e.action.type === 'call',
-    ).length
-    const isSqueeze = coldCallers > 1
-    if (isSqueeze) {
-      target = state.currentBet * 5.5
-    } else if (position.category === 'late') {
-      target = state.currentBet * 3
-    } else if (position.category === 'blinds') {
-      target = state.currentBet * 4
-    } else {
-      target = state.currentBet * 3.5
-    }
+    if (position.category === 'late') target = state.currentBet * 3
+    else if (position.category === 'blinds') target = state.currentBet * 4
+    else target = state.currentBet * 3.5
   } else {
     target = state.currentBet * (position.category === 'blinds' ? 2.5 : 2.3)
   }

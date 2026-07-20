@@ -133,7 +133,6 @@ export function calculateContextualRaiseTo(
     activeOpponents?: number
     opponentShowedWeakness?: boolean
     opponentCheckRaised?: boolean
-    isSqueezeSpot?: boolean
   },
   skillLevel?: number,
 ): number {
@@ -157,7 +156,6 @@ export function calculateContextualRaiseTo(
     if (streetContext.activeOpponents && streetContext.activeOpponents >= 3) potFraction += 0.1
     if (streetContext.opponentShowedWeakness && hand.category === 'air') potFraction -= 0.1
     if (streetContext.opponentCheckRaised && hand.category !== 'nuts') potFraction -= 0.15
-    if (streetContext.isSqueezeSpot) potFraction += 0.15
   }
 
   if (skillLevel != null && skillLevel < 100) {
