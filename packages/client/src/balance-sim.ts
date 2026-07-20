@@ -178,9 +178,14 @@ function simulateTable(config: TableConfig): BalanceResult {
 
     const initialState = game.getPublicState()
     const positions = new Map<string, Position>()
+    const playersInHand = initialState.players.filter(c => c.status !== 'waiting').sort((a, b) => a.seatIndex - b.seatIndex)
     for (const p of initialState.players.filter(c => c.status === 'active')) {
-      positions.set(p.id, getPositionCategory({ ...initialState, ...game.getPlayerView(p.id) }))
-    }
+      const playerIdx = playersInHand.findIndex(c => c.id === p.id)
+      const dealerIdx = playersInHand.findIndex(c => c.id === initialState.players[initialState.dealerIndex]?.id)
+      const posFromDealer = (playerIdx - dealerIdx + playersInHand.length) % playersInHand.length
+      const position = getPositionCategory(posFromDealer, playersInHand.length)
+      positions.set(p.id, position)
+      stats.positions[position].hands++
 
     const vpipPlayers = new Set<string>()
     const pfrPlayers = new Set<string>()
