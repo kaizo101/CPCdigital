@@ -17,7 +17,8 @@ import { createBotContext, getPositionCategory } from './bot-context'
 import { resetHandMemory } from './bot-memory'
 import { DEFAULT_BOT_ROSTER } from './bot-identities'
 
-const HANDS_PER_FORMAT = 10_000
+const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
+const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
 const BIG_BLIND = 20
 const SMALL_BLIND = 10
 const STARTING_CHIPS = 2_000
@@ -397,7 +398,7 @@ for (const profile of CALIBRATION_PROFILES) {
   }
 }
 
-if (calibrationFailed) throw new Error('Bot calibration missed at least one target range')
+if (calibrationFailed && EXIT_ON_FAIL) throw new Error('Bot calibration missed at least one target range')
 
 function isWithinTarget(value: number, target: [number, number]): boolean {
   return value >= target[0] && value <= target[1]

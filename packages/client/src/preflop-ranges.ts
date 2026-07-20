@@ -1,5 +1,6 @@
 import type { Card, PublicGameState } from '@cpc/shared'
 import type { Position } from './bot-types'
+import { params } from './bot-params'
 
 // Preflop situation types
 export type PreflopSituation = 'unopened' | 'facing-open' | 'facing-3bet'
@@ -173,7 +174,7 @@ export function getPreflopAction(
   const hand = cardsToHandPattern(cards)
   const range = TAG_PREFLOP_RANGES[situation][position]
   const baseCoverage = getTableAdjustedCoverage(position, situation, tableSize)
-  const pressureExponent = situation === 'facing-3bet' ? 1.7 : situation === 'facing-open' ? 1.35 : 1
+  const pressureExponent = params.preflop.pressureExponent[situation]
   const situationalRangeFactor = Math.pow(Math.max(0, rangeFactor), pressureExponent)
   const situationalRaiseRangeFactor = Math.pow(Math.max(0, raiseRangeFactor), pressureExponent)
   const coverage = {
@@ -194,68 +195,11 @@ export function getPreflopAction(
   return 'fold'
 }
 
-const FULL_RING_COVERAGE: CoverageProfile = {
-  unopened: {
-    early: { raise: 14, vpip: 18 },
-    middle: { raise: 16, vpip: 22 },
-    late: { raise: 23, vpip: 30 },
-    blinds: { raise: 18, vpip: 28 },
-  },
-  'facing-open': {
-    early: { raise: 3, vpip: 7 },
-    middle: { raise: 4, vpip: 10 },
-    late: { raise: 5, vpip: 13 },
-    blinds: { raise: 6, vpip: 18 },
-  },
-  'facing-3bet': {
-    early: { raise: 1.5, vpip: 4 },
-    middle: { raise: 2, vpip: 5 },
-    late: { raise: 2.5, vpip: 7 },
-    blinds: { raise: 2.5, vpip: 8 },
-  },
-}
+const FULL_RING_COVERAGE: CoverageProfile = params.coverage.fullRing as CoverageProfile
 
-const SIX_MAX_COVERAGE: CoverageProfile = {
-  unopened: {
-    early: { raise: 18, vpip: 22 },
-    middle: { raise: 22, vpip: 27 },
-    late: { raise: 32, vpip: 40 },
-    blinds: { raise: 25, vpip: 35 },
-  },
-  'facing-open': {
-    early: { raise: 4, vpip: 9 },
-    middle: { raise: 6, vpip: 13 },
-    late: { raise: 8, vpip: 18 },
-    blinds: { raise: 10, vpip: 24 },
-  },
-  'facing-3bet': {
-    early: { raise: 2, vpip: 5 },
-    middle: { raise: 2.5, vpip: 6 },
-    late: { raise: 3.5, vpip: 9 },
-    blinds: { raise: 4, vpip: 10 },
-  },
-}
+const SIX_MAX_COVERAGE: CoverageProfile = params.coverage.sixMax as CoverageProfile
 
-const HEADS_UP_COVERAGE: CoverageProfile = {
-  unopened: {
-    early: { raise: 68, vpip: 80 },
-    middle: { raise: 68, vpip: 80 },
-    late: { raise: 68, vpip: 80 },
-    blinds: { raise: 30, vpip: 70 },
-  },
-  'facing-open': {
-    early: { raise: 12, vpip: 50 },
-    middle: { raise: 12, vpip: 50 },
-    late: { raise: 12, vpip: 50 },
-    blinds: { raise: 16, vpip: 58 },
-  },
-  'facing-3bet': {
-    early: { raise: 7, vpip: 32 },
-    middle: { raise: 7, vpip: 32 },
-    late: { raise: 7, vpip: 32 },
-    blinds: { raise: 8, vpip: 36 },
-  },
-}
+const HEADS_UP_COVERAGE: CoverageProfile = params.coverage.headsUp as CoverageProfile
 
 export function getTableAdjustedCoverage(
   position: Position,

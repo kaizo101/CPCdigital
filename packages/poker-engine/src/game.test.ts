@@ -725,4 +725,53 @@ describe('regressions', () => {
     expect(() => new PokerGame(makePlayers(2), { smallBlind: 10, bigBlind: 0 })).toThrow(/big blind/i)
     expect(() => new PokerGame([makePlayer('p1', -1), makePlayer('p2')], config)).toThrow(/chips/i)
   })
+
+  it('reopens betting in correct clockwise order after a raise', () => {
+    const players = [
+      makePlayer('hero', 1000, 0),
+      makePlayer('b1', 1000, 1),
+      makePlayer('b2', 1000, 2),
+      makePlayer('b3', 1000, 3),
+      makePlayer('b4', 1000, 4),
+      makePlayer('b5', 1000, 5),
+    ]
+    const game = new PokerGame(players, config)
+    game.startHand()
+    const n = players.length
+    const gs = game.getPublicState()
+    const di = gs.dealerIndex
+
+    // Clockwise order starting from after BB (3rd from dealer)
+    const firstAct = (di + 3) % n
+    const sb = (di + 1) % n
+    const bb = (di + 2) % n
+    const ids = [gs.players[firstAct].id, gs.players[(firstAct + 1) % n].id,
+      gs.players[(firstAct + 2) % n].id, gs.players[(firstAct + 3) % n].id,
+      gs.players[(firstAct + 4) % n].id, gs.players[(firstAct + 5) % n].id]
+
+    // Callers (UTG, UTG+1 call), then CO raises, BTN calls, SB folds, BB all-in
+    game.applyAction(ids[0], { type: 'call' }) // UTG calls
+    game.applyAction(ids[1], { type: 'fold' }) // UTG+1 folds
+    game.applyAction(ids[2], { type: 'raise', amount: 50 }) // CO raises
+    game.applyAction(ids[3], { type: 'call' })  // BTN calls
+    game.applyAction(ids[4], { type: 'fold' })  // SB folds
+    game.applyAction(ids[5], { type: 'all-in' }) // BB all-in (reopens)
+
+    // After BB all-in, queue must reopen clockwise from BB
+    // BB at seat (di+2), clockwise: (di+3)[UTG], (di+4)[folded], (di+5)[CO], (di+0)[BTN]
+    const reopenOrder = [
+      gs.players[(bb + 1) % n].id, // first after BB (UTG)
+      gs.players[(bb + 3) % n].id, // skip folded, CO
+      gs.players[(bb + 4) % n].id, // BTN
+    ]
+
+    let s = game.getPublicState()
+    expect(s.currentPlayerId).toBe(reopenOrder[0])
+    game.applyAction(reopenOrder[0], { type: 'fold' })
+    s = game.getPublicState()
+    expect(s.currentPlayerId).toBe(reopenOrder[1])
+    game.applyAction(reopenOrder[1], { type: 'fold' })
+    s = game.getPublicState()
+    expect(s.currentPlayerId).toBe(reopenOrder[2])
+  })
 })

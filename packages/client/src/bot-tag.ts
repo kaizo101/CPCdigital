@@ -1,7 +1,7 @@
 import type { PlayerAction, PublicGameState } from '@cpc/shared'
 import { updateMentalState } from './bot-mental'
 import { createBotState, createBotStateFromIdentity } from './bot-state'
-import { getOpponentStats, shouldActOnRead, updateOpponentRead } from './bot-reads'
+import { getOpponentStats, shouldActOnRead, updateOpponentRead, updateOpponentSizing } from './bot-reads'
 import { applyDecisionMemory, recordHandResult, resetHandMemory } from './bot-memory'
 import { decideAction as pipelineDecide, type DecisionResult } from './bot-pipeline'
 import type { BotState, BotPersonality, Position, MentalEvent } from './bot-types'
@@ -10,8 +10,9 @@ import type { DecisionContext } from './bot-pipeline'
 import { analyzeStreetAction } from './bot-street-analysis'
 import type { BotContext } from './bot-context'
 import { deriveDecisionMetrics, type DecisionMetrics } from './bot-decision-metrics'
-import { evaluateBotVariant } from './bot-variant-registry'
+import { params } from './bot-params'
 import type { VariantEvaluation, VariantHandAssessment } from './bot-variant-evaluation'
+import { evaluateBotVariant } from './bot-variant-registry'
 import { calculateChipUnit, roundToCents } from './utils/format'
 import { getPreflopAction, getPreflopSituation } from './preflop-ranges'
 import {
@@ -33,6 +34,7 @@ export {
   resetHandMemory,
   updateMentalState,
   updateOpponentRead,
+  updateOpponentSizing,
 }
 
 export interface BotDecision {
@@ -178,14 +180,14 @@ export function preflopRangeFactor(
   const clampedTableSize = Math.max(2, Math.min(9, tableSize))
   const risk = Math.max(0, Math.min(100, riskTolerance))
   const tableExpansionRate = clampedTableSize <= 6
-    ? ((clampedTableSize - 2) / 4) * 0.025
-    : 0.025 + (((clampedTableSize - 6) / 3) * 0.005)
+    ? ((clampedTableSize - 2) / 4) * params.preflop.rangeFactorTableExpansionNear
+    : params.preflop.rangeFactorTableExpansionNear + (((clampedTableSize - 6) / 3) * params.preflop.rangeFactorTableExpansionFar)
   const veryLooseExpansion = Math.max(0, looseness - 70) * tableExpansionRate
   const shortHandedDefenseExpansion = Math.max(0, risk - 80)
     * Math.max(0, looseness - 75)
     * 0.008
     * (Math.max(0, 6 - clampedTableSize) / 4)
-  return 0.55 + (looseness * 0.009) + veryLooseExpansion + shortHandedDefenseExpansion
+  return params.preflop.rangeFactorBase + (looseness * params.preflop.rangeFactorLoosenessMul) + veryLooseExpansion + shortHandedDefenseExpansion
 }
 
 export function preflopRaiseRangeFactor(
@@ -195,8 +197,8 @@ export function preflopRaiseRangeFactor(
 ): number {
   const rangeFactor = preflopRangeFactor(preflopLooseness, tableSize)
   const clampedAggression = Math.max(0, Math.min(100, aggression))
-  if (clampedAggression >= 30) return rangeFactor
-  return rangeFactor * (0.15 + (clampedAggression / 100))
+  if (clampedAggression >= params.preflop.raiseRangeLowAggCutoff) return rangeFactor
+  return rangeFactor * (params.preflop.raiseRangeLowAggCompress + (clampedAggression / 100))
 }
 
 function identityArchetypeId(botState: BotState): 'tag' | 'nit' | 'lag' | 'calling-station' {

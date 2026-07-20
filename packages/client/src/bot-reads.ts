@@ -24,6 +24,8 @@ export function getOpponentStats(read: OpponentRead): {
   aggression: number
   foldToBet: number
   confidence: number
+  sizingAvg: number
+  sizingCount: number
 } {
   const totalSamples = read.vpipEstimate.successes + read.vpipEstimate.failures
   return {
@@ -31,6 +33,8 @@ export function getOpponentStats(read: OpponentRead): {
     aggression: betaMean(read.aggressionEstimate) * 100,
     foldToBet: betaMean(read.foldToBetEstimate) * 100,
     confidence: readConfidence(read),
+    sizingAvg: read.sizing.count > 0 ? read.sizing.average : 0,
+    sizingCount: read.sizing.count,
   }
 }
 
@@ -97,6 +101,41 @@ export function updateOpponentRead(
   }
 }
 
+export function updateOpponentSizing(
+  reads: BotReadsState,
+  opponentId: string,
+  potFraction: number,
+): void {
+  let read = reads.opponents.get(opponentId)
+  if (!read) {
+    const biasRng = hashToNumber(opponentId + ':read-bias')
+    read = createOpponentRead(opponentId, biasRng)
+    reads.opponents.set(opponentId, read)
+  }
+
+  const alpha = 0.25
+  read.sizing.count++
+  read.sizing.average = read.sizing.average * (1 - alpha) + potFraction * alpha
+}
+
+export function getSizingTell(
+  read: OpponentRead,
+  currentPotFraction: number,
+): { deviation: number; label: string } | null {
+  if (read.sizing.count < 3) return null
+
+  const avg = read.sizing.average
+  if (avg <= 0) return null
+
+  const deviation = currentPotFraction / avg
+
+  if (deviation > 2.0) return { deviation, label: 'Massive overbet vs typical sizing' }
+  if (deviation > 1.5) return { deviation, label: 'Overbet vs typical sizing' }
+  if (deviation < 0.4) return { deviation, label: 'Unusually small bet vs typical sizing' }
+
+  return null
+}
+
 export function shouldActOnRead(
   read: OpponentRead,
   mentalState: MentalState,
@@ -142,6 +181,8 @@ export function createOpponentRead(opponentId: string, biasRng: number): Opponen
   const aggressionBias = 0.85 + ((biasRng * 1.7) % 1) * 0.3
   const foldBias = 0.85 + ((biasRng * 3.1) % 1) * 0.3
 
+  const sizingBias = 0.85 + ((biasRng * 2.3) % 1) * 0.3
+
   return {
     playerId: opponentId,
     vpipEstimate: {
@@ -158,6 +199,10 @@ export function createOpponentRead(opponentId: string, biasRng: number): Opponen
     },
     handsSampled: 0,
     effectiveObservations: 0,
+    sizing: {
+      average: 0.6 * sizingBias,
+      count: 0,
+    },
   }
 }
 

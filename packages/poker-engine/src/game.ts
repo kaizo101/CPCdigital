@@ -463,14 +463,21 @@ export class PokerGame {
     const canBet = new Set(this.getCanBetPlayers().map(p => p.id))
     canBet.delete(raiserId)
     const inQueue = new Set(this.bettingQueue)
+    const raiserSeat = this.state.players.findIndex(p => p.id === raiserId)
+    const n = this.state.players.length
     const needToReact = this.getInHandPlayers()
-      .map(p => p.id)
-      .filter(id =>
-        !inQueue.has(id) &&
-        id !== raiserId &&
-        canBet.has(id) &&
-        (this.roundBets.get(id) ?? 0) < this.currentBet
+      .filter(p =>
+        !inQueue.has(p.id) &&
+        p.id !== raiserId &&
+        canBet.has(p.id) &&
+        (this.roundBets.get(p.id) ?? 0) < this.currentBet
       )
+      .sort((a, b) => {
+        const aDist = (a.seatIndex - raiserSeat + n) % n
+        const bDist = (b.seatIndex - raiserSeat + n) % n
+        return aDist - bDist
+      })
+      .map(p => p.id)
     this.bettingQueue.push(...needToReact)
   }
 

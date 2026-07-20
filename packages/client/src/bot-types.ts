@@ -80,6 +80,13 @@ export interface BotState {
 }
 
 // Opponent read with Beta distribution
+export interface SizingRead {
+  /** Exponential moving average of pot-fraction bet sizes (weighted, 0-3+) */
+  average: number
+  /** Count of sizing observations */
+  count: number
+}
+
 export interface OpponentRead {
   playerId: string
   vpipEstimate: { successes: number; failures: number }
@@ -87,6 +94,7 @@ export interface OpponentRead {
   foldToBetEstimate: { successes: number; failures: number }
   handsSampled: number
   effectiveObservations: number
+  sizing: SizingRead
 }
 
 // Position types

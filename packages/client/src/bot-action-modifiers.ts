@@ -112,6 +112,10 @@ export function applyPersonalityModifiers(
       }
     }
 
+    if (context.metrics) {
+      contributions.push(...stackDepthFactors(scored, context))
+    }
+
     if (context.streetAnalysis && context.gameView.phase !== 'preflop') {
       const commitment = determineLineCommitment(
         context.streetAnalysis,
@@ -142,6 +146,47 @@ function addContributions(scored: ScoredAction, additions: ScoreContribution[]):
 
 function clampUtility(value: number): number {
   return Math.max(0, Math.min(100, value))
+}
+
+function stackDepthFactors(
+  scored: ScoredAction,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const effBb = context.metrics.effectiveStackBb
+  if (!effBb || effBb >= 50) return []
+
+  const contributions: ScoreContribution[] = []
+  const hand = context.handAssessment
+
+  if (effBb <= 25) {
+    if (scored.action.type === 'fold' && hand.category === 'weak') {
+      contributions.push({ category: 'betting-context', label: `Short stack ${Math.round(effBb)} BB — fold marginal`, value: 8 })
+    }
+    if (scored.action.type === 'call' && hand.category !== 'strong' && hand.category !== 'nuts') {
+      contributions.push({ category: 'betting-context', label: `Short stack ${Math.round(effBb)} BB — preserve chips`, value: -10 })
+    }
+    if (effBb <= 12) {
+      if (scored.action.type === 'raise' && (hand.category === 'strong' || hand.category === 'nuts')) {
+        contributions.push({ category: 'betting-context', label: 'Very short stack — push or fold', value: 5 })
+      }
+      if (scored.action.type === 'call') {
+        contributions.push({ category: 'betting-context', label: 'Very short stack — avoid calling', value: -8 })
+      }
+    }
+    // Discourage non-all-in raises at ≤20 BB with non-premium hands
+    if (effBb <= 20 && scored.action.type === 'raise' && hand.category !== 'nuts') {
+      const canShove = !!context.legalActions.allInAmount
+      if (canShove && hand.category !== 'strong') {
+        contributions.push({ category: 'betting-context', label: `Short stack ${Math.round(effBb)} BB — avoid raising non-premium`, value: -10 })
+      }
+    }
+  } else if (effBb <= 40) {
+    if (scored.action.type === 'call' && hand.category === 'air') {
+      contributions.push({ category: 'betting-context', label: `Moderate stack ${Math.round(effBb)} BB — don\'t bleed`, value: -5 })
+    }
+  }
+
+  return contributions
 }
 
 interface TiltModifiers {

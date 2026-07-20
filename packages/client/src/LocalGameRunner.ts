@@ -15,6 +15,7 @@ import {
   resetHandMemory,
   updateMentalState,
   updateOpponentRead,
+  updateOpponentSizing,
 } from './bot-tag'
 import type { BotState, MentalEvent } from './bot-tag'
 import { getPlayerActionLabel, type PlayerActionLabel } from './action-display'
@@ -173,8 +174,9 @@ export class LocalGameRunner {
     }
     const exportedAt = new Date().toISOString()
 
-    const lastHandNumber = this.currentHandNumber
-    const firstIncludedHand = Math.max(1, lastHandNumber - 4)
+    const gameActive = this.game && this.game.getPublicState().phase !== 'waiting'
+    const lastCompleteHand = gameActive ? Math.max(0, this.currentHandNumber - 1) : this.currentHandNumber
+    const firstIncludedHand = Math.max(1, lastCompleteHand - 4)
 
     const compactBotDecisions = this.botDebugDecisions
       .filter(d => d.handNumber >= firstIncludedHand)
@@ -529,6 +531,14 @@ export class LocalGameRunner {
           updateOpponentRead(botState.reads, actionPlayerId, 'foldToBet', observationSkill, archetypeId)
         } else if (action.type === 'call' || action.type === 'raise') {
           updateOpponentRead(botState.reads, actionPlayerId, 'no-fold', observationSkill, archetypeId)
+        }
+
+        if ((action.type === 'raise' || action.type === 'all-in') && event.phase !== 'preflop' && event.potAfter > 0) {
+          const potBefore = event.potAfter - event.amount
+          if (potBefore > 0) {
+            const potFraction = event.amount / potBefore
+            updateOpponentSizing(botState.reads, actionPlayerId, potFraction)
+          }
         }
       }
     }
