@@ -2,7 +2,7 @@
 
 Eine Offline-Poker-App für den Desktop: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung.
 
-Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.4.0** und konzentriert sich auf glaubwürdige Bot-Persönlichkeiten mit unterscheidbaren Spielweisen. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
+Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.5.0** und bietet ein vollständig spielbares No-Limit-Hold'em mit glaubwürdigen Bots. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
 
 ## Leitgedanken
 
@@ -30,6 +30,7 @@ Derzeit enthalten sind unter anderem:
 - 44 individuelle Bot-Identitäten mit Namen, Avataren und wiedererkennbaren Gewohnheiten
 - Utility-basierte Botentscheidungen mit Pot Odds, Betgröße, effektivem Stack und SPR
 - getrennte Modelle für Personality, Skill, Mental State, Reads und Memory
+- Street-Analyse mit C-Bet-Erkennung, Range-Schätzung und Multi-Street-Line-Planning
 - archetyp-spezifische Tilt-Reaktionen und Beobachtungsfähigkeit
 - Reads mit Stichprobengröße, Konfidenz und systematischen Fehlern (Beta-Distribution)
 - gewichtete Auswahl plausibler Aktionen und situationsabhängige Reaktionszeiten
@@ -40,6 +41,8 @@ Derzeit enthalten sind unter anderem:
 - Mixed-Table-Kalibrierung und Balance-Simulation über alle Archetypen
 
 Noch nicht als stabiler Funktionsumfang enthalten sind zusätzliche Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
+
+Eine öffentliche Demo ohne Server/Secrets gibt es unter **[cpcdigital-demo](https://github.com/kaizo101/cpcdigital-demo)** mit [Live-Deployment auf GitHub Pages](https://kaizo101.github.io/cpcdigital-demo/).
 
 ## Voraussetzungen
 
@@ -73,6 +76,12 @@ TAG und Nit reproduzierbar über Full Ring, 6-max und Heads-up kalibrieren:
 
 ```bash
 npm run calibrate:bots
+```
+
+Session-Evaluator mit Root-Cause-Analyse ausführen:
+
+```bash
+npx tsx packages/client/src/session-evaluator.ts
 ```
 
 Alle Pakete bauen und den Client dabei typprüfen:
