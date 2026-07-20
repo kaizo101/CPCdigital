@@ -185,8 +185,6 @@ function simulateTable(config: TableConfig): BalanceResult {
       const posFromDealer = (playerIdx - dealerIdx + playersInHand.length) % playersInHand.length
       const position = getPositionCategory(posFromDealer, playersInHand.length)
       positions.set(p.id, position)
-      stats.positions[position].hands++
-      stats.playerHands++
     }
 
     const vpipPlayers = new Set<string>()
