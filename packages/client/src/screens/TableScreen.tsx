@@ -63,6 +63,7 @@ export function TableScreen({
   myCards,
   lastResults,
   isMyTurn,
+  playerAvatarKeys,
   playerActionLabels,
   showdownCards,
   botDebugDecisions,
@@ -74,11 +75,13 @@ export function TableScreen({
   options,
   currency,
   onRebuy,
+  onExportDebugRecord,
 }: {
   gameState: Readonly<PublicGameState> | null
   myCards: [Card, Card] | null
   lastResults: HandResult[] | null
   isMyTurn: boolean
+  playerAvatarKeys: Readonly<Record<string, string>>
   playerActionLabels: Readonly<Record<string, PlayerActionLabel>>
   showdownCards: Readonly<Record<string, [Card, Card]>>
   botDebugDecisions: readonly BotDebugDecision[]
@@ -90,6 +93,7 @@ export function TableScreen({
   options: TableOptions
   currency: DisplayCurrency
   onRebuy: (playerId: string) => void
+  onExportDebugRecord: () => void
 }) {
   const players = gameState?.players ?? []
   const heroId = 'hero'
@@ -240,7 +244,7 @@ export function TableScreen({
         padding: '10px 12px',
       }}>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 2, letterSpacing: 0.3, color: '#f3f4f6' }}>CPC-Offline</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 2, letterSpacing: 0.3, color: '#f3f4f6' }}>CPCdigital</div>
           <div style={{ color: '#8f98a4', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
             v{APP_VERSION} · NLHE · Blinds {options.smallBlind}/{options.bigBlind} · {players.length} Spieler
           </div>
@@ -276,6 +280,7 @@ export function TableScreen({
                         seatCount={orderedPlayers.length}
                         isMe={player.id === heroId}
                         isCurrent={gameState?.currentPlayerId === player.id}
+                        avatarKey={playerAvatarKeys[player.id]}
                         actionLabel={playerActionLabels[player.id]}
                         revealedCards={showdownCards[player.id]}
                         myCards={player.id === heroId ? myCards : null}
@@ -317,7 +322,11 @@ export function TableScreen({
           />
         </div>
         <div className="debug-dock">
-          <BotDebugInspector decisions={botDebugDecisions} currency={currency} />
+          <BotDebugInspector
+            decisions={botDebugDecisions}
+            currency={currency}
+            onExportDebugRecord={onExportDebugRecord}
+          />
         </div>
       </div>
     </div>

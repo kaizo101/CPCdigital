@@ -37,10 +37,11 @@ function scoreFold(context: DecisionContext): ScoredAction {
       nuts: -50,
     }[hand.category]),
     ...bettingFactors('fold', context),
+    ...preflopStrategyFactors('fold', context),
   ]
 
   if (gameView.phase === 'preflop' && context.botState.memory.hand.raisedPreflop && metrics.potOdds <= 0.15) {
-    contributions.push(factor('betting-context', 'Overwhelming preflop price after raising', -30))
+    contributions.push(factor('betting-context', 'Overwhelming preflop price after raising', -50))
   }
   if (playerCount > 3 && hand.category === 'weak') {
     contributions.push(factor('hand-strength', 'Weak hand in multiway pot', 15))
@@ -58,8 +59,11 @@ function scoreFold(context: DecisionContext): ScoredAction {
 }
 
 function scoreCheck(context: DecisionContext): ScoredAction {
-  const { handAssessment: hand, position } = context
-  const intent: ActionIntent = hand.category === 'strong' || hand.category === 'nuts'
+  const { handAssessment: hand, position, gameView } = context
+  const isRiver = gameView.phase === 'river'
+  const outOfPosition = position === 'early' || position === 'blinds'
+  const intent: ActionIntent = (hand.category === 'strong' || hand.category === 'nuts')
+    && (!isRiver || outOfPosition)
     ? 'trap'
     : 'pot-control'
   const contributions: ScoreContribution[] = [
@@ -71,23 +75,29 @@ function scoreCheck(context: DecisionContext): ScoredAction {
       strong: -30,
       nuts: -30,
     }[hand.category]),
+    ...preflopStrategyFactors('check', context),
   ]
 
   if (hand.drawTypes.length > 0) contributions.push(factor('hand-strength', 'Free card for draw', 10))
   if (position === 'late') contributions.push(factor('position', 'Late position information', 10))
+  if (isRiver && (hand.category === 'strong' || hand.category === 'nuts') && !outOfPosition) {
+    contributions.push(factor('hand-strength', 'River check in position misses value', -20))
+  }
   return buildAction({ type: 'check' }, intent, contributions)
 }
 
 function scoreCall(context: DecisionContext): ScoredAction {
   const { gameView, handAssessment: hand, metrics, opponentStats, playerCount } = context
+  const isRiver = gameView.phase === 'river'
+  const outOfPosition = context.position === 'early' || context.position === 'blinds'
   const intent: ActionIntent = hand.drawTypes.length > 0
     ? 'draw'
     : hand.category === 'medium'
       ? 'bluff-catch'
       : hand.category === 'strong' || hand.category === 'nuts'
-        ? 'trap'
+        ? (isRiver && !outOfPosition) ? 'value' : 'trap'
         : 'pot-control'
-  const handValue = hand.category === 'strong' || hand.category === 'nuts'
+  const handValue = (hand.category === 'strong' || hand.category === 'nuts') && !isRiver
     ? -10
     : hand.category === 'medium'
       ? 20
@@ -100,10 +110,11 @@ function scoreCall(context: DecisionContext): ScoredAction {
     baseContribution(),
     factor('hand-strength', `Call with ${hand.category}`, handValue),
     ...bettingFactors('call', context),
+    ...preflopStrategyFactors('call', context),
   ]
 
   if (gameView.phase === 'preflop' && context.botState.memory.hand.raisedPreflop && metrics.potOdds <= 0.15) {
-    contributions.push(factor('betting-context', 'Overwhelming preflop price after raising', 30))
+    contributions.push(factor('betting-context', 'Overwhelming preflop price after raising', 50))
   }
   if (playerCount > 3 && hand.category === 'weak') {
     contributions.push(factor('hand-strength', 'Weak hand in multiway pot', -20))
@@ -134,6 +145,7 @@ function scoreRaise(context: DecisionContext): ScoredAction {
       nuts: 40,
     }[hand.category]),
     ...bettingFactors('raise', context),
+    ...preflopStrategyFactors('raise', context),
   ]
 
   if (hand.relativeStrength > 70) contributions.push(factor('hand-strength', 'High relative strength', 10))
@@ -173,6 +185,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
       nuts: 42,
     }[hand.category]),
     ...bettingFactors('raise', context),
+    ...preflopStrategyFactors('raise', context),
   ]
 
   if (metrics.spr <= 2) contributions.push(factor('betting-context', `Low SPR ${metrics.spr.toFixed(2)}`, 12))
@@ -206,6 +219,26 @@ function bettingFactors(
     category: context.handAssessment.category,
     hasDraw: context.handAssessment.drawTypes.length > 0,
   }).map(({ label, value }) => factor('betting-context', label, value))
+}
+
+function preflopStrategyFactors(
+  action: 'fold' | 'check' | 'call' | 'raise',
+  context: DecisionContext,
+): ScoreContribution[] {
+  const preferred = context.preflopRangeAction
+  if (context.gameView.phase !== 'preflop' || !preferred) return []
+  if (context.botState.memory.hand.raisedPreflop && context.metrics.potOdds <= 0.15) return []
+
+  const values: Record<typeof preferred, Record<typeof action, number>> = {
+    fold: { fold: 35, check: 15, call: -45, raise: -60 },
+    call: { fold: -25, check: 5, call: 30, raise: -25 },
+    raise: { fold: -35, check: -20, call: -10, raise: 30 },
+  }
+  return [factor(
+    'strategy',
+    `Archetype preflop range prefers ${preferred}`,
+    values[preferred][action],
+  )]
 }
 
 function calculateRaiseTo(context: DecisionContext): number {

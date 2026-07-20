@@ -1,8 +1,8 @@
-# CPC-Offline
+# CPCdigital
 
 Eine Offline-Poker-App für den Desktop: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung.
 
-Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.3.1** und konzentriert sich auf ein stabiles No-Limit-Hold'em-Fundament sowie eine nachvollziehbare Bot-Architektur. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
+Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.4.0** und konzentriert sich auf glaubwürdige Bot-Persönlichkeiten mit unterscheidbaren Spielweisen. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
 
 ## Leitgedanken
 
@@ -25,11 +25,19 @@ Derzeit enthalten sind unter anderem:
 - strukturierte Action History, Decision Snapshots und deterministische Hand-Replays
 - seedbarer Zufallszahlengenerator für reproduzierbare Tests und Sessions
 - Trennung öffentlicher und privater Informationen
+- vier unterscheidbare Bot-Archetypen: TAG, Nit, LAG und Calling Station
+- seltene Maniac-Ausprägung als extreme LAG-Variante
+- 44 individuelle Bot-Identitäten mit Namen, Avataren und wiedererkennbaren Gewohnheiten
 - Utility-basierte Botentscheidungen mit Pot Odds, Betgröße, effektivem Stack und SPR
 - getrennte Modelle für Personality, Skill, Mental State, Reads und Memory
+- archetyp-spezifische Tilt-Reaktionen und Beobachtungsfähigkeit
+- Reads mit Stichprobengröße, Konfidenz und systematischen Fehlern (Beta-Distribution)
 - gewichtete Auswahl plausibler Aktionen und situationsabhängige Reaktionszeiten
 - Debug Inspector mit Entscheidungskontext, Action Scores und Gründen
+- persistenter lokaler Bot-Roster mit wiederkehrenden Gegnern über Sessions
 - einfache Rebuys zwischen Händen sowie verschiedene Bedienungs- und Anzeigeverbesserungen
+- kompakter JSON-Debug-Export (v2) für KI-gestützte Analyse
+- Mixed-Table-Kalibrierung und Balance-Simulation über alle Archetypen
 
 Noch nicht als stabiler Funktionsumfang enthalten sind zusätzliche Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
 
@@ -59,6 +67,12 @@ Alle vorhandenen Workspace-Tests ausführen:
 
 ```bash
 npm test
+```
+
+TAG und Nit reproduzierbar über Full Ring, 6-max und Heads-up kalibrieren:
+
+```bash
+npm run calibrate:bots
 ```
 
 Alle Pakete bauen und den Client dabei typprüfen:
@@ -95,4 +109,4 @@ Die laufende Offline-App benötigt das Server-Paket nicht. Eine Onlinefunktion i
 
 ## Hinweis
 
-CPC-Offline ist ein Spiel- und Lernprojekt ohne Echtgeldfunktion. Der aktuelle Stand ist eine Entwicklungsversion und noch kein fertiges Produkt.
+CPCdigital ist ein Spiel- und Lernprojekt ohne Echtgeldfunktion. Der aktuelle Stand ist eine Entwicklungsversion und noch kein fertiges Produkt.

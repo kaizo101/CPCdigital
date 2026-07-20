@@ -154,7 +154,7 @@ describe('NLHE bot hand assessment', () => {
       minRaise: 600,
       canRaise: false,
     })
-    const botState = createBotState(TAG_PERSONALITY)
+    const botState = createBotState(TAG_PERSONALITY, 50, () => 0.5)
     botState.memory.hand.raisedPreflop = true
 
     const action = decideTagAction(

@@ -9,9 +9,11 @@ const borderColor = 'rgba(255,255,255,0.12)'
 export function BotDebugInspector({
   decisions,
   currency,
+  onExportDebugRecord,
 }: {
   decisions: readonly BotDebugDecision[]
   currency: DisplayCurrency
+  onExportDebugRecord: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [selectedSequence, setSelectedSequence] = useState<number | null>(null)
@@ -52,8 +54,27 @@ export function BotDebugInspector({
                 Lokal · enthält private Botkarten
               </div>
             </div>
-            {decisions.length > 0 && (
-              <select
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <button
+                type="button"
+                onClick={onExportDebugRecord}
+                title="Enthält private Karten und vollständige Bot-Entscheidungen"
+                style={{
+                  padding: '6px 8px',
+                  borderRadius: 6,
+                  border: `1px solid ${borderColor}`,
+                  color: '#bae6fd',
+                  background: '#102536',
+                  fontFamily: 'inherit',
+                  fontSize: 10,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                Session-JSON
+              </button>
+              {decisions.length > 0 && (
+                <select
                 aria-label="Debug-Entscheidung auswählen"
                 value={selectedSequence ?? 'latest'}
                 onChange={event => setSelectedSequence(
@@ -69,15 +90,16 @@ export function BotDebugInspector({
                   fontFamily: 'inherit',
                   fontSize: 11,
                 }}
-              >
-                <option value="latest">Live · neueste Entscheidung</option>
-                {[...decisions].reverse().map(decision => (
-                  <option key={decision.sequence} value={decision.sequence}>
-                    #{decision.sequence} · H{decision.handNumber} · {decision.playerName}
-                  </option>
-                ))}
-              </select>
-            )}
+                >
+                  <option value="latest">Live · neueste Entscheidung</option>
+                  {[...decisions].reverse().map(decision => (
+                    <option key={decision.sequence} value={decision.sequence}>
+                      #{decision.sequence} · H{decision.handNumber} · {decision.playerName}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
 
           <div style={{ overflowY: 'auto', padding: 12 }}>
@@ -237,6 +259,7 @@ function DecisionDetails({ debug, currency }: { debug: BotDebugDecision; currenc
           ['Archetyp', profile.archetype],
           ['Skill', formatNumber(profile.skill.level)],
           ['Beobachtung', formatNumber(profile.skill.observation)],
+          ['Preflop-Looseness', formatNumber(profile.personality.preflopLooseness)],
           ['Aggression', formatNumber(profile.personality.aggression)],
           ['Bluff-Frequenz', formatNumber(profile.personality.bluffFrequency)],
           ['Risikotoleranz', formatNumber(profile.personality.riskTolerance)],

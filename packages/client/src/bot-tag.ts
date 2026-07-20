@@ -1,22 +1,32 @@
 import type { PlayerAction, PublicGameState } from '@cpc/shared'
 import { updateMentalState } from './bot-mental'
-import { createBotState } from './bot-state'
-import { getOpponentStats, updateOpponentRead } from './bot-reads'
+import { createBotState, createBotStateFromIdentity } from './bot-state'
+import { getOpponentStats, shouldActOnRead, updateOpponentRead } from './bot-reads'
 import { applyDecisionMemory, recordHandResult, resetHandMemory } from './bot-memory'
 import { decideAction as pipelineDecide, type DecisionResult } from './bot-pipeline'
 import type { BotState, BotPersonality, Position, MentalEvent } from './bot-types'
+import type { ActiveHabit } from './bot-habits'
 import type { DecisionContext } from './bot-pipeline'
 import type { BotContext } from './bot-context'
 import { deriveDecisionMetrics, type DecisionMetrics } from './bot-decision-metrics'
 import { evaluateBotVariant } from './bot-variant-registry'
 import type { VariantEvaluation, VariantHandAssessment } from './bot-variant-evaluation'
 import { calculateChipUnit, roundToCents } from './utils/format'
+import { getPreflopAction, getPreflopSituation } from './preflop-ranges'
+import {
+  CALLING_STATION_PERSONALITY,
+  LAG_PERSONALITY,
+  NIT_PERSONALITY,
+  TAG_PERSONALITY,
+} from './bot-archetypes'
 
 export type { BotState, BotPersonality, Position, MentalEvent }
+export { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, NIT_PERSONALITY, TAG_PERSONALITY }
 export type HandAssessment = VariantHandAssessment
 export {
   applyDecisionMemory,
   createBotState,
+  createBotStateFromIdentity,
   getOpponentStats,
   recordHandResult,
   resetHandMemory,
@@ -24,20 +34,7 @@ export {
   updateOpponentRead,
 }
 
-// TAG Personality (as distribution for variance)
-export const TAG_PERSONALITY: BotPersonality = {
-  name: 'TAG',
-  aggression: { mean: 65, stddev: 10 },
-  bluffFrequency: { mean: 25, stddev: 8 },
-  riskTolerance: { mean: 50, stddev: 12 },
-  patience: { mean: 70, stddev: 10 },
-  observationSkill: { mean: 60, stddev: 15 },
-  tiltSensitivity: { mean: 40, stddev: 15 },  // Moderate tilt sensitivity
-  tiltRecovery: { mean: 60, stddev: 15 },    // Good recovery
-  emotionality: { mean: 50, stddev: 10 },    // Balanced emotionality
-}
-
-export interface TagDecision {
+export interface BotDecision {
   action: PlayerAction
   decisionResult: DecisionResult
   evaluation: VariantEvaluation
@@ -45,10 +42,11 @@ export interface TagDecision {
 }
 
 // Main decision function using Pipeline for postflop
-export function decideTagDecision(
+export function decideBotDecision(
   botContext: Readonly<BotContext>,
   botState: BotState,
   random: () => number = Math.random,
+  botHabits?: ActiveHabit[],
 ): TagDecision {
   const {
     publicState: state,
@@ -71,7 +69,7 @@ export function decideTagDecision(
   let opponentStats = undefined
   if (opponent) {
     const read = botState.reads.opponents.get(opponent.id)
-    if (read && read.handsSampled > 5) {
+    if (read && shouldActOnRead(read, botState.mentalState, identityArchetypeId(botState))) {
       opponentStats = getOpponentStats(read)
     }
   }
@@ -112,7 +110,26 @@ export function decideTagDecision(
     metrics,
     legalActions,
     preferredRaiseTo,
-    opponentStats
+    preflopRangeAction: state.phase === 'preflop'
+      ? getPreflopAction(
+          holeCards,
+          position,
+          getPreflopSituation(state, position),
+          botContext.position.tableSize,
+          preflopRangeFactor(
+            botState.personality.preflopLooseness,
+            botContext.position.tableSize,
+            botState.personality.riskTolerance,
+          ),
+          preflopRaiseRangeFactor(
+            botState.personality.preflopLooseness,
+            botState.personality.aggression,
+            botContext.position.tableSize,
+          ),
+        )
+      : undefined,
+    opponentStats,
+    botHabits,
   }
 
   const result = pipelineDecide(context, { random })
@@ -130,12 +147,55 @@ export function decideTagDecision(
   }
 }
 
-export function decideTagAction(
+export function decideBotAction(
   botContext: Readonly<BotContext>,
   botState: BotState,
   random: () => number = Math.random,
 ): PlayerAction {
-  return decideTagDecision(botContext, botState, random).action
+  return decideBotDecision(botContext, botState, random).action
+}
+
+/** Compatibility aliases while callers migrate from the original TAG-only entry point. */
+export const decideTagDecision = decideBotDecision
+export const decideTagAction = decideBotAction
+export type TagDecision = BotDecision
+
+export function preflopRangeFactor(
+  preflopLooseness: number,
+  tableSize: number = 6,
+  riskTolerance: number = 50,
+): number {
+  const looseness = Math.max(0, Math.min(100, preflopLooseness))
+  const clampedTableSize = Math.max(2, Math.min(9, tableSize))
+  const risk = Math.max(0, Math.min(100, riskTolerance))
+  const tableExpansionRate = clampedTableSize <= 6
+    ? ((clampedTableSize - 2) / 4) * 0.025
+    : 0.025 + (((clampedTableSize - 6) / 3) * 0.005)
+  const veryLooseExpansion = Math.max(0, looseness - 70) * tableExpansionRate
+  const shortHandedDefenseExpansion = Math.max(0, risk - 80)
+    * Math.max(0, looseness - 75)
+    * 0.008
+    * (Math.max(0, 6 - clampedTableSize) / 4)
+  return 0.55 + (looseness * 0.009) + veryLooseExpansion + shortHandedDefenseExpansion
+}
+
+export function preflopRaiseRangeFactor(
+  preflopLooseness: number,
+  aggression: number,
+  tableSize: number = 6,
+): number {
+  const rangeFactor = preflopRangeFactor(preflopLooseness, tableSize)
+  const clampedAggression = Math.max(0, Math.min(100, aggression))
+  if (clampedAggression >= 30) return rangeFactor
+  return rangeFactor * (0.15 + (clampedAggression / 100))
+}
+
+function identityArchetypeId(botState: BotState): 'tag' | 'nit' | 'lag' | 'calling-station' {
+  const name = botState.personality.archetype.name
+  if (name === 'Nit') return 'nit'
+  if (name === 'LAG') return 'lag'
+  if (name === 'Calling Station') return 'calling-station'
+  return 'tag'
 }
 
 function legalizeBotAction(

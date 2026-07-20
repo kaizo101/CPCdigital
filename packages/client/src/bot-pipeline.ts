@@ -50,7 +50,7 @@ export function decideAction(
     scoreActions(perception.context),
     perception.errors,
   )
-  const personalityActions = applyPersonalityModifiers(scoredActions, context.botState)
+  const personalityActions = applyPersonalityModifiers(scoredActions, context)
   const chosenAction = weightedChoice(personalityActions, rng)
   const chosenScored = personalityActions.find(candidate => sameAction(candidate.action, chosenAction))
   const stateUpdates = deriveStateUpdates(chosenAction, context)

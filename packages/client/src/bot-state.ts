@@ -1,10 +1,12 @@
-import type { BotPersonality, BotState } from './bot-types'
+import type { BotIdentity } from './bot-identities'
+import type { BotPersonality, BotPersonalityState, BotState } from './bot-types'
 
 export function createBotState(
   archetype: BotPersonality,
   skillLevel: number = 50,
   random: () => number = Math.random,
 ): BotState {
+  const preflopLooseness = rollFromDistribution(archetype.preflopLooseness, random)
   const aggression = rollFromDistribution(archetype.aggression, random)
   const bluffFrequency = rollFromDistribution(archetype.bluffFrequency, random)
   const riskTolerance = rollFromDistribution(archetype.riskTolerance, random)
@@ -14,16 +16,50 @@ export function createBotState(
   const tiltRecovery = rollFromDistribution(archetype.tiltRecovery, random)
   const emotionality = rollFromDistribution(archetype.emotionality, random)
 
+  return initializeBotState(archetype, skillLevel, observation, {
+    preflopLooseness,
+    aggression,
+    bluffFrequency,
+    riskTolerance,
+    patience,
+    tiltSensitivity,
+    tiltRecovery,
+    emotionality,
+  })
+}
+
+export function createBotStateFromIdentity(
+  identity: BotIdentity,
+  archetype: BotPersonality,
+  random: () => number = Math.random,
+): BotState {
+  const sessionValue = (
+    baseline: number,
+    distribution: { stddev: number },
+  ) => rollFromDistribution({ mean: baseline, stddev: distribution.stddev * 0.25 }, random)
+
+  return initializeBotState(archetype, identity.skill, identity.traits.observation, {
+    preflopLooseness: sessionValue(identity.traits.preflopLooseness, archetype.preflopLooseness),
+    aggression: sessionValue(identity.traits.aggression, archetype.aggression),
+    bluffFrequency: sessionValue(identity.traits.bluffFrequency, archetype.bluffFrequency),
+    riskTolerance: sessionValue(identity.traits.riskTolerance, archetype.riskTolerance),
+    patience: sessionValue(identity.traits.patience, archetype.patience),
+    tiltSensitivity: sessionValue(identity.traits.tiltSensitivity, archetype.tiltSensitivity),
+    tiltRecovery: sessionValue(identity.traits.tiltRecovery, archetype.tiltRecovery),
+    emotionality: sessionValue(identity.traits.emotionality, archetype.emotionality),
+  })
+}
+
+function initializeBotState(
+  archetype: BotPersonality,
+  skillLevel: number,
+  observation: number,
+  personality: Omit<BotPersonalityState, 'archetype'>,
+): BotState {
   return {
     personality: {
       archetype,
-      aggression,
-      bluffFrequency,
-      riskTolerance,
-      patience,
-      tiltSensitivity,
-      tiltRecovery,
-      emotionality,
+      ...personality,
     },
     skill: {
       level: Math.max(0, Math.min(100, skillLevel)),
@@ -32,7 +68,7 @@ export function createBotState(
     mentalState: {
       tilt: 0,
       confidence: 50,
-      patience,
+      patience: personality.patience,
       frustration: new Map(),
       momentum: 0,
     },

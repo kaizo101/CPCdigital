@@ -4,13 +4,15 @@ import path from 'node:path'
 const useDevServer = process.env.USE_DEV_SERVER === 'true'
 const DEV_URL = process.env.VITE_URL ?? 'http://localhost:5173'
 
+app.setName('CPCdigital')
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 900,
     minWidth: 800,
     minHeight: 600,
-    title: 'CPC-Offline',
+    title: 'CPCdigital',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

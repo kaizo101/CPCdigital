@@ -4,6 +4,8 @@ import { LocalGameRunner } from './LocalGameRunner'
 import { SetupScreen } from './screens/SetupScreen'
 import { TableScreen } from './screens/TableScreen'
 import type { DisplayCurrency } from './utils/format'
+import { APP_VERSION } from './app-version'
+import { downloadSessionDebugRecord } from './session-debug-record'
 
 type Screen = 'setup' | 'table'
 
@@ -57,6 +59,10 @@ export default function App() {
     setScreen('setup')
   }
 
+  function handleExportDebugRecord() {
+    downloadSessionDebugRecord(runner.createSessionDebugRecord(APP_VERSION, currency))
+  }
+
   if (screen === 'setup') {
     return (
       <SetupScreen
@@ -77,6 +83,7 @@ export default function App() {
       myCards={localState.myCards}
       lastResults={localState.lastResults}
       isMyTurn={localState.isMyTurn}
+      playerAvatarKeys={localState.playerAvatarKeys}
       playerActionLabels={localState.playerActionLabels}
       showdownCards={localState.showdownCards}
       botDebugDecisions={runner.getBotDebugDecisions()}
@@ -88,6 +95,7 @@ export default function App() {
       options={options}
       currency={currency}
       onRebuy={playerId => runner.requestRebuy(playerId)}
+      onExportDebugRecord={handleExportDebugRecord}
     />
   )
 }

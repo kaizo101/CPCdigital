@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { BettingContext, Card, LegalActions } from '@cpc/shared'
+import type { BettingContext, Card, LegalActions, PlayerAction } from '@cpc/shared'
 import { createBotState } from './bot-state'
 import { deriveDecisionMetrics } from './bot-decision-metrics'
 import { decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
 import { applySkillPerception } from './bot-skill-perception'
-import { TAG_PERSONALITY } from './bot-tag'
+import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
 
 const cards: [Card, Card] = [
   { rank: 'A', suit: 'spades' },
@@ -194,6 +194,83 @@ describe('bot utility candidates', () => {
         .reduce((sum, contribution) => sum + contribution.value, 0)
       expect(candidate.utility).toBeCloseTo(explainedUtility)
     }
+  })
+
+  it('makes a LAG prefer explainable pressure over a TAG in the same marginal spot', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const tagContext = context(legalActions)
+    tagContext.botState = createBotState(TAG_PERSONALITY, 100, () => 0.25)
+    tagContext.handAssessment = {
+      ...tagContext.handAssessment,
+      category: 'air',
+      relativeStrength: 15,
+      showdownValue: 10,
+      nutPotential: 'weak',
+    }
+    tagContext.boardTexture = 'dry'
+
+    const lagContext: DecisionContext = {
+      ...tagContext,
+      botState: createBotState(LAG_PERSONALITY, 100, () => 0.25),
+    }
+    const tag = decideAction(tagContext, { random: () => 0.5 }).allActions
+    const lag = decideAction(lagContext, { random: () => 0.5 }).allActions
+    const utility = (actions: typeof tag, action: PlayerAction['type']) =>
+      actions.find(candidate => candidate.action.type === action)!.utility
+
+    expect(utility(lag, 'raise')).toBeGreaterThan(utility(tag, 'raise') + 10)
+    expect(utility(lag, 'fold')).toBeLessThan(utility(tag, 'fold') - 6)
+    expect(lag.find(candidate => candidate.action.type === 'raise')!.contributions)
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ category: 'personality', label: 'Aggression' }),
+        expect.objectContaining({ category: 'personality', label: 'Bluff frequency' }),
+        expect.objectContaining({ category: 'personality', label: 'Risk tolerance affects aggression' }),
+      ]))
+  })
+
+  it('makes a Calling Station prefer bluff-catching calls over folding or initiative', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const tagContext = context(legalActions)
+    tagContext.botState = createBotState(TAG_PERSONALITY, 100, () => 0.25)
+    tagContext.handAssessment = {
+      ...tagContext.handAssessment,
+      category: 'weak',
+      relativeStrength: 30,
+      showdownValue: 30,
+      nutPotential: 'weak',
+    }
+    const stationContext: DecisionContext = {
+      ...tagContext,
+      botState: createBotState(CALLING_STATION_PERSONALITY, 100, () => 0.25),
+    }
+    const tag = decideAction(tagContext, { random: () => 0.5 }).allActions
+    const station = decideAction(stationContext, { random: () => 0.5 }).allActions
+    const utility = (actions: typeof tag, action: PlayerAction['type']) =>
+      actions.find(candidate => candidate.action.type === action)!.utility
+
+    expect(utility(station, 'call')).toBeGreaterThan(utility(tag, 'call') + 8)
+    expect(utility(station, 'fold')).toBeLessThan(utility(tag, 'fold') - 6)
+    expect(utility(station, 'raise')).toBeLessThan(utility(tag, 'raise') - 4)
+    expect(station.find(candidate => candidate.action.type === 'raise')!.contributions)
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          category: 'personality',
+          label: 'Passive style avoids initiative',
+          value: expect.any(Number),
+        }),
+      ]))
   })
 
   it('gives a perfect-skill bot exact perception without consuming fair data', () => {

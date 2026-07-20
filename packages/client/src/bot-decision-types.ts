@@ -1,4 +1,5 @@
 import type { Card, LegalActions, PlayerAction } from '@cpc/shared'
+import type { ActiveHabit } from './bot-habits'
 import type { DecisionMetrics } from './bot-decision-metrics'
 import type { BotState, Position } from './bot-types'
 import type { BoardTexture, VariantHandAssessment } from './bot-variant-evaluation'
@@ -13,6 +14,7 @@ export type ScoreCategory =
   | 'mental-state'
   | 'opponent-read'
   | 'skill-perception'
+  | 'strategy'
 
 export type ActionIntent =
   | 'fold'
@@ -70,5 +72,7 @@ export interface DecisionContext {
   metrics: DecisionMetrics
   legalActions: LegalActions
   preferredRaiseTo?: number
+  preflopRangeAction?: 'raise' | 'call' | 'fold'
   opponentStats?: { vpip: number; aggression: number; foldToBet: number; confidence: number }
+  botHabits?: ActiveHabit[]
 }

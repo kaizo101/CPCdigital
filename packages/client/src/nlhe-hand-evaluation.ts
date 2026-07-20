@@ -5,7 +5,7 @@ import type {
   VariantEvaluator,
   VariantHandAssessment,
 } from './bot-variant-evaluation'
-import { cardsToHandPattern, getPreflopAction, getPreflopSituation } from './preflop-ranges'
+import { cardsToHandPattern, getStartingHandPercentile, getPreflopSituation } from './preflop-ranges'
 
 export interface NlheHandAssessment extends VariantHandAssessment {
   pairType?: 'top' | 'middle' | 'bottom' | 'over' | 'under' | 'pocket'
@@ -31,11 +31,19 @@ export const nlheVariantEvaluator: VariantEvaluator = {
 function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
   const { publicState: state, ownCards, position, bettingContext } = context
   const situation = getPreflopSituation(state, position.category)
-  const rangeAction = getPreflopAction(ownCards, position.category, situation)
   const pattern = cardsToHandPattern(ownCards)
+  const percentile = getStartingHandPercentile(ownCards)
   const premium = ['AA', 'KK', 'QQ', 'AKs'].includes(pattern)
-  const category = premium ? 'nuts' : rangeAction === 'raise' ? 'strong' : rangeAction === 'call' ? 'medium' : 'air'
-  const relativeStrength = premium ? 92 : rangeAction === 'raise' ? 75 : rangeAction === 'call' ? 55 : 15
+  const category = premium
+    ? 'nuts'
+    : percentile <= 18
+      ? 'strong'
+      : percentile <= 40
+        ? 'medium'
+        : percentile <= 65
+          ? 'weak'
+          : 'air'
+  const relativeStrength = premium ? 95 : Math.max(5, 100 - percentile)
 
   return {
     variantId: nlheVariantEvaluator.variantId,
@@ -45,7 +53,7 @@ function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
       made: false,
       relativeStrength,
       showdownValue: relativeStrength,
-      nutPotential: premium ? 'near-nuts' : rangeAction === 'raise' ? 'strong' : rangeAction === 'call' ? 'medium' : 'weak',
+      nutPotential: premium ? 'near-nuts' : percentile <= 18 ? 'strong' : percentile <= 40 ? 'medium' : 'weak',
       vulnerability: 0,
       drawQuality: 0,
       cleanOuts: 0,

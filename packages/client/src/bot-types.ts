@@ -14,6 +14,7 @@ export type MentalEvent =
 // Personality traits that affect emotional responses
 export interface BotPersonality {
   name: string
+  preflopLooseness: { mean: number; stddev: number }
   aggression: { mean: number; stddev: number }
   bluffFrequency: { mean: number; stddev: number }
   riskTolerance: { mean: number; stddev: number }
@@ -37,6 +38,7 @@ export interface MentalState {
 /** Immutable rolled traits for one bot in this session. */
 export interface BotPersonalityState {
   archetype: BotPersonality
+  preflopLooseness: number
   aggression: number
   bluffFrequency: number
   riskTolerance: number
@@ -80,11 +82,11 @@ export interface BotState {
 // Opponent read with Beta distribution
 export interface OpponentRead {
   playerId: string
-  // Beta distribution parameters (successes + failures)
   vpipEstimate: { successes: number; failures: number }
   aggressionEstimate: { successes: number; failures: number }
   foldToBetEstimate: { successes: number; failures: number }
   handsSampled: number
+  effectiveObservations: number
 }
 
 // Position types

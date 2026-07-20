@@ -1,3 +1,12 @@
+export const PREFLOP_RUNOUT_STAGE_DELAY_MS = 1500
+export const POSTFLOP_RUNOUT_STAGE_DELAY_MS = 1000
+
+export function getRunoutStageDelay(startCardCount: number): number {
+  return startCardCount === 0
+    ? PREFLOP_RUNOUT_STAGE_DELAY_MS
+    : POSTFLOP_RUNOUT_STAGE_DELAY_MS
+}
+
 /** Community-card counts shown one stage at a time after betting has ended. */
 export function getRunoutRevealStages(startCount: number, finalCount: number): number[] {
   const start = Math.max(0, Math.min(5, Math.floor(startCount)))

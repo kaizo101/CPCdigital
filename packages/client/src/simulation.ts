@@ -1,18 +1,26 @@
-// TAG bot calibration across common table formats.
+// Bot archetype calibration across common table formats.
 // Run with: npx tsx packages/client/src/simulation.ts
 
 import { createSeededRandom, PokerGame } from '@cpc/poker-engine'
 import type { Player, PlayerAction, PublicGameState } from '@cpc/shared'
-import { createBotState, decideTagAction, TAG_PERSONALITY } from './bot-tag'
-import type { BotState, Position } from './bot-tag'
+import {
+  CALLING_STATION_PERSONALITY,
+  createBotStateFromIdentity,
+  decideBotAction,
+  LAG_PERSONALITY,
+  NIT_PERSONALITY,
+  TAG_PERSONALITY,
+} from './bot-tag'
+import type { BotPersonality, BotState, Position } from './bot-tag'
+import type { BotArchetypeId } from './bot-archetypes'
 import { createBotContext, getPositionCategory } from './bot-context'
 import { resetHandMemory } from './bot-memory'
+import { DEFAULT_BOT_ROSTER } from './bot-identities'
 
 const HANDS_PER_FORMAT = 10_000
 const BIG_BLIND = 20
 const SMALL_BLIND = 10
 const STARTING_CHIPS = 2_000
-const SIMULATION_SEED = 'tag-calibration-v1'
 
 interface FormatConfig {
   name: string
@@ -20,13 +28,119 @@ interface FormatConfig {
   target: {
     vpip: [number, number]
     pfr: [number, number]
+    threeBet: [number, number]
   }
 }
 
-const FORMATS: FormatConfig[] = [
-  { name: 'Full Ring (9-max)', playerCount: 9, target: { vpip: [15, 21], pfr: [12, 18] } },
-  { name: '6-max', playerCount: 6, target: { vpip: [22, 29], pfr: [18, 25] } },
-  { name: 'Heads-up', playerCount: 2, target: { vpip: [45, 65], pfr: [35, 55] } },
+interface CalibrationProfile {
+  name: string
+  seed: string
+  archetypeId: BotArchetypeId
+  personality: BotPersonality
+  formats: FormatConfig[]
+}
+
+const TAG_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [15, 21], pfr: [12, 18], threeBet: [6, 13] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [22, 29], pfr: [18, 25], threeBet: [8, 15] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [45, 65], pfr: [35, 55], threeBet: [12, 22] },
+  },
+]
+
+const NIT_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [9, 15], pfr: [7, 12], threeBet: [3, 9] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [13, 19], pfr: [10, 15], threeBet: [4, 10] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [30, 45], pfr: [16, 35], threeBet: [6, 13] },
+  },
+]
+
+const LAG_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [22, 31], pfr: [17, 26], threeBet: [8, 18] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [28, 40], pfr: [22, 33], threeBet: [10, 20] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [65, 86], pfr: [45, 68], threeBet: [14, 28] },
+  },
+]
+
+const CALLING_STATION_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [28, 43], pfr: [5, 14], threeBet: [2, 8] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [38, 56], pfr: [7, 17], threeBet: [2, 9] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [62, 85], pfr: [15, 36], threeBet: [2, 13] },
+  },
+]
+
+const CALIBRATION_PROFILES: CalibrationProfile[] = [
+  {
+    name: 'TAG',
+    seed: 'tag-calibration-v1',
+    archetypeId: 'tag',
+    personality: TAG_PERSONALITY,
+    formats: TAG_FORMATS,
+  },
+  {
+    name: 'Nit',
+    seed: 'nit-calibration-v1',
+    archetypeId: 'nit',
+    personality: NIT_PERSONALITY,
+    formats: NIT_FORMATS,
+  },
+  {
+    name: 'LAG',
+    seed: 'lag-calibration-v1',
+    archetypeId: 'lag',
+    personality: LAG_PERSONALITY,
+    formats: LAG_FORMATS,
+  },
+  {
+    name: 'Calling Station',
+    seed: 'calling-station-calibration-v1',
+    archetypeId: 'calling-station',
+    personality: CALLING_STATION_PERSONALITY,
+    formats: CALLING_STATION_FORMATS,
+  },
 ]
 
 interface PositionStats {
@@ -51,7 +165,7 @@ interface SimulationStats {
 function createPlayers(playerCount: number): Player[] {
   return Array.from({ length: playerCount }, (_, index) => ({
     id: `bot-${index}`,
-    name: `TAG ${index + 1}`,
+    name: `Bot ${index + 1}`,
     role: 'player',
     chips: STARTING_CHIPS,
     seatIndex: index,
@@ -92,13 +206,27 @@ function isAggressiveAction(state: Readonly<PublicGameState>, action: PlayerActi
     && (state.bettingContext?.legalActions.allInAmount ?? 0) > state.currentBet
 }
 
-function simulateFormat(format: FormatConfig, numHands = HANDS_PER_FORMAT): SimulationStats {
+function simulateFormat(
+  profile: CalibrationProfile,
+  format: FormatConfig,
+  numHands = HANDS_PER_FORMAT,
+): SimulationStats {
   const players = createPlayers(format.playerCount)
-  const seedNamespace = `${SIMULATION_SEED}:${format.name}`
-  const personalityRandom = createSeededRandom(`${seedNamespace}:personalities`)
+  const seedNamespace = `${profile.seed}:${format.name}`
   const decisionRandom = createSeededRandom(`${seedNamespace}:decisions`)
+  const identities = DEFAULT_BOT_ROSTER.identities
+    .filter(identity => identity.archetypeId === profile.archetypeId && !identity.maniac)
   const botStates = new Map<string, BotState>(
-    players.map(player => [player.id, createBotState(TAG_PERSONALITY, 60, personalityRandom)])
+    players.map((player, index) => {
+      const identity = identities[index % identities.length]
+      const sessionRandom = createSeededRandom(
+        `${seedNamespace}:session:${player.id}:${identity.id}`,
+      )
+      return [
+        player.id,
+        createBotStateFromIdentity(identity, profile.personality, sessionRandom),
+      ]
+    })
   )
   const game = new PokerGame(players, {
     bigBlind: BIG_BLIND,
@@ -151,7 +279,7 @@ function simulateFormat(format: FormatConfig, numHands = HANDS_PER_FORMAT): Simu
       let action: PlayerAction
       try {
         const botContext = createBotContext(botId, botView, game.getPublicHandHistory())
-        action = decideTagAction(botContext, botState, decisionRandom)
+        action = decideBotAction(botContext, botState, decisionRandom)
         game.applyAction(botId, action)
       } catch {
         stats.actionErrors++
@@ -223,7 +351,7 @@ function targetLabel(value: number, target: [number, number]): string {
   return 'in range'
 }
 
-function printStats(format: FormatConfig, stats: SimulationStats): void {
+function printStats(format: FormatConfig, stats: SimulationStats): boolean {
   const vpip = percentage(stats.vpipHands, stats.playerHands)
   const pfr = percentage(stats.pfrHands, stats.playerHands)
   const threeBet = percentage(stats.threeBets, stats.threeBetOpportunities)
@@ -232,7 +360,11 @@ function printStats(format: FormatConfig, stats: SimulationStats): void {
   console.log(`Hands: ${stats.handsPlayed.toLocaleString('en-US')} · Player-hands: ${stats.playerHands.toLocaleString('en-US')} · ${stats.durationMs}ms`)
   console.log(`VPIP: ${vpip.toFixed(2)}% (target ${format.target.vpip.join('–')}%, ${targetLabel(vpip, format.target.vpip)})`)
   console.log(`PFR:  ${pfr.toFixed(2)}% (target ${format.target.pfr.join('–')}%, ${targetLabel(pfr, format.target.pfr)})`)
-  console.log(`3-bet: ${threeBet.toFixed(2)}% (${stats.threeBets}/${stats.threeBetOpportunities} opportunities)`)
+  console.log(
+    `3-bet: ${threeBet.toFixed(2)}% `
+    + `(target ${format.target.threeBet.join('–')}%, ${targetLabel(threeBet, format.target.threeBet)}; `
+    + `${stats.threeBets}/${stats.threeBetOpportunities} opportunities)`,
+  )
 
   console.log('Positions:')
   for (const position of ['early', 'middle', 'late', 'blinds'] as const) {
@@ -251,9 +383,22 @@ function printStats(format: FormatConfig, stats: SimulationStats): void {
     .join(' · ')
   console.log(`Actions: ${actionSummary}`)
   console.log(`Invalid-action fallbacks: ${stats.actionErrors}`)
+  return isWithinTarget(vpip, format.target.vpip)
+    && isWithinTarget(pfr, format.target.pfr)
+    && isWithinTarget(threeBet, format.target.threeBet)
+    && stats.actionErrors === 0
 }
 
-console.log(`TAG simulation · ${HANDS_PER_FORMAT.toLocaleString('en-US')} hands per format`)
-for (const format of FORMATS) {
-  printStats(format, simulateFormat(format))
+let calibrationFailed = false
+for (const profile of CALIBRATION_PROFILES) {
+  console.log(`\n${profile.name} simulation · ${HANDS_PER_FORMAT.toLocaleString('en-US')} hands per format`)
+  for (const format of profile.formats) {
+    if (!printStats(format, simulateFormat(profile, format))) calibrationFailed = true
+  }
+}
+
+if (calibrationFailed) throw new Error('Bot calibration missed at least one target range')
+
+function isWithinTarget(value: number, target: [number, number]): boolean {
+  return value >= target[0] && value <= target[1]
 }

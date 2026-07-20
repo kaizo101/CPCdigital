@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Building CPC-Offline..."
+echo "Building CPCdigital..."
 
 # Build client (static files, no server needed)
 cd packages/client
@@ -13,6 +13,6 @@ cd ../..
 
 # Start Electron (loads built files directly)
 echo ""
-echo "Starting CPC-Offline..."
+echo "Starting CPCdigital..."
 cd packages/electron
 npx electron .

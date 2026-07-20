@@ -5,9 +5,10 @@ import { CardView, CardBack } from './Card'
 import { formatChips, type DisplayCurrency } from '../utils/format'
 import { getSeatPosition } from '../utils/positions'
 import type { PlayerActionLabel } from '../action-display'
+import { getBotAvatarUrl } from '../bot-avatars'
 
 export function PlayerSeat({
-  player, seatIndex, seatCount, isMe, isCurrent, actionLabel, myCards, revealedCards, showCards,
+  player, seatIndex, seatCount, isMe, isCurrent, avatarKey, actionLabel, myCards, revealedCards, showCards,
   currency, startingChips, rebuyPending, onRebuy,
 }: {
   player: Player
@@ -15,6 +16,7 @@ export function PlayerSeat({
   seatCount: number
   isMe: boolean
   isCurrent: boolean
+  avatarKey?: string
   actionLabel?: PlayerActionLabel
   myCards?: [Card, Card] | null
   revealedCards?: [Card, Card]
@@ -26,6 +28,7 @@ export function PlayerSeat({
 }) {
   const [isHovering, setIsHovering] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null)
   const position = getSeatPosition(seatIndex, seatCount)
   const isFolded = player.status === 'folded'
   const visibleCards = revealedCards ?? (isMe ? myCards : null)
@@ -33,6 +36,14 @@ export function PlayerSeat({
   const isPeekingFoldedCards = canPeekFoldedCards && isHovering
   const showHoleCards = (showCards && (!isMe || !!visibleCards)) || isPeekingFoldedCards
   const canRebuy = player.chips < startingChips && !rebuyPending
+  const avatarUrl = getBotAvatarUrl(avatarKey)
+  const visibleAvatarUrl = avatarUrl === failedAvatarUrl ? null : avatarUrl
+  const avatarInitials = player.name
+    .split(/\s+/)
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toLocaleUpperCase()
 
   useEffect(() => {
     if (!contextMenu) return
@@ -68,7 +79,7 @@ export function PlayerSeat({
       left: position.left,
       top: position.top,
       transform: 'translate(-50%, -50%)',
-      width: `clamp(160px, 12vw, ${position.width}px)`,
+      width: `clamp(168px, 13.5vw, ${position.width}px)`,
       textAlign: 'center',
       zIndex: isCurrent ? 30 : 20,
     }}
@@ -86,7 +97,7 @@ export function PlayerSeat({
         {showHoleCards && (
           <div style={{
             position: 'absolute',
-            bottom: 44,
+            bottom: 50,
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
@@ -112,8 +123,10 @@ export function PlayerSeat({
         <div style={{
           position: 'relative',
           zIndex: 1,
-          minWidth: 106,
-          padding: '8px 13px 7px',
+          minWidth: avatarKey ? 138 : 120,
+          minHeight: avatarKey ? 56 : undefined,
+          boxSizing: 'border-box',
+          padding: avatarKey ? '7px 15px 6px 56px' : '10px 16px 9px',
           background: isMe ? 'linear-gradient(180deg, #1d2733 0%, #10151c 100%)' : 'linear-gradient(180deg, rgba(43,43,43,0.98) 0%, rgba(18,18,18,1) 100%)',
           border: isMe ? '2px solid #2a7af0' : isCurrent ? '1px solid #bfc7d0' : '1px solid rgba(255,255,255,0.16)',
           borderRadius: 999,
@@ -121,9 +134,46 @@ export function PlayerSeat({
           transform: isCurrent ? 'translateY(-1px)' : 'translateY(0)',
           transition: 'transform 180ms ease, box-shadow 180ms ease',
         }}>
+          {avatarKey && (
+            <div style={{
+              position: 'absolute',
+              left: -4,
+              top: '50%',
+              width: 56,
+              height: 56,
+              transform: 'translateY(-50%)',
+              overflow: 'hidden',
+              display: 'grid',
+              placeItems: 'center',
+              borderRadius: '50%',
+              border: isCurrent ? '2px solid #8dc3ff' : '2px solid rgba(255,255,255,0.28)',
+              background: 'radial-gradient(circle at 35% 25%, #36576a 0%, #17303a 48%, #0c171d 100%)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+              color: '#d8e7eb',
+              fontSize: 15,
+              fontWeight: 800,
+              letterSpacing: 0.4,
+            }}>
+              {visibleAvatarUrl ? (
+                <img
+                  src={visibleAvatarUrl}
+                  alt=""
+                  draggable={false}
+                  onError={() => setFailedAvatarUrl(visibleAvatarUrl)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'block',
+                    objectFit: 'cover',
+                    objectPosition: '50% 34%',
+                  }}
+                />
+              ) : avatarInitials}
+            </div>
+          )}
           <div style={{
             color: '#ffffff',
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 700,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -132,13 +182,13 @@ export function PlayerSeat({
           }}>
             {player.name}
           </div>
-          <div style={{ color: '#d8dde3', fontSize: 13, fontWeight: 700 }}>
+          <div style={{ color: '#d8dde3', fontSize: 14, fontWeight: 700 }}>
             {formatChips(player.chips, currency)}
           </div>
           {(player.status !== 'waiting' || player.isSittingOut) && (
             <div style={{
               marginTop: 1,
-              fontSize: 9,
+              fontSize: 10,
               color: player.isSittingOut ? '#9cc6ff' : isFolded ? '#d5d0ca' : '#92d767',
               textTransform: 'uppercase',
               letterSpacing: 0.7,

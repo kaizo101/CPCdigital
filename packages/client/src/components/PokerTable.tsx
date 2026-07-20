@@ -53,7 +53,7 @@ export function PokerTable({ children }: { children: React.ReactNode }) {
         pointerEvents: 'none',
         userSelect: 'none',
       }}>
-        CPC-Offline
+        CPCdigital
       </div>
       {children}
     </div>

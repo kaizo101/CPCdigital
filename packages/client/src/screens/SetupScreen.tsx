@@ -117,7 +117,7 @@ export function SetupScreen({
       <main className="setup-shell">
         <header style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <h1 style={{ fontSize: 30, fontWeight: 700, margin: 0 }}>CPC-Offline</h1>
+            <h1 style={{ fontSize: 30, fontWeight: 700, margin: 0 }}>CPCdigital</h1>
             <span style={{
               padding: '3px 7px',
               borderRadius: 999,

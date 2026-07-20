@@ -19,6 +19,13 @@ export interface PreflopRange {
   fold: string[]
 }
 
+interface RangeCoverage {
+  raise: number
+  vpip: number
+}
+
+type CoverageProfile = Record<PreflopSituation, Record<Position, RangeCoverage>>
+
 // TAG Preflop Ranges (6-max) - Raise-heavy, ~27% VPIP, ~22% PFR
 export const TAG_PREFLOP_RANGES: Record<PreflopSituation, Record<Position, PreflopRange>> = {
   unopened: {
@@ -158,27 +165,183 @@ function handMatchesPattern(hand: string, pattern: string): boolean {
 export function getPreflopAction(
   cards: [Card, Card],
   position: Position,
-  situation: PreflopSituation
+  situation: PreflopSituation,
+  tableSize: number = 6,
+  rangeFactor: number = 1,
+  raiseRangeFactor: number = rangeFactor,
 ): 'raise' | 'call' | 'fold' {
   const hand = cardsToHandPattern(cards)
   const range = TAG_PREFLOP_RANGES[situation][position]
-
-  // Check raise range
-  for (const pattern of range.raise) {
-    if (handMatchesPattern(hand, pattern)) {
-      return 'raise'
-    }
+  const baseCoverage = getTableAdjustedCoverage(position, situation, tableSize)
+  const pressureExponent = situation === 'facing-3bet' ? 1.7 : situation === 'facing-open' ? 1.35 : 1
+  const situationalRangeFactor = Math.pow(Math.max(0, rangeFactor), pressureExponent)
+  const situationalRaiseRangeFactor = Math.pow(Math.max(0, raiseRangeFactor), pressureExponent)
+  const coverage = {
+    raise: Math.min(100, baseCoverage.raise * situationalRaiseRangeFactor),
+    vpip: Math.min(100, baseCoverage.vpip * situationalRangeFactor),
   }
+  const percentile = getStartingHandPercentile(cards)
 
-  // Check call range
-  for (const pattern of range.call) {
-    if (handMatchesPattern(hand, pattern)) {
-      return 'call'
-    }
-  }
+  // Keep the curated core intact, then widen it smoothly as the table gets shorter.
+  const keepCuratedRaiseCore = situationalRaiseRangeFactor >= 1
+  const keepCuratedCallCore = situationalRangeFactor >= 1
+  if (keepCuratedRaiseCore && range.raise.some(pattern => handMatchesPattern(hand, pattern))) return 'raise'
+  if (percentile <= coverage.raise) return 'raise'
 
-  // Default: fold
+  if (keepCuratedCallCore && range.call.some(pattern => handMatchesPattern(hand, pattern))) return 'call'
+  if (percentile <= coverage.vpip) return 'call'
+
   return 'fold'
+}
+
+const FULL_RING_COVERAGE: CoverageProfile = {
+  unopened: {
+    early: { raise: 14, vpip: 18 },
+    middle: { raise: 16, vpip: 22 },
+    late: { raise: 23, vpip: 30 },
+    blinds: { raise: 18, vpip: 28 },
+  },
+  'facing-open': {
+    early: { raise: 3, vpip: 7 },
+    middle: { raise: 4, vpip: 10 },
+    late: { raise: 5, vpip: 13 },
+    blinds: { raise: 6, vpip: 18 },
+  },
+  'facing-3bet': {
+    early: { raise: 1.5, vpip: 4 },
+    middle: { raise: 2, vpip: 5 },
+    late: { raise: 2.5, vpip: 7 },
+    blinds: { raise: 2.5, vpip: 8 },
+  },
+}
+
+const SIX_MAX_COVERAGE: CoverageProfile = {
+  unopened: {
+    early: { raise: 18, vpip: 22 },
+    middle: { raise: 22, vpip: 27 },
+    late: { raise: 32, vpip: 40 },
+    blinds: { raise: 25, vpip: 35 },
+  },
+  'facing-open': {
+    early: { raise: 4, vpip: 9 },
+    middle: { raise: 6, vpip: 13 },
+    late: { raise: 8, vpip: 18 },
+    blinds: { raise: 10, vpip: 24 },
+  },
+  'facing-3bet': {
+    early: { raise: 2, vpip: 5 },
+    middle: { raise: 2.5, vpip: 6 },
+    late: { raise: 3.5, vpip: 9 },
+    blinds: { raise: 4, vpip: 10 },
+  },
+}
+
+const HEADS_UP_COVERAGE: CoverageProfile = {
+  unopened: {
+    early: { raise: 68, vpip: 80 },
+    middle: { raise: 68, vpip: 80 },
+    late: { raise: 68, vpip: 80 },
+    blinds: { raise: 30, vpip: 70 },
+  },
+  'facing-open': {
+    early: { raise: 12, vpip: 50 },
+    middle: { raise: 12, vpip: 50 },
+    late: { raise: 12, vpip: 50 },
+    blinds: { raise: 16, vpip: 58 },
+  },
+  'facing-3bet': {
+    early: { raise: 7, vpip: 32 },
+    middle: { raise: 7, vpip: 32 },
+    late: { raise: 7, vpip: 32 },
+    blinds: { raise: 8, vpip: 36 },
+  },
+}
+
+export function getTableAdjustedCoverage(
+  position: Position,
+  situation: PreflopSituation,
+  tableSize: number,
+): RangeCoverage {
+  const clampedSize = Math.max(2, Math.min(9, Math.round(tableSize)))
+  if (clampedSize === 6) return { ...SIX_MAX_COVERAGE[situation][position] }
+
+  if (clampedSize < 6) {
+    const shortHandedWeight = (6 - clampedSize) / 4
+    return interpolateCoverage(
+      SIX_MAX_COVERAGE[situation][position],
+      HEADS_UP_COVERAGE[situation][position],
+      shortHandedWeight,
+    )
+  }
+
+  const fullRingWeight = (clampedSize - 6) / 3
+  return interpolateCoverage(
+    SIX_MAX_COVERAGE[situation][position],
+    FULL_RING_COVERAGE[situation][position],
+    fullRingWeight,
+  )
+}
+
+function interpolateCoverage(from: RangeCoverage, to: RangeCoverage, weight: number): RangeCoverage {
+  return {
+    raise: from.raise + (to.raise - from.raise) * weight,
+    vpip: from.vpip + (to.vpip - from.vpip) * weight,
+  }
+}
+
+interface RankedStartingHand {
+  score: number
+  combinations: number
+}
+
+const RANKED_STARTING_HANDS: RankedStartingHand[] = buildRankedStartingHands()
+const STARTING_HAND_COMBINATIONS = RANKED_STARTING_HANDS
+  .reduce((sum, hand) => sum + hand.combinations, 0)
+
+/** Approximate percentage of random starting-card combinations at least this strong. */
+export function getStartingHandPercentile(cards: [Card, Card]): number {
+  const score = scoreStartingHand(cards)
+  const strongerCombinations = RANKED_STARTING_HANDS
+    .filter(hand => hand.score >= score)
+    .reduce((sum, hand) => sum + hand.combinations, 0)
+  return (strongerCombinations / STARTING_HAND_COMBINATIONS) * 100
+}
+
+function buildRankedStartingHands(): RankedStartingHand[] {
+  const hands: RankedStartingHand[] = []
+  for (let high = 14; high >= 2; high--) {
+    for (let low = high; low >= 2; low--) {
+      if (high === low) {
+        hands.push({ score: scoreRanks(high, low, false), combinations: 6 })
+      } else {
+        hands.push({ score: scoreRanks(high, low, true), combinations: 4 })
+        hands.push({ score: scoreRanks(high, low, false), combinations: 12 })
+      }
+    }
+  }
+  return hands
+}
+
+function scoreStartingHand(cards: [Card, Card]): number {
+  const first = cardToNumber(cards[0].rank)
+  const second = cardToNumber(cards[1].rank)
+  return scoreRanks(
+    Math.max(first, second),
+    Math.min(first, second),
+    cards[0].suit === cards[1].suit,
+  )
+}
+
+function scoreRanks(high: number, low: number, suited: boolean): number {
+  if (high === low) return 42 + high * 3.5
+
+  const gap = high - low - 1
+  const connectedBonus = gap <= 0 ? 5 : gap === 1 ? 3 : gap === 2 ? 1 : 0
+  const gapPenalty = Math.max(0, gap - 2) * 2
+  const broadwayBonus = high >= 10 && low >= 10 ? 5 : 0
+  const aceBonus = high === 14 ? 3 : 0
+  return high * 4 + low * 1.7 + (suited ? 4 : 0)
+    + connectedBonus + broadwayBonus + aceBonus - gapPenalty
 }
 
 // Determine preflop situation

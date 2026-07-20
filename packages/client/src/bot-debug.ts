@@ -8,6 +8,7 @@ import type { VariantEvaluation } from './bot-variant-evaluation'
 export interface BotDebugProfile {
   archetype: string
   personality: {
+    preflopLooseness: number
     aggression: number
     bluffFrequency: number
     riskTolerance: number

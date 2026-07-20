@@ -1,4 +1,4 @@
-# CPC-Offline — Roadmap
+# CPCdigital — Roadmap
 
 **Offline Poker App · Electron Desktop · Single-Player gegen glaubwürdige Bots · später Lern- und Trainingsplattform für Pokervarianten**
 
@@ -6,7 +6,7 @@
 
 ## Vision
 
-CPC-Offline soll ein zugänglicher Ort sein, an dem Spieler bekannte und seltene Pokervarianten ohne Echtgeld, Wartezeiten oder chaotische öffentliche Tische ausprobieren können.
+CPCdigital soll ein zugänglicher Ort sein, an dem Spieler bekannte und seltene Pokervarianten ohne Echtgeld, Wartezeiten oder chaotische öffentliche Tische ausprobieren können.
 
 Der erste Schwerpunkt liegt auf einem stabilen, unterhaltsamen Singleplayer-Pokerspiel mit glaubwürdigen Bots. Ab Version 1.0 wird darauf eine Lernschicht aufgebaut: Wiki, Tutorials, Session-Analysen und Poker-Rätsel anhand konkreter Hände.
 
@@ -109,23 +109,27 @@ PokerPlayer
 
 **Ziel:** Mehrere klar unterscheidbare, aber nicht starre Gegner.
 
-- [ ] TAG als Referenzbot stabilisieren
-- [ ] Nit
-- [ ] Calling Station
-- [ ] Maniac
-- [ ] Skill und Persönlichkeit frei kombinierbar machen
-- [ ] Session-Varianz innerhalb eines Archetyps
-- [ ] `BotIdentity` mit Name, Avatar und stabilen Grundtendenzen getrennt von Archetyp und Skill modellieren
-- [ ] persistenten lokalen Bot-Roster mit über mehrere Sessions wiederkehrenden Identitäten aufbauen
-- [ ] Identitäts-Seed, Session-Varianz und Hand-/Decision-RNG getrennt und reproduzierbar verwenden
-- [ ] wiedererkennbare Gewohnheiten ermöglichen, ohne Entscheidungen vollständig vorhersehbar zu machen
-- [ ] Archetyp und Skill nicht durch Namen oder offen sichtbare Kategorien verraten
-- [ ] individuelle Tilt-Reaktionen
-- [ ] unterschiedliche Beobachtungsfähigkeit
-- [ ] Reads mit Stichprobengröße und Konfidenz
-- [ ] falsche und überhastete Reads ermöglichen
-- [ ] Bot-Gewohnheiten statt nur VPIP-/Aggressionsregler
-- [ ] Balancing über längere Test-Sessions
+- [x] TAG als Referenzbot über seedbare Full-Ring-, 6-max- und Heads-up-Kalibrierungen stabilisieren
+- [x] Nit
+- [x] Calling Station
+- [x] LAG
+- [x] Maniac als seltene extreme LAG-Ausprägung statt eigenständiger Grundstrategie
+- [x] Skill und Persönlichkeit frei kombinierbar machen
+- [x] Session-Varianz innerhalb eines Archetyps
+- [x] Archetypen pro Session seedbar mischen und vor Wiederholungen gleichmäßig verteilen
+- [x] `BotIdentity` mit Name, `avatarKey` und stabilen Grundtendenzen getrennt von Archetyp und Skill modellieren
+- [x] versionierten deterministischen Identity-Generator mit einer ersten 32-Bot-Testpopulation aufbauen
+- [ ] generierten Roster bis v1.0 auf ungefähr 80–100 Identitäten ausbauen, technisch offen erweiterbar halten (aktuell 44/100)
+- [x] persistenten lokalen Bot-Roster mit über mehrere Sessions wiederkehrenden Identitäten aufbauen
+- [x] Identitäts-Seed, Session-Varianz und Hand-/Decision-RNG getrennt und reproduzierbar verwenden
+- [x] wiedererkennbare Gewohnheiten ermöglichen, ohne Entscheidungen vollständig vorhersehbar zu machen
+- [x] Archetyp und Skill nicht durch Namen oder offen sichtbare Kategorien verraten
+- [x] individuelle Tilt-Reaktionen
+- [x] unterschiedliche Beobachtungsfähigkeit
+- [x] Reads mit Stichprobengröße und Konfidenz
+- [x] falsche und überhastete Reads ermöglichen
+- [x] Bot-Gewohnheiten statt nur VPIP-/Aggressionsregler
+- [x] Balancing über längere Test-Sessions
 
 ### Zielbild
 
@@ -213,6 +217,7 @@ Triple Draw folgt erst, wenn Single Draw stabil ist.
 - [ ] interessante Entscheidungen automatisch markieren
 - [ ] Bot-Entscheidungsgründe im Debug-Modus anzeigen
 - [ ] Export und Import von Sessions
+- [x] versionierten lokalen JSON-Debug-Record mit Setup, Events, Decision Snapshots und Bot-Scores exportieren
 - [ ] gespeicherte Hände für spätere Analysen stabil versionieren
 - [ ] PokerStars-artiges Dealer-/Sessionlog links unten aus den strukturierten Hand-Events darstellen
 
