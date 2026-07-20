@@ -148,17 +148,16 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 **Ziel:** Die erste Variante dient als Referenz für Community-Card-Poker und No Limit.
 
-- [ ] positionsabhängige Preflop-Situationen
-- [ ] Hand- und Board-Assessment
-- [ ] relative Handstärke statt nur Handkategorie
-- [ ] Draws, Outs, Blocker und Verwundbarkeit
-- [ ] Postflop-Initiative und Action History
-- [ ] Range-Schätzungen in vereinfachter Form
-- [ ] No-Limit-Bet-Sizing
-- [ ] variantengerechte Sizing-Kandidaten inklusive Overbets, sofern die Setzstruktur sie erlaubt
-- [ ] Multiway-Entscheidungen
-- [ ] glaubwürdige Bot-Lines über mehrere Streets
-- [ ] umfassende Tests und Bot-Test-Sessions
+- [x] positionsabhängige Preflop-Situationen
+- [x] Hand- und Board-Assessment
+- [x] relative Handstärke statt nur Handkategorie
+- [x] Draws, Outs, Blocker und Verwundbarkeit
+- [x] Postflop-Initiative und Action History
+- [x] Range-Schätzungen in vereinfachter Form
+- [x] No-Limit-Bet-Sizing (inkl. skill-basierter Sizing-Fehler)
+- [x] Multiway-Entscheidungen
+- [x] glaubwürdige Bot-Lines über mehrere Streets (Line-Commitment-System)
+- [x] umfassende Tests und Bot-Test-Sessions
 
 ---
 

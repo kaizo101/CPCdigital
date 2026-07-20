@@ -10,6 +10,7 @@ import type {
   ScoredAction,
   ScoreContribution,
 } from './bot-decision-types'
+import { estimateOpponentRanges, rangeStrengthModifier } from './bot-range-estimation'
 import { roundToCents } from './utils/format'
 
 export function scoreActions(context: DecisionContext): ScoredAction[] {
@@ -55,6 +56,8 @@ function scoreFold(context: DecisionContext): ScoredAction {
     }
   }
 
+  contributions.push(...rangeBasedFactors('fold', context))
+
   return buildAction({ type: 'fold' }, 'fold', contributions)
 }
 
@@ -83,6 +86,9 @@ function scoreCheck(context: DecisionContext): ScoredAction {
   if (isRiver && (hand.category === 'strong' || hand.category === 'nuts') && !outOfPosition) {
     contributions.push(factor('hand-strength', 'River check in position misses value', -20))
   }
+
+  contributions.push(...rangeBasedFactors('call', context))
+
   return buildAction({ type: 'check' }, intent, contributions)
 }
 
@@ -103,9 +109,7 @@ function scoreCall(context: DecisionContext): ScoredAction {
       ? 20
       : hand.category === 'weak'
         ? 10
-        : hand.drawTypes.length > 0
-          ? 15
-          : -40
+        : -25
   const contributions: ScoreContribution[] = [
     baseContribution(),
     factor('hand-strength', `Call with ${hand.category}`, handValue),
@@ -129,6 +133,8 @@ function scoreCall(context: DecisionContext): ScoredAction {
     }
   }
 
+  contributions.push(...rangeBasedFactors('call', context))
+
   return buildAction({ type: 'call' }, intent, contributions)
 }
 
@@ -146,6 +152,7 @@ function scoreRaise(context: DecisionContext): ScoredAction {
     }[hand.category]),
     ...bettingFactors('raise', context),
     ...preflopStrategyFactors('raise', context),
+    ...streetInitiativeFactors(context),
   ]
 
   if (hand.relativeStrength > 70) contributions.push(factor('hand-strength', 'High relative strength', 10))
@@ -154,10 +161,14 @@ function scoreRaise(context: DecisionContext): ScoredAction {
   if (hand.nutPotential === 'nuts') contributions.push(factor('hand-strength', 'Nut potential', 15))
   else if (hand.nutPotential === 'near-nuts') contributions.push(factor('hand-strength', 'Near-nut potential', 8))
   if (hand.vulnerability > 60) contributions.push(factor('hand-strength', 'Protection against draws', 5))
+  if (hand.drawQuality > 50) contributions.push(factor('hand-strength', 'Strong draw equity', 8))
+  if (hand.cleanOuts >= 8) contributions.push(factor('hand-strength', `${hand.cleanOuts} clean outs`, 10))
   if (position === 'late') contributions.push(factor('position', 'Late-position leverage', 15))
   if (boardTexture === 'dry' && hand.category === 'air') {
     contributions.push(factor('board-texture', 'Dry board supports bluff', 10))
   }
+
+  contributions.push(...rangeBasedFactors('raise', context))
 
   return buildAction(
     { type: 'raise', amount: calculateRaiseTo(context) },
@@ -243,6 +254,7 @@ function preflopStrategyFactors(
 
 function calculateRaiseTo(context: DecisionContext): number {
   if (context.preferredRaiseTo != null) return roundToCents(context.preferredRaiseTo)
+  const sa = context.streetAnalysis
   return roundToCents(calculateContextualRaiseTo(
     context.metrics,
     {
@@ -251,6 +263,13 @@ function calculateRaiseTo(context: DecisionContext): number {
     },
     context.boardTexture,
     context.position,
+    sa ? {
+      iAmPreflopAggressor: sa.iAmPreflopAggressor,
+      activeOpponents: sa.activeOpponents,
+      opponentShowedWeakness: sa.opponentShowedWeakness,
+      opponentCheckRaised: sa.opponentCheckRaised,
+    } : undefined,
+    context.botState.skill.level,
   ))
 }
 
@@ -277,4 +296,87 @@ function factor(
   value: number,
 ): ScoreContribution {
   return { category, label, value }
+}
+
+function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] {
+  const analysis = context.streetAnalysis
+  if (!analysis) return []
+
+  const result: ScoreContribution[] = []
+  const { gameView } = context
+  const hand = context.handAssessment
+
+  if (gameView.phase === 'flop' && analysis.iAmPreflopAggressor) {
+    result.push(factor('position', 'Continuation bet opportunity', 12))
+  }
+
+  if ((gameView.phase === 'turn' || gameView.phase === 'river') && analysis.iAmPreflopAggressor) {
+    if (analysis.streetAggressor.flop === null && analysis.streetAggressor.turn === null) {
+      result.push(factor('position', 'Delayed c-bet after flop checked through', 8))
+    }
+  }
+
+  if (analysis.opponentShowedWeakness) {
+    if (hand.category === 'air') {
+      result.push(factor('position', 'Opponent showed weakness — steal opportunity', 10))
+    }
+    if (hand.category === 'strong' || hand.category === 'nuts') {
+      result.push(factor('position', 'Opponent showed weakness — trap value', -5))
+    }
+  }
+
+  if (analysis.opponentCheckRaised) {
+    result.push(factor('position', 'Opponent check-raised — proceed with caution', -8))
+  }
+
+  if (analysis.activeOpponents >= 3) {
+    if (hand.category === 'weak' || hand.category === 'air') {
+      result.push(factor('board-texture', 'Multiway pot — weak hands lose value', -10))
+    }
+    if (hand.category === 'medium') {
+      result.push(factor('board-texture', 'Multiway pot — medium hands cautious', -5))
+    }
+  }
+
+  const opponentLines = [...(analysis.opponentLines.values() ?? [])]
+  const strongOpponentLines = opponentLines.filter(l =>
+    l.preflop === 'raised' && (l.flop?.startsWith('bet') || l.turn?.startsWith('bet')),
+  )
+  if (strongOpponentLines.length > 0 && hand.category !== 'nuts') {
+    result.push(factor('position', `Opponent shows strength (${strongOpponentLines.length} players)`, -7))
+  }
+
+  const weakOpponentLines = opponentLines.filter(l =>
+    l.flop === 'check-call' || l.turn === 'check-call' || l.flop === 'check-fold' || l.turn === 'check-fold',
+  )
+  if (weakOpponentLines.length > 0 && weakOpponentLines.length === opponentLines.length) {
+    if (hand.category !== 'air') {
+      result.push(factor('position', 'All opponents passive — value bet opportunity', 8))
+    }
+  }
+
+  return result
+}
+
+function rangeBasedFactors(
+  action: 'fold' | 'call' | 'raise',
+  context: DecisionContext,
+): ScoreContribution[] {
+  const analysis = context.streetAnalysis
+  if (!analysis) return []
+
+  const ranges = estimateOpponentRanges(analysis, context.botId)
+  if (ranges.length === 0) return []
+
+  const result: ScoreContribution[] = []
+
+  for (const range of ranges) {
+    const mods = rangeStrengthModifier(range.strength)
+    const value = action === 'fold' ? mods.fold : action === 'call' ? mods.call : mods.raise
+    if (value !== 0) {
+      result.push(factor('opponent-read', `${range.summary} ${range.playerId}`, value))
+    }
+  }
+
+  return result
 }

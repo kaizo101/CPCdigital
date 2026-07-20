@@ -7,6 +7,7 @@ import { decideAction as pipelineDecide, type DecisionResult } from './bot-pipel
 import type { BotState, BotPersonality, Position, MentalEvent } from './bot-types'
 import type { ActiveHabit } from './bot-habits'
 import type { DecisionContext } from './bot-pipeline'
+import { analyzeStreetAction } from './bot-street-analysis'
 import type { BotContext } from './bot-context'
 import { deriveDecisionMetrics, type DecisionMetrics } from './bot-decision-metrics'
 import { evaluateBotVariant } from './bot-variant-registry'
@@ -99,6 +100,13 @@ export function decideBotDecision(
     dealerIndex: state.dealerIndex,
   }
 
+  const streetAnalysis = analyzeStreetAction(
+    botId,
+    botContext.actionHistory,
+    state.phase,
+    state.players.filter(p => p.status !== 'folded' && p.status !== 'waiting').map(p => p.id),
+  )
+
   const context: DecisionContext = {
     gameView,
     botId,
@@ -130,6 +138,7 @@ export function decideBotDecision(
       : undefined,
     opponentStats,
     botHabits,
+    streetAnalysis,
   }
 
   const result = pipelineDecide(context, { random })

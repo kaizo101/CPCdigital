@@ -90,7 +90,7 @@ const LAG_FORMATS: FormatConfig[] = [
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [65, 86], pfr: [45, 68], threeBet: [14, 28] },
+    target: { vpip: [65, 87], pfr: [45, 68], threeBet: [14, 28] },
   },
 ]
 
@@ -98,7 +98,7 @@ const CALLING_STATION_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [28, 43], pfr: [5, 14], threeBet: [2, 8] },
+    target: { vpip: [28, 43], pfr: [5, 14], threeBet: [1, 8] },
   },
   {
     name: '6-max',

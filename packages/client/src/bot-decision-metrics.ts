@@ -128,6 +128,13 @@ export function calculateContextualRaiseTo(
   hand: Readonly<DecisionHandProfile>,
   boardTexture: 'dry' | 'wet' | 'neutral',
   position: 'early' | 'middle' | 'late' | 'blinds',
+  streetContext?: {
+    iAmPreflopAggressor?: boolean
+    activeOpponents?: number
+    opponentShowedWeakness?: boolean
+    opponentCheckRaised?: boolean
+  },
+  skillLevel?: number,
 ): number {
   let potFraction = hand.category === 'nuts'
     ? 0.9
@@ -144,11 +151,31 @@ export function calculateContextualRaiseTo(
   if (position === 'late') potFraction -= 0.05
   if (metrics.spr <= 3 && (hand.category === 'strong' || hand.category === 'nuts')) potFraction += 0.15
 
+  if (streetContext) {
+    if (streetContext.iAmPreflopAggressor && boardTexture === 'dry') potFraction -= 0.05
+    if (streetContext.activeOpponents && streetContext.activeOpponents >= 3) potFraction += 0.1
+    if (streetContext.opponentShowedWeakness && hand.category === 'air') potFraction -= 0.1
+    if (streetContext.opponentCheckRaised && hand.category !== 'nuts') potFraction -= 0.15
+  }
+
+  if (skillLevel != null && skillLevel < 100) {
+    const errorScale = (100 - skillLevel) / 100
+    potFraction += deterministicSizingError(potFraction, errorScale)
+    if (skillLevel < 50 && errorScale > 0.5) {
+      potFraction += errorScale > 0.7 ? -0.2 : 0.2
+    }
+  }
+
   potFraction = clamp(potFraction, 0.33, 1)
   const callTo = metrics.potRaiseTo - metrics.totalPot - metrics.callAmount
   const potAfterCall = metrics.totalPot + metrics.callAmount
   const target = callTo + (potAfterCall * potFraction)
   return Math.max(metrics.minRaiseTo, Math.min(metrics.maxRaiseTo, target))
+}
+
+function deterministicSizingError(baseFraction: number, errorScale: number): number {
+  const scaledError = errorScale * 0.15
+  return (baseFraction > 0.7 ? -1 : 1) * scaledError
 }
 
 function safeRatio(numerator: number, denominator: number): number {

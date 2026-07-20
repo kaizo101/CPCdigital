@@ -1,5 +1,6 @@
 import type { BotArchetypeId } from './bot-archetypes'
 import type { DecisionContext, ScoredAction, ScoreContribution } from './bot-decision-types'
+import { determineLineCommitment, lineCommitmentModifiers } from './bot-line-planning'
 
 export function applyPersonalityModifiers(
   actions: ScoredAction[],
@@ -109,6 +110,16 @@ export function applyPersonalityModifiers(
       for (const habit of context.botHabits) {
         contributions.push(...habit.modifier(scored, context))
       }
+    }
+
+    if (context.streetAnalysis && context.gameView.phase !== 'preflop') {
+      const commitment = determineLineCommitment(
+        context.streetAnalysis,
+        context.handAssessment.category,
+        context.boardTexture,
+        context.streetAnalysis.iAmPreflopAggressor,
+      )
+      contributions.push(...lineCommitmentModifiers(commitment, context.gameView.phase, scored))
     }
 
     return addContributions(scored, contributions)
