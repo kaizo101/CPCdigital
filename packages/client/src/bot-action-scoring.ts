@@ -268,6 +268,7 @@ function calculateRaiseTo(context: DecisionContext): number {
       activeOpponents: sa.activeOpponents,
       opponentShowedWeakness: sa.opponentShowedWeakness,
       opponentCheckRaised: sa.opponentCheckRaised,
+      isSqueezeSpot: sa.isSqueezeSpot,
     } : undefined,
     context.botState.skill.level,
   ))
@@ -298,35 +299,54 @@ function factor(
   return { category, label, value }
 }
 
+function skillLevelFactor(skill: number): number {
+  if (skill >= 90) return 1
+  if (skill >= 70) return 0.85
+  if (skill >= 50) return 0.65
+  if (skill >= 30) return 0.4
+  return 0.2
+}
+
 function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] {
   const analysis = context.streetAnalysis
   if (!analysis) return []
+
+  const skill = context.botState.skill.level
+  const skillFactor = skillLevelFactor(skill)
 
   const result: ScoreContribution[] = []
   const { gameView } = context
   const hand = context.handAssessment
 
+  if (analysis.squeezeOpportunity && skillFactor >= 0.4) {
+    result.push(factor('position', 'Squeeze opportunity — dead money in pot', Math.round(10 * skillFactor)))
+  }
+
+  if (analysis.isSqueezeSpot && skillFactor >= 0.5) {
+    result.push(factor('position', 'Squeeze spot — 3-bet wide for fold equity', Math.round(8 * skillFactor)))
+  }
+
   if (gameView.phase === 'flop' && analysis.iAmPreflopAggressor) {
-    result.push(factor('position', 'Continuation bet opportunity', 12))
+    result.push(factor('position', 'Continuation bet opportunity', Math.round(12 * skillFactor)))
   }
 
   if ((gameView.phase === 'turn' || gameView.phase === 'river') && analysis.iAmPreflopAggressor) {
     if (analysis.streetAggressor.flop === null && analysis.streetAggressor.turn === null) {
-      result.push(factor('position', 'Delayed c-bet after flop checked through', 8))
+      result.push(factor('position', 'Delayed c-bet after flop checked through', Math.round(8 * skillFactor)))
     }
   }
 
-  if (analysis.opponentShowedWeakness) {
+  if (analysis.opponentShowedWeakness && skillFactor >= 0.3) {
     if (hand.category === 'air') {
-      result.push(factor('position', 'Opponent showed weakness — steal opportunity', 10))
+      result.push(factor('position', 'Opponent showed weakness — steal opportunity', Math.round(10 * skillFactor)))
     }
     if (hand.category === 'strong' || hand.category === 'nuts') {
-      result.push(factor('position', 'Opponent showed weakness — trap value', -5))
+      result.push(factor('position', 'Opponent showed weakness — trap value', Math.round(-5 * skillFactor)))
     }
   }
 
-  if (analysis.opponentCheckRaised) {
-    result.push(factor('position', 'Opponent check-raised — proceed with caution', -8))
+  if (analysis.opponentCheckRaised && skillFactor >= 0.2) {
+    result.push(factor('position', 'Opponent check-raised — proceed with caution', Math.round(-8 * skillFactor)))
   }
 
   if (analysis.activeOpponents >= 3) {
@@ -342,8 +362,8 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
   const strongOpponentLines = opponentLines.filter(l =>
     l.preflop === 'raised' && (l.flop?.startsWith('bet') || l.turn?.startsWith('bet')),
   )
-  if (strongOpponentLines.length > 0 && hand.category !== 'nuts') {
-    result.push(factor('position', `Opponent shows strength (${strongOpponentLines.length} players)`, -7))
+  if (strongOpponentLines.length > 0 && hand.category !== 'nuts' && skillFactor >= 0.4) {
+    result.push(factor('position', `Opponent shows strength (${strongOpponentLines.length} players)`, Math.round(-7 * skillFactor)))
   }
 
   const weakOpponentLines = opponentLines.filter(l =>
@@ -351,7 +371,7 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
   )
   if (weakOpponentLines.length > 0 && weakOpponentLines.length === opponentLines.length) {
     if (hand.category !== 'air') {
-      result.push(factor('position', 'All opponents passive — value bet opportunity', 8))
+      result.push(factor('position', 'All opponents passive — value bet opportunity', Math.round(8 * skillFactor)))
     }
   }
 

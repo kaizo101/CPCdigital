@@ -29,6 +29,12 @@ export interface StreetAnalysis {
   street: 'preflop' | 'flop' | 'turn' | 'river'
   /** Total number of non-fold actions viable this street */
   actionCountThisStreet: number
+  /** Squeeze: raise + at least 1 caller before my action */
+  squeezeOpportunity: boolean
+  /** I am squeezing (raising after a raise + caller) */
+  isSqueezeSpot: boolean
+  /** Number of opponents who cold-called the preflop raise */
+  preflopColdCallers: number
 }
 
 export function analyzeStreetAction(
@@ -56,6 +62,10 @@ export function analyzeStreetAction(
   let opponentCheckRaised = false
   let actionCountThisStreet = 0
 
+  let preflopRaiseCount = 0
+  let preflopColdCallers = 0
+  let botHasActedPreflop = false
+
   const streetStates = new Map<string, { lastAction: string | null; lastAggressor: string | null; checksThisRound: string[] }>()
   let previousPhaseAggressor: string | null = null
 
@@ -81,7 +91,13 @@ export function analyzeStreetAction(
           opponentCheckRaised = true
         }
         switch (eventPhase) {
-          case 'preflop': preflopLastAggressor = event.playerId; break
+          case 'preflop':
+            preflopLastAggressor = event.playerId
+            if (preflopRaiseCount >= 1 && preflopColdCallers >= 1 && event.playerId !== botId) {
+              preflopColdCallers++
+            }
+            preflopRaiseCount++
+            break
           case 'flop': flopLastAggressor = event.playerId; break
           case 'turn': turnLastAggressor = event.playerId; break
           case 'river': riverLastAggressor = event.playerId; break
@@ -114,10 +130,14 @@ export function analyzeStreetAction(
               line.preflop = 'raised'
             }
           } else if (action === 'call') {
+            if (preflopRaiseCount >= 1) {
+              preflopColdCallers++
+            }
             if (line.preflop === null) line.preflop = 'called'
           } else if (action === 'fold') {
             line.preflop = 'folded'
           }
+          if (event.playerId === botId) botHasActedPreflop = true
           break
         case 'flop':
           line.flop = resolveLineAction(action, line.flop)
@@ -137,6 +157,13 @@ export function analyzeStreetAction(
     iAmInPosition = true
   }
 
+  const squeezeOpportunity = currentPhase === 'preflop'
+    && preflopRaiseCount >= 1
+    && preflopColdCallers >= 1
+    && !botHasActedPreflop
+
+  const isSqueezeSpot = squeezeOpportunity && preflopLastAggressor !== botId
+
   return {
     preflopAggressor: preflopLastAggressor,
     streetAggressor: { preflop: preflopLastAggressor, flop: flopLastAggressor, turn: turnLastAggressor, river: riverLastAggressor },
@@ -148,6 +175,9 @@ export function analyzeStreetAction(
     opponentCheckRaised,
     street: currentPhase,
     actionCountThisStreet,
+    squeezeOpportunity,
+    isSqueezeSpot,
+    preflopColdCallers,
   }
 }
 

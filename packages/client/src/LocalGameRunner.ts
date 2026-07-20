@@ -173,8 +173,9 @@ export class LocalGameRunner {
     }
     const exportedAt = new Date().toISOString()
 
-    const lastHandNumber = this.currentHandNumber
-    const firstIncludedHand = Math.max(1, lastHandNumber - 4)
+    const gameActive = this.game && this.game.getPublicState().phase !== 'waiting'
+    const lastCompleteHand = gameActive ? this.currentHandNumber - 1 : this.currentHandNumber
+    const firstIncludedHand = Math.max(1, lastCompleteHand - 4)
 
     const compactBotDecisions = this.botDebugDecisions
       .filter(d => d.handNumber >= firstIncludedHand)
