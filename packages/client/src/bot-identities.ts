@@ -50,6 +50,60 @@ export interface BotIdentity {
   traits: BotIdentityTraits
   maniac: boolean
   habitIds: string[]
+  rebuyPolicy?: RebuyPolicy
+}
+
+export interface RebuyPolicy {
+  /** Rebuy amount when busted (BB). null = never rebuy. */
+  rebuyThresholdBb: number | null
+  /** Maximum rebuys per session. 0 = never rebuy. */
+  maxRebuys: number
+  /** The bot leaves the table instead of rebuying when busted. */
+  leaveOnBust: boolean
+  /** If set and chips < this BB, rebuy even if not busted (counts as one rebuy). null = disabled. */
+  rebuyWhenShortBb: number | null
+}
+
+function rollRebuyPolicy(archetypeId: BotArchetypeId, maniac: boolean, random: () => number): RebuyPolicy {
+  if (maniac) {
+    return {
+      rebuyThresholdBb: 50 + Math.round(random() * 40),
+      maxRebuys: 2 + Math.round(random() * 4),
+      leaveOnBust: false,
+      rebuyWhenShortBb: 8 + Math.round(random() * 7),
+    }
+  }
+
+  switch (archetypeId) {
+    case 'tag':
+      return {
+        rebuyThresholdBb: 25 + Math.round(random() * 30),
+        maxRebuys: 1 + Math.round(random() * 2),
+        leaveOnBust: random() < 0.15,
+        rebuyWhenShortBb: random() < 0.3 ? 8 + Math.round(random() * 5) : null,
+      }
+    case 'nit':
+      return {
+        rebuyThresholdBb: random() < 0.3 ? 10 + Math.round(random() * 15) : null,
+        maxRebuys: random() < 0.4 ? 1 : 0,
+        leaveOnBust: random() < 0.6,
+        rebuyWhenShortBb: null,
+      }
+    case 'lag':
+      return {
+        rebuyThresholdBb: 50 + Math.round(random() * 40),
+        maxRebuys: 2 + Math.round(random() * 4),
+        leaveOnBust: false,
+        rebuyWhenShortBb: 6 + Math.round(random() * 8),
+      }
+    case 'calling-station':
+      return {
+        rebuyThresholdBb: 20 + Math.round(random() * 25),
+        maxRebuys: 1 + Math.round(random() * 3),
+        leaveOnBust: random() < 0.2,
+        rebuyWhenShortBb: random() < 0.4 ? 6 + Math.round(random() * 6) : null,
+      }
+  }
 }
 
 export interface BotRoster {
@@ -132,6 +186,7 @@ export function generateBotRoster(
       traits,
       maniac,
       habitIds: habits.map(h => h.definition.id),
+      rebuyPolicy: rollRebuyPolicy(archetypeId, maniac, createSeededRandom(`${identitySeed}:rebuy`)),
     } satisfies BotIdentity
   })
 

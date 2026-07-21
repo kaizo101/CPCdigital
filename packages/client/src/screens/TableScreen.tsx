@@ -1,5 +1,6 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { Card, HandResult, Player, PlayerAction, PublicGameState, TableOptions } from '@cpc/shared'
+import { createRoot } from 'react-dom/client'
 import { PokerTable, TablePot, CommunityCards, BetStack, TablePositionButtons } from '../components/PokerTable'
 import { PlayerSeat } from '../components/PlayerSeat'
 import { ActionButtons } from '../components/ActionButtons'
@@ -8,6 +9,8 @@ import { getTableButtonAssignments, rotatePlayersForTable } from '../utils/posit
 import type { PlayerActionLabel } from '../action-display'
 import type { BotDebugDecision } from '../bot-debug'
 import { BotDebugInspector } from '../components/BotDebugInspector'
+import { HandReplayer } from '../components/HandReplayer'
+import type { HandReplay } from '../session/hand-replay'
 import { APP_VERSION } from '../app-version'
 
 const actionButtonStyle = (bg: string, disabled = false): React.CSSProperties => ({
@@ -76,6 +79,7 @@ export function TableScreen({
   currency,
   onRebuy,
   onExportDebugRecord,
+  handReplays,
 }: {
   gameState: Readonly<PublicGameState> | null
   myCards: [Card, Card] | null
@@ -94,13 +98,35 @@ export function TableScreen({
   currency: DisplayCurrency
   onRebuy: (playerId: string) => void
   onExportDebugRecord: () => void
+  handReplays: readonly HandReplay[]
 }) {
+  const [showDebug, setShowDebug] = useState(false)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault()
+        setShowDebug(d => !d)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   const players = gameState?.players ?? []
   const heroId = 'hero'
   const orderedPlayers = rotatePlayersForTable(players, heroId)
   const tableButtonAssignments = gameState ? getTableButtonAssignments(gameState) : {}
   const phase = gameState?.phase ?? 'waiting'
   const pot = gameState?.pot ?? 0
+  const isHandOver = lastResults && lastResults.length > 0
+  const displayPot = isHandOver ? 0 : pot
+  const wonByPlayer: Record<string, number> = {}
+  if (isHandOver) {
+    for (const r of lastResults!) {
+      if (r.amount > 0) wonByPlayer[r.playerId] = (wonByPlayer[r.playerId] ?? 0) + r.amount
+    }
+  }
   const community = gameState?.communityCards ?? []
   const inActiveHand = gameState != null && gameState.phase !== 'waiting'
   const bettingContext = gameState?.bettingContext
@@ -249,7 +275,34 @@ export function TableScreen({
             v{APP_VERSION} · NLHE · Blinds {options.smallBlind}/{options.bigBlind} · {players.length} Spieler
           </div>
         </div>
-        <button onClick={onBack} style={actionButtonStyle('#30343c', false)}>Zurück zum Setup</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {(() => {
+            const hasReplay = handReplays.length > 0
+            return (
+              <button
+                onClick={() => {
+                  if (!hasReplay) return
+                  openReplayWindow(handReplays, handReplays.length - 1, currency, showDebug)
+                }}
+                disabled={!hasReplay}
+                title={hasReplay ? 'Letzte Hand wiederholen' : 'Keine Hand verfügbar'}
+                style={{
+                  padding: '10px 14px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
+                  background: hasReplay
+                    ? 'linear-gradient(180deg, #30343c 0%, rgba(25,25,25,0.98) 100%)'
+                    : '#1f2228',
+                  color: hasReplay ? '#9ca3af' : '#4b5563', cursor: hasReplay ? 'pointer' : 'not-allowed',
+                  fontFamily: 'monospace', fontSize: 18, lineHeight: 1,
+                  boxShadow: hasReplay ? 'inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 18px rgba(0,0,0,0.22)' : 'none',
+                  opacity: hasReplay ? 1 : 0.5,
+                }}
+              >
+                ↻
+              </button>
+            )
+          })()}
+          <button onClick={onBack} style={actionButtonStyle('#30343c', false)}>Zurück zum Setup</button>
+        </div>
       </div>
 
       <div className="game-layout">
@@ -262,12 +315,12 @@ export function TableScreen({
                 padding: '8px 10px 0',
               }}>
                 <PokerTable>
-                  <TablePot pot={pot} sidePots={gameState?.sidePots} currency={currency} />
+                  <TablePot pot={displayPot} sidePots={gameState?.sidePots} currency={currency} />
                   <CommunityCards cards={community} phase={phase} />
                   <HandResultOverlay results={lastResults ?? []} players={players} currency={currency} />
                   {orderedPlayers.map((player: Player, index: number) => (
                     <Fragment key={player.id}>
-                      <BetStack amount={player.roundBet} seatIndex={index} seatCount={orderedPlayers.length} currency={currency} />
+                      <BetStack amount={player.roundBet + (wonByPlayer[player.id] ?? 0)} seatIndex={index} seatCount={orderedPlayers.length} currency={currency} />
                       <TablePositionButtons
                         labels={tableButtonAssignments[player.id] ?? []}
                         seatIndex={index}
@@ -321,6 +374,7 @@ export function TableScreen({
             currency={currency}
           />
         </div>
+        {showDebug && (
         <div className="debug-dock">
           <BotDebugInspector
             decisions={botDebugDecisions}
@@ -328,7 +382,43 @@ export function TableScreen({
             onExportDebugRecord={onExportDebugRecord}
           />
         </div>
+        )}
       </div>
     </div>
+  )
+}
+
+function openReplayWindow(replays: readonly HandReplay[], startIndex: number, currency: DisplayCurrency, debugMode: boolean): void {
+  const allReplays = [...replays].sort((a, b) => a.handNumber - b.handNumber)
+
+  const sessionKey = 'replay-session'
+  localStorage.setItem(sessionKey, JSON.stringify(allReplays))
+
+  // Try Electron IPC first
+  const api = (window as any).electronAPI
+  if (api?.openReplay) {
+    const latest = allReplays[startIndex < allReplays.length ? startIndex : allReplays.length - 1]
+    api.openReplay(latest.handNumber, latest).catch(() => {
+      openOverlay(allReplays, startIndex, currency, debugMode)
+    })
+    return
+  }
+
+  // Browser fallback
+  const latest = allReplays[startIndex < allReplays.length ? startIndex : allReplays.length - 1]
+  const base = window.location.href.split('#')[0]
+  const w = window.open(`${base}#replay/${latest.handNumber}`, `replay-${latest.handNumber}`, 'width=1100,height=800')
+  if (!w) {
+    openOverlay(allReplays, startIndex, currency, debugMode)
+  }
+}
+
+function openOverlay(replays: readonly HandReplay[], startIndex: number, currency: DisplayCurrency, debugMode: boolean): void {
+  const container = document.createElement('div')
+  container.id = 'replay-overlay'
+  document.body.appendChild(container)
+  const root = createRoot(container)
+  root.render(
+    <HandReplayer replays={[...replays]} startIndex={startIndex} currency={currency} debugMode={debugMode} onClose={() => { root.unmount(); container.remove() }} />
   )
 }

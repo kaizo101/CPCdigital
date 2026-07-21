@@ -144,7 +144,7 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 # Phase 3 — Variantenfähiges Kernspiel
 
-## 🎯 0.5.0 — NLHE vollständig spielbar
+## ✅ 0.5.0 — NLHE vollständig spielbar
 
 **Ziel:** Die erste Variante dient als Referenz für Community-Card-Poker und No Limit.
 
@@ -161,115 +161,119 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## 🎯 0.6.0 — Omaha High
+## ✅ 0.5.1 — Bugfixes und Balancing
 
-**Ziel:** Pot Limit und variantenspezifische Handregeln testen.
-
-- [ ] exakt zwei Hole Cards und drei Board Cards verwenden
-- [ ] Omaha-spezifische Hand-Evaluation
-- [ ] Pot-Limit-Minimum und -Maximum korrekt berechnen
-- [ ] Draw-Dichte und Nut-Potenzial bewerten
-- [ ] Omaha-spezifischer Variant Context
-- [ ] Bots auf stärkere Draws und häufigere Multiway-Pots anpassen
-- [ ] NLHE- und Omaha-Logik ohne Duplizierung betreiben
-
-Omaha dient als Architekturtest dafür, dass die Decision Engine allgemein bleibt und nur die Variantenevaluation ausgetauscht wird.
+- [x] Queue-Reihenfolge nach All-In/Reraise gefixt (clockwise ab Raiser)
+- [x] ReadTyp: Gegner-Bet-Sizing-Tracking (Pot-Fraktion-EMA)
+- [x] Reraise-Disziplin postflop (Medium -12, Weak/Air -18, großer Bet -10)
+- [x] Raise-Sizing: Short-Stack-Reduktion, Reraise-Faktor 0.75
+- [x] Non-Premium-Raises bei ≤20 BB bestraft (-10)
+- [x] Parameter-System: `bot-params.ts` zentralisiert ~50 tuning-Knobs
+- [x] Auto-Kalibrierer: Random-Search-Optimizer mit Loss-Funktion
+- [x] Board-Dangers, Flush-Danger, Reraise-Erkennung, Stack-Management
 
 ---
 
-## 🎯 0.7.0 — 2-7 Single Draw als Varianten-Proof
+## 🎯 0.6.0 — Rebuys, Hand History & Replay
 
-**Ziel:** Früh prüfen, ob die Architektur auch außerhalb von Community-Card-Spielen funktioniert.
+**Ziel:** Bot-Rebuys mit Persönlichkeit, reproduzierbare Hand-Replays für Debugging und Analyse.
+
+- [x] Rebuy-Policy pro Identity ausgewürfelt, nicht Archetyp-Fest (Threshold 10–90 BB)
+- [x] Auto-Rebuy nach Hand-Ende wenn Chips unter Threshold
+- [x] Leave-on-Bust: Nits (~60%) verlassen Tisch, LAGs nie
+- [x] Ersatz-Bot nach zufällig 2–6 Händen Pause (frische Identity aus Roster)
+- [x] Sofort-Ersatz wenn Tisch sonst stirbt (nur noch 1 Spieler)
+- [x] Setup-Toggle "Auto-Rebuy & Ersatz-Bots"
+- [x] `syncChips` synchronisiert isSittingOut
+- [x] deterministisches Hand-Replay aus Decision-Snapshots + Engine-Seed
+- [x] Replay-UI: Step-Forward, Step-Backward, Tisch-Ansicht, Text-History
+- [x] PokerStars-Style Hand-History-Export pro Hand
+- [x] Autoplay-Funktion im Replayer
+- [x] Session-Navigation: alle Hände der Session durchblätterbar (◀▶)
+- [x] Hand-Kategorien: 7 Stufen (premium > strong > good > medium > marginal > weak > air) mit Board-Kontext
+- [x] Preflop-Reraising-Disziplin (kein Blind-Eskalieren mit marginalen Händen)
+- [x] Pot-zu-Gewinner-Visualisierung (Pot springt auf 0, Chips beim Gewinner)
+- [x] separates Replay-Fenster (Electron: BrowserWindow via IPC + localStorage, Browser: Overlay-Fallback)
+- [x] "Letzte Hand wiederholen"-Button (↻ in der Kopfleiste)
+- [x] Session-übergreifende Hand-History (localStorage, max 200 Hände)
+- [x] Hand-Filter nach Pot-Größe (≥ X BB)
+- [x] Bot-Entscheidungsgründe im Replay (Scores, Beiträge, Hand-Kategorie)
+- [ ] `LocalGameRunner` splitten (Rebuy-Manager, Replay-Store auslagern)
+
+> **Retrospektive** — v0.6.0 hat 19 Features in einem Release gebündelt. Besser wären 3 Minor-Releases gewesen:
+> `v0.5.2` Rebuys · `v0.5.3` Replay · `v0.5.4` 7-Kategorien. Ab v0.7 wird jedes Release auf **ein Thema** fokussiert.
+
+---
+
+## 🎯 0.7.0 — Numerischer Hand-Score
+
+**Ziel:** `hand.strength: 0-100` ersetzt die 7 Kategorien als Basiswert fürs Scoring. Weniger Parameter, weniger Interaktionen.
+
+- [ ] `hand.strength` als kontinuierlicher Wert (0-100) aus `categorizeHand`
+- [ ] Scoring-Refaktor: `strength * weight` statt `if (category === 'medium') +15`
+- [ ] `bot-action-scoring.ts` vereinfachen (5 Scorer → tabellengesteuert)
+- [ ] Kalibrierung auf numerischen Score umstellen
+
+---
+
+## 🎯 0.7.1 — Omaha High
+
+**Ziel:** Pot-Limit und variantenspezifische Hand-Eval testen.
+
+- [ ] Omaha-Hand-Evaluation (exakt 2 Hole + 3 Board)
+- [ ] Pot-Limit-Berechnung (Max-Raise = Pot + 2×Call, bereits in Engine)
+- [ ] Omaha-spezifischer Variant Context
+- [ ] Bot-Strategie: Draw-Dichte, Redraw-Warnung, Nuts-Frequenz
+- [ ] NLHE- und Omaha-Logik ohne Duplizierung
+
+---
+
+## 🎯 0.7.2 — 2-7 Single Draw
+
+**Ziel:** Architektur-Proof für Draw-Spiele außerhalb Community-Card.
 
 - [ ] 2-7-Lowball-Handrangfolge
 - [ ] Draw-Phase und Kartentausch
-- [ ] Pat- und Draw-Status
-- [ ] Roughness und Smoothness
-- [ ] Anzahl gezogener Karten als öffentliche Information
+- [ ] Pat/Draw-Status + Snowing-Logik
 - [ ] Draw-spezifische Action History
-- [ ] erste einfache Snowing- und Bluffcatch-Logik
-- [ ] Bots mit variantenspezifischem Wissen
-- [ ] grundlegende Regelhinweise in der UI
-
-Triple Draw folgt erst, wenn Single Draw stabil ist.
+- [ ] Grundlegende Regelhinweise in der UI
 
 ---
 
 # Phase 4 — Spielkomfort und v1.0
 
-## 🎯 0.8.0 — Hand History, Replay und Sessiondaten
+## 🎯 0.8.0 — Session-Statistiken
 
-**Ziel:** Hände nachvollziehen und die spätere Learning-Schicht vorbereiten.
+- [ ] Live-VPIP/PFR/3-Bet in einklappbarer Kopfzeile
+- [ ] Ergebnis in BB pro Session
+- [ ] PokerStars-Sessionlog aus Hand-Events
 
-- [ ] persistente Hand History
-- [ ] Hand-Replayer Schritt für Schritt
-- [ ] Filter nach Variante, Session, Bot und Potgröße
-- [ ] reduzierte Live-Session-Statistik mit Händen, VPIP, PFR und Ergebnis in BB
-- [ ] Live-Statistiken erst nach abgeschlossenen Händen aktualisieren und Prozentwerte immer zusammen mit ihrer Rohstichprobe anzeigen
-- [ ] Live-Statistiken über einen kompakten, einklappbaren Zugang in der Kopfzeile anzeigen, ohne das spätere Sessionlog links unten zu verdrängen
-- [ ] Rebuys als strukturierte Session-Events erfassen und im Nettoergebnis korrekt berücksichtigen
-- [ ] separate, lokal persistente und versionierte Globalstatistik aufbauen
-- [ ] globale Statistiken um Sessions, 3-Bet, Aggression, WTSD, W$SD, Gewinn/Verlust, BB/100 und zeitliche Verläufe erweitern
-- [ ] globale Statistiken nach Variante, Tischgröße, Stakes und Zeitraum filtern; Stichprobengrößen immer sichtbar halten
-- [ ] Ergebnisse über verschiedene Stakes hinweg primär in BB und BB/100 vergleichen statt rohe Geldbeträge zu vermischen
-- [ ] variantenspezifische Statistiken
-- [ ] interessante Entscheidungen automatisch markieren
-- [ ] Bot-Entscheidungsgründe im Debug-Modus anzeigen
-- [ ] Export und Import von Sessions
-- [x] versionierten lokalen JSON-Debug-Record mit Setup, Events, Decision Snapshots und Bot-Scores exportieren
-- [ ] gespeicherte Hände für spätere Analysen stabil versionieren
-- [ ] PokerStars-artiges Dealer-/Sessionlog links unten aus den strukturierten Hand-Events darstellen
+## 🎯 0.8.1 — Globale Statistiken
 
----
+- [ ] Persistente, versionierte Globalstatistik (Sessions, WTSD, W$SD, BB/100)
+- [ ] Filter nach Variante, Tischgröße, Stakes, Zeitraum
+- [ ] BB/100 als primäre Vergleichsmetrik
 
-## 🎯 0.9.0 — Tischkomfort und optionale Hilfen
+## 🎯 0.9.0 — Tischkomfort
 
-**Ziel:** Der Tisch zeigt relevante Informationen klar an und lässt sich an persönliche Spielgewohnheiten anpassen.
-
-- [ ] verständliche Anzeige von Setzrunde und Spielphase
+- [ ] BB-Anzeige-Modus (Stacks, Bets, Pot in BB)
+- [ ] 4-Color-Deck-Option
 - [ ] Min-/Max-Bet direkt in der Oberfläche
-- [ ] optional kompakte Regelhinweise
-- [ ] optional zuschaltbare, standardmäßig deaktivierte Anzeige der aktuellen Hero-Hand
-- [ ] Handbeschreibung variantenspezifisch erzeugen, ohne Odds oder Handlungsempfehlungen vorwegzunehmen
-- [ ] am Tisch zwischen Geldbeträgen und Big-Blind-Anzeige umschalten
-- [ ] im BB-Modus Stacks, Bets, Pot, Aktionen, Showdown, Rebuy und Debug-Werte konsistent in BB darstellen
-- [ ] Bet- und Raise-Eingaben im BB-Modus in Big Blinds annehmen und sicher auf Engine-Chips sowie gültige Chip-Schritte umrechnen
-- [ ] zwischen klassischem 2-Color-Deck und optionalem 4-Color-Deck umschalten
-- [ ] Deck-Theme lokal speichern und kontrastreiche Suit-Farben bei weiterhin klar erkennbaren Symbolen verwenden
+- [ ] Handbeschreibung variantenspezifisch
 
----
+## 🎯 0.9.1 — Session-Flexibilität
 
-## 🎯 0.9.1 — Session-Anpassung und Tischidentität
+- [ ] Individuelle Starting-Stacks pro Bot
+- [ ] Konfigurierbare Buy-in-Grenzen (40–250 BB)
+- [ ] Frei wählbare Rebuy-Beträge
+- [ ] Session-Setup mit Variante + Schwierigkeitsmix
 
-**Ziel:** Sessions, Gegner und Buy-ins lassen sich flexibel konfigurieren, ohne die Offline-First-Struktur aufzuweichen.
+## 🎯 0.9.2 — Präsentation
 
-- [ ] wiedererkennbare Bot-Namen, Avatare und Tischidentitäten aus dem lokalen Bot-Roster darstellen
-- [ ] Session-Setup mit Variante, Bots und Schwierigkeitsmix
-- [ ] standardmäßig deaktivierte Setup-Option `Dynamischer Tisch` für Botwechsel anbieten
-- [ ] Bots im dynamischen Modus ausschließlich zwischen Händen gehen und zeitversetzt durch andere Identitäten ersetzen lassen
-- [ ] mindestens einen Bot garantieren und die im Setup gewählte Botanzahl als Maximum verwenden
-- [ ] Reads und Erinnerungen an die Bot-Identität binden, damit zurückkehrende Gegner wiedererkennbar bleiben
-- [ ] jedem Bot im Session-Setup einen individuellen Starting Stack zuweisen
-- [x] einfacher Rechtsklick-Rebuy auf den konfigurierten Startstack zwischen zwei Händen
-- [ ] frei wählbare Rebuy-Beträge
-- [ ] konfigurierbare Buy-in-Grenzen, beispielsweise 40–250 BB
-- [ ] Auto-Rebuy pro Bot beziehungsweise Spieler sowie für den gesamten Tisch
-- [ ] touch- und barrierefreie Alternative zum Rechtsklick-Rebuy
-
----
-
-## 🎯 0.9.2 — Präsentation und Plattformstabilität
-
-**Ziel:** Die App wirkt lebendig, bleibt bei langen Sessions stabil und ist auf unterschiedlichen Eingabegeräten gut bedienbar.
-
-- [ ] Animationen für Karten und Chips
-- [x] All-in-Runouts mit zeitversetztem Flop, Turn und River präsentieren
-- [ ] Sound-Effekte und Lautstärkeeinstellungen
-- [ ] Touch-freundliche Bedienelemente vorbereiten
-- [ ] Performance und lange Sessions testen
-- [ ] Barrierefreiheit und skalierbare UI
-
-Rein dekorative Punkte aus 0.9.2 dürfen notfalls nach v1.0 verschoben werden, solange Bedienbarkeit und Plattformstabilität gewährleistet sind.
+- [ ] Animationen (Karten, Chips)
+- [ ] Sound-Effekte
+- [ ] Touch-Optimierung
+- [ ] Performance-Test für lange Sessions
 
 ---
 
@@ -407,7 +411,7 @@ Was ist passiert?
 
 ## 🎯 1.9.0 — Table Rules und Multiplayer-Readiness
 
-**Ziel:** Sonderregeln werden als allgemeine, deterministische Engine-Erweiterungen vorbereitet, ohne vorzeitig eine Online-Infrastruktur einzuführen.
+**Ziel:** Sonderregeln werden als allgemeine, deterministische Engine-Erweiterungen vorbereitet.
 
 - [ ] allgemeines `TableRules`-Framework getrennt von Variantenregeln definieren
 - [ ] Kompatibilitätsprüfung zwischen Pokervariante, Betting-Struktur und Sonderregel
@@ -415,10 +419,9 @@ Was ist passiert?
 - [ ] Main- und Side-Pots bei mehreren Boards beziehungsweise zusätzlichen Auszahlungen korrekt abrechnen
 - [ ] Sonderregeln vollständig in Hand History, Decision Snapshots und deterministischen Replays erfassen
 - [ ] protokollneutrale Zustimmungs-, Timeout- und Ablehnungs-Events für spätere Spielerentscheidungen vorbereiten
-- [ ] betroffene Sonderregeln im `BotContext` sichtbar machen, damit Offline-Tests fair bleiben
+- [ ] betroffene Sonderregeln im `BotContext` sichtbar machen
 - [ ] Single-Board Bomb Pot als erster offline testbarer Proof
 - [ ] Schnittstellen für 7-2-Game/Bounty und Run It Twice vorbereiten
-- [ ] noch keine vollständige Multiplayer-Oberfläche oder Serverabhängigkeit einführen
 
 ### Freigabe ab v2.x
 
@@ -454,8 +457,6 @@ packages/
 ├── shared/              gemeinsame Typen
 └── electron/            Desktop-Wrapper
 ```
-
-Die Pakete `analysis` und `knowledge` müssen vor v1.0 noch keine vollständige Benutzeroberfläche besitzen. Ihre Datenmodelle und Schnittstellen sollten jedoch früh berücksichtigt werden.
 
 ---
 

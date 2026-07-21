@@ -21,7 +21,7 @@ export function determineLineCommitment(
   }
 
   if (iAmPreflopAggressor) {
-    if (handCategory === 'nuts' || handCategory === 'strong') {
+    if (handCategory === 'premium' || handCategory === 'strong') {
       return { plan: 'aggressive', plannedStreets: 3 }
     }
     if (handCategory === 'medium') {
@@ -36,7 +36,7 @@ export function determineLineCommitment(
     return { plan: 'give-up', plannedStreets: 0 }
   }
 
-  if (handCategory === 'nuts') {
+  if (handCategory === 'premium') {
     return { plan: 'aggressive', plannedStreets: 3 }
   }
   if (handCategory === 'strong') {

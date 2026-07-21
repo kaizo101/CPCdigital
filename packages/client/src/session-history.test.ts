@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { LocalGameRunner, SHOWDOWN_DISPLAY_MS } from './LocalGameRunner'
+import { LocalGameRunner, SHOWDOWN_DISPLAY_MS } from './session/LocalGameRunner'
 
 describe('LocalGameRunner session history', () => {
   afterEach(() => {

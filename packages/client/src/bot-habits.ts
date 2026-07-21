@@ -189,7 +189,7 @@ function createHabitModifier(
         return []
       }
       case 'slowplay-monsters': {
-        if (hand.category === 'nuts') {
+        if (hand.category === 'premium') {
           if (action.action.type === 'check' || action.action.type === 'call') {
             return [{ category: 'personality', label: 'Habit: slowplays monsters', value: ai(12) }]
           }
@@ -210,7 +210,7 @@ function createHabitModifier(
       case 'float-flop': {
         if (phase === 'flop' && (hand.category === 'weak' || hand.category === 'air')) {
           if (action.action.type === 'call') {
-            return [{ category: 'personality', label: 'Habit: floats flop', value: ai(10) }]
+            return [{ category: 'personality', label: 'Habit: floats flop', value: ai(7) }]
           }
           if (action.action.type === 'fold') {
             return [{ category: 'personality', label: 'Habit: floats flop', value: ai(-8) }]

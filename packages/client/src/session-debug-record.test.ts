@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { LocalGameRunner } from './LocalGameRunner'
+import { LocalGameRunner } from './session/LocalGameRunner'
 import {
   createSessionDebugFilename,
   serializeSessionDebugRecord,
   SESSION_DEBUG_SCHEMA,
-} from './session-debug-record'
+} from './session/session-debug-record'
 
 describe('session debug record', () => {
   afterEach(() => {
@@ -23,12 +23,12 @@ describe('session debug record', () => {
     }, 4)
     runner.startHand()
 
-    const record = runner.createSessionDebugRecord('0.4.0-dev', 'EUR')
+    const record = runner.createSessionDebugRecord('0.6.0', 'EUR')
     const parsed = JSON.parse(serializeSessionDebugRecord(record))
 
     expect(record.schema).toBe(SESSION_DEBUG_SCHEMA)
     expect(record.schemaVersion).toBe(2)
-    expect(record.app).toEqual({ name: 'CPCdigital', version: '0.4.0-dev' })
+    expect(record.app).toEqual({ name: 'CPCdigital', version: '0.6.0' })
     expect(record.session.config).toEqual(expect.objectContaining({ maxPlayers: 5, seed: 'debug-record' }))
     expect(record.session.players).toHaveLength(5)
     expect(record.history.map(entry => entry.event.type)).toEqual([

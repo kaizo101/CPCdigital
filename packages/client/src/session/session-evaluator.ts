@@ -10,12 +10,12 @@ import {
   LAG_PERSONALITY,
   NIT_PERSONALITY,
   TAG_PERSONALITY,
-} from './bot-tag'
-import type { BotPersonality, BotState } from './bot-tag'
-import type { BotArchetypeId } from './bot-archetypes'
-import { createBotContext } from './bot-context'
-import { resetHandMemory } from './bot-memory'
-import { DEFAULT_BOT_ROSTER } from './bot-identities'
+} from '../bot-tag'
+import type { BotPersonality, BotState } from '../bot-tag'
+import type { BotArchetypeId } from '../bot-archetypes'
+import { createBotContext } from '../bot-context'
+import { resetHandMemory } from '../bot-memory'
+import { DEFAULT_BOT_ROSTER } from '../bot-identities'
 
 const HANDS_PER_TABLE = 5_000
 const BIG_BLIND = 20
@@ -225,7 +225,7 @@ function classifyRootCause(
     return 'structural'
   }
 
-  if ((handCategory === 'strong' || handCategory === 'nuts') && action === 'check' && phase === 'river') {
+  if ((handCategory === 'strong' || handCategory === 'premium') && action === 'check' && phase === 'river') {
     return 'structural'
   }
 
@@ -273,7 +273,7 @@ function analyzePatterns(): void {
           })
         }
 
-        if (d.action === 'check' && d.phase === 'river' && (d.handCategory === 'strong' || d.handCategory === 'nuts') && d.inPosition && d.activeOpponents <= 1) {
+        if (d.action === 'check' && d.phase === 'river' && (d.handCategory === 'strong' || d.handCategory === 'premium') && d.inPosition && d.activeOpponents <= 1) {
           patterns.push({
             archetypeId, botName, handNumber: d.handNumber,
             pattern: 'Checked strong hand on river in position',
@@ -399,7 +399,7 @@ function printReport(): void {
     ).length
 
     const checksRiverStrong = archDecisions.filter(d =>
-      d.action === 'check' && d.phase === 'river' && (d.handCategory === 'strong' || d.handCategory === 'nuts') && d.inPosition,
+      d.action === 'check' && d.phase === 'river' && (d.handCategory === 'strong' || d.handCategory === 'premium') && d.inPosition,
     ).length
 
     const foldsAsPFA = archDecisions.filter(d =>

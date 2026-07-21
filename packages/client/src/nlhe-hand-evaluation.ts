@@ -4,6 +4,7 @@ import type {
   BoardTexture,
   VariantEvaluator,
   VariantHandAssessment,
+  HandStrengthCategory,
 } from './bot-variant-evaluation'
 import { cardsToHandPattern, getStartingHandPercentile, getPreflopSituation } from './preflop-ranges'
 
@@ -35,7 +36,7 @@ function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
   const percentile = getStartingHandPercentile(ownCards)
   const premium = ['AA', 'KK', 'QQ', 'AKs'].includes(pattern)
   const category = premium
-    ? 'nuts'
+    ? 'premium'
     : percentile <= 18
       ? 'strong'
       : percentile <= 40
@@ -59,6 +60,7 @@ function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
       cleanOuts: 0,
       blockerValue: ownCards.some(card => card.rank === 'A' || card.rank === 'K') ? 10 : 0,
       drawTypes: [],
+      boardGotWorse: false,
     } satisfies NlheHandAssessment,
     boardTexture: 'neutral' as const,
     preferredRaiseTo: calculatePreflopRaiseTo(context, situation, bettingContext.legalActions.check),
@@ -108,7 +110,8 @@ export function assessHand(
       drawQuality: 0,
       cleanOuts: 0,
       blockerValue: 0,
-      drawTypes: []
+      drawTypes: [],
+      boardGotWorse: false,
     }
   }
 
@@ -118,7 +121,7 @@ export function assessHand(
 
   // Build assessment
   const assessment: NlheHandAssessment = {
-    category: categorizeHand(rank),
+    category: categorizeHand(rank, holeCards, communityCards, evalResult),
     rank,
     made: rank >= 2,
     relativeStrength: calculateRelativeStrength(evalResult, communityCards, holeCards),
@@ -128,7 +131,8 @@ export function assessHand(
     drawQuality: isRiver ? 0 : calculateDrawQuality(holeCards, communityCards),  // No draws on river
     cleanOuts: isRiver ? 0 : calculateCleanOuts(holeCards, communityCards, evalResult),
     blockerValue: calculateBlockerValue(holeCards, communityCards),
-    drawTypes: isRiver ? [] : identifyDrawTypes(holeCards, communityCards, evalResult)
+    drawTypes: isRiver ? [] : identifyDrawTypes(holeCards, communityCards, evalResult),
+    boardGotWorse: boardGotMoreDangerous(communityCards),
   }
 
   // Add pair type if applicable
@@ -145,13 +149,129 @@ function getHandRank(evalResult: EvalResult): number {
 }
 
 // Fix #10: Two Pair should be medium, not weak
-function categorizeHand(rank: number): 'air' | 'weak' | 'medium' | 'strong' | 'nuts' {
-  if (rank >= 8) return 'nuts'  // Four of a Kind+
-  if (rank >= 6) return 'strong'  // Flush+
-  if (rank >= 4) return 'medium'  // Trips
-  if (rank === 3) return 'medium'  // Two Pair (FIX: was weak)
-  if (rank === 2) return 'weak'  // Pair
+function categorizeHand(
+  rank: number,
+  holeCards?: [Card, Card],
+  communityCards?: Card[],
+  evalResult?: EvalResult,
+): HandStrengthCategory {
+  // Straight Flush / Quads: premium
+  if (rank >= 8) return 'premium'
+
+  // Full House (7)
+  if (rank === 7 && communityCards && holeCards) {
+    const sharedTrips = hasSharedTrips(communityCards, holeCards)
+    return sharedTrips ? 'good' : 'strong'
+  }
+
+  // Flush (6)
+  if (rank === 6 && communityCards && holeCards) {
+    const suitDanger = detectFlushSuitOnBoard(communityCards)
+    if (suitDanger >= 4) {
+      const flushSuit = getPlayerFlushSuit(holeCards, communityCards)
+      const hasHighCard = flushSuit ? hasHighestOfSuitInHole(holeCards, flushSuit, communityCards) : false
+      return hasHighCard ? 'good' : 'medium'
+    }
+    return 'strong'
+  }
+
+  // Straight (5)
+  if (rank === 5 && communityCards && holeCards) {
+    return isBottomEndStraight(holeCards, communityCards) ? 'good' : 'strong'
+  }
+
+  // Trips (4)
+  if (rank === 4 && communityCards && holeCards) {
+    return hasSharedTrips(communityCards, holeCards) ? 'marginal' : 'medium'
+  }
+
+  // Two Pair (3)
+  if (rank === 3 && communityCards && holeCards) {
+    return hasSharedPair(communityCards, holeCards) ? 'marginal' : 'medium'
+  }
+
+  // One Pair (2)
+  if (rank === 2 && holeCards && communityCards) {
+    const pairType = determinePairType(holeCards, communityCards)
+    if (pairType === 'top' || pairType === 'over') return 'medium'
+    if (pairType === 'pocket') {
+      const boardRanks = communityCards.map(c => rankValue(c.rank))
+      const holeRank = rankValue(holeCards[0].rank)
+      if (boardRanks.every(br => holeRank > br)) return 'marginal'
+      return 'weak'
+    }
+    if (pairType === 'middle') return 'weak'
+    return 'air' // bottom/under pair = air
+  }
+
+  // High Card (1)
+  if (rank === 1 && holeCards) {
+    const ranks = holeCards.map(c => rankValue(c.rank)).sort((a, b) => b - a)
+    if (ranks[0] >= 14) return 'weak'
+    if (ranks[0] >= 10 && ranks[1] >= 10) return 'weak'
+    return 'air'
+  }
+
   return 'air'
+}
+
+/** Check if trips exist on the board (shared by all players). */
+function hasSharedTrips(communityCards: Card[], holeCards: [Card, Card]): boolean {
+  const boardRanks = communityCards.map(c => c.rank)
+  const rankCounts = new Map<string, number>()
+  for (const r of boardRanks) rankCounts.set(r, (rankCounts.get(r) ?? 0) + 1)
+  // Trips on board = three of same rank
+  return [...rankCounts.values()].some(c => c >= 3)
+}
+
+/** Check if a pair exists on the board (shared by all players). */
+function hasSharedPair(communityCards: Card[], holeCards: [Card, Card]): boolean {
+  const boardRanks = communityCards.map(c => c.rank)
+  const rankCounts = new Map<string, number>()
+  for (const r of boardRanks) rankCounts.set(r, (rankCounts.get(r) ?? 0) + 1)
+  return [...rankCounts.values()].some(c => c >= 2)
+}
+
+/** Count suited cards on the board. */
+function detectFlushSuitOnBoard(communityCards: Card[]): number {
+  const suitCounts = new Map<string, number>()
+  for (const c of communityCards) suitCounts.set(c.suit, (suitCounts.get(c.suit) ?? 0) + 1)
+  return Math.max(0, ...suitCounts.values())
+}
+
+/** Get the suit of the player's flush. */
+function getPlayerFlushSuit(holeCards: [Card, Card], communityCards: Card[]): string | null {
+  const all = [...holeCards, ...communityCards]
+  const suitCounts = new Map<string, number>()
+  for (const c of all) suitCounts.set(c.suit, (suitCounts.get(c.suit) ?? 0) + 1)
+  for (const [suit, count] of suitCounts) {
+    if (count >= 5) return suit
+  }
+  return null
+}
+
+/** Check if player holds the highest card of the given suit. */
+function hasHighestOfSuitInHole(holeCards: [Card, Card], suit: string, communityCards: Card[]): boolean {
+  const boardOfSuit = communityCards.filter(c => c.suit === suit).map(c => rankValue(c.rank))
+  const maxBoard = boardOfSuit.length > 0 ? Math.max(...boardOfSuit) : 0
+  const holeOfSuit = holeCards.filter(c => c.suit === suit).map(c => rankValue(c.rank))
+  return holeOfSuit.some(r => r > maxBoard)
+}
+
+/** Check if the straight uses the bottom end (vulnerable to higher straights). */
+function isBottomEndStraight(holeCards: [Card, Card], communityCards: Card[]): boolean {
+  const allRanks = [...holeCards, ...communityCards].map(c => rankValue(c.rank))
+  const unique = [...new Set(allRanks)].sort((a, b) => a - b)
+  for (let i = 0; i <= unique.length - 5; i++) {
+    if (unique[i + 4] - unique[i] === 4) {
+      const straightTop = unique[i + 4]
+      if (i + 5 < unique.length && unique[i + 5] === straightTop + 1) {
+        return true
+      }
+      return false
+    }
+  }
+  return false
 }
 
 // Calculate relative strength (0-100)
@@ -564,4 +684,29 @@ export function analyzeBoardTexture(cards: Card[]): BoardTexture {
   if (hasPair) return 'wet'
 
   return 'neutral'
+}
+
+/** Check if the last dealt card made the board more dangerous (flush/straight threat). */
+function boardGotMoreDangerous(communityCards: Card[]): boolean {
+  if (communityCards.length < 4) return false
+  const prev = communityCards.slice(0, -1)
+  const latest = communityCards[communityCards.length - 1]
+
+  // Flush danger: latest card adds 3rd+ of a suit
+  const prevSuits = new Map<string, number>()
+  for (const c of prev) prevSuits.set(c.suit, (prevSuits.get(c.suit) ?? 0) + 1)
+  const newCount = (prevSuits.get(latest.suit) ?? 0) + 1
+  if (newCount >= 3) return true
+
+  // Straight/connected danger: latest card is within 2 ranks of any previous
+  const rankVal = (c: Card) => {
+    const r: Record<string, number> = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14 }
+    return r[c.rank] ?? 0
+  }
+  const latestVal = rankVal(latest)
+  const prevVals = prev.map(rankVal)
+  const connected = prevVals.some(pv => Math.abs(pv - latestVal) <= 2)
+  if (connected && prev.length >= 3) return true
+
+  return false
 }

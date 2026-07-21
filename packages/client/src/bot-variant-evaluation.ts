@@ -1,6 +1,11 @@
 import type { BotContext } from './bot-context'
 
-export type HandStrengthCategory = 'air' | 'weak' | 'medium' | 'strong' | 'nuts'
+export type HandStrengthCategory = 'premium' | 'strong' | 'good' | 'medium' | 'marginal' | 'weak' | 'air'
+
+export function isAtLeast(c: HandStrengthCategory, min: HandStrengthCategory): boolean {
+  const order: HandStrengthCategory[] = ['premium', 'strong', 'good', 'medium', 'marginal', 'weak', 'air']
+  return order.indexOf(c) <= order.indexOf(min)
+}
 export type NutPotential = 'nuts' | 'near-nuts' | 'strong' | 'medium' | 'weak'
 export type BoardTexture = 'dry' | 'neutral' | 'wet'
 
@@ -17,6 +22,7 @@ export interface VariantHandAssessment {
   cleanOuts: number
   blockerValue: number
   drawTypes: string[]
+  boardGotWorse: boolean
 }
 
 export interface VariantEvaluation {

@@ -10,3 +10,8 @@ dist/
 .tmp-ps-frames/
 *.mp4
 *.webm
+docker-compose.yml
+Cards (large)/
+2
+calibration/*.backup
+*.calib-backup

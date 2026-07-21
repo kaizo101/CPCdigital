@@ -46,6 +46,7 @@ function makeContext(
       cleanOuts: 0,
       blockerValue: 0,
       drawTypes: [],
+      boardGotWorse: false,
     },
     metrics: {
       potOdds: 0.25,

@@ -10,6 +10,7 @@ import type {
   ScoredAction,
   ScoreContribution,
 } from './bot-decision-types'
+import { isAtLeast } from './bot-variant-evaluation'
 import { estimateOpponentRanges, rangeStrengthModifier } from './bot-range-estimation'
 import { getSizingTell } from './bot-reads'
 import { roundToCents } from './utils/format'
@@ -61,7 +62,7 @@ function scoreCheck(context: DecisionContext): ScoredAction {
   const { handAssessment: hand, position, gameView } = context
   const isRiver = gameView.phase === 'river'
   const outOfPosition = position === 'early' || position === 'blinds'
-  const intent: ActionIntent = (hand.category === 'strong' || hand.category === 'nuts')
+  const intent: ActionIntent = (isAtLeast(hand.category, 'strong'))
     && (!isRiver || outOfPosition)
     ? 'trap'
     : 'pot-control'
@@ -73,7 +74,7 @@ function scoreCheck(context: DecisionContext): ScoredAction {
 
   if (hand.drawTypes.length > 0) contributions.push(factor('hand-strength', 'Free card for draw', 10))
   if (position === 'late') contributions.push(factor('position', 'Late position information', 10))
-  if (isRiver && (hand.category === 'strong' || hand.category === 'nuts') && !outOfPosition) {
+  if (isRiver && (isAtLeast(hand.category, 'strong')) && !outOfPosition) {
     contributions.push(factor('hand-strength', 'River check in position misses value', -20))
   }
 
@@ -90,10 +91,10 @@ function scoreCall(context: DecisionContext): ScoredAction {
     ? 'draw'
     : hand.category === 'medium'
       ? 'bluff-catch'
-      : hand.category === 'strong' || hand.category === 'nuts'
+      : isAtLeast(hand.category, 'strong')
         ? (isRiver && !outOfPosition) ? 'value' : 'trap'
         : 'pot-control'
-  const handValue = (hand.category === 'strong' || hand.category === 'nuts') && !isRiver
+  const handValue = (isAtLeast(hand.category, 'strong')) && !isRiver
     ? params.scoring.handStrength.call.strong
     : params.scoring.handStrength.call[hand.category]
   const contributions: ScoreContribution[] = [
@@ -145,6 +146,9 @@ function scoreRaise(context: DecisionContext): ScoredAction {
   if (hand.nutPotential === 'nuts') contributions.push(factor('hand-strength', 'Nut potential', params.scoring.raiseBonus.nutPotential))
   else if (hand.nutPotential === 'near-nuts') contributions.push(factor('hand-strength', 'Near-nut potential', params.scoring.raiseBonus.nearNutPotential))
   if (hand.vulnerability > 60) contributions.push(factor('hand-strength', 'Protection against draws', params.scoring.raiseBonus.vulnerability))
+  if (hand.boardGotWorse && (hand.category === 'medium' || hand.category === 'good' || hand.category === 'strong')) {
+    contributions.push(factor('hand-strength', 'Board got more dangerous — protect harder', 8))
+  }
   if (hand.drawQuality > 50) contributions.push(factor('hand-strength', 'Strong draw equity', params.scoring.raiseBonus.drawQuality))
   if (hand.cleanOuts >= 8) contributions.push(factor('hand-strength', `${hand.cleanOuts} clean outs`, params.scoring.raiseBonus.cleanOuts))
   if (position === 'late') contributions.push(factor('position', 'Late-position leverage', params.scoring.raiseBonus.latePosition))
@@ -198,7 +202,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
 
 function aggressiveIntent(context: DecisionContext): ActionIntent {
   const hand = context.handAssessment
-  if (hand.category === 'strong' || hand.category === 'nuts') return 'value'
+  if (isAtLeast(hand.category, 'strong')) return 'value'
   if (hand.drawTypes.length > 0) return 'semi-bluff'
   if (hand.category === 'medium') return 'protection'
   return 'bluff'
@@ -220,7 +224,14 @@ function preflopStrategyFactors(
 ): ScoreContribution[] {
   const preferred = context.preflopRangeAction
   if (context.gameView.phase !== 'preflop' || !preferred) return []
-  if (context.botState.memory.hand.raisedPreflop && context.metrics.potOdds <= 0.15) return []
+  if (context.botState.memory.hand.raisedPreflop && context.metrics.potOdds <= 0.15) {
+    // Already raised and facing tiny re-raise — can't fold, but don't blindly re-raise
+    if (action === 'fold') return [factor('strategy', 'Overwhelming preflop price after raising', -50)]
+    if (action === 'raise' && preferred !== 'raise') {
+      return [factor('strategy', 'Reraising without premium hand', -35)]
+    }
+    return [factor('strategy', 'Must defend after raising — call', 15)]
+  }
 
   const values: Record<typeof preferred, Record<typeof action, number>> = {
     fold: { fold: 35, check: 15, call: -45, raise: -60 },
@@ -312,7 +323,7 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
     if (hand.category === 'air') {
       result.push(factor('position', 'Opponent showed weakness — steal opportunity', Math.round(params.scoring.streetInitiative.weaknessSteal * skillFactor)))
     }
-    if (hand.category === 'strong' || hand.category === 'nuts') {
+    if (isAtLeast(hand.category, 'strong')) {
       result.push(factor('position', 'Opponent showed weakness — trap value', Math.round(params.scoring.streetInitiative.weaknessTrap * skillFactor)))
     }
   }
@@ -334,7 +345,7 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
   const strongOpponentLines = opponentLines.filter(l =>
     l.preflop === 'raised' && (l.flop?.startsWith('bet') || l.turn?.startsWith('bet')),
   )
-  if (strongOpponentLines.length > 0 && hand.category !== 'nuts') {
+  if (strongOpponentLines.length > 0 && hand.category !== 'premium') {
     result.push(factor('position', `Opponent shows strength (${strongOpponentLines.length} players)`, Math.round(params.scoring.streetInitiative.opponentStrength * skillFactor)))
   }
 

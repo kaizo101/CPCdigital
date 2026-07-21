@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { PlayerAction, TableOptions } from '@cpc/shared'
-import { LocalGameRunner } from './LocalGameRunner'
+import { LocalGameRunner } from './session/LocalGameRunner'
 import { SetupScreen } from './screens/SetupScreen'
 import { TableScreen } from './screens/TableScreen'
 import type { DisplayCurrency } from './utils/format'
 import { APP_VERSION } from './app-version'
-import { downloadSessionDebugRecord } from './session-debug-record'
+import { downloadSessionDebugRecord } from './session/session-debug-record'
+import { HandReplayer } from './components/HandReplayer'
+import type { HandReplay } from './session/hand-replay'
 
 type Screen = 'setup' | 'table'
 
@@ -20,6 +22,41 @@ export default function App() {
   const [botCount, setBotCount] = useState(5)
   const [raiseAmount, setRaiseAmount] = useState(0)
   const [currency, setCurrency] = useState<DisplayCurrency>('EUR')
+  const [rebuyEnabled, setRebuyEnabled] = useState(true)
+
+  // Replay mode: read from #replay/N hash (set by Electron or browser fallback)
+  const [replayMode] = useState<{ replays: HandReplay[]; startIndex: number } | null>(() => {
+    const hash = window.location.hash
+    let handNum: number | null = null
+
+    const hashMatch = /^#replay\/(\d+)$/.exec(hash) || /^#replay=(\d+)$/.exec(hash)
+    if (hashMatch) {
+      handNum = parseInt(hashMatch[1])
+    } else {
+      const nameMatch = /^replay-(\d+)$/.exec(window.name)
+      if (nameMatch) handNum = parseInt(nameMatch[1])
+    }
+
+    if (handNum) {
+      // Try session-level first
+      const session = localStorage.getItem('replay-session')
+      if (session) {
+        try {
+          const all: HandReplay[] = JSON.parse(session)
+          const idx = all.findIndex(r => r.handNumber === handNum)
+          return { replays: all, startIndex: idx >= 0 ? idx : all.length - 1 }
+        } catch { /* ignore */ }
+      }
+      // Fallback: single hand
+      const stored = localStorage.getItem(`replay-${handNum}`)
+      if (stored) {
+        try { return { replays: [JSON.parse(stored) as HandReplay], startIndex: 0 } } catch { /* ignore */ }
+      }
+    }
+
+    window.name = ''
+    return null
+  })
 
   useEffect(() => {
     const unsub = runner.subscribe(() => forceRender(n => n + 1))
@@ -49,7 +86,7 @@ export default function App() {
   function handleStartGame() {
     const tableOptions = { ...options, maxPlayers: botCount + 1 }
     setOptions(tableOptions)
-    runner.setupTable(tableOptions, botCount)
+    runner.setupTable(tableOptions, botCount, rebuyEnabled)
     runner.startHand()
     setScreen('table')
   }
@@ -63,6 +100,22 @@ export default function App() {
     downloadSessionDebugRecord(runner.createSessionDebugRecord(APP_VERSION, currency))
   }
 
+  if (replayMode) {
+    return (
+      <HandReplayer
+        replays={replayMode.replays}
+        startIndex={replayMode.startIndex}
+        currency={currency}
+        onClose={() => {
+          const hn = replayMode.replays[replayMode.startIndex]?.handNumber
+          if (hn) localStorage.removeItem(`replay-${hn}`)
+          localStorage.removeItem('replay-session')
+          window.close()
+        }}
+      />
+    )
+  }
+
   if (screen === 'setup') {
     return (
       <SetupScreen
@@ -73,6 +126,8 @@ export default function App() {
         onStart={handleStartGame}
         currency={currency}
         setCurrency={setCurrency}
+        rebuyEnabled={rebuyEnabled}
+        setRebuyEnabled={setRebuyEnabled}
       />
     )
   }
@@ -96,6 +151,7 @@ export default function App() {
       currency={currency}
       onRebuy={playerId => runner.requestRebuy(playerId)}
       onExportDebugRecord={handleExportDebugRecord}
+      handReplays={localState.handReplays}
     />
   )
 }

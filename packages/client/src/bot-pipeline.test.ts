@@ -64,6 +64,7 @@ function context(
       cleanOuts: 0,
       blockerValue: 0,
       drawTypes: [],
+      boardGotWorse: false,
     },
     metrics: deriveDecisionMetrics(bettingContext, 20),
     legalActions,

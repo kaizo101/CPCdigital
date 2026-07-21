@@ -6,6 +6,17 @@ import { formatChips, type DisplayCurrency } from '../utils/format'
 const panelColor = '#11151a'
 const borderColor = 'rgba(255,255,255,0.12)'
 
+const selectStyle: React.CSSProperties = {
+  maxWidth: 130,
+  padding: '6px 7px',
+  borderRadius: 6,
+  border: `1px solid ${borderColor}`,
+  color: '#e6edf3',
+  background: '#0b0f14',
+  fontFamily: 'inherit',
+  fontSize: 11,
+}
+
 export function BotDebugInspector({
   decisions,
   currency,
@@ -17,10 +28,33 @@ export function BotDebugInspector({
 }) {
   const [open, setOpen] = useState(false)
   const [selectedSequence, setSelectedSequence] = useState<number | null>(null)
+
   const latest = decisions.at(-1) ?? null
   const selected = selectedSequence == null
     ? latest
     : decisions.find(decision => decision.sequence === selectedSequence) ?? latest
+
+  // Group decisions by hand
+  const hands = new Map<number, BotDebugDecision[]>()
+  for (const d of decisions) {
+    const arr = hands.get(d.handNumber) ?? []
+    arr.push(d)
+    hands.set(d.handNumber, arr)
+  }
+  const handNumbers = [...hands.keys()].sort((a, b) => a - b)
+  const activeHand = selected?.handNumber ?? handNumbers.at(-1) ?? 0
+  const decisionsInHand = hands.get(activeHand) ?? []
+
+  const [selectedHand, setSelectedHand] = useState<number>(activeHand)
+  const [selectedBot, setSelectedBot] = useState<string>('latest')
+
+  // Sync state when selection changes externally
+  const effectiveHand = selected?.handNumber ?? selectedHand
+  const decisionsForHand = hands.get(effectiveHand) ?? []
+  const effectiveBot = selectedBot === 'latest' || !decisionsForHand.some(d => d.playerId === selectedBot)
+    ? decisionsForHand.at(-1)
+    : decisionsForHand.find(d => d.playerId === selectedBot)
+  const displayDecision = selectedBot === 'latest' ? selected : effectiveBot ?? decisionsForHand.at(-1)
 
   return (
     <div className="bot-debug-inspector" style={{ pointerEvents: 'auto' }}>
@@ -74,36 +108,50 @@ export function BotDebugInspector({
                 Session-JSON
               </button>
               {decisions.length > 0 && (
-                <select
-                aria-label="Debug-Entscheidung auswählen"
-                value={selectedSequence ?? 'latest'}
-                onChange={event => setSelectedSequence(
-                  event.target.value === 'latest' ? null : Number(event.target.value),
-                )}
-                style={{
-                  maxWidth: 210,
-                  padding: '6px 7px',
-                  borderRadius: 6,
-                  border: `1px solid ${borderColor}`,
-                  color: '#e6edf3',
-                  background: '#0b0f14',
-                  fontFamily: 'inherit',
-                  fontSize: 11,
-                }}
-                >
-                  <option value="latest">Live · neueste Entscheidung</option>
-                  {[...decisions].reverse().map(decision => (
-                    <option key={decision.sequence} value={decision.sequence}>
-                      #{decision.sequence} · H{decision.handNumber} · {decision.playerName}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    aria-label="Hand auswählen"
+                    value={effectiveHand}
+                    onChange={e => {
+                      const hn = Number(e.target.value)
+                      setSelectedHand(hn)
+                      setSelectedBot('latest')
+                      const firstInHand = hands.get(hn)?.at(-1)
+                      if (firstInHand) setSelectedSequence(null)
+                    }}
+                    style={selectStyle}
+                  >
+                    {handNumbers.map(hn => (
+                      <option key={hn} value={hn}>Hand {hn} ({hands.get(hn)?.length ?? 0})</option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Bot auswählen"
+                    value={selectedBot}
+                    onChange={e => {
+                      const bot = e.target.value
+                      setSelectedBot(bot)
+                      if (bot === 'latest') {
+                        setSelectedSequence(null)
+                      } else {
+                        const d = decisionsForHand.find(d => d.playerId === bot)
+                        if (d) setSelectedSequence(d.sequence)
+                      }
+                    }}
+                    style={{ ...selectStyle, maxWidth: 120 }}
+                  >
+                    <option value="latest">Live</option>
+                    {[...new Map(decisionsForHand.map(d => [d.playerId, d.playerName] as const)).entries()].map(([pid, name]) => (
+                      <option key={pid} value={pid}>{name}</option>
+                    ))}
+                  </select>
+                </>
               )}
             </div>
           </div>
 
           <div style={{ overflowY: 'auto', padding: 12 }}>
-            {selected ? <DecisionDetails debug={selected} currency={currency} /> : (
+            {displayDecision ? <DecisionDetails debug={displayDecision} currency={currency} /> : (
               <div style={{ padding: '24px 8px', textAlign: 'center', color: '#89939e' }}>
                 Noch keine Bot-Entscheidung in dieser Session.
               </div>

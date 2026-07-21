@@ -1,5 +1,6 @@
 import type { BotArchetypeId } from './bot-archetypes'
 import type { DecisionContext, ScoredAction, ScoreContribution } from './bot-decision-types'
+import { isAtLeast } from './bot-variant-evaluation'
 import { determineLineCommitment, lineCommitmentModifiers } from './bot-line-planning'
 
 export function applyPersonalityModifiers(
@@ -9,8 +10,7 @@ export function applyPersonalityModifiers(
   const { botState } = context
   const { aggression, bluffFrequency, riskTolerance } = botState.personality
   const { tilt, confidence, patience } = botState.mentalState
-  const marginalHand = context.handAssessment.category !== 'strong'
-    && context.handAssessment.category !== 'nuts'
+  const marginalHand = !isAtLeast(context.handAssessment.category, 'strong')
 
   return actions.map(scored => {
     const contributions: ScoreContribution[] = []
@@ -162,11 +162,11 @@ function stackDepthFactors(
     if (scored.action.type === 'fold' && hand.category === 'weak') {
       contributions.push({ category: 'betting-context', label: `Short stack ${Math.round(effBb)} BB — fold marginal`, value: 8 })
     }
-    if (scored.action.type === 'call' && hand.category !== 'strong' && hand.category !== 'nuts') {
+    if (scored.action.type === 'call' && hand.category !== 'strong' && hand.category !== 'premium') {
       contributions.push({ category: 'betting-context', label: `Short stack ${Math.round(effBb)} BB — preserve chips`, value: -10 })
     }
     if (effBb <= 12) {
-      if (scored.action.type === 'raise' && (hand.category === 'strong' || hand.category === 'nuts')) {
+      if (scored.action.type === 'raise' && (isAtLeast(hand.category, 'strong'))) {
         contributions.push({ category: 'betting-context', label: 'Very short stack — push or fold', value: 5 })
       }
       if (scored.action.type === 'call') {
@@ -174,7 +174,7 @@ function stackDepthFactors(
       }
     }
     // Discourage non-all-in raises at ≤20 BB with non-premium hands
-    if (effBb <= 20 && scored.action.type === 'raise' && hand.category !== 'nuts') {
+    if (effBb <= 20 && scored.action.type === 'raise' && hand.category !== 'premium') {
       const canShove = !!context.legalActions.allInAmount
       if (canShove && hand.category !== 'strong') {
         contributions.push({ category: 'betting-context', label: `Short stack ${Math.round(effBb)} BB — avoid raising non-premium`, value: -10 })

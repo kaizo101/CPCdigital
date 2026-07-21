@@ -36,6 +36,8 @@ export function SetupScreen({
   onStart,
   currency,
   setCurrency,
+  rebuyEnabled,
+  setRebuyEnabled,
 }: {
   options: TableOptions
   setOptions: (options: TableOptions) => void
@@ -44,6 +46,8 @@ export function SetupScreen({
   onStart: () => void
   currency: DisplayCurrency
   setCurrency: (currency: DisplayCurrency) => void
+  rebuyEnabled: boolean
+  setRebuyEnabled: (enabled: boolean) => void
 }) {
   const maxBots = 8
   const selectedBlindPreset = BLIND_PRESETS.find(preset =>
@@ -245,6 +249,25 @@ export function SetupScreen({
                   )
                 })}
               </div>
+            </section>
+
+            <section style={{ background: 'rgba(255,255,255,0.04)', padding: 18, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontSize: 11, color: '#8f98a4', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Rebuys</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={rebuyEnabled}
+                  onChange={e => setRebuyEnabled(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: '#0e7490' }}
+                />
+                <span style={{ fontSize: 13, color: '#cbd5e1' }}>
+                  Auto-Rebuy & Ersatz-Bots
+                </span>
+              </label>
+              <p style={{ fontSize: 11, color: '#6b7280', margin: '8px 0 0 28px', lineHeight: 1.5 }}>
+                Busted Bots kaufen nach oder werden nach 4 Händen durch neue ersetzt.<br />
+                Nits verlassen den Tisch, LAGs kaufen aggressiv nach.
+              </p>
             </section>
 
             <button onClick={onStart} disabled={!!validationError} style={{

@@ -39,23 +39,45 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
 
 
-## [Unreleased]
+## [0.6.0] — 2026-07-22
 
 ### Added
 
-- versioniertes `BotIdentity`-Modell mit stabilen Namen, Seeds, Skills, Grundtendenzen und Avatar-Schlüsseln
-- deterministisch generierte 32-Bot-Testpopulation als erweiterbare Grundlage des späteren Rosters
-- erste vier Bot-Avatare mit neutralem Initialen-Fallback für noch nicht bebilderte Identitäten
+- **Rebuy-System**: Auto-Rebuy bei Bust (pro Identity ausgewürfelt, Threshold 10–90 BB), Leave-on-Bust, Ersatz-Bots mit 2–6 Händen Pause
+- **Setup-Toggle**: "Auto-Rebuy & Ersatz-Bots" in der Setup-Maske
+- **Hand-Replay**: deterministisches Replay aus Decision Snapshots, Tisch-Ansicht mit Step-Forward/Back, Autoplay
+- **Session-Navigation**: alle Hände der Session durchblätterbar (◀▶)
+- **PokerStars-Style Hand-History**: Text-Export pro Hand und ganze Session
+- **Pot-Filter**: Replay nach Minimum-Pot-Größe filtern (≥ X BB)
+- **Session-übergreifende History**: localStorage, max 200 Hände
+- **Bot-Entscheidungsgründe**: Scores und Beiträge als Export-Option (debug-only)
+- **7-Stufen-Handbewertung**: premium > strong > good > medium > marginal > weak > air mit Board-Kontext
+- **Board-Relativierung**: Top Pair ≠ Bottom Pair, Flush/Straight/Full House je nach Board-Gefahr abgestuft
+- **Protection-Betting**: Board-Verschlechterungserkennung (Turn bringt drittes Herz → sizing +0.08, scoring +8)
+- **Parameter-System**: `bot-params.ts` zentralisiert ~50 tuning-Knobs, Auto-Kalibrierer via Env-Vars
+- **Auto-Kalibrierer**: Random-Search-Optimizer mit Loss-Funktion, progressive narrowing
+- **Rebuy-Manager**: `bot-rebuy-manager.ts` aus `LocalGameRunner` extrahiert (907 → 241 Zeilen)
+- **Session-Ordner**: `session/` für LocalGameRunner, Rebuy-Manager, Session-Evaluator, Hand-Replay
 
 ### Changed
 
-- Projekt und sichtbare App-Bezeichnung von CPC-Offline in CPCdigital umbenannt
-- TAG-Ranges auf jede Tischgröße von Heads-up bis Full Ring abgestimmt
-- gemeinsame Archetyp-Pipeline eingeführt und Nit, LAG sowie Calling Station als kalibrierte Botprofile ergänzt
-- Archetypen pro Session seedbar gemischt und vor Wiederholungen gleichmäßig am Tisch verteilt
-- Tischbesetzung und Bot-Kalibrierung von abstrakten Archetypen auf konkrete Identitäten umgestellt
-- Preflop-All-in-Runouts mit längeren Pausen zwischen Flop, Turn und River versehen
-- versionierten lokalen Session-Debug-Record als JSON-Export ergänzt
+- **ReadTyp**: Bots tracken Gegner-Bet-Sizing (Pot-Fraktion-EMA), Abweichungserkennung (>2× Overbet)
+- **Raise-Sizing**: Short-Stack-Reduktion (effBb/50), Reraise-Faktor (×0.75), Non-Premium-Raises bei ≤20 BB bestraft
+- **Preflop-Reraising**: keine Blind-Eskalation mit marginalen Händen mehr (−35 Penalty)
+- **Scoring-Tuning**: call.weak −5, fold.weak +5 (7-Kategorien-System nachgezogen), float-flop-Habit +10→+7
+- **Pot-Visualisierung**: Gewinnbetrag erscheint beim Gewinner, Pot springt auf 0
+- **Debug-Mode**: BotDebugInspector, Cards-on, Entscheidungs-Export hinter Ctrl+D
+- **Route aufräumen**: v0.6 → 19 Punkte (besser verteilt auf v0.5.2–v0.5.4 in Retrospektive)
+
+### Fixed
+
+- **Queue-Reihenfolge**: `reopenBettingAfterRaise` sortiert jetzt clockwise ab Raiser (war Sitz-Index)
+- **Hand-History-Format**: Blinds korrekt (via Dealer-Position), Chips ohne /100-Division, Raise-Format "raises to X"
+- **All-in-Crash**: Spiel friert nicht mehr wenn nur noch Hero übrig ist (forced replacement)
+- **Rebuy-Crash**: fehlendes `rebuyPolicy`-Feld in alten Roster-Identities → Default-Policy-Fallback
+- **Replay-Daten**: alle Hole-Cards gespeichert (nicht nur Showdown), Community-Cards kumulieren korrekt
+
+## [0.5.1] — 2026-07-22 (unveröffentlicht, direkt in 0.6.0 aufgegangen)
 
 ## [0.3.1] — 2026-07-19
 
@@ -130,7 +152,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kaizo101/CPCdigital/compare/v0.4.0...v0.6.0
 [0.4.0]: https://github.com/kaizo101/CPCdigital/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/kaizo101/CPCdigital/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/kaizo101/CPCdigital/compare/v0.2.1...v0.3.0

@@ -1,5 +1,7 @@
 import type { BettingContext } from '@cpc/shared'
 import { params } from './bot-params'
+import type { HandStrengthCategory } from './bot-variant-evaluation'
+import { isAtLeast } from './bot-variant-evaluation'
 
 export type StackDepth = 'short' | 'medium' | 'deep'
 export type DecisionActionKind = 'fold' | 'check' | 'call' | 'raise'
@@ -21,7 +23,7 @@ export interface DecisionMetrics {
 }
 
 export interface DecisionHandProfile {
-  category: 'air' | 'weak' | 'medium' | 'strong' | 'nuts'
+  category: HandStrengthCategory
   hasDraw: boolean
 }
 
@@ -87,7 +89,7 @@ export function getBettingContextFactors(
       { label: `Pot odds ${(metrics.potOdds * 100).toFixed(1)}%`, value: -priceAdjustment },
       { label: `Bet/pot ratio ${metrics.toCallPotRatio.toFixed(2)}`, value: -sizingAdjustment },
     ]
-    if (metrics.callCommitment >= 0.5 && (hand.category === 'strong' || hand.category === 'nuts')) {
+    if (metrics.callCommitment >= 0.5 && (isAtLeast(hand.category, 'strong'))) {
       factors.push({ label: `Call commitment ${(metrics.callCommitment * 100).toFixed(0)}%`, value: params.betting.foldCommitmentPenalty })
     }
     return capFactors(factors, params.betting.foldCapMin, params.betting.foldCapMax)
@@ -103,7 +105,7 @@ export function getBettingContextFactors(
       if (metrics.stackDepth === 'deep') factors.push({ label: `Deep stack ${metrics.effectiveStackBb.toFixed(0)} BB`, value: params.betting.callDeepDrawBonus })
       if (metrics.stackDepth === 'short') factors.push({ label: `Short stack ${metrics.effectiveStackBb.toFixed(0)} BB`, value: params.betting.callShortDrawPenalty })
     }
-    if (metrics.spr <= 2 && (hand.category === 'strong' || hand.category === 'nuts')) {
+    if (metrics.spr <= 2 && (isAtLeast(hand.category, 'strong'))) {
       factors.push({ label: `Low SPR ${metrics.spr.toFixed(2)}`, value: params.betting.callLowSprBonus })
     }
     if (metrics.callCommitment >= 0.5 && (hand.category === 'air' || hand.category === 'weak')) {
@@ -117,7 +119,7 @@ export function getBettingContextFactors(
   if (metrics.spr <= 3) {
     factors.push({
       label: `Low SPR ${metrics.spr.toFixed(2)}`,
-      value: hand.category === 'strong' || hand.category === 'nuts' ? params.betting.raiseSprBonus : params.betting.raiseSprPenalty,
+      value: isAtLeast(hand.category, 'strong') ? params.betting.raiseSprBonus : params.betting.raiseSprPenalty,
     })
   }
   if (metrics.stackDepth === 'deep' && hand.hasDraw) {
@@ -127,19 +129,21 @@ export function getBettingContextFactors(
     factors.push({ label: `Large bet/pot ratio ${metrics.toCallPotRatio.toFixed(2)}`, value: params.betting.raiseLargeBetPenalty })
   }
 
-  const facingBet = metrics.toCallPotRatio > 0 && phase !== 'preflop'
+  const facingBet = metrics.toCallPotRatio > 0
   if (facingBet) {
-    if (hand.category === 'medium') {
-      factors.push({ label: 'Reraising medium hand into a bet', value: params.betting.raiseReraiseMedium })
+    const isPreflop = phase === 'preflop'
+    const factor = isPreflop ? 0.5 : 1 // Half penalty preflop (3-bet is fine, 4-bet+ less so)
+    if (hand.category === 'medium' || hand.category === 'marginal') {
+      factors.push({ label: 'Reraising medium hand into a bet', value: Math.round(params.betting.raiseReraiseMedium * factor) })
     }
-    if (hand.category === 'weak' || hand.category === 'air') {
-      factors.push({ label: 'Reraising without a hand into a bet', value: params.betting.raiseReraiseWeak })
+    if (hand.category === 'weak' || hand.category === 'air' || hand.category === 'marginal') {
+      factors.push({ label: 'Reraising without a hand into a bet', value: Math.round(params.betting.raiseReraiseWeak * factor) })
     }
-    if (metrics.toCallPotRatio >= 0.5 && hand.category !== 'nuts') {
-      factors.push({ label: `Facing ${(metrics.toCallPotRatio * 100).toFixed(0)}% pot bet — reraise risk`, value: params.betting.raiseReraiseBigBet })
+    if (metrics.toCallPotRatio >= 0.5 && hand.category !== 'premium') {
+      factors.push({ label: `Facing ${(metrics.toCallPotRatio * 100).toFixed(0)}% pot bet — reraise risk`, value: Math.round(params.betting.raiseReraiseBigBet * factor) })
     }
-    if (metrics.potOdds >= 0.35 && hand.category !== 'nuts') {
-      factors.push({ label: `Good pot odds (${(metrics.potOdds * 100).toFixed(0)}%) — call preferred`, value: params.betting.raiseReraiseGoodOdds })
+    if (metrics.potOdds >= 0.35 && hand.category !== 'premium') {
+      factors.push({ label: `Good pot odds (${(metrics.potOdds * 100).toFixed(0)}%) — call preferred`, value: Math.round(params.betting.raiseReraiseGoodOdds * factor) })
     }
   }
 
@@ -159,36 +163,39 @@ export function calculateContextualRaiseTo(
   },
   skillLevel?: number,
 ): number {
-  let potFraction = hand.category === 'nuts'
-    ? params.betting.raisePotFraction.nuts
+  let potFraction = hand.category === 'premium'
+    ? params.betting.raisePotFraction.premium
     : hand.category === 'strong'
       ? params.betting.raisePotFraction.strong
-      : hand.hasDraw
-        ? params.betting.raisePotFraction.draw
-        : hand.category === 'medium'
-          ? params.betting.raisePotFraction.medium
-          : params.betting.raisePotFraction.default
+      : hand.category === 'good'
+        ? params.betting.raisePotFraction.good
+        : hand.hasDraw
+          ? params.betting.raisePotFraction.draw
+          : hand.category === 'medium'
+            ? params.betting.raisePotFraction.medium
+            : params.betting.raisePotFraction.default
 
   if (boardTexture === 'wet') potFraction += params.betting.raiseSizingMods.wetBoard
   if (boardTexture === 'dry') potFraction += params.betting.raiseSizingMods.dryBoard
+  if ((hand as any).boardGotWorse && hand.category !== 'air') potFraction += 0.08
   if (position === 'late') potFraction += params.betting.raiseSizingMods.latePosition
-  if (metrics.spr <= 3 && (hand.category === 'strong' || hand.category === 'nuts')) potFraction += params.betting.raiseSizingMods.lowSprStrong
+  if (metrics.spr <= 3 && (isAtLeast(hand.category, 'strong'))) potFraction += params.betting.raiseSizingMods.lowSprStrong
 
   if (streetContext) {
     if (streetContext.iAmPreflopAggressor && boardTexture === 'dry') potFraction += params.betting.raiseSizingMods.cbetDry
     if (streetContext.activeOpponents && streetContext.activeOpponents >= 3) potFraction += params.betting.raiseSizingMods.multiway
     if (streetContext.opponentShowedWeakness && hand.category === 'air') potFraction += params.betting.raiseSizingMods.weaknessBluff
-    if (streetContext.opponentCheckRaised && hand.category !== 'nuts') potFraction += params.betting.raiseSizingMods.checkRaiseCaution
+    if (streetContext.opponentCheckRaised && hand.category !== 'premium') potFraction += params.betting.raiseSizingMods.checkRaiseCaution
   }
 
   // Short-stack survival: reduce sizing to avoid pot-committing with non-nut hands
-  if (metrics.effectiveStackBb <= 50 && hand.category !== 'nuts') {
+  if (metrics.effectiveStackBb <= 50 && hand.category !== 'premium') {
     const shortFactor = Math.max(0.4, metrics.effectiveStackBb / 50)
     potFraction *= shortFactor
   }
 
   // Reraising into a bet: smaller sizing needed for fold equity
-  if (metrics.toCallPotRatio > 0 && hand.category !== 'nuts') {
+  if (metrics.toCallPotRatio > 0 && hand.category !== 'premium') {
     potFraction *= 0.75
   }
 

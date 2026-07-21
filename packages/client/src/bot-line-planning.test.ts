@@ -30,7 +30,7 @@ describe('line commitment', () => {
   })
 
   it('plans 3-street aggression with nuts as PFA', () => {
-    const plan = determineLineCommitment(analysis({ iAmPreflopAggressor: true }), 'nuts', 'dry', true)
+    const plan = determineLineCommitment(analysis({ iAmPreflopAggressor: true }), 'premium', 'dry', true)
     expect(plan.plan).toBe('aggressive')
     expect(plan.plannedStreets).toBe(3)
   })

@@ -2,7 +2,7 @@
 
 Eine Offline-Poker-App für den Desktop: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung.
 
-Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.5.0** und bietet ein vollständig spielbares No-Limit-Hold'em mit glaubwürdigen Bots. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
+Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.6.0** und bietet ein vollständig spielbares No-Limit-Hold'em mit glaubwürdigen Bots, Auto-Rebuys, Hand-Replays und einer PokerStars-kompatiblen Hand-History. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
 
 ## Leitgedanken
 
@@ -39,6 +39,13 @@ Derzeit enthalten sind unter anderem:
 - einfache Rebuys zwischen Händen sowie verschiedene Bedienungs- und Anzeigeverbesserungen
 - kompakter JSON-Debug-Export (v2) für KI-gestützte Analyse
 - Mixed-Table-Kalibrierung und Balance-Simulation über alle Archetypen
+- Auto-Rebuys mit persönlichkeitsabhängigen Policies und Ersatz-Bots
+- grafisches Hand-Replay mit Step-Through, Autoplay und Session-Navigation
+- PokerStars-kompatible Hand-History (Export pro Hand oder ganze Session)
+- 7-stufige Handbewertung mit Board-Kontext (Premium bis Air)
+- Board-Verschlechterungserkennung und Protection-Betting
+- ReadTyp: Gegner-Bet-Sizing-Analyse mit Abweichungserkennung
+- Stack- und positionsabhängiges Raise-Sizing
 
 Noch nicht als stabiler Funktionsumfang enthalten sind zusätzliche Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
 
@@ -115,6 +122,7 @@ Die laufende Offline-App benötigt das Server-Paket nicht. Eine Onlinefunktion i
 
 - [Roadmap](ROADMAP.md) — geplante Entwicklungsphasen und langfristige Vision
 - [Changelog](CHANGELOG.md) — tatsächlich veröffentlichte Änderungen je Version
+- [Entwicklerdokumentation](DEV.md) — Architektur, Kalibrierung, Debugging
 
 ## Hinweis
 

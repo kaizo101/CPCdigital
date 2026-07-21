@@ -10,12 +10,12 @@ import type {
   PublicGameState,
   TableOptions,
 } from '@cpc/shared'
-import type { BotDebugDecision, BotDebugProfile } from './bot-debug'
-import type { BotIdentity } from './bot-identities'
-import type { DecisionComplexity } from './bot-decision-complexity'
-import type { DecisionResult } from './bot-pipeline'
-import type { BotDecisionTiming } from './bot-timing'
-import type { DisplayCurrency } from './utils/format'
+import type { BotDebugDecision, BotDebugProfile } from '../bot-debug'
+import type { BotIdentity } from '../bot-identities'
+import type { DecisionComplexity } from '../bot-decision-complexity'
+import type { DecisionResult } from '../bot-pipeline'
+import type { BotDecisionTiming } from '../bot-timing'
+import type { DisplayCurrency } from '../utils/format'
 
 export const SESSION_DEBUG_SCHEMA = 'cpcdigital.session-debug'
 export const SESSION_DEBUG_SCHEMA_VERSION = 1

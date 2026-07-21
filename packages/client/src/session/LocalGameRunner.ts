@@ -16,30 +16,30 @@ import {
   updateMentalState,
   updateOpponentRead,
   updateOpponentSizing,
-} from './bot-tag'
-import type { BotState, MentalEvent } from './bot-tag'
-import { getPlayerActionLabel, type PlayerActionLabel } from './action-display'
-import { createBotContext } from './bot-context'
-import { planBotDecisionTiming, sampleTargetReactionMs } from './bot-timing'
-import { assessDecisionComplexity } from './bot-decision-complexity'
-import type { DecisionComplexity } from './bot-decision-complexity'
-import type { ScoredAction } from './bot-decision-types'
-import type { BotContext } from './bot-context'
-import type { BotDecision } from './bot-tag'
-import type { BotDebugDecision, BotDebugProfile } from './bot-debug'
-import { getRunoutRevealStages, getRunoutStageDelay } from './community-runout'
-import { getBotArchetype } from './bot-archetypes'
+} from '../bot-tag'
+import type { BotState, MentalEvent } from '../bot-tag'
+import { getPlayerActionLabel, type PlayerActionLabel } from '../action-display'
+import { createBotContext } from '../bot-context'
+import { planBotDecisionTiming, sampleTargetReactionMs } from '../bot-timing'
+import { assessDecisionComplexity } from '../bot-decision-complexity'
+import type { DecisionComplexity } from '../bot-decision-complexity'
+import type { ScoredAction } from '../bot-decision-types'
+import type { BotContext } from '../bot-context'
+import type { BotDecision } from '../bot-tag'
+import type { BotDebugDecision, BotDebugProfile } from '../bot-debug'
+import { getRunoutRevealStages, getRunoutStageDelay } from '../community-runout'
+import { getBotArchetype } from '../bot-archetypes'
 import {
   loadPersistentRoster,
   recordSession,
   selectReturningSessionIdentities,
-} from './bot-roster-store'
+} from '../bot-roster-store'
 import type {
   BotIdentity,
-} from './bot-identities'
-import { habitIdsToActiveHabits } from './bot-habits'
-import type { ActiveHabit } from './bot-habits'
-import type { BotArchetypeId } from './bot-archetypes'
+} from '../bot-identities'
+import { habitIdsToActiveHabits } from '../bot-habits'
+import type { ActiveHabit } from '../bot-habits'
+import type { BotArchetypeId } from '../bot-archetypes'
 
 function identityArchetypeId(botState: BotState): BotArchetypeId {
   const name = botState.personality.archetype.name
@@ -58,7 +58,11 @@ import {
   SESSION_DEBUG_SCHEMA,
   SESSION_DEBUG_SCHEMA_VERSION,
 } from './session-debug-record'
-import type { DisplayCurrency } from './utils/format'
+import type { DisplayCurrency } from '../utils/format'
+import { buildReplayFromSession, formatHandHistory } from './hand-replay'
+import type { HandReplay } from './hand-replay'
+import { BotRebuyManager } from './bot-rebuy-manager'
+import type { RebuyRequestStatus } from './bot-rebuy-manager'
 
 export type { SessionDecisionSnapshot, SessionHistoryEvent } from './session-debug-record'
 
@@ -77,9 +81,8 @@ export interface LocalGameState {
   showdownCards: Readonly<Record<string, [Card, Card]>>
   sessionHistory: readonly SessionHistoryEvent[]
   pendingRebuyPlayerIds: readonly string[]
+  handReplays: readonly HandReplay[]
 }
-
-export type RebuyRequestStatus = 'applied' | 'queued' | 'not-needed' | 'unavailable'
 
 export class LocalGameRunner {
   private game: PokerGame | null = null
@@ -103,8 +106,11 @@ export class LocalGameRunner {
   private botDebugDecisions: BotDebugDecision[] = []
   private previousSnapshotActionCountPerHand = new Map<number, number>()
   private nextBotDebugSequence = 1
-  private pendingRebuyPlayerIds = new Set<string>()
-  private startingChips = 0
+  private rebuyManager: BotRebuyManager = new BotRebuyManager(
+    null, [], new Set(), new Map(), new Map(), new Map(), new Map(), new Map(), new Map(), 0, true,
+  )
+  private handReplays: HandReplay[] = []
+  private playerNames = new Map<string, string>()
   private runoutStartCardCount: number | null = null
   private visibleCommunityCardCount: number | null = null
   private currentHandNumber = 0
@@ -127,7 +133,8 @@ export class LocalGameRunner {
         playerActionLabels: {},
         showdownCards: {},
         sessionHistory: [...this.sessionHistory],
-        pendingRebuyPlayerIds: [...this.pendingRebuyPlayerIds],
+        pendingRebuyPlayerIds: [...this.rebuyManager.pendingRebuyPlayerIds],
+        handReplays: [...this.handReplays],
       }
     }
     const playerView = this.game.getPlayerView(this.heroId)
@@ -149,7 +156,8 @@ export class LocalGameRunner {
       playerActionLabels: { ...this.playerActionLabels },
       showdownCards: { ...this.showdownCards },
       sessionHistory: [...this.sessionHistory],
-      pendingRebuyPlayerIds: [...this.pendingRebuyPlayerIds],
+      pendingRebuyPlayerIds: [...this.rebuyManager.pendingRebuyPlayerIds],
+      handReplays: [...this.handReplays],
     }
   }
 
@@ -216,7 +224,7 @@ export class LocalGameRunner {
         players: this.players.map(player => ({ ...player })),
         currentGameState: this.game ? this.game.getPublicState() : null,
         lastResults: this._lastResults?.map(result => ({ ...result })) ?? null,
-        pendingRebuyPlayerIds: [...this.pendingRebuyPlayerIds],
+        pendingRebuyPlayerIds: [...this.rebuyManager.pendingRebuyPlayerIds],
       },
       botProfiles: [...this.botStates.entries()].map(([playerId, botState]) => ({
         playerId,
@@ -224,7 +232,10 @@ export class LocalGameRunner {
       })),
       botIdentities: [...this.botIdentities.entries()].map(([playerId, identity]) => ({
         playerId,
-        identity,
+        identity: {
+          ...identity,
+          rebuysRemaining: (identity.rebuyPolicy?.maxRebuys ?? 0) - (this.rebuyManager.rebuysUsed.get(playerId) ?? 0),
+        },
       })),
       history: this.sessionHistory.filter(h => h.handNumber >= firstIncludedHand),
       decisionSnapshots: this.sessionDecisionSnapshots.filter(s => s.handNumber >= firstIncludedHand),
@@ -237,7 +248,7 @@ export class LocalGameRunner {
     for (const l of this.listeners) l()
   }
 
-  setupTable(options: TableOptions, botCount: number): Player[] {
+  setupTable(options: TableOptions, botCount: number, rebuyEnabled = true): Player[] {
     this.cleanup()
 
     if (!Number.isFinite(options.smallBlind) || options.smallBlind <= 0) throw new Error('Small blind must be positive')
@@ -291,8 +302,9 @@ export class LocalGameRunner {
     this.botDebugDecisions = []
     this.previousSnapshotActionCountPerHand.clear()
     this.nextBotDebugSequence = 1
-    this.pendingRebuyPlayerIds.clear()
-    this.startingChips = options.startingChips
+    this.handReplays = []
+    this.playerNames.clear()
+    this.playerNames.set(this.heroId, 'You')
     this.runoutStartCardCount = null
     this.visibleCommunityCardCount = null
     this.currentHandNumber = 0
@@ -321,6 +333,7 @@ export class LocalGameRunner {
       this.botStates.set(botId, createBotStateFromIdentity(identity, archetype, sessionRandom))
       this.botHabits.set(botId, habitIdsToActiveHabits(identity.identitySeed, identity.habitIds))
       identityIds.push(identity.id)
+      this.playerNames.set(botId, identity.name)
       const bot: Player = {
         id: botId,
         name: identity.name,
@@ -343,6 +356,21 @@ export class LocalGameRunner {
       ...(seedNamespace === null ? {} : { seed: `${seedNamespace}:deck` }),
     })
 
+    this.rebuyManager = new BotRebuyManager(
+      this.game,
+      this.players,
+      this.botIds,
+      this.botIdentities,
+      this.botStates,
+      this.botHabits,
+      this.observedEventCountByBot,
+      this.observedVpipPlayersByBot,
+      this.playerNames,
+      options.startingChips,
+      rebuyEnabled,
+      () => this.notify(),
+    )
+
     this.notify()
     return this.players
   }
@@ -351,10 +379,18 @@ export class LocalGameRunner {
     if (!this.game) return
     if (this.game.getPublicState().phase !== 'waiting') return
 
-    this.applyPendingRebuys()
+    this.rebuyManager.applyPendingRebuys()
 
     const eligible = this.players.filter(p => p.chips > 0 && !p.isSittingOut)
-    if (eligible.length < 2) return
+    if (eligible.length < 2) {
+      if (this.rebuyManager.rebuyEnabled && this.rebuyManager.leftTableBots.size > 0) {
+        // Force immediate replacement so the table doesn't die
+        this.rebuyManager.processReplacements(this.currentHandNumber)
+        this.syncChips()
+      }
+      const retry = this.players.filter(p => p.chips > 0 && !p.isSittingOut)
+      if (retry.length < 2) return
+    }
 
     this._lastResults = null
     this.runoutStartCardCount = null
@@ -566,8 +602,20 @@ export class LocalGameRunner {
         updateMentalState(botState.mentalState, botState.personality, event, bigBlind)
       }
     }
+    this.syncChips()
+
+    try {
+      this.captureHandReplay(gs)
+      if (this.rebuyManager.rebuyEnabled) {
+        this.rebuyManager.processAutoRebuys()
+        this.rebuyManager.processReplacements(this.currentHandNumber)
+      }
+    } catch (err) {
+      console.error('[LocalGameRunner] post-hand processing failed:', (err as Error).message)
+    }
 
     this.syncChips()
+
     const resultDisplayMs = Object.keys(this.showdownCards).length > 0
       ? SHOWDOWN_DISPLAY_MS
       : UNCONTESTED_RESULT_DISPLAY_MS
@@ -662,7 +710,69 @@ export class LocalGameRunner {
     const gs = this.game.getPublicState()
     for (const p of this.players) {
       const updated = gs.players.find(gp => gp.id === p.id)
-      if (updated) p.chips = updated.chips
+      if (updated) {
+        p.chips = updated.chips
+        p.isSittingOut = updated.isSittingOut
+      }
+    }
+  }
+
+  private captureHandReplay(gs: PublicGameState): void {
+    if (!this.game || this.currentHandNumber <= 0) return
+    // Only capture once per hand
+    if (this.handReplays.length > 0 && this.handReplays[this.handReplays.length - 1]?.handNumber === this.currentHandNumber) return
+    const handEvents = this.game.getPublicHandHistory()
+    const holeCards: Record<string, [Card, Card]> = {}
+    const revealed = this.game.getRevealedCards()
+    for (const id of Object.keys(revealed)) {
+      holeCards[id] = revealed[id]
+    }
+    // Include hero cards
+    const heroView = this.game.getPlayerView(this.heroId)
+    if (heroView.ownCards) {
+      holeCards[this.heroId] = heroView.ownCards
+    }
+    // Include bot hole cards from debug decisions
+    for (const d of this.botDebugDecisions) {
+      if (d.handNumber === this.currentHandNumber && d.context.ownCards) {
+        holeCards[d.playerId] = d.context.ownCards as [Card, Card]
+      }
+    }
+
+    const botInfos = this.botDebugDecisions
+      .filter(d => d.handNumber === this.currentHandNumber)
+      .map(d => ({
+        playerId: d.playerId,
+        action: d.decision.action.type === 'raise' ? `raise ${d.decision.action.amount}` : d.decision.action.type,
+        handCategory: d.evaluation.handAssessment.category,
+        scores: d.decision.allActions.slice(0, 3).map(a => ({
+          action: a.action.type === 'raise' ? `raise ${a.action.amount}` : a.action.type,
+          utility: a.utility,
+        })),
+        topContributions: (d.decision.allActions.find(a => a.action.type === d.decision.action.type)?.contributions ?? [])
+          .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+          .slice(0, 5)
+          .map(c => `${c.label}: ${c.value > 0 ? '+' : ''}${c.value}`),
+      }))
+
+    const replay = buildReplayFromSession(
+      this.currentHandNumber,
+      handEvents.map(e => ({ event: e })),
+      holeCards,
+      this.game.getLastHandResults(),
+      this.playerNames,
+      botInfos,
+    )
+    if (replay) {
+      this.handReplays.push(replay)
+      if (this.handReplays.length > 50) this.handReplays.shift()
+
+      try {
+        const stored = JSON.parse(localStorage.getItem('cpcdigital-hand-history') ?? '[]')
+        stored.push(replay)
+        if (stored.length > 200) stored.splice(0, stored.length - 200)
+        localStorage.setItem('cpcdigital-hand-history', JSON.stringify(stored))
+      } catch { /* localStorage full */ }
     }
   }
 
@@ -706,33 +816,7 @@ export class LocalGameRunner {
   }
 
   requestRebuy(playerId: string): RebuyRequestStatus {
-    if (!this.game || this.startingChips <= 0) return 'unavailable'
-    const player = this.game.getPublicState().players.find(candidate => candidate.id === playerId)
-    if (!player) return 'unavailable'
-    if (player.chips >= this.startingChips) return 'not-needed'
-
-    this.pendingRebuyPlayerIds.add(playerId)
-    if (this.game.getPublicState().phase === 'waiting') {
-      this.applyPendingRebuys()
-      this.notify()
-      return 'applied'
-    }
-
-    this.notify()
-    return 'queued'
-  }
-
-  private applyPendingRebuys(): void {
-    if (!this.game || this.game.getPublicState().phase !== 'waiting') return
-
-    for (const playerId of this.pendingRebuyPlayerIds) {
-      const player = this.players.find(candidate => candidate.id === playerId)
-      if (player && player.chips < this.startingChips) {
-        player.chips = this.startingChips
-        this.game.setPlayerChips(playerId, this.startingChips)
-      }
-    }
-    this.pendingRebuyPlayerIds.clear()
+    return this.rebuyManager.requestRebuy(playerId)
   }
 
   cleanup(): void {
@@ -743,6 +827,7 @@ export class LocalGameRunner {
     this.autoStartTimer = null
     this.runoutTimer = null
     this.game = null
+    this.rebuyManager.setGame(null)
     this._lastResults = null
     this.showdownCards = {}
     this.sessionHistory = []
@@ -750,8 +835,7 @@ export class LocalGameRunner {
     this.botDebugDecisions = []
     this.previousSnapshotActionCountPerHand.clear()
     this.nextBotDebugSequence = 1
-    this.pendingRebuyPlayerIds.clear()
-    this.startingChips = 0
+    this.rebuyManager.reset()
     this.runoutStartCardCount = null
     this.visibleCommunityCardCount = null
     this.currentHandNumber = 0

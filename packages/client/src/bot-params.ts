@@ -97,8 +97,9 @@ export interface BettingParams {
   raiseCapMin: number
   raiseCapMax: number
   raisePotFraction: {
-    nuts: number
+    premium: number
     strong: number
+    good: number
     draw: number
     medium: number
     default: number
@@ -229,11 +230,11 @@ export const DEFAULT_PARAMS: BotParams = {
   },
   scoring: {
     handStrength: {
-      fold: { air: 10, weak: -10, medium: -30, strong: -50, nuts: -50 },
-      check: { air: 20, weak: 20, medium: 10, strong: -30, nuts: -30 },
-      call: { air: -25, weak: 10, medium: 20, strong: -10, nuts: -10 },
-      raise: { air: -25, 'weak-draw': 15, 'weak-no-draw': -25, medium: 5, strong: 30, nuts: 40 },
-      allIn: { air: -42, 'weak-draw': -18, 'weak-no-draw': -42, medium: -15, strong: 28, nuts: 42 },
+      fold: { air: 10, weak: 5, marginal: -5, medium: -30, good: -42, strong: -50, premium: -50 },
+      check: { air: 20, weak: 20, marginal: 15, medium: 10, good: -15, strong: -30, premium: -30 },
+      call: { air: -25, weak: -5, marginal: 5, medium: 20, good: -5, strong: -10, premium: -10 },
+      raise: { air: -25, 'weak-draw': 15, 'weak-no-draw': -25, weak: -20, marginal: -10, medium: 5, good: 20, strong: 30, premium: 40 },
+      allIn: { air: -42, 'weak-draw': -18, 'weak-no-draw': -42, weak: -35, marginal: -25, medium: -15, good: 10, strong: 28, premium: 42 },
     },
     streetInitiative: {
       cbetOpportunity: 12,
@@ -310,8 +311,9 @@ export const DEFAULT_PARAMS: BotParams = {
     raiseCapMin: -30,
     raiseCapMax: 20,
     raisePotFraction: {
-      nuts: 0.9,
+      premium: 0.9,
       strong: 0.75,
+      good: 0.65,
       draw: 0.65,
       medium: 0.55,
       default: 0.45,
