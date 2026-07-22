@@ -47,6 +47,7 @@ function makeContext(
       blockerValue: 0,
       drawTypes: [],
       boardGotWorse: false,
+      strength: 50,
     },
     metrics: {
       potOdds: 0.25,

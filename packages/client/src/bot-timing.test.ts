@@ -3,8 +3,8 @@ import { planBotDecisionTiming, sampleTargetReactionMs } from './bot-timing'
 
 describe('bot reaction timing', () => {
   it('samples the artificial target independently from computation', () => {
-    expect(sampleTargetReactionMs(() => 0)).toBe(600)
-    expect(sampleTargetReactionMs(() => 0.5)).toBe(1200)
+    expect(sampleTargetReactionMs(() => 0)).toBe(900)
+    expect(sampleTargetReactionMs(() => 0.5)).toBe(1350)
     expect(sampleTargetReactionMs(() => 1)).toBe(1800)
   })
 
@@ -12,8 +12,8 @@ describe('bot reaction timing', () => {
     const normal = sampleTargetReactionMs(() => 0.5, { score: 10, difficultAllIn: false })
     const difficultAllIn = sampleTargetReactionMs(() => 0.5, { score: 80, difficultAllIn: true })
 
-    expect(normal).toBe(1400)
-    expect(difficultAllIn).toBe(4800)
+    expect(normal).toBe(1550)
+    expect(difficultAllIn).toBe(4950)
     expect(difficultAllIn - normal).toBeGreaterThanOrEqual(3000)
   })
 

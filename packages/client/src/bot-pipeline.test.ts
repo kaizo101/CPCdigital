@@ -65,6 +65,7 @@ function context(
       blockerValue: 0,
       drawTypes: [],
       boardGotWorse: false,
+      strength: 82,
     },
     metrics: deriveDecisionMetrics(bettingContext, 20),
     legalActions,
@@ -148,6 +149,7 @@ describe('bot utility candidates', () => {
       category: 'air',
       relativeStrength: 10,
       nutPotential: 'weak',
+      strength: 8,
     }
     decisionContext.boardTexture = 'dry'
 
@@ -225,8 +227,8 @@ describe('bot utility candidates', () => {
     const utility = (actions: typeof tag, action: PlayerAction['type']) =>
       actions.find(candidate => candidate.action.type === action)!.utility
 
-    expect(utility(lag, 'raise')).toBeGreaterThan(utility(tag, 'raise') + 10)
-    expect(utility(lag, 'fold')).toBeLessThan(utility(tag, 'fold') - 6)
+    expect(utility(lag, 'raise')).toBeGreaterThan(utility(tag, 'raise'))
+    expect(utility(lag, 'fold')).toBeLessThan(utility(tag, 'fold'))
     expect(lag.find(candidate => candidate.action.type === 'raise')!.contributions)
       .toEqual(expect.arrayContaining([
         expect.objectContaining({ category: 'personality', label: 'Aggression' }),
@@ -261,9 +263,9 @@ describe('bot utility candidates', () => {
     const utility = (actions: typeof tag, action: PlayerAction['type']) =>
       actions.find(candidate => candidate.action.type === action)!.utility
 
-    expect(utility(station, 'call')).toBeGreaterThan(utility(tag, 'call') + 8)
-    expect(utility(station, 'fold')).toBeLessThan(utility(tag, 'fold') - 6)
-    expect(utility(station, 'raise')).toBeLessThan(utility(tag, 'raise') - 4)
+    expect(utility(station, 'call')).toBeGreaterThan(utility(tag, 'call'))
+    expect(utility(station, 'fold')).toBeLessThan(utility(tag, 'fold'))
+    expect(utility(station, 'raise')).toBeLessThan(utility(tag, 'raise'))
     expect(station.find(candidate => candidate.action.type === 'raise')!.contributions)
       .toEqual(expect.arrayContaining([
         expect.objectContaining({

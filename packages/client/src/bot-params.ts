@@ -27,6 +27,13 @@ export interface ScoringParams {
     raise: Record<string, number>
     allIn: Record<string, number>
   }
+  strengthWeights: {
+    foldNeutral: number
+    checkNeutral: number
+    callNeutral: number
+    raiseNeutral: number
+    allInNeutral: number
+  }
   streetInitiative: {
     cbetOpportunity: number
     delayedCbet: number
@@ -231,13 +238,20 @@ export const DEFAULT_PARAMS: BotParams = {
   scoring: {
     handStrength: {
       fold: { air: 10, weak: 5, marginal: -5, medium: -30, good: -42, strong: -50, premium: -50 },
-      check: { air: 20, weak: 20, marginal: 15, medium: 10, good: -15, strong: -30, premium: -30 },
+      check: { air: 10, weak: 10, marginal: 8, medium: 5, good: -15, strong: -30, premium: -30 },
       call: { air: -25, weak: -5, marginal: 5, medium: 20, good: -5, strong: -10, premium: -10 },
       raise: { air: -25, 'weak-draw': 15, 'weak-no-draw': -25, weak: -20, marginal: -10, medium: 5, good: 20, strong: 30, premium: 40 },
       allIn: { air: -42, 'weak-draw': -18, 'weak-no-draw': -42, weak: -35, marginal: -25, medium: -15, good: 10, strong: 28, premium: 42 },
     },
+    strengthWeights: {
+      foldNeutral: 42,
+      checkNeutral: 30,
+      callNeutral: 42,
+      raiseNeutral: 38,
+      allInNeutral: 52,
+    },
     streetInitiative: {
-      cbetOpportunity: 12,
+      cbetOpportunity: 18,
       delayedCbet: 8,
       weaknessSteal: 10,
       weaknessTrap: -5,

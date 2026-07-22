@@ -315,9 +315,54 @@ function analyzePatterns(): void {
             rootCause: classifyRootCause(archetypeId2, calls[0].handCategory, 'call', calls[0].phase, calls[0].topContributions),
           })
         }
+    }
+
+    // C-Bet patterns
+    const flopActions = actions.filter(a => a.phase === 'flop')
+    const pfaFlopActions = flopActions.filter(a => a.isPFA)
+
+    for (const d of pfaFlopActions) {
+      // Case 1: PFA missed C-Bet — checked flop instead of betting
+      if (d.action === 'check' && d.handCategory !== 'premium' && d.handCategory !== 'strong') {
+        patterns.push({
+          archetypeId: d.archetypeId, botName, handNumber: d.handNumber,
+          pattern: 'PFA missed C-Bet opportunity',
+          details: `${d.handCategory} on ${d.board} — checked flop instead of betting | contributions: ${d.topContributions.join('; ') || 'none'}`,
+          severity: d.handCategory === 'good' || d.handCategory === 'medium' ? 'warning' : 'info',
+          rootCause: classifyRootCause(d.archetypeId, d.handCategory, d.action, d.phase, d.topContributions),
+        })
       }
 
-      if (raises.length === 0 && checks.length === 0 && folds.length >= 2 && archetypeId !== 'nit') {
+      // Case 2: PFA C-Bet — check what opponents did (tracked per hand, cross-ref later)
+      if (d.action === 'raise' || d.action === 'bet') {
+        // Track that this hand had a C-Bet for aggregate stats
+        patterns.push({
+          archetypeId: d.archetypeId, botName, handNumber: d.handNumber,
+          pattern: d.action === 'raise' ? 'PFA C-Bet (raise)' : 'PFA C-Bet (bet)',
+          details: `${d.handCategory} on ${d.board}`,
+          severity: 'info',
+          rootCause: 'plausible' as const,
+        })
+      }
+    }
+
+    // Fold-to-CBet: opponent folded on flop after PFA bet
+    const nonPfaFlopFolds = flopActions.filter(a => !a.isPFA && a.action === 'fold')
+    for (const d of nonPfaFlopFolds) {
+      if (d.handCategory === 'medium' || d.handCategory === 'marginal') {
+        patterns.push({
+          archetypeId: d.archetypeId, botName, handNumber: d.handNumber,
+          pattern: 'Folded playable hand to C-Bet',
+          details: `${d.handCategory} on ${d.board} — folded flop facing a bet | contributions: ${d.topContributions.join('; ') || 'none'}`,
+          severity: 'warning',
+          rootCause: classifyRootCause(d.archetypeId, d.handCategory, d.action, d.phase, d.topContributions),
+        })
+      }
+    }
+
+    // }
+
+    if (raises.length === 0 && checks.length === 0 && folds.length >= 2 && archetypeId !== 'nit') {
         const hasStrong = actions.some(a => a.handCategory === 'strong')
         if (hasStrong) {
           patterns.push({

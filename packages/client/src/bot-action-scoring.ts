@@ -34,6 +34,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
   const contributions: ScoreContribution[] = [
     baseContribution(),
     factor('hand-strength', `Fold with ${hand.category}`, params.scoring.handStrength.fold[hand.category]),
+    factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('fold', hand.strength)),
     ...bettingFactors('fold', context),
     ...preflopStrategyFactors('fold', context),
   ]
@@ -69,13 +70,26 @@ function scoreCheck(context: DecisionContext): ScoredAction {
   const contributions: ScoreContribution[] = [
     baseContribution(),
     factor('hand-strength', `Check with ${hand.category}`, params.scoring.handStrength.check[hand.category]),
+    factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('check', hand.strength)),
     ...preflopStrategyFactors('check', context),
   ]
 
-  if (hand.drawTypes.length > 0) contributions.push(factor('hand-strength', 'Free card for draw', 10))
+  const analysis = context.streetAnalysis
+
+  // Free card for draw: only benefits non-PFA callers, not the preflop aggressor
+  if (hand.drawTypes.length > 0 && !(analysis && gameView.phase === 'flop' && analysis.iAmPreflopAggressor)) {
+    contributions.push(factor('hand-strength', 'Free card for draw', 10))
+  }
   if (position === 'late') contributions.push(factor('position', 'Late position information', 10))
   if (isRiver && (isAtLeast(hand.category, 'strong')) && !outOfPosition) {
     contributions.push(factor('hand-strength', 'River check in position misses value', -20))
+  }
+
+  // C-Bet opportunity missed: PFA checking flop is too passive
+  if (analysis && gameView.phase === 'flop' && analysis.iAmPreflopAggressor) {
+    if (hand.category !== 'premium' && hand.category !== 'strong') {
+      contributions.push(factor('position', 'Check as PFA on flop — c-bet preferred', -30))
+    }
   }
 
   contributions.push(...rangeBasedFactors('call', context))
@@ -99,7 +113,7 @@ function scoreCall(context: DecisionContext): ScoredAction {
     : params.scoring.handStrength.call[hand.category]
   const contributions: ScoreContribution[] = [
     baseContribution(),
-    factor('hand-strength', `Call with ${hand.category}`, handValue),
+    factor('hand-strength', `Call with ${hand.category}`, handValue + strengthScore('call', hand.strength)),
     ...bettingFactors('call', context),
     ...preflopStrategyFactors('call', context),
   ]
@@ -134,7 +148,7 @@ function scoreRaise(context: DecisionContext): ScoredAction {
       hand.category === 'weak'
         ? (hand.drawTypes.length > 0 ? params.scoring.handStrength.raise['weak-draw'] : params.scoring.handStrength.raise['weak-no-draw'])
         : params.scoring.handStrength.raise[hand.category]
-    )),
+    ) + strengthScore('raise', hand.strength)),
     ...bettingFactors('raise', context),
     ...preflopStrategyFactors('raise', context),
     ...streetInitiativeFactors(context),
@@ -180,7 +194,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
       hand.category === 'weak'
         ? (hand.drawTypes.length > 0 ? params.scoring.handStrength.allIn['weak-draw'] : params.scoring.handStrength.allIn['weak-no-draw'])
         : params.scoring.handStrength.allIn[hand.category]
-    )),
+    ) + strengthScore('all-in', hand.strength)),
     ...bettingFactors('raise', context),
     ...preflopStrategyFactors('raise', context),
   ]
@@ -291,6 +305,21 @@ function factor(
   return { category, label, value }
 }
 
+function strengthScore(action: 'fold' | 'check' | 'call' | 'raise' | 'all-in', strength: number): number {
+  const w = params.scoring.strengthWeights
+  switch (action) {
+    case 'fold': return clip(Math.round((w.foldNeutral - strength) * 0.15), -8, 8)
+    case 'check': return clip(Math.round((w.checkNeutral - strength) * 0.1), -5, 5)
+    case 'call': return clip(Math.round((strength - w.callNeutral) * 0.12), -6, 6)
+    case 'raise': return clip(Math.round((strength - w.raiseNeutral) * 0.15), -8, 8)
+    case 'all-in': return clip(Math.round((strength - w.allInNeutral) * 0.15), -10, 10)
+  }
+}
+
+function clip(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
 function skillLevelFactor(skill: number): number {
   for (const tier of params.scoring.skillTiers) {
     if (skill >= tier.threshold) return tier.factor
@@ -311,6 +340,10 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
 
   if (gameView.phase === 'flop' && analysis.iAmPreflopAggressor) {
     result.push(factor('position', 'Continuation bet opportunity', Math.round(params.scoring.streetInitiative.cbetOpportunity * skillFactor)))
+    // PFA with air on dry board: classic bluff C-Bet scenario
+    if (hand.category === 'air' && context.boardTexture === 'dry') {
+      result.push(factor('position', 'Bluff C-Bet on dry board as PFA', Math.round(15 * skillFactor)))
+    }
   }
 
   if ((gameView.phase === 'turn' || gameView.phase === 'river') && analysis.iAmPreflopAggressor) {

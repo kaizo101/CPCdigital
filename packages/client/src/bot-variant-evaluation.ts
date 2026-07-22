@@ -23,6 +23,7 @@ export interface VariantHandAssessment {
   blockerValue: number
   drawTypes: string[]
   boardGotWorse: boolean
+  strength: number  // 0-100 numeric hand strength (replaces category for base scoring)
 }
 
 export interface VariantEvaluation {

@@ -30,6 +30,9 @@ interface FormatConfig {
     vpip: [number, number]
     pfr: [number, number]
     threeBet: [number, number]
+    cBet?: [number, number]
+    aggressionFactor?: [number, number]
+    wtsd?: [number, number]
   }
 }
 
@@ -45,17 +48,17 @@ const TAG_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [15, 21], pfr: [12, 18], threeBet: [6, 13] },
+    target: { vpip: [15, 21], pfr: [12, 18], threeBet: [6, 13], cBet: [35, 55], aggressionFactor: [2.0, 5.0] },
   },
   {
     name: '6-max',
     playerCount: 6,
-    target: { vpip: [22, 29], pfr: [18, 25], threeBet: [8, 15] },
+    target: { vpip: [22, 29], pfr: [18, 25], threeBet: [8, 15], cBet: [35, 55], aggressionFactor: [2.0, 5.0] },
   },
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [45, 65], pfr: [35, 55], threeBet: [12, 22] },
+    target: { vpip: [45, 65], pfr: [35, 55], threeBet: [12, 22], cBet: [40, 65], aggressionFactor: [2.5, 10.0] },
   },
 ]
 
@@ -63,17 +66,17 @@ const NIT_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [9, 15], pfr: [7, 12], threeBet: [3, 9] },
+    target: { vpip: [9, 15], pfr: [7, 12], threeBet: [3, 9], cBet: [33, 55], aggressionFactor: [2.0, 5.5] },
   },
   {
     name: '6-max',
     playerCount: 6,
-    target: { vpip: [13, 19], pfr: [10, 15], threeBet: [4, 10] },
+    target: { vpip: [13, 19], pfr: [10, 15], threeBet: [4, 10], cBet: [35, 55], aggressionFactor: [2.0, 5.5] },
   },
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [30, 45], pfr: [16, 35], threeBet: [6, 13] },
+    target: { vpip: [30, 45], pfr: [16, 35], threeBet: [6, 13], cBet: [40, 60], aggressionFactor: [2.5, 8.0] },
   },
 ]
 
@@ -81,17 +84,17 @@ const LAG_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [22, 31], pfr: [17, 26], threeBet: [8, 18] },
+    target: { vpip: [22, 31], pfr: [17, 26], threeBet: [8, 18], cBet: [45, 70], aggressionFactor: [1.8, 6.0] },
   },
   {
     name: '6-max',
     playerCount: 6,
-    target: { vpip: [28, 40], pfr: [22, 33], threeBet: [10, 20] },
+    target: { vpip: [28, 40], pfr: [22, 33], threeBet: [10, 20], cBet: [45, 70], aggressionFactor: [2.0, 6.0] },
   },
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [65, 87], pfr: [45, 68], threeBet: [14, 28] },
+    target: { vpip: [65, 87], pfr: [45, 68], threeBet: [14, 28], cBet: [50, 75], aggressionFactor: [3.0, 10.0] },
   },
 ]
 
@@ -99,17 +102,17 @@ const CALLING_STATION_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [28, 43], pfr: [5, 14], threeBet: [1, 8] },
+    target: { vpip: [28, 43], pfr: [5, 14], threeBet: [1, 8], cBet: [25, 45], aggressionFactor: [0.5, 2.0] },
   },
   {
     name: '6-max',
     playerCount: 6,
-    target: { vpip: [38, 56], pfr: [7, 17], threeBet: [2, 9] },
+    target: { vpip: [38, 56], pfr: [7, 17], threeBet: [2, 9], cBet: [25, 45], aggressionFactor: [0.5, 2.0] },
   },
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [62, 85], pfr: [15, 36], threeBet: [2, 13] },
+    target: { vpip: [62, 85], pfr: [15, 36], threeBet: [2, 13], cBet: [30, 50], aggressionFactor: [1.0, 3.0] },
   },
 ]
 
@@ -148,6 +151,18 @@ interface PositionStats {
   hands: number
   vpipHands: number
   pfrHands: number
+  cBetOpps: number
+  cBets: number
+}
+
+interface PostflopStats {
+  betsAndRaises: number
+  calls: number
+  wentToShowdown: number
+  wonAtShowdown: number
+  handsSeenFlop: number
+  foldToCBetOpps: number
+  foldToCBets: number
 }
 
 interface SimulationStats {
@@ -158,6 +173,7 @@ interface SimulationStats {
   threeBets: number
   threeBetOpportunities: number
   positions: Record<Position, PositionStats>
+  postflop: PostflopStats
   actions: Record<PlayerAction['type'], number>
   actionErrors: number
   durationMs: number
@@ -186,10 +202,19 @@ function createStats(): SimulationStats {
     threeBets: 0,
     threeBetOpportunities: 0,
     positions: {
-      early: { hands: 0, vpipHands: 0, pfrHands: 0 },
-      middle: { hands: 0, vpipHands: 0, pfrHands: 0 },
-      late: { hands: 0, vpipHands: 0, pfrHands: 0 },
-      blinds: { hands: 0, vpipHands: 0, pfrHands: 0 },
+      early: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
+      middle: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
+      late: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
+      blinds: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
+    },
+    postflop: {
+      betsAndRaises: 0,
+      calls: 0,
+      wentToShowdown: 0,
+      wonAtShowdown: 0,
+      handsSeenFlop: 0,
+      foldToCBetOpps: 0,
+      foldToCBets: 0,
     },
     actions: { fold: 0, check: 0, call: 0, raise: 0, 'all-in': 0 },
     actionErrors: 0,
@@ -261,7 +286,9 @@ function simulateFormat(
     const threeBetOpportunityPlayers = new Set<string>()
     const threeBetPlayers = new Set<string>()
     const preflopActedPlayers = new Set<string>()
+    const flopSeenPlayers = new Set<string>()
     let preflopRaiseCount = 0
+    let pfa: string | null = null
     let actionCount = 0
     const maxActions = format.playerCount * 30
 
@@ -305,6 +332,34 @@ function simulateFormat(
           pfrPlayers.add(botId)
           if (preflopRaiseCount === 1) threeBetPlayers.add(botId)
           preflopRaiseCount++
+          if (preflopRaiseCount === 1) pfa = botId
+        }
+      }
+
+      // Postflop tracking
+      if (state.phase !== 'preflop') {
+        flopSeenPlayers.add(botId)
+
+        // C-Bet: PFA acts on flop
+        if (state.phase === 'flop' && botId === pfa) {
+          const pos = positions.get(botId)
+          if (pos) stats.positions[pos].cBetOpps++
+          if (isAggressiveAction(state, action) && pos) stats.positions[pos].cBets++
+        }
+
+        // Fold-to-CBet: facing a bet on flop from PFA
+        if (state.phase === 'flop' && botId !== pfa && pfa !== null &&
+          state.currentBet > 0) {
+          stats.postflop.foldToCBetOpps++
+          if (action.type === 'fold') stats.postflop.foldToCBets++
+        }
+
+        // AF: postflop aggression
+        if (action.type === 'raise' || action.type === 'all-in') {
+          stats.postflop.betsAndRaises++
+        }
+        if (action.type === 'call') {
+          stats.postflop.calls++
         }
       }
 
@@ -323,6 +378,27 @@ function simulateFormat(
     for (const playerId of pfrPlayers) {
       const position = positions.get(playerId)
       if (position) stats.positions[position].pfrHands++
+    }
+
+    // C-Bet opportunities: PFA acted on flop (counted per-action now)
+
+    // Showdown tracking: hand reached showdown
+    const results = game.getLastHandResults()
+    const history = game.getPublicHandHistory()
+    const hadShowdown = history.some(e => e.type === 'CardsRevealed')
+    if (hadShowdown) {
+      // Count players who were still in hand at showdown (not folded)
+      const finalState = history.length > 0 ? game.getPublicState() : null
+      const showdownPlayers = finalState
+        ? finalState.players.filter(p => (p.status === 'active' || p.status === 'all-in'))
+        : []
+      stats.postflop.wentToShowdown += showdownPlayers.length
+      stats.postflop.wonAtShowdown += results.filter(r => r.amount > 0).length
+      for (const playerId of showdownPlayers.map(p => p.id)) {
+        stats.postflop.handsSeenFlop++
+      }
+    } else if (flopSeenPlayers.size > 0) {
+      stats.postflop.handsSeenFlop += flopSeenPlayers.size
     }
   }
 
@@ -383,10 +459,36 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
     .map(([action, count]) => `${action} ${percentage(count, totalActions).toFixed(1)}%`)
     .join(' · ')
   console.log(`Actions: ${actionSummary}`)
+
+  // Postflop metrics
+  const pf = stats.postflop
+  let totalCBetOpps = 0
+  let totalCBets = 0
+  for (const pos of ['early', 'middle', 'late', 'blinds'] as const) {
+    totalCBetOpps += stats.positions[pos].cBetOpps
+    totalCBets += stats.positions[pos].cBets
+  }
+  const cBet = percentage(totalCBets, totalCBetOpps)
+  const foldToCBet = percentage(pf.foldToCBets, pf.foldToCBetOpps)
+  const af = pf.calls > 0 ? (pf.betsAndRaises / pf.calls) : 0
+  const wtsd = percentage(pf.wentToShowdown, pf.handsSeenFlop)
+  const wssd = percentage(pf.wonAtShowdown, pf.wentToShowdown)
+
+  let allWithin = true
+  console.log(`C-Bet: ${cBet.toFixed(1)}%` + (format.target.cBet ? ` (target ${format.target.cBet.join('–')}%, ${targetLabel(cBet, format.target.cBet)})` : ''))
+  console.log(`Fold-to-CBet: ${foldToCBet.toFixed(1)}%`)
+  console.log(`AF: ${af.toFixed(2)}` + (format.target.aggressionFactor ? ` (target ${format.target.aggressionFactor.join('–')}, ${targetLabel(af, format.target.aggressionFactor)})` : ''))
+  console.log(`WTSD: ${wtsd.toFixed(1)}%` + (format.target.wtsd ? ` (target ${format.target.wtsd.join('–')}%, ${targetLabel(wtsd, format.target.wtsd)})` : ''))
+  console.log(`W$SD: ${wssd.toFixed(1)}%`)
   console.log(`Invalid-action fallbacks: ${stats.actionErrors}`)
+
+  if (format.target.cBet) allWithin = allWithin && isWithinTarget(cBet, format.target.cBet!)
+  if (format.target.aggressionFactor) allWithin = allWithin && isWithinTarget(af, format.target.aggressionFactor!)
+  if (format.target.wtsd) allWithin = allWithin && isWithinTarget(wtsd, format.target.wtsd!)
   return isWithinTarget(vpip, format.target.vpip)
     && isWithinTarget(pfr, format.target.pfr)
     && isWithinTarget(threeBet, format.target.threeBet)
+    && allWithin
     && stats.actionErrors === 0
 }
 

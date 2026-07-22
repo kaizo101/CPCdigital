@@ -61,6 +61,7 @@ function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
       blockerValue: ownCards.some(card => card.rank === 'A' || card.rank === 'K') ? 10 : 0,
       drawTypes: [],
       boardGotWorse: false,
+      strength: preflopStrength(category),
     } satisfies NlheHandAssessment,
     boardTexture: 'neutral' as const,
     preferredRaiseTo: calculatePreflopRaiseTo(context, situation, bettingContext.legalActions.check),
@@ -112,27 +113,31 @@ export function assessHand(
       blockerValue: 0,
       drawTypes: [],
       boardGotWorse: false,
+      strength: 0,
     }
   }
 
   const evalResult = evaluateHand(holeCards, communityCards)
   const rank = getHandRank(evalResult)
   const isRiver = communityCards.length === 5
+  const category = categorizeHand(rank, holeCards, communityCards, evalResult)
+  const drawQuality = isRiver ? 0 : calculateDrawQuality(holeCards, communityCards)
 
   // Build assessment
   const assessment: NlheHandAssessment = {
-    category: categorizeHand(rank, holeCards, communityCards, evalResult),
+    category,
     rank,
     made: rank >= 2,
     relativeStrength: calculateRelativeStrength(evalResult, communityCards, holeCards),
     showdownValue: calculateShowdownValue(rank),
     nutPotential: calculateNutPotential(evalResult, communityCards, holeCards),
     vulnerability: calculateVulnerability(evalResult, communityCards, holeCards),
-    drawQuality: isRiver ? 0 : calculateDrawQuality(holeCards, communityCards),  // No draws on river
+    drawQuality,
     cleanOuts: isRiver ? 0 : calculateCleanOuts(holeCards, communityCards, evalResult),
     blockerValue: calculateBlockerValue(holeCards, communityCards),
     drawTypes: isRiver ? [] : identifyDrawTypes(holeCards, communityCards, evalResult),
     boardGotWorse: boardGotMoreDangerous(communityCards),
+    strength: calculateHandStrength(category, drawQuality),
   }
 
   // Add pair type if applicable
@@ -504,7 +509,9 @@ function calculateCleanOuts(holeCards: [Card, Card], communityCards: Card[], eva
         const cardKey = `${i}-${flushSuit}`
         if (!communityCards.some(c => rankValue(c.rank) === i && c.suit === flushSuit)) {
           outCards.add(cardKey)
-        }
+}
+
+/** Map category to base numeric strength (0-100), modulated by draw quality. */
       }
     }
   } else if (draws.includes('flush-draw')) {
@@ -709,4 +716,33 @@ function boardGotMoreDangerous(communityCards: Card[]): boolean {
   if (connected && prev.length >= 3) return true
 
   return false
+}
+
+/** Map category to base numeric strength (0-100), modulated by draw quality. */
+function calculateHandStrength(category: HandStrengthCategory, drawQuality: number): number {
+  const base: Record<HandStrengthCategory, number> = {
+    premium: 95,
+    strong: 82,
+    good: 68,
+    medium: 55,
+    marginal: 40,
+    weak: 25,
+    air: 8,
+  }
+  let strength = base[category] ?? 25
+  strength += Math.min(10, drawQuality * 0.15)
+  return Math.max(0, Math.min(100, Math.round(strength)))
+}
+
+function preflopStrength(category: HandStrengthCategory): number {
+  const base: Record<HandStrengthCategory, number> = {
+    premium: 95,
+    strong: 82,
+    good: 68,
+    medium: 55,
+    marginal: 40,
+    weak: 25,
+    air: 8,
+  }
+  return base[category] ?? 25
 }

@@ -39,6 +39,31 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
 
 
+## [0.7.0] — 2026-07-22
+
+### Added
+
+- **Postflop-Kalibrierung**: 5 neue Metriken in `simulation.ts` (C-Bet%, Fold-to-CBet, AF, WTSD, W$SD)
+- **C-Bet-Targets**: pro Archetyp und Format (TAG 35-55%, Nit 33-55%, LAG 42-70%, CS 25-45%)
+- **PFA-Tracking**: Preflop-Aggressor wird erkannt und C-Bet-Chancen pro Position gezählt
+- **`hand.strength`**: numerischer Handstärkewert 0-100 mit Draw-Quality-Bonus (bis +10)
+- **Hybrid-Scoring**: Strength-Bonus (±5-10) zusätzlich zum Kategorie-System
+- **Bluff-C-Bet-Bonus**: +15 für PFA mit Air auf trockenem Board
+- **Session-Evaluator C-Bet-Patterns**: "PFA missed C-Bet", "Folded playable hand to C-Bet"
+
+### Changed
+
+- **C-Bet-Opportunity-Bonus**: von +12 auf +18 erhöht
+- **Check-Basiswerte gesenkt**: air +20→+10, weak +20→+10, marginal +15→+8, medium +10→+5
+- **Min-Reaktionszeit Bots**: 600ms → 900ms
+
+### Fixed
+
+- **"Free card for draw"-Bug**: Bonus galt fälschlich auch für PFA am Flop (widerspricht C-Bet-Logik)
+- **PFA-Check-Penalty**: −30 für Air/Weak am Flop (nicht für Good+)
+- **C-Bet% von 20% auf 47-60% angehoben** (TAG 6-max: 20% → 52%)
+- **"You wins" → "You win"** in der Ergebnisanzeige
+
 ## [0.6.0] — 2026-07-22
 
 ### Added
@@ -152,7 +177,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/kaizo101/CPCdigital/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/kaizo101/CPCdigital/compare/v0.4.0...v0.6.0
 [0.4.0]: https://github.com/kaizo101/CPCdigital/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/kaizo101/CPCdigital/compare/v0.3.0...v0.3.1

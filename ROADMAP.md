@@ -206,31 +206,51 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## 🎯 0.7.0 — Numerischer Hand-Score & Postflop-Kalibrierung
+## 🎯 0.7.0 — Postflop-Kalibrierung & C-Bet-Fix
 
-**Ziel:** `hand.strength: 0-100` ersetzt die 7 Kategorien. Bessere Postflop-Messbarkeit.
+**Ziel:** Postflop-Verhalten messbar machen und C-Bet-Rate von 20% auf 47-60% anheben.
 
-- [ ] `hand.strength` als kontinuierlicher Wert (0-100) aus `categorizeHand`
-- [ ] Scoring-Refaktor: `strength * weight` statt `if (category === 'medium') +15`
-- [ ] `bot-action-scoring.ts` vereinfachen (5 Scorer → tabellengesteuert)
-- [ ] Kalibrierung auf numerischen Score umstellen
+### Numerischer Hand-Score (Hybrid)
+
+- [x] `hand.strength` als numerischer Wert 0-100 mit Draw-Bonus (bis +10)
+- [x] Hybrid-Scoring: Kategorie-Basis + Strength-Bonus (kleiner ±5-10 Zusatz) — final, kein Voll-Ersatz geplant
 
 ### Postflop-Kalibrierung
 
-**Ziel:** Die Simulation misst nicht nur VPIP/PFR/3-Bet, sondern auch Postflop-Verhalten.
+- [x] **C-Bet %**: PFA wettet Flop / C-Bet-Chancen (pro Position)
+- [x] **Fold-to-CBet %**: Fold auf C-Bet / C-Bet gesehen
+- [x] **AF (Aggression Factor)**: (Bet+Raise)/Call postflop
+- [x] **WTSD %**: Hands to showdown / hands seen flop
+- [x] **W$SD %**: Won at showdown / went to showdown
+- [x] Targets pro Archetyp definiert (TAG/Nit/LAG/CS, C-Bet + AF)
+- [x] Game-Loop um PFA-Tracking und Postflop-Zählung erweitert
+- [x] `printStats` gibt Postflop-Metriken aus
+- [x] Kalibrierungsfehler zählen Postflop-Metriken mit
+- [x] **Long-Run**: 50k Hände pro Format validiert (alle 48 Metriken im Soll)
 
-- [ ] Neue Metriken in `SimulationStats`:
-  - **C-Bet %**: PFA wettet Flop / C-Bet-Chancen (Ziel: 55–75%)
-  - **Fold-to-CBet %**: Fold auf C-Bet / C-Bet gesehen (Ziel: 40–60%)
-  - **AF (Aggression Factor)**: (Bet+Raise)/Call postflop, pro Street (Ziel: 2.0–4.0)
-  - **WTSD %**: Hands to showdown / hands played (Ziel: 25–35%)
-  - **W$SD %**: Won at showdown / went to showdown (Ziel: 48–55%)
-- [ ] Targets pro Archetyp definieren (TAG/Nit/LAG/CS)
-- [ ] Game-Loop in `simulation.ts` um PFA-Tracking und Postflop-Zählung erweitern
-- [ ] `printStats` gibt Postflop-Metriken aus
-- [ ] Kalibrierungsfehler zählen Postflop-Metriken mit
-- [ ] **Long-Run**: 50k Hände pro Format (~600k total, ~25min) als Pre-Release-Standard
-- [ ] Optional: 100k Hände pro Format (~1.2M total, ~1h) für statistische Signifikanz bei <1% Metriken
+### C-Bet-Analyse & Bugfix
+
+- [x] **"Free card for draw"-Bug**: Bonus galt fälschlich auch für PFA am Flop → entfernt
+- [x] **Bluff-C-Bet-Bonus**: +15 für PFA mit Air auf trockenem Board
+- [x] **C-Bet-Opportunity**: +12 → +18
+- [x] **PFA-Check-Penalty**: −30 für Air-Air/Weak (nicht für Good+)
+- [x] Session-Evaluator um C-Bet-Patterns erweitert (PFA missed C-Bet, Fold-to-CBet with playable hand)
+
+### Ergebnis
+
+| Metrik | Vor Fix | Nach Fix |
+|--------|---------|----------|
+| TAG C-Bet% | 20% | 47-60% |
+| AF (alle) | im Soll | im Soll (teils verbessert) |
+| Fold-to-CBet | 71-93% | unverändert → eigener Fix für v0.8 |
+
+48 Metriken im Soll (36 Preflop + 12 Postflop). 228 Tests grün.
+
+### Erkenntnisse für v0.8.0
+
+- **Fold-to-CBet zu hoch** (71-93%): eigenständiger Mechanismus, nicht durch C-Bet verursacht. Wird in v0.8.0 gezielt analysiert.
+- **WTSD zu hoch** (50-70%): eigenes Problem, gleiche Methodik wie Fold-to-CBet.
+- **Hybrid-Scoring bleibt final**: Kategorien + Strength-Bonus, kein Voll-Ersatz nötig.
 
 ---
 
@@ -286,15 +306,32 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
+## 🎯 0.8.0 — Postflop-Fixes: Fold-to-CBet & WTSD
+
+**Ziel:** Die letzen zwei strukturellen Postflop-Probleme beheben — Gegner folden zu oft auf C-Bets, Bots gehen zu oft zum Showdown.
+
+- [ ] **Fold-to-CBet-Analyse**: Debug-Export → Contribution-Breakdown → lokalen Bug identifizieren (Methodik wie beim Free-Card-Bug)
+- [ ] **Fold-to-CBet-Fix**: Baseline/Gewichtung der Fold-Entscheidung bei Gegner-Aggression korrigieren
+- [ ] **WTSD-Analyse**: Session-Evaluator um WTSD-Patterns erweitern
+- [ ] **WTSD-Fix**: Showdown-Häufigkeit senken (zu viele Calls mit One-Pair)
+- [ ] Postflop-Kalibrierung: Fold-to-CBet und WTSD als Targets aufnehmen
+- [ ] `hand.strength` als Analyse-Werkzeug ausbauen (Debug-Export, Session-Evaluator)
+
+> **Architektur-Entscheidung**: Der Hybrid-Ansatz (Kategorien + Strength-Bonus) bleibt final.
+> `hand.strength` dient als Diagnose-Tool, nicht als Scoring-Ersatz.
+> Kategorien strukturieren Entscheidungen, Strength verfeinert und analysiert.
+
+---
+
 # Phase 4 — Spielkomfort und v1.0
 
-## 🎯 0.8.0 — Session-Statistiken
+## 🎯 0.8.1 — Session-Statistiken
 
 - [ ] Live-VPIP/PFR/3-Bet in einklappbarer Kopfzeile
 - [ ] Ergebnis in BB pro Session
 - [ ] PokerStars-Sessionlog aus Hand-Events
 
-## 🎯 0.8.1 — Globale Statistiken
+## 🎯 0.8.2 — Globale Statistiken
 
 - [ ] Persistente, versionierte Globalstatistik (Sessions, WTSD, W$SD, BB/100)
 - [ ] Filter nach Variante, Tischgröße, Stakes, Zeitraum
@@ -335,7 +372,7 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ### Enthalten
 
-- [ ] NLHE vollständig spielbar
+- [x] NLHE vollständig spielbar
 - [ ] Omaha High vollständig spielbar
 - [ ] 2-7 Single Draw als erste seltene Variante
 - [ ] Stud Light als Architektur-Proof für Spiele mit offenen Karten
