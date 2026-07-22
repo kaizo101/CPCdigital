@@ -198,21 +198,39 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [x] Session-übergreifende Hand-History (localStorage, max 200 Hände)
 - [x] Hand-Filter nach Pot-Größe (≥ X BB)
 - [x] Bot-Entscheidungsgründe im Replay (Scores, Beiträge, Hand-Kategorie)
-- [ ] `LocalGameRunner` splitten (Rebuy-Manager, Replay-Store auslagern)
+- [x] `LocalGameRunner` splitten (Rebuy-Manager in `bot-rebuy-manager.ts` ausgelagert)
+- [x] Session-Ordner (`session/`) eingeführt
 
 > **Retrospektive** — v0.6.0 hat 19 Features in einem Release gebündelt. Besser wären 3 Minor-Releases gewesen:
 > `v0.5.2` Rebuys · `v0.5.3` Replay · `v0.5.4` 7-Kategorien. Ab v0.7 wird jedes Release auf **ein Thema** fokussiert.
 
 ---
 
-## 🎯 0.7.0 — Numerischer Hand-Score
+## 🎯 0.7.0 — Numerischer Hand-Score & Postflop-Kalibrierung
 
-**Ziel:** `hand.strength: 0-100` ersetzt die 7 Kategorien als Basiswert fürs Scoring. Weniger Parameter, weniger Interaktionen.
+**Ziel:** `hand.strength: 0-100` ersetzt die 7 Kategorien. Bessere Postflop-Messbarkeit.
 
 - [ ] `hand.strength` als kontinuierlicher Wert (0-100) aus `categorizeHand`
 - [ ] Scoring-Refaktor: `strength * weight` statt `if (category === 'medium') +15`
 - [ ] `bot-action-scoring.ts` vereinfachen (5 Scorer → tabellengesteuert)
 - [ ] Kalibrierung auf numerischen Score umstellen
+
+### Postflop-Kalibrierung
+
+**Ziel:** Die Simulation misst nicht nur VPIP/PFR/3-Bet, sondern auch Postflop-Verhalten.
+
+- [ ] Neue Metriken in `SimulationStats`:
+  - **C-Bet %**: PFA wettet Flop / C-Bet-Chancen (Ziel: 55–75%)
+  - **Fold-to-CBet %**: Fold auf C-Bet / C-Bet gesehen (Ziel: 40–60%)
+  - **AF (Aggression Factor)**: (Bet+Raise)/Call postflop, pro Street (Ziel: 2.0–4.0)
+  - **WTSD %**: Hands to showdown / hands played (Ziel: 25–35%)
+  - **W$SD %**: Won at showdown / went to showdown (Ziel: 48–55%)
+- [ ] Targets pro Archetyp definieren (TAG/Nit/LAG/CS)
+- [ ] Game-Loop in `simulation.ts` um PFA-Tracking und Postflop-Zählung erweitern
+- [ ] `printStats` gibt Postflop-Metriken aus
+- [ ] Kalibrierungsfehler zählen Postflop-Metriken mit
+- [ ] **Long-Run**: 50k Hände pro Format (~600k total, ~25min) als Pre-Release-Standard
+- [ ] Optional: 100k Hände pro Format (~1.2M total, ~1h) für statistische Signifikanz bei <1% Metriken
 
 ---
 
