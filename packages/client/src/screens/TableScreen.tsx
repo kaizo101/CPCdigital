@@ -53,7 +53,7 @@ function HandResultOverlay({ results, players, currency }: { results: HandResult
         const p = players.find(pl => pl.id === r.playerId)
         return (
           <div key={i} style={{ color: '#fff', fontSize: 14 }}>
-            {p?.name} wins {formatChips(r.amount, currency)} {r.handName && `(${r.handName})`}
+            {p?.name === 'You' ? 'You win' : `${p?.name} wins`} {formatChips(r.amount, currency)} {r.handName && `(${r.handName})`}
           </div>
         )
       })}

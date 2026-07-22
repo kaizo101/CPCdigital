@@ -240,6 +240,34 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
+## 🎯 0.7.3 — Stud Light (Architektur-Proof: offene Karten)
+
+**Ziel:** Prüfen, ob `BotContext` offene Gegnerkarten als neue Informationsebene aufnehmen kann.
+
+- [ ] Engine: Stud-Regeln (Ante, Bring-in, 3rd/4th/5th/6th/7th Street)
+- [ ] `BotGameView` um `visibleOpponentCards` erweitern
+- [ ] Vereinfachte Hand-Evaluation (nur Kategorien, kein volles Scoring)
+- [ ] Dummy-Bot: liest offene Karten, trifft keine strategischen Entscheidungen
+- [ ] Keine vollständige Stud-Bot-AI — nur Architektur-Validierung
+
+---
+
+## 🎯 0.7.4 — UI-Skalierung & Responsive Layout
+
+**Ziel:** Auf Tablets und kleinen Bildschirmen spielbar, Actionleiste verdeckt keine Tischelemente.
+
+- [ ] **Actionleiste**: verdeckt auf Desktop untere Spieler-Sitze → in Tisch-Layout integrieren oder kollabierbar machen
+- [ ] **Table-Shell**: `aspect-ratio` statt fester `vh`-Berechnung, füllt verfügbaren Platz
+- [ ] **PlayerSeat**: Schriftgrößen, Avatar, Chip-Anzeige mit `clamp()` skalieren
+- [ ] **Cards**: Größen für kleine Viewports optimieren (aktuell clamp-Minimum zu klein)
+- [ ] **Setup-Screen**: Inputs und Layout für schmale Bildschirme
+- [ ] **Replayer**: Steuerung auf kleinen Screens bedienbar
+- [ ] **Touch**: Rechtsklick-Rebuy durch Long-Press oder sichtbaren Button ersetzen
+- [ ] **Hochformat-Tablet**: Layout bricht nicht auseinander
+- [ ] **PlayerSeat-Positionierung**: Panels ragen in Tisch oder Karten werden am Rand abgeschnitten — `getSeatPosition` braucht Padding zur Tischkante und Kollisionsvermeidung zwischen benachbarten Sitzen
+
+---
+
 # Phase 4 — Spielkomfort und v1.0
 
 ## 🎯 0.8.0 — Session-Statistiken
@@ -257,11 +285,15 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 ## 🎯 0.9.0 — Tischkomfort
 
 - [ ] BB-Anzeige-Modus (Stacks, Bets, Pot in BB)
+- [ ] Währungswahl um "Keine" erweitern (nur Zahlen, kein €/$)
 - [ ] 4-Color-Deck-Option
 - [ ] Min-/Max-Bet direkt in der Oberfläche
-- [ ] Handbeschreibung variantenspezifisch
+- [ ] Handbeschreibung variantenspezifisch (z.B. "Two Pair, A's & Q's") — optional zuschaltbar, standardmäßig aus
 
 ## 🎯 0.9.1 — Session-Flexibilität
+
+- [ ] Hero-Name im Setup wählbar (statt immer "You")
+- [ ] Bot-Avatare: 44 Bilder für alle Identities (aktuell nur Initial-Fallback)
 
 - [ ] Individuelle Starting-Stacks pro Bot
 - [ ] Konfigurierbare Buy-in-Grenzen (40–250 BB)
@@ -272,8 +304,10 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 - [ ] Animationen (Karten, Chips)
 - [ ] Sound-Effekte
-- [ ] Touch-Optimierung
+- [ ] Tablet-tauglich: Querformat, Touch-Bedienung, kein Zoom nötig
 - [ ] Performance-Test für lange Sessions
+
+> Tablet läuft im Browser (GitHub Pages) — keine APK nötig.
 
 ---
 
@@ -286,6 +320,7 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] NLHE vollständig spielbar
 - [ ] Omaha High vollständig spielbar
 - [ ] 2-7 Single Draw als erste seltene Variante
+- [ ] Stud Light als Architektur-Proof für Spiele mit offenen Karten
 - [ ] mehrere unterscheidbare Bot-Persönlichkeiten
 - [ ] Skill, Reads und Mental State
 - [ ] vollständige Hand History und Replay
@@ -293,6 +328,10 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] robuste Engine- und Bot-Tests
 - [ ] stabiles Desktop-Packaging
 - [ ] Dokumentation für Architektur und Variantenmodule
+
+### Optional (post-1.0)
+
+- [ ] Session-Log (PokerStars-Dealer-Stil, links unten, einklappbar) — Live-Hand-History als Text
 
 ### Packaging
 
@@ -364,17 +403,22 @@ Was ist passiert?
 
 ## 🎯 1.4.0 — Poker-Rätsel
 
-**Ziel:** Konkrete Situationen ähnlich wie bei Schachaufgaben trainieren.
+**Ziel:** Konkrete Situationen trainieren — inspiriert von existierenden Puzzle-Apps, aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
 
-- [ ] feste Grundlagenrätsel
-- [ ] Fold-, Call-, Raise- und Bet-Sizing-Aufgaben
+- [ ] feste Grundlagenrätsel (Preflop, Postflop, Bet-Sizing)
+- [ ] Fold-, Call-, Raise- und All-in-Entscheidungen
 - [ ] Draw- und Pat-Entscheidungen
 - [ ] Range- und Read-Aufgaben
 - [ ] Fehler in einer Hand finden
 - [ ] mehrstufige Hände nachspielen
 - [ ] Schwierigkeitsgrade
-- [ ] Bewertung mit Abstufungen statt nur richtig/falsch
+- [ ] **Erklärungsschicht**: Warum ist Aktion X besser als Y? Welche Faktoren waren entscheidend?
+  - Nicht nur "falsch", sondern "zu passiv — du hast Top Pair auf trockenem Board, ein Bet von 60% Pot
+    hätte Value generiert, während der Check deinem Gegner eine Free Card gibt"
+  - Verweis auf relevante Wiki-Begriffe und Strategiekonzepte
+  - Alternative Aktionen mit Erklärung, warum sie schlechter sind
 - [ ] persönliche Rätsel aus eigenen Sessions generieren
+- [ ] Orientierung an etablierten Poker-Puzzle-Apps (UX-Flow, Schwierigkeitskurve), aber mit eigenem CPC-Lernansatz
 
 ---
 
@@ -402,12 +446,17 @@ Was ist passiert?
 - [ ] Pat-Signale und Snowing
 - [ ] botseitige Draw- und Blufflogik
 
-## 🎯 1.8.0 — Android
+## 🎯 1.8.0 — Android (optional, Ausrichtung offen)
 
-- [ ] Capacitor-Setup
-- [ ] Touch-Optimierung
-- [ ] Android-spezifische Navigation
-- [ ] APK- und Release-Pipeline
+Die Smartphone-Darstellung von Poker ist auf kleinen Bildschirmen eine große UX-Herausforderung.
+Ob die APK ein vollständiges Spiel, ein reiner Lernclient oder nur Tablet-optimiert bleibt, wird nach v0.9.2 entschieden.
+
+- [ ] Capacitor-Setup und APK-Pipeline
+- [ ] entweder: Phone-Layout (radial, Overlay-Aktionen, nur Querformat)
+- [ ] oder: beschnittene Version (z.B. max 6-max, keine komplexen Varianten) — Spiel auf Phone möglich, aber mit Einschränkungen
+- [ ] oder: APK streichen, Fokus auf Browser (GitHub Pages)
+
+> Touch-Optimierung und responsive UI werden bereits in v0.7.4 (Scaling) und v0.9.2 (Tablet) behandelt.
 
 ## 🎯 1.9.0 — Table Rules und Multiplayer-Readiness
 
@@ -433,7 +482,7 @@ Was ist passiert?
 ## Später
 
 - Razz
-- Seven Card Stud
+- Seven Card Stud (vollständige AI, aufbauend auf v0.7.3 Stud Light)
 - Stud Hi-Lo
 - Mixed Games
 - Tournament-Modus
@@ -448,14 +497,21 @@ Was ist passiert?
 
 ```text
 packages/
-├── client/              React UI
-├── poker-engine/        Regeln, State Machine, Commands und Events
-├── variant-modules/     NLHE, Omaha, 2-7 Draw usw.
-├── bots/                Decision Engine, Personality, Reads und Mental State
-├── analysis/            Decision Records, Replay und spätere Session-Analyse
-├── knowledge/           Wiki-, Tutorial- und Rätselinhalte
-├── shared/              gemeinsame Typen
-└── electron/            Desktop-Wrapper
+├── client/src/                    aktuell flach, langfristig:
+│   ├── session/                   ✓ LocalGameRunner, Rebuys, Replay, Export
+│   ├── components/                ✓ PokerTable, PlayerSeat, Cards
+│   ├── screens/                   ✓ SetupScreen, TableScreen
+│   └── utils/                     ✓ format, positions
+├── poker-engine/                  ✓ Regeln, State Machine, Hand-Evaluator
+├── shared/                        ✓ gemeinsame Typen
+├── electron/                      ✓ Desktop-Wrapper (main, preload)
+├── server/                        älterer Online-Prototyp (ungenutzt)
+│
+│   # Zielarchitektur (noch nicht umgesetzt):
+├── variant-modules/               NLHE, Omaha, 2-7 Draw, Stud (je eigener Ordner)
+├── bots/                          Decision Engine, Personality, Reads, Mental State
+├── analysis/                      Decision Records, Replay, Session-Analyse
+└── knowledge/                     Wiki-, Tutorial- und Rätselinhalte
 ```
 
 ---

@@ -1,5 +1,86 @@
 # Entwicklerdokumentation
 
+## Quick-Start
+
+```bash
+npm install
+npm run dev          # Vite + Electron
+npm test             # 228 Tests in ~1.5s
+npm run build        # Client + Engine + Electron bauen
+```
+
+## Architektur-Überblick
+
+### Pakete
+
+```
+packages/
+├── client/src/           React UI + Bot-AI + Session-Management
+│   ├── session/          LocalGameRunner, Rebuys, Replay, Debug-Export
+│   ├── components/       PokerTable, PlayerSeat, Cards, HandReplayer
+│   ├── screens/          SetupScreen, TableScreen
+│   └── utils/            format, positions
+├── poker-engine/src/     Regeln, State Machine, Hand-Evaluator
+├── shared/src/           Typen (Player, Card, GameState, Events)
+└── electron/src/         Desktop-Wrapper (main, preload)
+```
+
+### Wichtige Dateien
+
+| Datei | Zeilen | Verantwortung |
+|-------|--------|---------------|
+| `session/LocalGameRunner.ts` | 907 | Game-Loop, Bot-Management, Event-Capture |
+| `session/bot-rebuy-manager.ts` | 241 | Rebuys, Replacements, Leave-on-Bust |
+| `session/hand-replay.ts` | 310 | Replay-Builder, PokerStars-Formatierer |
+| `bot-action-scoring.ts` | 521 | Fold/Check/Call/Raise/All-In-Scoring |
+| `bot-action-modifiers.ts` | 291 | Persönlichkeit, Stack, Tilt-Modifier |
+| `bot-decision-metrics.ts` | 238 | SPR, Pot-Odds, Bet-Sizing |
+| `bot-params.ts` | 433 | Zentralisierte Tuning-Konstanten |
+| `bot-pipeline.ts` | 95 | Decision-Pipeline (Variant→Scoring→Auswahl) |
+| `nlhe-hand-evaluation.ts` | 719 | Hand-Kategorien, Draws, Vulnerability |
+| `bot-identities.ts` | 247 | Identity-Generator, Rebuy-Policies |
+| `bot-habits.ts` | 271 | 12 Habits mit archetyp-spezifischen Präferenzen |
+| `poker-engine/src/game.ts` | 1050 | Engine: State Machine, Betting, Showdown |
+
+### Entscheidungs-Flow (Bot)
+
+```
+1. PokerEngine → getPlayerView(botId) → BotGameView
+2. BotGameView + HandHistory → BotContext
+3. BotContext → VariantEvaluator.evaluate() → HandAssessment
+4. HandAssessment + Context → scoreFold/Check/Call/Raise/AllIn
+5. ScoredAction[] → weightedSelection() → chosen action
+```
+
+Jede der 5 Scoring-Funktionen durchläuft ~15 Modifier:
+```
+Base(Hand-Kategorie) + Position + Board-Texture + Gegner-Reads
++ Stack-Tiefe + SPR + Preflop-Strategy + Street-Initiative
++ Range-Estimation + Habits + Mental-State + Line-Planning
+→ Utility-Score (0-100)
+```
+
+### Eine neue Variante hinzufügen
+
+1. `bot-variant-registry.ts`: Variant registrieren
+2. Neue Datei `omaha-hand-evaluation.ts`: `VariantEvaluator` implementieren
+   - `evaluate(context)` → `VariantEvaluation { handAssessment, boardTexture }`
+   - `handAssessment.category` + `relativeStrength` + `vulnerability` + `drawTypes`
+3. Variant-spezifische Phasen in `poker-engine/src/game-variant.ts` definieren
+4. UI: Setup-Screen um Variantenauswahl erweitern
+
+Der Bot-Stack (Scoring, Habits, Mental State, Reads) arbeitet auf dem generischen `VariantHandAssessment`-Interface — keine Änderungen nötig.
+
+### Game-Loop
+
+```
+Setup → startHand() → postBlinds() → scheduleBotAction()
+  → Bot entscheidet → applyAction() → syncChips() → notify()
+  → nächster Spieler oder checkHandEnd()
+  → Ergebnis anzeigen → finishHandPresentation()
+  → setTimeout → startHand() (nächste Hand)
+```
+
 ## Kalibrierung
 
 Die Bot-Kalibrierung (VPIP, PFR, 3-Bet) wird mit `npx tsx packages/client/src/simulation.ts` gemessen. Standard: 10.000 Hände pro Format × 3 Formate × 4 Archetypen = 120.000 Hände, Laufzeit ~5 Minuten.

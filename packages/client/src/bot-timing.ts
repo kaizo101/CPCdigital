@@ -15,7 +15,7 @@ export interface BotDecisionTiming {
 }
 
 export const DEFAULT_BOT_TIMING: Readonly<BotTimingPolicy> = {
-  minimumReactionMs: 600,
+  minimumReactionMs: 900,
   maximumReactionMs: 1800,
   maximumComplexityBonusMs: 2000,
   difficultAllInBonusMs: 2000,
