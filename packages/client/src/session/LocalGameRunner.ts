@@ -631,7 +631,6 @@ export class LocalGameRunner {
         updateMentalState(botState.mentalState, botState.personality, event, bigBlind)
       }
     }
-    this.syncChips()
 
     try {
       this.captureHandReplay(gs)
@@ -643,8 +642,6 @@ export class LocalGameRunner {
       console.error('[LocalGameRunner] post-hand processing failed:', (err as Error).message)
     }
 
-    this.syncChips()
-
     const resultDisplayMs = Object.keys(this.showdownCards).length > 0
       ? SHOWDOWN_DISPLAY_MS
       : UNCONTESTED_RESULT_DISPLAY_MS
@@ -653,6 +650,7 @@ export class LocalGameRunner {
       : getRunoutRevealStages(this.runoutStartCardCount, gs.communityCards.length)
 
     if (revealStages.length > 0) {
+      const savedChips = new Map(this.players.map(p => [p.id, p.chips]))
       this._lastResults = null
       this.notify()
       this.revealRunoutStages(
@@ -661,6 +659,7 @@ export class LocalGameRunner {
         results,
         resultDisplayMs,
         getRunoutStageDelay(this.runoutStartCardCount ?? 0),
+        savedChips,
       )
       return
     }
@@ -674,15 +673,20 @@ export class LocalGameRunner {
     results: HandResult[],
     resultDisplayMs: number,
     stageDelayMs: number,
+    savedChips: Map<string, number>,
   ): void {
     if (this.runoutTimer) clearTimeout(this.runoutTimer)
     this.runoutTimer = setTimeout(() => {
       this.runoutTimer = null
+      for (const [id, chips] of savedChips) {
+        const p = this.players.find(pl => pl.id === id)
+        if (p) p.chips = chips
+      }
       this.visibleCommunityCardCount = stages[stageIndex]
       this.notify()
 
       if (stageIndex + 1 < stages.length) {
-        this.revealRunoutStages(stages, stageIndex + 1, results, resultDisplayMs, stageDelayMs)
+        this.revealRunoutStages(stages, stageIndex + 1, results, resultDisplayMs, stageDelayMs, savedChips)
         return
       }
 
@@ -694,6 +698,7 @@ export class LocalGameRunner {
     this.visibleCommunityCardCount = null
     this.runoutStartCardCount = null
     this._lastResults = results
+    this.syncChips()
     this.notify()
 
     if (this.autoStartTimer) clearTimeout(this.autoStartTimer)
@@ -707,26 +712,21 @@ export class LocalGameRunner {
     const potSize = results.reduce((sum, r) => sum + r.amount, 0)
     const potBb = potSize / bigBlind
 
-    // Find the opponent who won (if any)
     const opponentWinner = results.find(r => r.playerId !== botId && r.amount > 0)
     const opponentId = opponentWinner?.playerId
 
     if (wonResult) {
-      // Bot won
       if (potBb < 5) {
         return { type: 'won-small-pot', potBb }
       } else if (potBb > 20) {
-        // Check if it was a suckout or successful bluff
         return { type: 'suckout-win', potBb }
       } else {
         return { type: 'won-small-pot', potBb }
       }
     } else {
-      // Bot lost
       if (potBb < 5) {
         return { type: 'lost-small-pot', potBb, opponentId }
       } else if (potBb > 20) {
-        // Check if it was a bad beat or cooler
         return { type: 'lost-big-pot', potBb, opponentId }
       } else {
         return { type: 'lost-small-pot', potBb, opponentId }
