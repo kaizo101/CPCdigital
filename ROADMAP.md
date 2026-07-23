@@ -308,21 +308,22 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## ✅ 0.7.5 — UI-Skalierung & Responsive Layout
+## ⚠️ 0.7.5 — UI-Skalierung & Responsive Layout (in Arbeit)
 
 **Ziel:** Auf Tablets und Phone-Landscape testbar — Tester-Akquise.
 
-- [x] Table-Shell-Floor: `max(300px, ...)` für Landscape-Phones
-- [x] Landscape-Media-Query (`max-height: 450px`): reduzierte Paddings
+- [x] Landscape-Media-Query (`max-height: 450px`): reduzierte Paddings, kein Scrollen
 - [x] Cards: Clamp-Minimum reduziert (36/50px statt 46/64px)
 - [x] ActionButtons: minHeight 74→56px, fontSize 18→16
 - [x] Touch: Long-Press (600ms) öffnet Rebuy-Menü
 - [x] Landscape-Lock: `maximum-scale=1.0, user-scalable=no`
-- [ ] **Actionleiste**: verdeckt auf Desktop untere Spieler-Sitze → später (nicht kritisch für Landscape)
-- [ ] **Replayer**: Steuerung auf kleinen Screens optimieren → später
+- [x] Actionbar-Overlap: Bottom-Padding 260px, Formel auf 470px umgestellt
+- [ ] **Phone-Landscape**: Actionbar noch zu dominant, Slider ausgeblendet → Usability leidet
+- [ ] **Replayer**: Steuerung auf kleinen Screens → später
 - [ ] Portrait-Modus: bewusst nicht supported (zu schmal für Poker-Layout)
 
-> Phone-Landscape (≥667px) ist spielbar, Tablet (≥768px) komfortabel.
+> Desktop und Tablet sind gut spielbar. Phone-Landscape funktioniert, aber die Actionbar
+> nimmt noch zu viel Raum ein — muss in einem Folge-Release iteriert werden.
 
 ---
 
