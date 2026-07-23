@@ -66,6 +66,23 @@ export function SessionStats({
           <span><strong>{bbPer100.toFixed(1)}</strong> BB/100</span>
           <span style={{ color: '#4b5563' }}>·</span>
           <span style={{ color: '#6b7280' }}>{stats.totalHands} hands</span>
+          <button
+            onClick={onExport}
+            title="Session-Log exportieren"
+            style={{
+              marginLeft: 2,
+              padding: '2px 6px',
+              borderRadius: 3,
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'transparent',
+              color: '#6b7280',
+              fontFamily: 'monospace',
+              fontSize: 10,
+              cursor: 'pointer',
+            }}
+          >
+            📄
+          </button>
         </div>
       )}
 
