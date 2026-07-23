@@ -64,7 +64,7 @@ export function decideBotDecision(
   const position = botContext.position.category
   const playerCount = state.players.filter(p => p.status !== 'folded' && p.status !== 'waiting').length
   const evaluation = evaluateBotVariant(botContext)
-  const { handAssessment, boardTexture, preferredRaiseTo } = evaluation
+  const { handAssessment, boardTexture, preferredRaiseTo, categoryScores } = evaluation
   const metrics = deriveDecisionMetrics(bettingContext, state.bigBlind)
 
   // Get opponent stats if available
@@ -120,6 +120,7 @@ export function decideBotDecision(
     metrics,
     legalActions,
     preferredRaiseTo,
+    categoryScores,
     preflopRangeAction: state.phase === 'preflop' && holeCards.length === 2
       ? getPreflopAction(
           holeCards,

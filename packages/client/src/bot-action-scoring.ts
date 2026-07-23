@@ -33,7 +33,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
   const { gameView, handAssessment: hand, metrics, opponentStats, playerCount } = context
   const contributions: ScoreContribution[] = [
     baseContribution(),
-    factor('hand-strength', `Fold with ${hand.category}`, params.scoring.handStrength.fold[hand.category]),
+    factor('hand-strength', `Fold with ${hand.category}`, context.categoryScores.fold[hand.category]),
     factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('fold', hand.strength)),
     ...bettingFactors('fold', context),
     ...preflopStrategyFactors('fold', context),
@@ -69,7 +69,7 @@ function scoreCheck(context: DecisionContext): ScoredAction {
     : 'pot-control'
   const contributions: ScoreContribution[] = [
     baseContribution(),
-    factor('hand-strength', `Check with ${hand.category}`, params.scoring.handStrength.check[hand.category]),
+    factor('hand-strength', `Check with ${hand.category}`, context.categoryScores.check[hand.category]),
     factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('check', hand.strength)),
     ...preflopStrategyFactors('check', context),
   ]
@@ -109,8 +109,8 @@ function scoreCall(context: DecisionContext): ScoredAction {
         ? (isRiver && !outOfPosition) ? 'value' : 'trap'
         : 'pot-control'
   const handValue = (isAtLeast(hand.category, 'strong')) && !isRiver
-    ? params.scoring.handStrength.call.strong
-    : params.scoring.handStrength.call[hand.category]
+    ? context.categoryScores.call.strong
+    : context.categoryScores.call[hand.category]
   const contributions: ScoreContribution[] = [
     baseContribution(),
     factor('hand-strength', `Call with ${hand.category}`, handValue + strengthScore('call', hand.strength)),
@@ -146,8 +146,8 @@ function scoreRaise(context: DecisionContext): ScoredAction {
     baseContribution(),
     factor('hand-strength', `Raise with ${hand.category}`, (
       hand.category === 'weak'
-        ? (hand.drawTypes.length > 0 ? params.scoring.handStrength.raise['weak-draw'] : params.scoring.handStrength.raise['weak-no-draw'])
-        : params.scoring.handStrength.raise[hand.category]
+        ? (hand.drawTypes.length > 0 ? context.categoryScores.raise['weak-draw'] : context.categoryScores.raise['weak-no-draw'])
+        : context.categoryScores.raise[hand.category]
     ) + strengthScore('raise', hand.strength)),
     ...bettingFactors('raise', context),
     ...preflopStrategyFactors('raise', context),
@@ -192,8 +192,8 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
     baseContribution(),
     factor('hand-strength', `All-in with ${hand.category}`, (
       hand.category === 'weak'
-        ? (hand.drawTypes.length > 0 ? params.scoring.handStrength.allIn['weak-draw'] : params.scoring.handStrength.allIn['weak-no-draw'])
-        : params.scoring.handStrength.allIn[hand.category]
+        ? (hand.drawTypes.length > 0 ? context.categoryScores.allIn['weak-draw'] : context.categoryScores.allIn['weak-no-draw'])
+        : context.categoryScores.allIn[hand.category]
     ) + strengthScore('all-in', hand.strength)),
     ...bettingFactors('raise', context),
     ...preflopStrategyFactors('raise', context),

@@ -5,6 +5,7 @@ import { deriveDecisionMetrics } from './bot-decision-metrics'
 import { decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
 import { applySkillPerception } from './bot-skill-perception'
 import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
+import { NLHE_CATEGORY_SCORES } from './bot-category-scores'
 
 const cards: [Card, Card] = [
   { rank: 'A', suit: 'spades' },
@@ -69,6 +70,7 @@ function context(
     },
     metrics: deriveDecisionMetrics(bettingContext, 20),
     legalActions,
+    categoryScores: NLHE_CATEGORY_SCORES,
   }
 }
 

@@ -9,6 +9,7 @@ import {
   TAG_PERSONALITY,
 } from './bot-tag'
 import type { DecisionContext, ScoredAction } from './bot-decision-types'
+import { NLHE_CATEGORY_SCORES } from './bot-category-scores'
 
 function makeContext(
   botState: ReturnType<typeof createBotState>,
@@ -66,6 +67,7 @@ function makeContext(
       raise: { minAmount: 100, maxAmount: 1000 },
       allInAmount: null,
     },
+    categoryScores: NLHE_CATEGORY_SCORES,
     ...overrides,
   }
 }

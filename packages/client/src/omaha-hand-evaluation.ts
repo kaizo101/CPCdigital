@@ -1,8 +1,7 @@
 // Omaha High hand evaluation — must use exactly 2 hole cards + 3 community cards.
 import type { Card } from '@cpc/shared'
-import type { VariantEvaluator, HandStrengthCategory } from './bot-variant-evaluation'
-import type { VariantHandAssessment } from './bot-variant-evaluation'
-import type { BoardTexture } from './bot-variant-evaluation'
+import type { VariantEvaluator, HandStrengthCategory, VariantHandAssessment, BoardTexture } from './bot-variant-evaluation'
+import { PLO_CATEGORY_SCORES } from './bot-category-scores'
 import { evaluateOmahaHand } from '@cpc/poker-engine'
 
 export const omahaVariantEvaluator: VariantEvaluator = {
@@ -20,6 +19,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
         variantId: this.variantId,
         handAssessment: preflopAssess(ownCards, facingRaise, raiseCount),
         boardTexture: 'neutral' as const,
+        categoryScores: PLO_CATEGORY_SCORES,
       }
     }
 
@@ -55,6 +55,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
         strength,
       },
       boardTexture: analyzeOmahaBoardTexture(communityCards),
+      categoryScores: PLO_CATEGORY_SCORES,
     }
   },
 }

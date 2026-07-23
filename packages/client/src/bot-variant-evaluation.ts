@@ -9,6 +9,14 @@ export function isAtLeast(c: HandStrengthCategory, min: HandStrengthCategory): b
 export type NutPotential = 'nuts' | 'near-nuts' | 'strong' | 'medium' | 'weak'
 export type BoardTexture = 'dry' | 'neutral' | 'wet'
 
+export interface CategoryScoreTable {
+  fold: Record<string, number>
+  check: Record<string, number>
+  call: Record<string, number>
+  raise: Record<string, number>
+  allIn: Record<string, number>
+}
+
 /** Variant-neutral strategic description consumed by the decision engine. */
 export interface VariantHandAssessment {
   category: HandStrengthCategory
@@ -30,6 +38,7 @@ export interface VariantEvaluation {
   variantId: string
   handAssessment: VariantHandAssessment
   boardTexture: BoardTexture
+  categoryScores: CategoryScoreTable
   /** Variant-specific sizing suggestion; the decision engine still scores the raise. */
   preferredRaiseTo?: number
 }

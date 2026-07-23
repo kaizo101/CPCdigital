@@ -3,7 +3,7 @@ import type { ActiveHabit } from './bot-habits'
 import type { DecisionMetrics } from './bot-decision-metrics'
 import type { StreetAnalysis } from './bot-street-analysis'
 import type { BotState, Position } from './bot-types'
-import type { BoardTexture, VariantHandAssessment } from './bot-variant-evaluation'
+import type { BoardTexture, CategoryScoreTable, VariantHandAssessment } from './bot-variant-evaluation'
 
 export type ScoreCategory =
   | 'base'
@@ -73,6 +73,7 @@ export interface DecisionContext {
   metrics: DecisionMetrics
   legalActions: LegalActions
   preferredRaiseTo?: number
+  categoryScores: CategoryScoreTable
   preflopRangeAction?: 'raise' | 'call' | 'fold'
   opponentStats?: { vpip: number; aggression: number; foldToBet: number; confidence: number }
   botHabits?: ActiveHabit[]
