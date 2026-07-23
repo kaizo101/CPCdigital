@@ -189,7 +189,7 @@ export function TableScreen({
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 50px 20px 200px;
+          padding: 70px 20px 210px;
           box-sizing: border-box;
         }
         .table-screen {
