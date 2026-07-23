@@ -209,7 +209,7 @@ export function TableScreen({
           box-sizing: border-box;
         }
         .table-shell {
-          width: min(100%, calc((100vh - 320px) * 2.38));
+          width: min(100%, calc((100vh - 420px) * 2.38));
         }
         .bottom-dock {
           position: absolute;
