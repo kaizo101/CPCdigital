@@ -274,30 +274,31 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## 🎯 0.7.2 — WTSD (Postflop-Fold-Verhalten)
+## ✅ 0.7.2 — WTSD (Postflop-Fold-Verhalten)
 
 **Ziel:** Showdown-Rate senken — Bots folden postflop zu selten.
 
-- **Problem**: Alle Archetypen sehen zu viele Showdowns (TAG PLO 6-max: 39.9%,
-  Target 28–38%). "Medium"-Hände callen postflop zu oft (Category-Base: +20).
-- **Ansatz**: Variant-spezifische Category-Scores. PLO "medium" call=+5 statt
-  NLHE +20. NLHE-Tabelle bleibt unangetastet, PLO bekommt konservativere Werte.
-- **Umsetzung**: `GameVariant`-Konfiguration um Category-Score-Tabelle erweitern.
-  `bot-action-scoring.ts` liest Scores aus Variant-Konfig statt globalem Param.
-- **Hebel**: Alle Archetypen, größter struktureller Einzelfix.
+- [x] Variant-spezifische Category-Scores: `CategoryScoreTable` in `bot-variant-evaluation.ts`
+- [x] `VariantEvaluation.categoryScores` → `DecisionContext` → `bot-action-scoring.ts`
+- [x] NLHE: Scores identisch mit `params.scoring.handStrength` (keine Regression)
+- [x] PLO: `call.medium` 20→8, `call.weak` −5→−8, `call.marginal` 5→0
+- [x] TAG PLO WTSD 52%→36%, VPIP 22.4%, PFR 15.2% — 6/6 in Range
+- [x] `bot-category-scores.ts` definiert `NLHE_CATEGORY_SCORES` + `PLO_CATEGORY_SCORES`
 
 ---
 
-## 🎯 0.7.3 — Personality-Tuning (LAG AF / Nit VPIP)
+## ✅ 0.7.3 — Personality-Tuning (LAG AF / Nit VPIP)
 
-**Ziel:** Archetypen spielen ihre Rolle — LAG aggressiver, Nit tighter.
+**Ziel:** Inkrementelles Modifier-Tuning — LAG aggressiver, Nit tighter.
 
-- **Problem**: LAG AF zu niedrig (PLO 1.45, Target 2.5+), Nit VPIP zu hoch
-  (PLO 27.8%, Target 14–22%). Category-Base-Scores dominieren Personality.
-- **Ansatz**: Aufbauend auf 0.7.2 — die variant-spezifischen Category-Scores
-  erlauben pro Archetyp unterschiedliche Fold/Call/Raise-Basen. LAG kriegt
-  höhere Raise-Base, Nit höhere Fold-Base.
-- **Hebel**: 2 Archetypen, nutzt die in 0.7.2 geschaffene Infrastruktur.
+- [x] Aggression-Modifier `/4` → `/3.5` (LAG-Raise-Bonus +1.07)
+- [x] RiskTolerance-Call `/6` → `/8` (LAG-Call −0.75, Nit-Call +1.04)
+- [x] LAG AF 1.60→1.73, Nit WTSD 45→41% (Richtung stimmt, aber noch nicht im Target)
+- [x] NLHE ohne Regression
+
+> **Erkenntnis**: Personality-Modifier (±5–10) können Category-Base-Scores (±20–30)
+> nicht ausreichend gegensteuern. Inkrementelles Nenner-Tuning stößt an Grenzen.
+> Strukturelle Lösung (archetyp-spezifische Score-Tabellen) → v0.7.6.
 
 ---
 
