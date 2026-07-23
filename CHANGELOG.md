@@ -39,6 +39,16 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
 
 
+## [0.7.4] — 2026-07-23
+
+### Added
+
+- **Session-Statistiken**: Live-VPIP/PFR/3-Bet für alle Spieler in einklappbarem Panel (📊)
+- Session-Ergebnis in BB (grün/rot) und BB/100 in der Kopfleiste
+- Session-Log-Export als PokerStars-Text (Download-Button im Stats-Panel)
+- `session-stats.ts`: VPIP/PFR/3B-Tracking + BB/100-Berechnung + Session-Log-Generator
+- `SessionStats.tsx`: einklappbare Komponente mit Spieler-Tabelle und Export
+
 ## [0.7.3] — 2026-07-23
 
 ### Changed
@@ -239,7 +249,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.4...HEAD
+[0.7.4]: https://github.com/kaizo101/CPCdigital/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/kaizo101/CPCdigital/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/kaizo101/CPCdigital/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kaizo101/CPCdigital/compare/v0.7.0...v0.7.1

@@ -302,14 +302,15 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## 🎯 0.7.4 — Session-Statistiken
+## ✅ 0.7.4 — Session-Statistiken
 
 **Ziel:** Live-Feedback während der Session.
 
-- [ ] Live-VPIP/PFR/3-Bet in einklappbarer Kopfzeile
-- [ ] Ergebnis in BB pro Session
-- [ ] BB/100 als primäre Vergleichsmetrik
-- [ ] PokerStars-Sessionlog aus Hand-Events
+- [x] Live-VPIP/PFR/3-Bet in einklappbarer Kopfzeile (📊-Button)
+- [x] Ergebnis in BB pro Session (grün/rot)
+- [x] BB/100 als primäre Vergleichsmetrik
+- [x] Session-Log-Export (PokerStars-Format, Download-Button)
+- [x] `session-stats.ts` + `SessionStats.tsx`-Komponente
 
 ---
 
