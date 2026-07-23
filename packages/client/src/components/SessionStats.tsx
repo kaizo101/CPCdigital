@@ -11,7 +11,7 @@ export function SessionStats({
   onExport: () => void
   showDebug: boolean
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const [visible, setVisible] = useState(false)
   const heroVPIP = getPlayerVPIP(stats, heroId)
   const heroPFR = getPlayerPFR(stats, heroId)
   const hero3Bet = getPlayer3Bet(stats, heroId)
@@ -19,80 +19,97 @@ export function SessionStats({
 
   if (stats.totalHands === 0) return null
 
-  const visiblePlayers = showDebug
-    ? Object.keys(stats.players)
-    : [heroId]
-
   return (
-    <div style={{ position: 'relative' }}>
+    <>
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => setVisible(!visible)}
+        title={visible ? 'Stats ausblenden' : 'Stats einblenden'}
         style={{
           padding: '6px 10px',
           borderRadius: 6,
           border: '1px solid rgba(255,255,255,0.15)',
-          background: expanded ? 'rgba(14,116,144,0.2)' : 'linear-gradient(180deg, #30343c 0%, rgba(25,25,25,0.98) 100%)',
-          color: expanded ? '#bae6fd' : '#9ca3af',
+          background: visible ? 'rgba(14,116,144,0.2)' : 'linear-gradient(180deg, #30343c 0%, rgba(25,25,25,0.98) 100%)',
+          color: visible ? '#bae6fd' : '#9ca3af',
           fontFamily: 'monospace',
-          fontSize: 11,
+          fontSize: 18,
+          lineHeight: 1,
           cursor: 'pointer',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(0,0,0,0.22)',
-          whiteSpace: 'nowrap',
+          boxShadow: visible ? '0 0 0 2px rgba(125,211,252,0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(0,0,0,0.22)',
         }}
-        title="Session-Statistiken"
       >
-        📊 {heroVPIP.toFixed(0)}/{heroPFR.toFixed(0)}/{hero3Bet.toFixed(0)}
-        <span style={{ color: stats.heroBBWon >= 0 ? '#86efac' : '#fca5a5', marginLeft: 6 }}>
-          {stats.heroBBWon >= 0 ? '+' : ''}{stats.heroBBWon.toFixed(1)} BB
-        </span>
+        📊
       </button>
 
-      {expanded && (
+      {visible && !showDebug && (
         <div style={{
-          position: 'absolute',
-          top: '100%',
-          right: 0,
-          marginTop: 6,
-          padding: 12,
-          borderRadius: 8,
-          border: '1px solid rgba(255,255,255,0.12)',
-          background: 'rgba(17,18,21,0.97)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          minWidth: 240,
-          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '6px 12px',
+          borderRadius: 6,
+          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(14,116,144,0.12)',
+          fontFamily: 'monospace',
+          fontSize: 11,
+          color: '#bae6fd',
         }}>
-          <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-            {showDebug ? `Session · ${stats.totalHands} hands · ${bbPer100.toFixed(1)} BB/100` : `Your stats · ${stats.totalHands} hands`}
-          </div>
+          <span>VPIP <strong>{heroVPIP.toFixed(0)}%</strong></span>
+          <span style={{ color: '#4b5563' }}>·</span>
+          <span>PFR <strong>{heroPFR.toFixed(0)}%</strong></span>
+          <span style={{ color: '#4b5563' }}>·</span>
+          <span>3B <strong>{hero3Bet.toFixed(0)}%</strong></span>
+          <span style={{ color: '#4b5563' }}>|</span>
+          <span style={{ color: stats.heroBBWon >= 0 ? '#86efac' : '#fca5a5' }}>
+            <strong>{stats.heroBBWon >= 0 ? '+' : ''}{stats.heroBBWon.toFixed(1)} BB</strong>
+          </span>
+          <span style={{ color: '#4b5563' }}>·</span>
+          <span><strong>{bbPer100.toFixed(1)}</strong> BB/100</span>
+          <span style={{ color: '#4b5563' }}>·</span>
+          <span style={{ color: '#6b7280' }}>{stats.totalHands} hands</span>
+        </div>
+      )}
 
-          <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+      {visible && showDebug && (
+        <div style={{
+          padding: '6px 12px',
+          borderRadius: 6,
+          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(14,116,144,0.12)',
+          fontFamily: 'monospace',
+          fontSize: 11,
+          color: '#bae6fd',
+          minWidth: 320,
+        }}>
+          <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4 }}>
+            Session · {stats.totalHands} hands · {bbPer100.toFixed(1)} BB/100
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ color: '#6b7280', textAlign: 'left' }}>
-                <th style={{ padding: '2px 6px' }}>Player</th>
-                <th style={{ padding: '2px 6px', textAlign: 'right' }}>VPIP</th>
-                <th style={{ padding: '2px 6px', textAlign: 'right' }}>PFR</th>
-                <th style={{ padding: '2px 6px', textAlign: 'right' }}>3B</th>
+                <th style={{ padding: '1px 6px' }}>Player</th>
+                <th style={{ padding: '1px 6px', textAlign: 'right' }}>VPIP</th>
+                <th style={{ padding: '1px 6px', textAlign: 'right' }}>PFR</th>
+                <th style={{ padding: '1px 6px', textAlign: 'right' }}>3B</th>
               </tr>
             </thead>
             <tbody>
-              {visiblePlayers.map(id => {
+              {Object.keys(stats.players).map(id => {
                 const isHero = id === heroId
                 return (
                   <tr key={id} style={{
                     color: isHero ? '#f3f4f6' : '#9ca3af',
                     fontWeight: isHero ? 600 : 400,
                   }}>
-                    <td style={{ padding: '2px 6px' }}>
-                      {playerNames.get(id) ?? id}
-                      {isHero && showDebug ? ' *' : ''}
+                    <td style={{ padding: '1px 6px' }}>
+                      {playerNames.get(id) ?? id}{isHero ? ' *' : ''}
                     </td>
-                    <td style={{ padding: '2px 6px', textAlign: 'right' }}>
+                    <td style={{ padding: '1px 6px', textAlign: 'right' }}>
                       {getPlayerVPIP(stats, id).toFixed(0)}%
                     </td>
-                    <td style={{ padding: '2px 6px', textAlign: 'right' }}>
+                    <td style={{ padding: '1px 6px', textAlign: 'right' }}>
                       {getPlayerPFR(stats, id).toFixed(0)}%
                     </td>
-                    <td style={{ padding: '2px 6px', textAlign: 'right' }}>
+                    <td style={{ padding: '1px 6px', textAlign: 'right' }}>
                       {getPlayer3Bet(stats, id).toFixed(0)}%
                     </td>
                   </tr>
@@ -100,13 +117,11 @@ export function SessionStats({
               })}
             </tbody>
           </table>
-
           <button
             onClick={onExport}
             style={{
-              marginTop: 10,
-              width: '100%',
-              padding: '5px 8px',
+              marginTop: 6,
+              padding: '3px 8px',
               borderRadius: 4,
               border: '1px solid rgba(255,255,255,0.1)',
               background: '#1f2228',
@@ -116,10 +131,10 @@ export function SessionStats({
               cursor: 'pointer',
             }}
           >
-            📄 Session-Log exportieren
+            📄 Export
           </button>
         </div>
       )}
-    </div>
+    </>
   )
 }
