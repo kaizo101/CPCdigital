@@ -21,7 +21,7 @@ export function applyPersonalityModifiers(
       contributions.push({
         category: 'personality',
         label: 'Aggression',
-        value: (aggression - 50) / 4,
+        value: (aggression - 50) / 3.5,
       })
       if (aggression < 30) {
         contributions.push({
@@ -57,7 +57,7 @@ export function applyPersonalityModifiers(
       contributions.push({
         category: 'personality',
         label: 'Risk tolerance affects calling',
-        value: (riskTolerance - 50) / 6 * callModScale,
+        value: (riskTolerance - 50) / 8 * callModScale,
       })
       contributions.push({
         category: 'personality',
