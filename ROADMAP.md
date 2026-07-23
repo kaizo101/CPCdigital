@@ -440,12 +440,13 @@ für die Learning-Erweiterung.
 
 ### Nach v1.0 verschoben
 
-- **Stud Light** (Architektur-Proof offene Karten) — technische Vorarbeit für Razz/Stud, kein Consumer-Feature
-- **Globale Statistiken** (Session-übergreifend, Filter nach Variante/Stakes) — braucht mehrere Sessions als Datenbasis
+- **Stud Light** (Architektur-Proof offene Karten) — jetzt Teil von 1.7.0 (Stud-Familie)
 
 ---
 
-## 🎯 1.1.0 — Bankroll-System
+# Phase 5 — Meta-Game
+
+## 🎯 1.0.1 — Bankroll-System
 
 **Ziel:** Spielgeld kriegt Wert durch Konsequenz. Gutes Bankroll-Management führt zum
 Aufstieg, schlechtes zum Abstieg. Kurze Stacks und "eh egal, ist nur Spielgeld" werden
@@ -459,8 +460,8 @@ durch Guardrails verhindert.
 
   | Stake | Blinds | Buy-in (60–100 BB) | Aufstieg ab | Abstieg unter |
   |-------|--------|---------------------|-------------|---------------|
-  | NL2 | 0.01/0.02 | €1.20–2.00 | €80 (40 BI) | €40 (20 BI) |
-  | NL5 | 0.02/0.05 | €3.00–5.00 | €200 | €100 |
+  | NL2  | 0.01/0.02 | €1.20–2.00 | €80 (40 BI) | €40 (20 BI) |
+  | NL5  | 0.02/0.05 | €3.00–5.00 | €200 | €100 |
   | NL10 | 0.05/0.10 | €6.00–10.00 | €400 | €200 |
   | NL25 | 0.10/0.25 | €15.00–25.00 | €1.000 | €500 |
   | NL50 | 0.25/0.50 | €30.00–50.00 | €2.000 | €1.000 |
@@ -489,13 +490,24 @@ durch Guardrails verhindert.
 - [ ] Aufstiegs-/Abstiegs-Benachrichtigung
 - [ ] BB/100 und Bankroll in der Session-Stats-Kopfleiste
 
-> **Abgrenzung zu Session-Stats (0.7.4)**: Session-Stats tracken VPIP/PFR/BB innerhalb
-> einer Session. Das Bankroll-System trackt die gesamte Bankroll über Sessions hinweg
-> und steuert die Stakes.
+---
+
+## 🎯 1.0.2 — Globale Statistiken
+
+**Ziel:** Session-übergreifendes Tracking mit Filterung und Vergleich.
+
+- [ ] Persistente, versionierte Globalstatistik (Sessions, WTSD, W$SD, BB/100)
+- [ ] Filter nach Variante, Tischgröße, Stakes, Zeitraum
+- [ ] BB/100 als primäre Vergleichsmetrik pro Stake
+- [ ] Bankroll-Verlauf als Graph (optional, minimal)
 
 ---
 
-# Phase 5 — Learning Layer ab v1.x
+# Phase 6 — Learning Layer
+
+> Die Learning-Schicht ist das, was CPCdigital von anderen Poker-Apps unterscheidet.
+> Jede neue Variante profitiert sofort von Wiki, Tutorials und Analyse.
+> Die Daten sind seit v0.2 vorhanden — die UI-Schicht kommt jetzt.
 
 ## 🎯 1.1.0 — Wiki und Glossar
 
@@ -557,7 +569,8 @@ Was ist passiert?
 
 ## 🎯 1.4.0 — Poker-Rätsel
 
-**Ziel:** Konkrete Situationen trainieren — inspiriert von existierenden Puzzle-Apps, aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
+**Ziel:** Konkrete Situationen trainieren — inspiriert von existierenden Puzzle-Apps,
+aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
 
 - [ ] feste Grundlagenrätsel (Preflop, Postflop, Bet-Sizing)
 - [ ] Fold-, Call-, Raise- und All-in-Entscheidungen
@@ -567,54 +580,82 @@ Was ist passiert?
 - [ ] mehrstufige Hände nachspielen
 - [ ] Schwierigkeitsgrade
 - [ ] **Erklärungsschicht**: Warum ist Aktion X besser als Y? Welche Faktoren waren entscheidend?
-  - Nicht nur "falsch", sondern "zu passiv — du hast Top Pair auf trockenem Board, ein Bet von 60% Pot
-    hätte Value generiert, während der Check deinem Gegner eine Free Card gibt"
-  - Verweis auf relevante Wiki-Begriffe und Strategiekonzepte
-  - Alternative Aktionen mit Erklärung, warum sie schlechter sind
 - [ ] persönliche Rätsel aus eigenen Sessions generieren
-- [ ] Orientierung an etablierten Poker-Puzzle-Apps (UX-Flow, Schwierigkeitskurve), aber mit eigenem CPC-Lernansatz
 
 ---
 
-# Weitere Varianten und Plattformen
+# Phase 7 — Mehr Varianten
+
+> Neue Varianten bauen auf den existierenden Architektur-Grundlagen auf
+> und profitieren direkt von Wiki, Tutorials und Rätseln aus Phase 6.
 
 ## 🎯 1.5.0 — 2-7 Triple Draw
+
+**Ziel:** Direkte Erweiterung von 2-7 Single Draw (0.8.1) — drei Draws statt einem.
 
 - [ ] drei Draw- und vier Setzrunden
 - [ ] Fixed-Limit-Struktur
 - [ ] Draw-History über mehrere Runden
-- [ ] angepasste Bot-Strategien
+- [ ] angepasste Bot-Strategien (mehrstufiges Pat/Draw/Bluff)
 - [ ] Tutorial- und Rätselmaterial
 
-## 🎯 1.6.0 — Omaha Hi-Lo
+---
 
-- [ ] High-/Low-Auswertung
-- [ ] Qualifier-Regeln
+## 🎯 1.5.1 — Omaha Hi-Lo
+
+**Ziel:** Direkte Erweiterung von Omaha High (0.7.1) — Split-Pot mit Low-Qualifier.
+
+- [ ] High-/Low-Auswertung (A-5 Lowball)
+- [ ] Qualifier-Regeln (8-or-better)
 - [ ] Split- und Quarter-Pot-Logik
 - [ ] Low-Draw- und Scoop-Bewertung
+- [ ] Bot-Strategie: Two-Way-Hands, Scoop-Potential
 
-## 🎯 1.7.0 — Badugi
+---
 
-- [ ] Badugi-Handrangfolge
-- [ ] Draw-Regeln
+## 🎯 1.6.0 — Badugi
+
+**Ziel:** Dritte Draw-Variante mit fundamental anderem Hand-Ranking.
+
+- [ ] Badugi-Handrangfolge (4 Karten, verschiedene Farben, keine Pairs)
+- [ ] Draw-Regeln (1–4 Karten tauschen, 3 Ziehrunden)
 - [ ] Pat-Signale und Snowing
 - [ ] botseitige Draw- und Blufflogik
+
+---
+
+## 🎯 1.7.0 — Stud-Familie (Razz + Seven Card Stud)
+
+**Ziel:** Stud-Spiele als eigene Kategorie — offene Karten im `BotContext`.
+
+- [ ] Razz (A-5 Lowball, 7 Cards, keine Draws)
+- [ ] Seven Card Stud (High, 7 Cards, offene Karten)
+- [ ] `BotContext` um `visibleOpponentCards` erweitert
+- [ ] Ante-, Bring-in- und Street-Logik (3rd–7th Street)
+- [ ] Vereinfachte Bot-AI für Stud (aufbauend auf Stud Light aus v0.7.3)
+
+---
+
+# Phase 8 — Plattformen & Multiplayer
 
 ## 🎯 1.8.0 — Android (optional, Ausrichtung offen)
 
 Die Smartphone-Darstellung von Poker ist auf kleinen Bildschirmen eine große UX-Herausforderung.
-Ob die APK ein vollständiges Spiel, ein reiner Lernclient oder nur Tablet-optimiert bleibt, wird nach v0.9.2 entschieden.
+Ob die APK ein vollständiges Spiel, ein reiner Lernclient oder nur Tablet-optimiert bleibt,
+wird nach v0.9.2 entschieden.
 
 - [ ] Capacitor-Setup und APK-Pipeline
 - [ ] entweder: Phone-Layout (radial, Overlay-Aktionen, nur Querformat)
-- [ ] oder: beschnittene Version (z.B. max 6-max, keine komplexen Varianten) — Spiel auf Phone möglich, aber mit Einschränkungen
+- [ ] oder: beschnittene Version (z.B. max 6-max, keine komplexen Varianten)
 - [ ] oder: APK streichen, Fokus auf Browser (GitHub Pages)
 
-> Touch-Optimierung und responsive UI werden bereits in v0.7.4 (Scaling) und v0.9.2 (Tablet) behandelt.
+> Touch-Optimierung und responsive UI werden bereits in 0.7.5 (Scaling) und 0.8.4 (Präsentation) behandelt.
 
-## 🎯 1.9.0 — Table Rules und Multiplayer-Readiness
+---
 
-**Ziel:** Sonderregeln werden als allgemeine, deterministische Engine-Erweiterungen vorbereitet.
+## 🎯 1.9.0 — Table Rules & Multiplayer-Readiness
+
+**Ziel:** Sonderregeln als allgemeine, deterministische Engine-Erweiterungen vorbereiten.
 
 - [ ] allgemeines `TableRules`-Framework getrennt von Variantenregeln definieren
 - [ ] Kompatibilitätsprüfung zwischen Pokervariante, Betting-Struktur und Sonderregel
@@ -622,28 +663,29 @@ Ob die APK ein vollständiges Spiel, ein reiner Lernclient oder nur Tablet-optim
 - [ ] Main- und Side-Pots bei mehreren Boards beziehungsweise zusätzlichen Auszahlungen korrekt abrechnen
 - [ ] Sonderregeln vollständig in Hand History, Decision Snapshots und deterministischen Replays erfassen
 - [ ] protokollneutrale Zustimmungs-, Timeout- und Ablehnungs-Events für spätere Spielerentscheidungen vorbereiten
-- [ ] betroffene Sonderregeln im `BotContext` sichtbar machen
 - [ ] Single-Board Bomb Pot als erster offline testbarer Proof
-- [ ] Schnittstellen für 7-2-Game/Bounty und Run It Twice vorbereiten
 
 ### Freigabe ab v2.x
 
 - Sonderregeln in Lobbys beziehungsweise Tisch-Setups für echte Spieler auswählbar machen
-- Run It Twice mit Zustimmung aller beteiligten Spieler, Timeouts und Disconnect-Regeln umsetzen
-- Bomb Pots und 7-2-Game/Bounty mit synchronisierter Abrechnung im Multiplayer freigeben
-- Online-Multiplayer frühestens ab v2.0 und weiterhin nur als langfristige Option behandeln
+- Run It Twice, Bomb Pots und 7-2-Game/Bounty im Multiplayer
+- Online-Multiplayer frühestens ab v2.0 und weiterhin nur als langfristige Option
 
-## Später
+---
 
-- Razz
-- Seven Card Stud (vollständige AI, aufbauend auf v0.7.3 Stud Light)
-- Stud Hi-Lo
-- Mixed Games
-- Tournament-Modus
-- Short Deck
-- weitere Draw-Varianten
-- optionaler lokaler Multiplayer
-- weitere Multiplayer-Sonderformen nach stabiler v2.x-Infrastruktur
+## Später / Unerforscht
+
+Diese Themen sind notiert, aber weder priorisiert noch im Scope einer bestimmten Version.
+Sie können in zukünftige Phasen einsortiert oder verworfen werden.
+
+| Thema | Kategorie | Notizen |
+|-------|-----------|---------|
+| Short Deck (6+) | Variante | Community-Card, 36-Karten-Deck, angepasste Hand-Ranks |
+| Stud Hi-Lo | Variante | Erweiterung von 1.7.0 |
+| Mixed Games (HORSE) | Variante | Rotation mehrerer Varianten, Session-Format |
+| Tournament-Modus | Spielmodus | Blinds steigen, Payout-Struktur, ICM |
+| Lokaler Multiplayer | Plattform | Hot-Seat, gleicher Rechner |
+| Session-Log (Live-Dealer-Text) | UI | PokerStars-Dealer-Stil, einklappbar links unten |
 
 ---
 
