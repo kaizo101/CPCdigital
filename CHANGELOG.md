@@ -39,6 +39,21 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
 
 
+## [0.7.2] — 2026-07-23
+
+### Changed
+
+- **WTSD-Fix**: Postflop-Showdown-Rate durch variant-spezifische Category-Scores gesenkt
+  - `CategoryScoreTable` in `bot-variant-evaluation.ts` definiert
+  - `VariantEvaluation.categoryScores` → `DecisionContext.categoryScores` → `bot-action-scoring.ts`
+  - NLHE: Scores identisch mit bisherigen `params.scoring.handStrength` (keine Regression)
+  - PLO: `call.medium` 20→8, `call.weak` −5→−8, `call.marginal` 5→0 (WTSD 52%→36%)
+  - TAG PLO 9-max: 6/6 Metriken im Soll, TAG PLO 6-max: 6/6
+
+### Fixed
+
+- **PLO Bot-Bedenkzeit**: 3–8s → 2–5.5s (Preflop war zu langsam)
+
 ## [0.7.1] — 2026-07-23
 
 ### Added
@@ -213,7 +228,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/kaizo101/CPCdigital/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kaizo101/CPCdigital/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kaizo101/CPCdigital/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/kaizo101/CPCdigital/compare/v0.4.0...v0.6.0
