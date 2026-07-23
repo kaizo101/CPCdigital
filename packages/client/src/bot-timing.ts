@@ -15,11 +15,11 @@ export interface BotDecisionTiming {
 }
 
 const NLHE_TIMING: Readonly<BotTimingPolicy> = {
-  minimumReactionMs: 1800,
-  maximumReactionMs: 4500,
+  minimumReactionMs: 1200,
+  maximumReactionMs: 3000,
   maximumComplexityBonusMs: 3500,
   difficultAllInBonusMs: 3000,
-  hardMaximumReactionMs: 12000,
+  hardMaximumReactionMs: 10000,
 }
 
 const OMAHA_TIMING: Readonly<BotTimingPolicy> = {
