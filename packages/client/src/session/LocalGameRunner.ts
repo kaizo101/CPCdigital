@@ -367,6 +367,7 @@ export class LocalGameRunner {
     const variant = variantId === 'omaha-high' ? OMAHA_HIGH : TEXAS_HOLDEM
 
     this.sessionStats = createSessionStats(variantId, options.bigBlind)
+    this.sessionStats.heroPrevChips = options.startingChips
 
     this.game = new PokerGame(this.players, {
       bigBlind: options.bigBlind,
@@ -845,7 +846,12 @@ export class LocalGameRunner {
   }
 
   requestRebuy(playerId: string): RebuyRequestStatus {
-    return this.rebuyManager.requestRebuy(playerId)
+    const status = this.rebuyManager.requestRebuy(playerId)
+    if (status === 'applied' && playerId === this.heroId) {
+      const heroPlayer = this.players.find(p => p.id === this.heroId)
+      if (heroPlayer) this.sessionStats.heroPrevChips = heroPlayer.chips
+    }
+    return status
   }
 
   cleanup(): void {
