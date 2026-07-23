@@ -246,12 +246,6 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 48 Metriken im Soll (36 Preflop + 12 Postflop). 228 Tests grün.
 
-### Erkenntnisse für v0.8.0
-
-- **Fold-to-CBet zu hoch** (71-93%): eigenständiger Mechanismus, nicht durch C-Bet verursacht. Wird in v0.8.0 gezielt analysiert.
-- **WTSD zu hoch** (50-70%): eigenes Problem, gleiche Methodik wie Fold-to-CBet.
-- **Hybrid-Scoring bleibt final**: Kategorien + Strength-Bonus, kein Voll-Ersatz nötig.
-
 ---
 
 ## ✅ 0.7.1 — Omaha High
@@ -336,20 +330,36 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 **Ziel:** Archetypen spielen konsistent ihre Rolle — LAG aggressiver, Nit tighter.
 
-- **Problem**: Personality-Modifier (±5–10) zu schwach gegen Category-Base-Scores (±20–30).
-  v0.7.3 (Aggression /3.5) war nur inkrementell — LAG AF 1.60→1.73 (Target 2.5+),
-  Nit WTSD 45%→41% (Target 25–36%). Die Gap bleibt strukturell.
-- **Ansatz**: Archetyp-spezifische Modifier-Multiplier oder Category-Score-Overrides.
-  Nicht mehr gemeinsame Nenner teilen, sondern pro Archetyp definieren:
-  LAG kriegt Raise-Base +15, Nit kriegt Fold-Base +15, etc.
-- **Umsetzung**: `bot-action-modifiers.ts` um `ArchetypeModifiers` erweitern,
-  die über die bestehenden Personality-Werte hinausgehen. Alternativ:
-  pro Archetyp eigene `CategoryScoreTable`-Overrides.
-- **Hebel**: LAG AF, LAG PFR, Nit WTSD — 8–10 rote Metriken in PLO.
+- **Problem**: Personality-Modifier (±5–10) können Category-Base-Scores (±20–30) nicht
+  gegensteuern. v0.7.3 (Aggression /3.5) war nur inkrementell — LAG AF 1.60→1.73
+  (Target 2.5+), Nit WTSD 45%→41% (Target 25–36%). Die Gap bleibt strukturell.
+
+- **Ansatz**: Archetyp-spezifische Modifier, die als Base-Offset wirken — nicht mehr
+  nur Nenner-Tuning an gemeinsamen Formeln. Drei Optionen, sortiert nach Aufwand:
+
+  | Option | Mechanismus | Aufwand |
+  |--------|-------------|---------|
+  | A: Multiplier | Pro Archetyp ein Skalierungsfaktor auf alle Personality-Modifier. LAG ×1.5, Nit ×2.0 auf Fold-Bonus | Gering (∼10 Zeilen) |
+  | B: Base-Offset | Pro Archetyp fester Additiv-Wert auf Raise/Fold/Call. LAG raise +12, Nit fold +12 | Mittel (∼30 Zeilen) |
+  | C: Archetyp-Score-Tables | Wie 0.7.2 (Variant-Category-Scores), aber pro Archetyp statt pro Variante. Hat höchste Präzision, aber 4× den Konfigurationsaufwand | Hoch (∼100 Zeilen) |
+
+  Empfehlung: **Option B (Base-Offset)** als erster Versuch. Wenn nicht ausreichend,
+  eskaliert zu Option C.
+
+- **Umsetzung**: `bot-action-modifiers.ts` erweitern um `getArchetypeModifiers(id)`.
+  Pro Archetyp: `{ raiseBonus: number, foldBonus: number, callBonus: number }`.
+  Werte initial aus der v0.7.3-Kalibrierung abgeleitet:
+  - TAG: `{ raise: 0, fold: 0, call: 0 }` (Referenz, unverändert)
+  - LAG: `{ raise: +12, fold: -8, call: -4 }` (mehr Raises, weniger Calls/Folds)
+  - Nit: `{ raise: -4, fold: +12, call: -8 }` (mehr Folds, weniger Calls/Raises)
+  - CS: `{ raise: -8, fold: -8, call: +12 }` (mehr Calls, weniger Raises/Folds)
+
+- **Hebel**: LAG AF, LAG PFR, Nit WTSD — 8–10 rote Metriken in PLO. NLHE-Kalibrierung
+  muss nach Änderung verifiziert werden (Regression-Check).
 
 ---
 
-# Phase 4 — Neue Variante & Komfort
+# Phase 4 — Release-Vorbereitung & neue Variante
 
 ## 🎯 0.8.0 — HU-Strategie (Heads-up)
 
