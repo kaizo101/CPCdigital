@@ -100,8 +100,11 @@ export function formatHandHistory(replay: HandReplay): string {
 
   lines.push('*** HOLE CARDS ***')
   for (const [id, cards] of Object.entries(replay.holeCards)) {
-    const name = replay.players.find(p => p.id === id)?.name ?? id
-    lines.push(`Dealt to ${name} [${cardsToString(cards)}]`)
+    const player = replay.players.find(p => p.id === id)
+    const name = player?.name ?? id
+    if (name === 'You') {
+      lines.push(`Dealt to ${name} [${cardsToString(cards)}]`)
+    }
   }
 
   let currentPhase = 'preflop'
