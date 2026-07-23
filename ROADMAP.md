@@ -330,9 +330,37 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-# Phase 4 — Neue Variante & Spielkomfort
+## 🎯 0.7.6 — Personality-Refactoring (LAG / Nit)
 
-## 🎯 0.8.0 — 2-7 Single Draw
+**Ziel:** Archetypen spielen konsistent ihre Rolle — LAG aggressiver, Nit tighter.
+
+- **Problem**: Personality-Modifier (±5–10) zu schwach gegen Category-Base-Scores (±20–30).
+  v0.7.3 (Aggression /3.5) war nur inkrementell — LAG AF 1.60→1.73 (Target 2.5+),
+  Nit WTSD 45%→41% (Target 25–36%). Die Gap bleibt strukturell.
+- **Ansatz**: Archetyp-spezifische Modifier-Multiplier oder Category-Score-Overrides.
+  Nicht mehr gemeinsame Nenner teilen, sondern pro Archetyp definieren:
+  LAG kriegt Raise-Base +15, Nit kriegt Fold-Base +15, etc.
+- **Umsetzung**: `bot-action-modifiers.ts` um `ArchetypeModifiers` erweitern,
+  die über die bestehenden Personality-Werte hinausgehen. Alternativ:
+  pro Archetyp eigene `CategoryScoreTable`-Overrides.
+- **Hebel**: LAG AF, LAG PFR, Nit WTSD — 8–10 rote Metriken in PLO.
+
+---
+
+# Phase 4 — Neue Variante & Komfort
+
+## 🎯 0.8.0 — HU-Strategie (Heads-up)
+
+**Ziel:** Heads-up spielt sich fundamental anders als Full-Ring — eigener Pfad.
+Bekannte, diagnostizierte Baustelle aus der 0.7.1-Kalibrierung.
+
+- [ ] HU-spezifische Preflop-Ranges (NLHE + PLO)
+- [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz)
+- [ ] Kalibrierung: HU-Formate für alle Archetypen
+
+---
+
+## 🎯 0.8.1 — 2-7 Single Draw
 
 **Ziel:** Erste Draw-Variante, Architektur-Proof für Kartentausch.
 
@@ -343,16 +371,6 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] Pat/Draw-Status + Snowing-Logik
 - [ ] Draw-spezifische Action History
 - [ ] Grundlegende Regelhinweise in der UI
-
----
-
-## 🎯 0.8.1 — HU-Strategie (Heads-up)
-
-**Ziel:** Heads-up spielt sich fundamental anders als Full-Ring — eigener Pfad.
-
-- [ ] HU-spezifische Preflop-Ranges (NLHE + PLO)
-- [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz)
-- [ ] Kalibrierung: HU-Formate für alle Archetypen
 
 ---
 
