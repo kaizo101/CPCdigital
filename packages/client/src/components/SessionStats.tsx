@@ -3,12 +3,13 @@ import type { SessionStatsData } from '../session/session-stats'
 import { getPlayerVPIP, getPlayerPFR, getPlayer3Bet, getBBPer100 } from '../session/session-stats'
 
 export function SessionStats({
-  stats, playerNames, heroId, onExport,
+  stats, playerNames, heroId, onExport, showDebug,
 }: {
   stats: SessionStatsData
   playerNames: Map<string, string>
   heroId: string
   onExport: () => void
+  showDebug: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
   const heroVPIP = getPlayerVPIP(stats, heroId)
@@ -17,6 +18,10 @@ export function SessionStats({
   const bbPer100 = getBBPer100(stats)
 
   if (stats.totalHands === 0) return null
+
+  const visiblePlayers = showDebug
+    ? Object.keys(stats.players)
+    : [heroId]
 
   return (
     <div style={{ position: 'relative' }}>
@@ -57,7 +62,7 @@ export function SessionStats({
           zIndex: 100,
         }}>
           <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-            Session · {stats.totalHands} hands · {bbPer100.toFixed(1)} BB/100
+            {showDebug ? `Session · ${stats.totalHands} hands · ${bbPer100.toFixed(1)} BB/100` : `Your stats · ${stats.totalHands} hands`}
           </div>
 
           <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
@@ -70,7 +75,7 @@ export function SessionStats({
               </tr>
             </thead>
             <tbody>
-              {Object.keys(stats.players).map(id => {
+              {visiblePlayers.map(id => {
                 const isHero = id === heroId
                 return (
                   <tr key={id} style={{
@@ -79,7 +84,7 @@ export function SessionStats({
                   }}>
                     <td style={{ padding: '2px 6px' }}>
                       {playerNames.get(id) ?? id}
-                      {isHero ? ' *' : ''}
+                      {isHero && showDebug ? ' *' : ''}
                     </td>
                     <td style={{ padding: '2px 6px', textAlign: 'right' }}>
                       {getPlayerVPIP(stats, id).toFixed(0)}%

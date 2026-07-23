@@ -288,6 +288,7 @@ export function TableScreen({
             playerNames={playerNames}
             heroId="hero"
             onExport={onExportSessionLog}
+            showDebug={showDebug}
           />
           {(() => {
             const hasReplay = handReplays.length > 0
