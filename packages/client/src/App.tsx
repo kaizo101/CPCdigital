@@ -137,6 +137,10 @@ export default function App() {
     )
   }
 
+  const playerNames = new Map(
+    localState.gameState?.players.map(p => [p.id, p.name]) ?? []
+  )
+
   return (
     <TableScreen
       gameState={gameState}
@@ -157,6 +161,18 @@ export default function App() {
       onRebuy={playerId => runner.requestRebuy(playerId)}
       onExportDebugRecord={handleExportDebugRecord}
       handReplays={localState.handReplays}
+      sessionStats={localState.sessionStats}
+      playerNames={playerNames}
+      onExportSessionLog={() => {
+        const log = runner.exportSessionLog()
+        const blob = new Blob([log], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `CPCdigital-session-${new Date().toISOString().slice(0, 10)}.txt`
+        a.click()
+        URL.revokeObjectURL(url)
+      }}
     />
   )
 }

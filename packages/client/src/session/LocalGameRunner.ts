@@ -8,6 +8,12 @@ import type {
   HandResult,
 } from '@cpc/shared'
 import {
+  createSessionStats,
+  recordHand,
+  exportSessionLog,
+  type SessionStatsData,
+} from './session-stats'
+import {
   createBotStateFromIdentity,
   decideBotDecision,
   getOpponentStats,
@@ -82,6 +88,7 @@ export interface LocalGameState {
   sessionHistory: readonly SessionHistoryEvent[]
   pendingRebuyPlayerIds: readonly string[]
   handReplays: readonly HandReplay[]
+  sessionStats: Readonly<SessionStatsData>
 }
 
 export class LocalGameRunner {
@@ -102,6 +109,7 @@ export class LocalGameRunner {
   private playerActionLabels: Record<string, PlayerActionLabel> = {}
   private showdownCards: Record<string, Card[]> = {}
   private sessionHistory: SessionHistoryEvent[] = []
+  private sessionStats: SessionStatsData = createSessionStats('texas-holdem', 20)
   private sessionDecisionSnapshots: any[] = []
   private botDebugDecisions: BotDebugDecision[] = []
   private previousSnapshotActionCountPerHand = new Map<number, number>()
@@ -135,6 +143,7 @@ export class LocalGameRunner {
         sessionHistory: [...this.sessionHistory],
         pendingRebuyPlayerIds: [...this.rebuyManager.pendingRebuyPlayerIds],
         handReplays: [...this.handReplays],
+        sessionStats: this.sessionStats,
       }
     }
     const playerView = this.game.getPlayerView(this.heroId)
@@ -158,6 +167,7 @@ export class LocalGameRunner {
       sessionHistory: [...this.sessionHistory],
       pendingRebuyPlayerIds: [...this.rebuyManager.pendingRebuyPlayerIds],
       handReplays: [...this.handReplays],
+      sessionStats: this.sessionStats,
     }
   }
 
@@ -246,6 +256,10 @@ export class LocalGameRunner {
 
   private notify(): void {
     for (const l of this.listeners) l()
+  }
+
+  exportSessionLog(): string {
+    return exportSessionLog(this.sessionStats, this.handReplays)
   }
 
   setupTable(options: TableOptions, botCount: number, rebuyEnabled = true, variantId = 'texas-holdem'): Player[] {
@@ -351,6 +365,8 @@ export class LocalGameRunner {
     recordSession(identityIds)
 
     const variant = variantId === 'omaha-high' ? OMAHA_HIGH : TEXAS_HOLDEM
+
+    this.sessionStats = createSessionStats(variantId, options.bigBlind)
 
     this.game = new PokerGame(this.players, {
       bigBlind: options.bigBlind,
@@ -594,6 +610,15 @@ export class LocalGameRunner {
     const results = this.game.getLastHandResults()
     this.showdownCards = { ...this.game.getRevealedCards() }
     const bigBlind = this.game?.getPublicState().bigBlind ?? 20
+
+    recordHand(
+      this.sessionStats,
+      this.players.map(p => p.id),
+      this.heroId,
+      this.currentHandNumber,
+      results,
+      this.game.getPublicHandHistory(),
+    )
 
     // Update mental state for all bots based on hand results
     for (const [botId, botState] of this.botStates) {

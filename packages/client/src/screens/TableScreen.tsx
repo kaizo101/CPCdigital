@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import type { Card, HandResult, Player, PlayerAction, PublicGameState, TableOptions } from '@cpc/shared'
 import { createRoot } from 'react-dom/client'
+import { SessionStats } from '../components/SessionStats'
 import { PokerTable, TablePot, CommunityCards, BetStack, TablePositionButtons } from '../components/PokerTable'
 import { PlayerSeat } from '../components/PlayerSeat'
 import { ActionButtons } from '../components/ActionButtons'
@@ -80,6 +81,9 @@ export function TableScreen({
   onRebuy,
   onExportDebugRecord,
   handReplays,
+  sessionStats,
+  playerNames,
+  onExportSessionLog,
 }: {
   gameState: Readonly<PublicGameState> | null
   myCards: Card[] | null
@@ -99,6 +103,9 @@ export function TableScreen({
   onRebuy: (playerId: string) => void
   onExportDebugRecord: () => void
   handReplays: readonly HandReplay[]
+  sessionStats: any
+  playerNames: Map<string, string>
+  onExportSessionLog: () => void
 }) {
   const [showDebug, setShowDebug] = useState(false)
 
@@ -276,6 +283,12 @@ export function TableScreen({
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <SessionStats
+            stats={sessionStats}
+            playerNames={playerNames}
+            heroId="hero"
+            onExport={onExportSessionLog}
+          />
           {(() => {
             const hasReplay = handReplays.length > 0
             return (
