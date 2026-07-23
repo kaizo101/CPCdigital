@@ -27,15 +27,15 @@ const miniControlButton = (disabled = false): React.CSSProperties => ({
 })
 
 const primaryActionButton = (disabled = false): React.CSSProperties => ({
-  minHeight: 74,
-  padding: '10px 12px',
+  minHeight: 56,
+  padding: '8px 12px',
   borderRadius: 10,
   border: '1px solid rgba(255,255,255,0.18)',
   cursor: disabled ? 'not-allowed' : 'pointer',
   background: disabled ? '#4a5568' : 'linear-gradient(180deg, #cf2d20 0%, #8e1d15 58%, #62100c 100%)',
   color: '#fff',
   fontWeight: 700,
-  fontSize: 18,
+  fontSize: 16,
   lineHeight: 1.15,
   whiteSpace: 'pre-line',
   boxShadow: disabled ? 'none' : 'inset 0 1px 0 rgba(255,255,255,0.18), 0 10px 22px rgba(0,0,0,0.28)',

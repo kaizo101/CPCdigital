@@ -262,6 +262,14 @@ export function TableScreen({
             padding: 0 0 10px 10px;
           }
         }
+        @media (max-height: 450px) {
+          .table-main {
+            padding: 20px 8px 80px;
+          }
+          .bottom-dock {
+            padding: 0 8px 4px;
+          }
+        }
       `}</style>
 
       <div style={{

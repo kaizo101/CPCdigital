@@ -10,10 +10,10 @@ const SUIT_COLOR: Record<string, string> = {
 export function CardView({ card, large }: { card: Card; large?: boolean }) {
   const color = SUIT_COLOR[card.suit]
   const suit = SUIT_SYMBOL[card.suit]
-  const w = large ? 'clamp(54px, 4.2vw + 0.4vh, 98px)' : 'clamp(46px, 3.2vw + 0.4vh, 82px)'
-  const h = large ? 'clamp(76px, 5.9vw + 0.6vh, 138px)' : 'clamp(64px, 4.5vw + 0.6vh, 115px)'
-  const rankSize = large ? 'clamp(20px, 2vw, 34px)' : 'clamp(18px, 1.65vw, 28px)'
-  const suitCenter = large ? 'clamp(28px, 2.75vw, 48px)' : 'clamp(23px, 2.1vw, 38px)'
+  const w = large ? 'clamp(44px, 4.2vw + 0.4vh, 98px)' : 'clamp(36px, 3.2vw + 0.4vh, 82px)'
+  const h = large ? 'clamp(62px, 5.9vw + 0.6vh, 138px)' : 'clamp(50px, 4.5vw + 0.6vh, 115px)'
+  const rankSize = large ? 'clamp(18px, 2vw, 34px)' : 'clamp(15px, 1.65vw, 28px)'
+  const suitCenter = large ? 'clamp(22px, 2.75vw, 48px)' : 'clamp(18px, 2.1vw, 38px)'
   return (
     <div style={{
       display: 'inline-flex',
@@ -45,8 +45,8 @@ export function CardView({ card, large }: { card: Card; large?: boolean }) {
 }
 
 export function CardBack() {
-  const w = 'clamp(46px, 3.2vw + 0.4vh, 82px)'
-  const h = 'clamp(64px, 4.5vw + 0.6vh, 115px)'
+  const w = 'clamp(36px, 3.2vw + 0.4vh, 82px)'
+  const h = 'clamp(50px, 4.5vw + 0.6vh, 115px)'
   return (
     <div style={{
       display: 'inline-flex',

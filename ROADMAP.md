@@ -308,21 +308,21 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## 🎯 0.7.5 — UI-Skalierung & Responsive Layout
+## ✅ 0.7.5 — UI-Skalierung & Responsive Layout
 
-**Ziel:** Auf Tablets und kleinen Bildschirmen testbar — mehr Dev-Bandbreite.
+**Ziel:** Auf Tablets und Phone-Landscape testbar — Tester-Akquise.
 
-- [ ] **Actionleiste**: verdeckt auf Desktop untere Spieler-Sitze → in Tisch-Layout integrieren oder kollabierbar machen
-- [ ] **Table-Shell**: `aspect-ratio` statt fester `vh`-Berechnung, füllt verfügbaren Platz
-- [ ] **PlayerSeat**: Schriftgrößen, Avatar, Chip-Anzeige mit `clamp()` skalieren
-- [ ] **Cards**: Größen für kleine Viewports optimieren
-- [ ] **Setup-Screen**: Inputs und Layout für schmale Bildschirme
-- [ ] **Replayer**: Steuerung auf kleinen Screens bedienbar
-- [ ] **Touch**: Rechtsklick-Rebuy durch Long-Press oder sichtbaren Button ersetzen
-- [ ] **Hochformat-Tablet**: Layout bricht nicht auseinander
-- [ ] **PlayerSeat-Positionierung**: Padding zur Tischkante, Kollisionsvermeidung
+- [x] Table-Shell-Floor: `max(300px, ...)` für Landscape-Phones
+- [x] Landscape-Media-Query (`max-height: 450px`): reduzierte Paddings
+- [x] Cards: Clamp-Minimum reduziert (36/50px statt 46/64px)
+- [x] ActionButtons: minHeight 74→56px, fontSize 18→16
+- [x] Touch: Long-Press (600ms) öffnet Rebuy-Menü
+- [x] Landscape-Lock: `maximum-scale=1.0, user-scalable=no`
+- [ ] **Actionleiste**: verdeckt auf Desktop untere Spieler-Sitze → später (nicht kritisch für Landscape)
+- [ ] **Replayer**: Steuerung auf kleinen Screens optimieren → später
+- [ ] Portrait-Modus: bewusst nicht supported (zu schmal für Poker-Layout)
 
-> Tablet läuft im Browser (GitHub Pages) — keine APK nötig.
+> Phone-Landscape (≥667px) ist spielbar, Tablet (≥768px) komfortabel.
 
 ---
 

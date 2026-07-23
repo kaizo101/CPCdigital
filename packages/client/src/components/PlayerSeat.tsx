@@ -29,6 +29,7 @@ export function PlayerSeat({
 }) {
   const [isHovering, setIsHovering] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [longPressTimer, setLongPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null)
   const position = getSeatPosition(seatIndex, seatCount)
   const isFolded = player.status === 'folded'
@@ -67,7 +68,7 @@ export function PlayerSeat({
     }
   }, [contextMenu])
 
-  const openRebuyMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+  const openRebuyMenu = (event: React.MouseEvent<HTMLDivElement> | React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault()
     event.stopPropagation()
     const menuWidth = 248
@@ -77,6 +78,19 @@ export function PlayerSeat({
       x: Math.max(padding, Math.min(event.clientX, window.innerWidth - menuWidth - padding)),
       y: Math.max(padding, Math.min(event.clientY, window.innerHeight - menuHeight - padding)),
     })
+  }
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (longPressTimer) clearTimeout(longPressTimer)
+    const timer = setTimeout(() => {
+      setLongPressTimer(null)
+      openRebuyMenu(event)
+    }, 600)
+    setLongPressTimer(timer)
+  }
+
+  const handlePointerUp = () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); setLongPressTimer(null) }
   }
 
   return (
@@ -92,7 +106,10 @@ export function PlayerSeat({
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       onContextMenu={openRebuyMenu}
-      title="Rechtsklick für Rebuy"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      title="Rechtsklick oder lang drücken für Rebuy"
     >
       <div style={{
         position: 'relative',
