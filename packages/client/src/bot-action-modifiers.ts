@@ -21,7 +21,7 @@ export function applyPersonalityModifiers(
       contributions.push({
         category: 'personality',
         label: 'Aggression',
-        value: (aggression - 50) / 5,
+        value: (aggression - 50) / 4,
       })
       if (aggression < 30) {
         contributions.push({
@@ -51,15 +51,18 @@ export function applyPersonalityModifiers(
       }
     }
     if (scored.action.type === 'call' && marginalHand) {
+      const hand = context.handAssessment
+      const isDeadAir = hand.category === 'air' && hand.drawTypes.length === 0
+      const callModScale = isDeadAir ? 0.5 : 1.0
       contributions.push({
         category: 'personality',
         label: 'Risk tolerance affects calling',
-        value: (riskTolerance - 50) / 6,
+        value: (riskTolerance - 50) / 6 * callModScale,
       })
       contributions.push({
         category: 'personality',
         label: 'Patience reduces marginal calls',
-        value: -(patience - 50) / 12,
+        value: -(patience - 50) / 12 * callModScale,
       })
     }
     if (aggressiveAction && scored.intent === 'bluff') {

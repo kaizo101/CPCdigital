@@ -14,13 +14,30 @@ export interface BotDecisionTiming {
   remainingDelayMs: number
 }
 
-export const DEFAULT_BOT_TIMING: Readonly<BotTimingPolicy> = {
-  minimumReactionMs: 900,
-  maximumReactionMs: 1800,
-  maximumComplexityBonusMs: 2000,
-  difficultAllInBonusMs: 2000,
-  hardMaximumReactionMs: 6000,
+const NLHE_TIMING: Readonly<BotTimingPolicy> = {
+  minimumReactionMs: 1800,
+  maximumReactionMs: 4500,
+  maximumComplexityBonusMs: 3500,
+  difficultAllInBonusMs: 3000,
+  hardMaximumReactionMs: 12000,
 }
+
+const OMAHA_TIMING: Readonly<BotTimingPolicy> = {
+  minimumReactionMs: 3000,
+  maximumReactionMs: 8000,
+  maximumComplexityBonusMs: 5000,
+  difficultAllInBonusMs: 4000,
+  hardMaximumReactionMs: 20000,
+}
+
+export function getBotTiming(variantId: string): Readonly<BotTimingPolicy> {
+  switch (variantId) {
+    case 'omaha-high': return OMAHA_TIMING
+    default: return NLHE_TIMING
+  }
+}
+
+export const DEFAULT_BOT_TIMING: Readonly<BotTimingPolicy> = NLHE_TIMING
 
 export function sampleTargetReactionMs(
   random: () => number,

@@ -23,9 +23,10 @@ export default function App() {
   const [raiseAmount, setRaiseAmount] = useState(0)
   const [currency, setCurrency] = useState<DisplayCurrency>('EUR')
   const [rebuyEnabled, setRebuyEnabled] = useState(true)
+  const [variantId, setVariantId] = useState('texas-holdem')
 
   // Replay mode: read from #replay/N hash (set by Electron or browser fallback)
-  const [replayMode] = useState<{ replays: HandReplay[]; startIndex: number } | null>(() => {
+  const [replayMode] = useState<{ replays: HandReplay[]; startIndex: number; debugMode: boolean } | null>(() => {
     const hash = window.location.hash
     let handNum: number | null = null
 
@@ -38,19 +39,20 @@ export default function App() {
     }
 
     if (handNum) {
+      const debugMode = localStorage.getItem('replay-debug') === '1'
       // Try session-level first
       const session = localStorage.getItem('replay-session')
       if (session) {
         try {
           const all: HandReplay[] = JSON.parse(session)
           const idx = all.findIndex(r => r.handNumber === handNum)
-          return { replays: all, startIndex: idx >= 0 ? idx : all.length - 1 }
+          return { replays: all, startIndex: idx >= 0 ? idx : all.length - 1, debugMode }
         } catch { /* ignore */ }
       }
       // Fallback: single hand
       const stored = localStorage.getItem(`replay-${handNum}`)
       if (stored) {
-        try { return { replays: [JSON.parse(stored) as HandReplay], startIndex: 0 } } catch { /* ignore */ }
+        try { return { replays: [JSON.parse(stored) as HandReplay], startIndex: 0, debugMode } } catch { /* ignore */ }
       }
     }
 
@@ -86,7 +88,7 @@ export default function App() {
   function handleStartGame() {
     const tableOptions = { ...options, maxPlayers: botCount + 1 }
     setOptions(tableOptions)
-    runner.setupTable(tableOptions, botCount, rebuyEnabled)
+    runner.setupTable(tableOptions, botCount, rebuyEnabled, variantId)
     runner.startHand()
     setScreen('table')
   }
@@ -105,6 +107,7 @@ export default function App() {
       <HandReplayer
         replays={replayMode.replays}
         startIndex={replayMode.startIndex}
+        debugMode={replayMode.debugMode}
         currency={currency}
         onClose={() => {
           const hn = replayMode.replays[replayMode.startIndex]?.handNumber
@@ -128,6 +131,8 @@ export default function App() {
         setCurrency={setCurrency}
         rebuyEnabled={rebuyEnabled}
         setRebuyEnabled={setRebuyEnabled}
+        variantId={variantId}
+        setVariantId={setVariantId}
       />
     )
   }

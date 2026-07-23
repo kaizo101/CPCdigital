@@ -164,14 +164,14 @@ function handMatchesPattern(hand: string, pattern: string): boolean {
 
 // Determine action from range tables
 export function getPreflopAction(
-  cards: [Card, Card],
+  cards: readonly Card[],
   position: Position,
   situation: PreflopSituation,
   tableSize: number = 6,
   rangeFactor: number = 1,
   raiseRangeFactor: number = rangeFactor,
 ): 'raise' | 'call' | 'fold' {
-  const hand = cardsToHandPattern(cards)
+  const hand = cardsToHandPattern(cards as [Card, Card])
   const range = TAG_PREFLOP_RANGES[situation][position]
   const baseCoverage = getTableAdjustedCoverage(position, situation, tableSize)
   const pressureExponent = params.preflop.pressureExponent[situation]
@@ -181,7 +181,7 @@ export function getPreflopAction(
     raise: Math.min(100, baseCoverage.raise * situationalRaiseRangeFactor),
     vpip: Math.min(100, baseCoverage.vpip * situationalRangeFactor),
   }
-  const percentile = getStartingHandPercentile(cards)
+  const percentile = getStartingHandPercentile(cards as [Card, Card])
 
   // Keep the curated core intact, then widen it smoothly as the table gets shorter.
   const keepCuratedRaiseCore = situationalRaiseRangeFactor >= 1

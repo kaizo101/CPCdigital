@@ -82,12 +82,12 @@ export function TableScreen({
   handReplays,
 }: {
   gameState: Readonly<PublicGameState> | null
-  myCards: [Card, Card] | null
+  myCards: Card[] | null
   lastResults: HandResult[] | null
   isMyTurn: boolean
   playerAvatarKeys: Readonly<Record<string, string>>
   playerActionLabels: Readonly<Record<string, PlayerActionLabel>>
-  showdownCards: Readonly<Record<string, [Card, Card]>>
+  showdownCards: Readonly<Record<string, Card[]>>
   botDebugDecisions: readonly BotDebugDecision[]
   pendingRebuyPlayerIds: readonly string[]
   raiseAmount: number
@@ -272,7 +272,7 @@ export function TableScreen({
         <div>
           <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 2, letterSpacing: 0.3, color: '#f3f4f6' }}>CPCdigital</div>
           <div style={{ color: '#8f98a4', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
-            v{APP_VERSION} · NLHE · Blinds {options.smallBlind}/{options.bigBlind} · {players.length} Spieler
+            v{APP_VERSION} · {gameState?.variantId === 'omaha-high' ? 'PLO' : 'NLHE'} · Blinds {options.smallBlind}/{options.bigBlind} · {players.length} Spieler
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -337,6 +337,7 @@ export function TableScreen({
                         actionLabel={playerActionLabels[player.id]}
                         revealedCards={showdownCards[player.id]}
                         myCards={player.id === heroId ? myCards : null}
+                        holeCardCount={gameState?.variantId === 'omaha-high' ? 4 : 2}
                         showCards={!!(
                           showdownCards[player.id]
                           || (inActiveHand && player.status !== 'folded' && player.status !== 'waiting')
@@ -393,6 +394,7 @@ function openReplayWindow(replays: readonly HandReplay[], startIndex: number, cu
 
   const sessionKey = 'replay-session'
   localStorage.setItem(sessionKey, JSON.stringify(allReplays))
+  localStorage.setItem('replay-debug', debugMode ? '1' : '0')
 
   // Try Electron IPC first
   const api = (window as any).electronAPI

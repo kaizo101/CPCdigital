@@ -50,7 +50,7 @@ function configureShowdown(
   game: PokerGame,
   players: Player[],
   communityCards: Card[],
-  holeCards: Record<string, [Card, Card]>,
+  holeCards: Record<string, Card[]>,
   contributions: Record<string, number>,
   foldedPlayerIds: string[] = [],
   dealerIndex = 0,

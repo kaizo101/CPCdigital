@@ -23,7 +23,7 @@ export const nlheVariantEvaluator: VariantEvaluator = {
     }
     return {
       variantId: this.variantId,
-      handAssessment: assessHand(context.ownCards, context.publicState.communityCards),
+      handAssessment: assessHand(context.ownCards as [Card, Card], context.publicState.communityCards),
       boardTexture: analyzeBoardTexture(context.publicState.communityCards),
     }
   },
@@ -32,8 +32,8 @@ export const nlheVariantEvaluator: VariantEvaluator = {
 function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
   const { publicState: state, ownCards, position, bettingContext } = context
   const situation = getPreflopSituation(state, position.category)
-  const pattern = cardsToHandPattern(ownCards)
-  const percentile = getStartingHandPercentile(ownCards)
+  const pattern = cardsToHandPattern(ownCards as [Card, Card])
+  const percentile = getStartingHandPercentile(ownCards as [Card, Card])
   const premium = ['AA', 'KK', 'QQ', 'AKs'].includes(pattern)
   const category = premium
     ? 'premium'

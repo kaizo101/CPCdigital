@@ -39,6 +39,42 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
 
 
+## [0.7.1] — 2026-07-23
+
+### Added
+
+- **Omaha High**: vollständig spielbare Pot-Limit-Omaha-Variante
+  - Variant-Selector im SetupScreen (No Limit Texas Hold'em / Pot Limit Omaha High)
+  - Omaha-Hand-Evaluation: `evaluateOmahaHand` mit 60 2-aus-4+3-aus-5-Kombinationen
+  - Engine-Support: 4 Hole Cards, Pot-Limit-Betting, `findWinnerIndices`-Dispatch
+  - `omaha-hand-evaluation.ts`: Draw-Dichte (Flush-Draw, Wrap-Outs), Nut-Potential, Preflop-Assessment (Double-Suited, Connectedness)
+- **Variant-spezifische Bot-Bedenkzeit**: NLHE 1.8–4.5s (max 12s), PLO 3–8s (max 20s)
+- **Omaha-Kalibrierung**: 12 Archetyp-Formate, TAG FR VPIP 30.8% / PFR 14.8% / AF 2.89 / WTSD 33.4% (10k Hände)
+- **Omaha-UI**: 4-Karten-Layout mit Overlap (−16px), CardBacks passen sich Variante an, Hole-Cards absteigend nach Rank sortiert (A→2)
+- **Hand-History-Export**: variantenabhängiger Header ("Omaha Pot Limit" / "Hold'em No Limit")
+- **PLO/NLHE-Badge** in der TableScreen-Kopfleiste
+- `BettingStructure`-Typ in `betting.ts` ausgelagert, Variants in `variants/` pro Datei
+- `formatVariantName()`-Helper, `holeCardCount`-Prop für PlayerSeat/Replay
+
+### Changed
+
+- **Type-System**: `[Card, Card]` → `Card[]` in 58 Stellen (shared, engine, client)
+- **Aggression-Modifier**: `/5` → `/4` (LAG NLHE AF 1.45→1.91, TAG unverändert)
+- **Bot-Bedenkzeit**: Min 900→1800ms, Max 1800→4500ms, Hard-Max 6000→12000ms (NLHE); PLO separat (s.o.)
+- **Calling Station**: Persönlichkeits-Call-Boni bei dead air (kein Pair, keine Draws) auf 50% skaliert
+- **Rebuy-Migration**: alte Identities ohne `rebuyPolicy` kriegen beim Laden eine archetyp-echte Policy (nicht mehr pauschal 40 BB)
+
+### Fixed
+
+- **Top Set (Rank 4) in Omaha**: war fälschlich "weak" → jetzt "good" (Lio checkte Top Set auf Q-high-Flop statt zu betten)
+- **`detectFlushDanger`**: NLHE-Annahme "1 Hole Card = Flush-Redraw" → jetzt Omaha-aware (braucht 2 Karten derselben Farbe)
+- **ActionButtons**: Pot-Limit-All-In-Bug — Button sendet nicht mehr `all-in` wenn `raise` legal ist
+- **`weightedChoice`-Fallback**: `fold` nur noch wenn keine andere Aktion legal (vorher blind-fold bei allen negativen Scores)
+- **Replay Pot-Anzeige**: Bet-Stacks akkumulierten zu viel (`totalBet` statt `amount`)
+- **Export-Menü**: per Portal zu `document.body` gerendert (kein Verdecken durch Footer)
+- **Debug-Mode im Replay**: `localStorage.replay-debug` für IPC-Fenster
+- **Hand-History-Header**: "PokerStars" → "CPCdigital"
+
 ## [0.7.0] — 2026-07-22
 
 ### Added
@@ -177,7 +213,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/kaizo101/CPCdigital/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kaizo101/CPCdigital/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/kaizo101/CPCdigital/compare/v0.4.0...v0.6.0
 [0.4.0]: https://github.com/kaizo101/CPCdigital/compare/v0.3.1...v0.4.0

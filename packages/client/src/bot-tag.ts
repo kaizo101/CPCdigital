@@ -120,7 +120,7 @@ export function decideBotDecision(
     metrics,
     legalActions,
     preferredRaiseTo,
-    preflopRangeAction: state.phase === 'preflop'
+    preflopRangeAction: state.phase === 'preflop' && holeCards.length === 2
       ? getPreflopAction(
           holeCards,
           position,

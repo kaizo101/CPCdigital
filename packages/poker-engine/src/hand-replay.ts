@@ -1,5 +1,6 @@
 import type { Card, HandEvent, HandResult, PlayerId } from '@cpc/shared'
-import { TEXAS_HOLDEM, type GameVariant } from './game-variant'
+import type { GameVariant } from './game-variant'
+import { TEXAS_HOLDEM } from './variants/texas-holdem'
 
 export type HandReplayPhase = string
 
@@ -10,7 +11,7 @@ export interface HandReplayPlayerState {
   chips: number
   roundBet: number
   status: 'active' | 'folded' | 'all-in'
-  holeCards: [Card, Card] | null
+  holeCards: Card[] | null
 }
 
 export interface HandReplayState {
@@ -132,7 +133,7 @@ export function replayHand(
       }
       case 'CardsRevealed': {
         const player = getReplayPlayer(state, event.playerId)
-        player.holeCards = event.cards.map(cloneCard) as [Card, Card]
+        player.holeCards = event.cards.map(cloneCard) as Card[]
         state.phase = 'showdown'
         state.actingPlayerId = event.playerId
         for (const candidate of state.players) candidate.roundBet = 0
@@ -191,7 +192,7 @@ function cloneReplayState(state: HandReplayState): HandReplayState {
     ...state,
     players: state.players.map(player => ({
       ...player,
-      holeCards: player.holeCards?.map(cloneCard) as [Card, Card] | null,
+      holeCards: player.holeCards?.map(cloneCard) as Card[] | null,
     })),
     communityCards: state.communityCards.map(cloneCard),
     results: state.results.map(result => ({ ...result })),

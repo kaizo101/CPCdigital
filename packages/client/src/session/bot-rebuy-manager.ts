@@ -115,12 +115,8 @@ export class BotRebuyManager {
       if (this.leftTableBots.has(botId)) continue
       const identity = this.botIdentities.get(botId)
       if (!identity) continue
-      let policy: RebuyPolicy | undefined = identity.rebuyPolicy
-      if (!policy) {
-        policy = { rebuyThresholdBb: 40, maxRebuys: 2, leaveOnBust: false, rebuyWhenShortBb: null }
-        console.warn(`[Rebuy] No rebuy policy for ${botId} (${identity.name}), using defaults`)
-        identity.rebuyPolicy = policy
-      }
+      const policy = identity.rebuyPolicy
+      if (!policy) continue // should not happen after v0.7 migration
 
       const player = this.players.find(p => p.id === botId)
       if (!player) continue

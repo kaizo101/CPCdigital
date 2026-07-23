@@ -113,7 +113,7 @@ describe('public and private information boundaries', () => {
       rank: originalFirstCard.rank === 'A' ? '2' : 'A',
       suit: originalFirstCard.suit,
     }
-    const mutableCopy = revealedCards as Record<string, [Card, Card]>
+    const mutableCopy = revealedCards as Record<string, Card[]>
     mutableCopy.p1[0] = replacement
 
     const mutableHistory = revealEvents as Array<Extract<(typeof revealEvents)[number], { type: 'CardsRevealed' }>>

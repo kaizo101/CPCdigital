@@ -3,7 +3,7 @@ import {
   BOT_ROSTER_SCHEMA_VERSION,
   DEFAULT_BOT_ROSTER,
   generateBotRoster,
-  selectSessionBotIdentities,
+  rollRebuyPolicy,
 } from './bot-identities'
 import type { BotArchetypeId } from './bot-archetypes'
 import { BOT_ARCHETYPE_IDS } from './bot-archetypes'
@@ -30,11 +30,21 @@ export function loadPersistentRoster(): PersistentRosterState {
       ? JSON.parse(storedRoster) as BotRoster
       : DEFAULT_BOT_ROSTER
 
+    // Migration: add rebuyPolicy to identities that don't have it (pre-v0.6)
+    let needsSave = false
+    for (const identity of roster.identities) {
+      if (!identity.rebuyPolicy) {
+        identity.rebuyPolicy = rollRebuyPolicy(identity.archetypeId, identity.maniac, () => Math.random())
+        needsSave = true
+      }
+    }
+    if (needsSave) saveRoster(roster)
+
     const sessionLog: SessionLogEntry[] = storedLog
       ? JSON.parse(storedLog) as SessionLogEntry[]
       : []
 
-    if (!storedRoster) {
+    if (!storedRoster && !needsSave) {
       saveRoster(roster)
     }
 

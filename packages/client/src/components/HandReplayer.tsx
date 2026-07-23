@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
+import { createPortal } from 'react-dom'
 import type { Card, Player } from '@cpc/shared'
 import type { HandReplay, ReplayFrame } from '../session/hand-replay'
 import { formatHandHistory } from '../session/hand-replay'
@@ -26,6 +27,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   const [autoPlay, setAutoPlay] = useState(false)
   const [showAllCards, setShowAllCards] = useState(false)
   const [minPotBb, setMinPotBb] = useState(0)
+  const exportBtnRef = useRef<HTMLButtonElement>(null)
   const replay = replays[Math.max(0, Math.min(handIdx, replays.length - 1))]
   if (!replay) return null
 
@@ -50,7 +52,17 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   const playerChips: Record<string, number> = {}
   let wonBy: string | null = null
   let wonAmount = 0
-  const revealedCards: Record<string, [Card, Card]> = {}
+  const revealedCards: Record<string, Card[]> = {}
+
+  const firstHoleCardCount = () => {
+    for (const cards of Object.values(replay.holeCards)) {
+      if (cards && cards.length > 0) return cards.length
+    }
+    for (const cards of Object.values(revealedCards)) {
+      if (cards && cards.length > 0) return cards.length
+    }
+    return 2
+  }
 
   for (const p of replay.players) {
     playerStatus[p.id] = 'active'
@@ -68,8 +80,8 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
     if (f.type === 'action') {
       if (f.action === 'fold') playerStatus[f.actorId!] = 'folded'
       if (f.action === 'all-in') playerStatus[f.actorId!] = 'all-in'
-      if (f.amount && f.actorId) {
-        playerBets[f.actorId] = (playerBets[f.actorId] ?? 0) + f.amount
+      if (f.betAmount != null && f.actorId) {
+        playerBets[f.actorId] = (playerBets[f.actorId] ?? 0) + f.betAmount
       }
     }
     if (f.type === 'showdown' && f.actorId && f.actorCards) {
@@ -255,21 +267,26 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
           </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowExportMenu(m => !m)} style={smallBtnStyle}>Export ▾</button>
-            {showExportMenu && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0, zIndex: 50,
-                background: '#1a1d23', border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: 6, padding: 4, minWidth: 220, marginTop: 4,
-              }}>
-                <button onClick={() => { exportCurrentHand(false); setShowExportMenu(false) }} style={menuItemStyle}>Diese Hand (Text)</button>
-                {debugMode && <button onClick={() => { exportCurrentHand(true); setShowExportMenu(false) }} style={menuItemStyle}>Diese Hand (Text + Entscheidungen)</button>}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '2px 0' }} />
-                <button onClick={() => { exportSession(false); setShowExportMenu(false) }} style={menuItemStyle}>Ganze Session (Text)</button>
-                {debugMode && <button onClick={() => { exportSession(true); setShowExportMenu(false) }} style={menuItemStyle}>Ganze Session (Text + Entscheidungen)</button>}
-              </div>
-            )}
+            <button ref={exportBtnRef} onClick={() => setShowExportMenu(m => !m)} style={smallBtnStyle}>Export ▾</button>
           </div>
+          {showExportMenu && exportBtnRef.current && createPortal(
+            <div style={{
+              position: 'fixed',
+              top: exportBtnRef.current.getBoundingClientRect().bottom + 4,
+              right: window.innerWidth - exportBtnRef.current.getBoundingClientRect().right,
+              zIndex: 99999,
+              background: '#1a1d23', border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 6, padding: 4, minWidth: 220,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+            }}>
+              <button onClick={() => { exportCurrentHand(false); setShowExportMenu(false) }} style={menuItemStyle}>Diese Hand (Text)</button>
+              {debugMode && <button onClick={() => { exportCurrentHand(true); setShowExportMenu(false) }} style={menuItemStyle}>Diese Hand (Text + Entscheidungen)</button>}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '2px 0' }} />
+              <button onClick={() => { exportSession(false); setShowExportMenu(false) }} style={menuItemStyle}>Ganze Session (Text)</button>
+              {debugMode && <button onClick={() => { exportSession(true); setShowExportMenu(false) }} style={menuItemStyle}>Ganze Session (Text + Entscheidungen)</button>}
+            </div>,
+            document.body
+          )}
           <button onClick={() => setShowHistory(h => !h)} style={smallBtnStyle}>
             {showHistory ? 'Tisch' : 'History'}
           </button>
@@ -322,6 +339,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
                       isCurrent={player.id === currentActorId}
                       revealedCards={showAllCards ? (replay.holeCards[player.id] ?? revealedCards[player.id]) : revealedCards[player.id]}
                       myCards={currentFrame?.type === 'action' && currentFrame.actorId === player.id ? currentFrame.actorCards ?? null : null}
+                      holeCardCount={firstHoleCardCount()}
                       showCards={showAllCards || !!revealedCards[player.id] || (isActive && player.status !== 'folded')}
                       currency={currency}
                       startingChips={startingChips}

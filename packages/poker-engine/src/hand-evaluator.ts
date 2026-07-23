@@ -19,17 +19,47 @@ export interface HandResult {
   name: string   // e.g. 'Full House' or 'A High'
 }
 
-export function evaluateHand(holeCards: [Card, Card], communityCards: Card[]): HandResult {
+export function evaluateHand(holeCards: Card[], communityCards: Card[]): HandResult {
   const allCards = [...holeCards, ...communityCards].map(toPokersolverCard)
   const hand = Hand.solve(allCards)
   return { rank: hand.rank, name: hand.descr }
 }
 
+/** Omaha evaluation: must use exactly 2 hole + 3 community cards. */
+export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): HandResult {
+  const boardCards = communityCards.map(toPokersolverCard)
+  const hole = holeCards.map(toPokersolverCard)
+
+  let best: { rank: number; name: string } | null = null
+
+  // Try all combinations: 2 of 4 hole cards + 3 of 5 community cards
+  for (let h1 = 0; h1 < hole.length - 1; h1++) {
+    for (let h2 = h1 + 1; h2 < hole.length; h2++) {
+      for (let c1 = 0; c1 < boardCards.length - 2; c1++) {
+        for (let c2 = c1 + 1; c2 < boardCards.length - 1; c2++) {
+          for (let c3 = c2 + 1; c3 < boardCards.length; c3++) {
+            const hand = Hand.solve([hole[h1], hole[h2], boardCards[c1], boardCards[c2], boardCards[c3]])
+            if (!best || hand.rank > best.rank) {
+              best = { rank: hand.rank, name: hand.descr }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return best ?? { rank: 1, name: 'High Card' }
+}
+
 export function describeWinningHand(
-  holeCards: [Card, Card],
+  holeCards: Card[],
   communityCards: Card[],
-  losingHoleCards: [Card, Card][],
+  losingHoleCards: Card[][],
 ): string {
+  if (holeCards.length === 4) {
+    const result = evaluateOmahaHand(holeCards, communityCards)
+    return result.name
+  }
   const winner = Hand.solve([...holeCards, ...communityCards].map(toPokersolverCard))
   const kickerIndices = kickerCardIndices(winner.rank)
   if (kickerIndices.length === 0) return winner.descr
@@ -67,8 +97,21 @@ function kickerCardIndices(rank: number): number[] {
  * returns the indices of the winner(s). Handles ties correctly.
  */
 export function findWinnerIndices(
-  hands: { holeCards: [Card, Card]; communityCards: Card[] }[]
+  hands: { holeCards: Card[]; communityCards: Card[] }[]
 ): number[] {
+  const isOmaha = hands.length > 0 && hands[0].holeCards.length >= 4
+
+  if (isOmaha) {
+    const results = hands.map(h => evaluateOmahaHand(h.holeCards, h.communityCards))
+    let bestRank = 0
+    for (const r of results) {
+      if (r.rank > bestRank) bestRank = r.rank
+    }
+    return results
+      .map((r, i) => r.rank >= bestRank ? i : -1)
+      .filter(i => i !== -1)
+  }
+
   const solved = hands.map(h =>
     Hand.solve([...h.holeCards, ...h.communityCards].map(toPokersolverCard))
   )

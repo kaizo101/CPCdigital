@@ -18,11 +18,20 @@ import { createSeededRandom, secureRandom, type RandomSeed, type RandomSource } 
 import { calculateSidePots } from './side-pot'
 import {
   cloneGameVariant,
-  TEXAS_HOLDEM,
   validateGameVariant,
   type BettingPhaseDefinition,
   type GameVariant,
 } from './game-variant'
+import { TEXAS_HOLDEM } from './variants/texas-holdem'
+
+const RANK_VALUE: Record<string, number> = {
+  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8,
+  '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14,
+}
+
+function byRankDesc(a: Card, b: Card): number {
+  return (RANK_VALUE[b.rank] ?? 0) - (RANK_VALUE[a.rank] ?? 0)
+}
 
 export interface GameConfig {
   bigBlind: number
@@ -46,7 +55,7 @@ export interface GameConfig {
  */
 export class PokerGame {
   private deck: Card[] = []
-  private holeCards = new Map<PlayerId, [Card, Card]>()
+  private holeCards = new Map<PlayerId, Card[]>()
   private handHistory: HandEvent[] = []
   private decisionSnapshots: DecisionSnapshot[] = []
   private lastHandResults: HandResult[] = []
@@ -79,8 +88,8 @@ export class PokerGame {
     }
     this.variant = cloneGameVariant(config.variant ?? TEXAS_HOLDEM)
     validateGameVariant(this.variant)
-    if (this.variant.holeCardsPerPlayer !== 2) {
-      throw new Error('PokerGame currently supports variants with exactly two hole cards')
+    if (this.variant.holeCardsPerPlayer !== 2 && this.variant.holeCardsPerPlayer !== 4) {
+      throw new Error('PokerGame currently supports variants with 2 or 4 hole cards')
     }
     this.random = config.random ?? (config.seed !== undefined ? createSeededRandom(config.seed) : secureRandom)
     this.state = {
@@ -115,7 +124,7 @@ export class PokerGame {
     const cards = this.holeCards.get(playerId)
     return {
       state: this.clonePublicState(),
-      ownCards: cards ? cards.map(card => ({ ...card })) as [Card, Card] : null,
+      ownCards: cards ? cards.map(card => ({ ...card })).sort(byRankDesc) as Card[] : null,
     }
   }
 
@@ -126,11 +135,11 @@ export class PokerGame {
   /** Private per-actor analysis records; never include these in a public broadcast. */
   getPrivateDecisionSnapshots(): readonly DecisionSnapshot[] { return this.decisionSnapshots }
 
-  getRevealedCards(): Readonly<Record<PlayerId, [Card, Card]>> {
-    const revealed: Record<PlayerId, [Card, Card]> = {}
+  getRevealedCards(): Readonly<Record<PlayerId, Card[]>> {
+    const revealed: Record<PlayerId, Card[]> = {}
     for (const event of this.handHistory) {
       if (event.type === 'CardsRevealed') {
-        revealed[event.playerId] = event.cards.map(card => ({ ...card })) as [Card, Card]
+        revealed[event.playerId] = event.cards.map(card => ({ ...card })).sort(byRankDesc) as Card[]
       }
     }
     return revealed
@@ -262,7 +271,7 @@ export class PokerGame {
 
     for (const player of this.getInHandPlayers()) {
       const [cards, remaining] = dealCards(this.deck, this.variant.holeCardsPerPlayer)
-      this.holeCards.set(player.id, cards as [Card, Card])
+      this.holeCards.set(player.id, cards)
       this.deck = remaining
     }
 
@@ -577,7 +586,7 @@ export class PokerGame {
     for (const player of this.getInHandPlayers()) {
       const cards = this.holeCards.get(player.id)
       if (cards) {
-        this.handHistory.push({ type: 'CardsRevealed', playerId: player.id, cards: [...cards] as [Card, Card] })
+        this.handHistory.push({ type: 'CardsRevealed', playerId: player.id, cards: [...cards].sort(byRankDesc) as Card[] })
       }
     }
 
@@ -744,7 +753,7 @@ export class PokerGame {
       case 'CommunityCardDealt':
         return { ...event, cards: event.cards.map(card => ({ ...card })) }
       case 'CardsRevealed':
-        return { ...event, cards: event.cards.map(card => ({ ...card })) as [Card, Card] }
+        return { ...event, cards: event.cards.map(card => ({ ...card })) as Card[] }
       case 'HandEnded':
         return { ...event, results: event.results.map(result => ({ ...result })) }
     }
@@ -820,7 +829,7 @@ export class PokerGame {
         smallBlind: this.state.smallBlind,
         bigBlind: this.state.bigBlind,
       },
-      ownCards: ownCards.map(card => ({ ...card })) as [Card, Card],
+      ownCards: ownCards.map(card => ({ ...card })).sort(byRankDesc) as Card[],
       bettingContext: {
         ...bettingContext,
         legalActions: {

@@ -34,7 +34,7 @@ export interface ServerToClientEvents {
 
   // Game
   'game:state': (state: PublicGameState) => void
-  'game:your-cards': (cards: [Card, Card]) => void
+  'game:your-cards': (cards: Card[]) => void
   'game:hand-result': (results: HandResult[]) => void
 
   // Chat

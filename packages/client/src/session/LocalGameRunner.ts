@@ -1,4 +1,4 @@
-import { createSeededRandom, PokerGame, type RandomSource } from '@cpc/poker-engine'
+import { createSeededRandom, PokerGame, TEXAS_HOLDEM, OMAHA_HIGH, type RandomSource } from '@cpc/poker-engine'
 import type {
   Player,
   PlayerAction,
@@ -20,7 +20,7 @@ import {
 import type { BotState, MentalEvent } from '../bot-tag'
 import { getPlayerActionLabel, type PlayerActionLabel } from '../action-display'
 import { createBotContext } from '../bot-context'
-import { planBotDecisionTiming, sampleTargetReactionMs } from '../bot-timing'
+import { planBotDecisionTiming, sampleTargetReactionMs, getBotTiming } from '../bot-timing'
 import { assessDecisionComplexity } from '../bot-decision-complexity'
 import type { DecisionComplexity } from '../bot-decision-complexity'
 import type { ScoredAction } from '../bot-decision-types'
@@ -73,12 +73,12 @@ const UNCONTESTED_RESULT_DISPLAY_MS = 3000
 
 export interface LocalGameState {
   gameState: PublicGameState | null
-  myCards: [Card, Card] | null
+  myCards: Card[] | null
   lastResults: HandResult[] | null
   isMyTurn: boolean
   playerAvatarKeys: Readonly<Record<string, string>>
   playerActionLabels: Readonly<Record<string, PlayerActionLabel>>
-  showdownCards: Readonly<Record<string, [Card, Card]>>
+  showdownCards: Readonly<Record<string, Card[]>>
   sessionHistory: readonly SessionHistoryEvent[]
   pendingRebuyPlayerIds: readonly string[]
   handReplays: readonly HandReplay[]
@@ -100,7 +100,7 @@ export class LocalGameRunner {
   private runoutTimer: ReturnType<typeof setTimeout> | null = null
   private _lastResults: HandResult[] | null = null
   private playerActionLabels: Record<string, PlayerActionLabel> = {}
-  private showdownCards: Record<string, [Card, Card]> = {}
+  private showdownCards: Record<string, Card[]> = {}
   private sessionHistory: SessionHistoryEvent[] = []
   private sessionDecisionSnapshots: any[] = []
   private botDebugDecisions: BotDebugDecision[] = []
@@ -248,7 +248,7 @@ export class LocalGameRunner {
     for (const l of this.listeners) l()
   }
 
-  setupTable(options: TableOptions, botCount: number, rebuyEnabled = true): Player[] {
+  setupTable(options: TableOptions, botCount: number, rebuyEnabled = true, variantId = 'texas-holdem'): Player[] {
     this.cleanup()
 
     if (!Number.isFinite(options.smallBlind) || options.smallBlind <= 0) throw new Error('Small blind must be positive')
@@ -350,9 +350,12 @@ export class LocalGameRunner {
 
     recordSession(identityIds)
 
+    const variant = variantId === 'omaha-high' ? OMAHA_HIGH : TEXAS_HOLDEM
+
     this.game = new PokerGame(this.players, {
       bigBlind: options.bigBlind,
       smallBlind: options.smallBlind,
+      variant,
       ...(seedNamespace === null ? {} : { seed: `${seedNamespace}:deck` }),
     })
 
@@ -470,7 +473,8 @@ export class LocalGameRunner {
       return
     }
 
-    const targetReactionMs = sampleTargetReactionMs(this.timingRandom, complexity)
+    const timingPolicy = getBotTiming(botContext.publicState.variantId)
+    const targetReactionMs = sampleTargetReactionMs(this.timingRandom, complexity, timingPolicy)
     const timing = planBotDecisionTiming(targetReactionMs, monotonicNow() - decisionStartedAt)
     this.botDebugDecisions.push({
       sequence: this.nextBotDebugSequence++,
@@ -722,7 +726,7 @@ export class LocalGameRunner {
     // Only capture once per hand
     if (this.handReplays.length > 0 && this.handReplays[this.handReplays.length - 1]?.handNumber === this.currentHandNumber) return
     const handEvents = this.game.getPublicHandHistory()
-    const holeCards: Record<string, [Card, Card]> = {}
+    const holeCards: Record<string, Card[]> = {}
     const revealed = this.game.getRevealedCards()
     for (const id of Object.keys(revealed)) {
       holeCards[id] = revealed[id]
@@ -735,7 +739,7 @@ export class LocalGameRunner {
     // Include bot hole cards from debug decisions
     for (const d of this.botDebugDecisions) {
       if (d.handNumber === this.currentHandNumber && d.context.ownCards) {
-        holeCards[d.playerId] = d.context.ownCards as [Card, Card]
+        holeCards[d.playerId] = d.context.ownCards
       }
     }
 

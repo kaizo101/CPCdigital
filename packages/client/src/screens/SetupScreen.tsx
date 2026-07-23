@@ -38,6 +38,8 @@ export function SetupScreen({
   setCurrency,
   rebuyEnabled,
   setRebuyEnabled,
+  variantId,
+  setVariantId,
 }: {
   options: TableOptions
   setOptions: (options: TableOptions) => void
@@ -48,6 +50,8 @@ export function SetupScreen({
   setCurrency: (currency: DisplayCurrency) => void
   rebuyEnabled: boolean
   setRebuyEnabled: (enabled: boolean) => void
+  variantId: string
+  setVariantId: (id: string) => void
 }) {
   const maxBots = 8
   const selectedBlindPreset = BLIND_PRESETS.find(preset =>
@@ -245,6 +249,39 @@ export function SetupScreen({
                       }}
                     >
                       {option === 'EUR' ? '€ Euro' : '$ Dollar'}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section style={{ background: 'rgba(255,255,255,0.04)', padding: 18, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontSize: 11, color: '#8f98a4', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Spielvariante</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {([
+                  { id: 'texas-holdem', label: 'No Limit Texas Hold\'em' },
+                  { id: 'omaha-high', label: 'Pot Limit Omaha High' },
+                ] as const).map(option => {
+                  const selected = variantId === option.id
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setVariantId(option.id)}
+                      style={{
+                        padding: '8px 9px',
+                        borderRadius: 7,
+                        border: selected ? '1px solid rgba(125,211,252,0.7)' : '1px solid rgba(255,255,255,0.1)',
+                        background: selected ? 'rgba(14,116,144,0.25)' : '#0e1116',
+                        color: selected ? '#bae6fd' : '#aab2bd',
+                        fontFamily: 'inherit',
+                        fontSize: 12,
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {option.label}
                     </button>
                   )
                 })}

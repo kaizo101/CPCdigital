@@ -2,7 +2,7 @@
 
 Eine Offline-Poker-App für den Desktop: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung.
 
-Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.6.0** und bietet ein vollständig spielbares No-Limit-Hold'em mit glaubwürdigen Bots, Auto-Rebuys, Hand-Replays und einer PokerStars-kompatiblen Hand-History. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
+Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.7.1** und bietet No-Limit Texas Hold'em und Pot-Limit Omaha High mit glaubwürdigen Bots, variant-spezifischer Handbewertung, kalibrierten Archetypen, Auto-Rebuys und Hand-Replays. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
 
 ## Leitgedanken
 
@@ -16,7 +16,9 @@ Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.
 
 Derzeit enthalten sind unter anderem:
 
-- No-Limit Texas Hold'em als lokale Singleplayer-Partie
+- No-Limit Texas Hold'em und Pot-Limit Omaha High als lokale Singleplayer-Partie
+- Variant-Selector im Setup (NLHE / PLO)
+- variant-spezifische Handbewertung: 7-Kategorien NLHE + Omaha mit Draw-Dichte, Wrap-Outs, Nut-Potential
 - flexible Tischgröße von Heads-up bis Full Ring
 - Setup für Blinds, Startstack und Dollar oder Euro
 - Blind-Presets und automatische Anpassung des Standardstacks auf 100 BB
@@ -47,7 +49,7 @@ Derzeit enthalten sind unter anderem:
 - ReadTyp: Gegner-Bet-Sizing-Analyse mit Abweichungserkennung
 - Stack- und positionsabhängiges Raise-Sizing
 
-Noch nicht als stabiler Funktionsumfang enthalten sind zusätzliche Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
+Noch nicht als stabiler Funktionsumfang enthalten sind weitere Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
 
 Eine öffentliche Demo ohne Server/Secrets gibt es unter **[cpcdigital-demo](https://github.com/kaizo101/cpcdigital-demo)** mit [Live-Deployment auf GitHub Pages](https://kaizo101.github.io/cpcdigital-demo/).
 

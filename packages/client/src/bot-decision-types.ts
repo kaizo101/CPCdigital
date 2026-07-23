@@ -42,7 +42,7 @@ export interface ScoredAction {
 }
 
 export interface BotGameView {
-  myCards: [Card, Card]
+  myCards: Card[]
   board: Card[]
   pot: number
   currentBet: number

@@ -254,145 +254,174 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## 🎯 0.7.1 — Omaha High
+## ✅ 0.7.1 — Omaha High
 
 **Ziel:** Pot-Limit und variantenspezifische Hand-Eval testen.
 
-- [ ] Omaha-Hand-Evaluation (exakt 2 Hole + 3 Board)
-- [ ] Pot-Limit-Berechnung (Max-Raise = Pot + 2×Call, bereits in Engine)
-- [ ] Omaha-spezifischer Variant Context
-- [ ] Bot-Strategie: Draw-Dichte, Redraw-Warnung, Nuts-Frequenz
-- [ ] NLHE- und Omaha-Logik ohne Duplizierung
+- [x] Omaha-Hand-Evaluation (exakt 2 Hole + 3 Board) — `evaluateOmahaHand` mit 60 Kombinationen
+- [x] Pot-Limit-Berechnung (Max-Raise = Pot + 2×Call, bereits in Engine)
+- [x] Omaha-spezifischer Variant Context — `omaha-hand-evaluation.ts` als `VariantEvaluator`
+- [x] Bot-Strategie: Draw-Dichte (Flush-Draw, Wrap-Outs), Nut-Potential, Vulnerability, Preflop-Assessment (Double-Suited, Connectedness, High-Card-Points)
+- [x] NLHE- und Omaha-Logik ohne Duplizierung — gemeinsames `VariantEvaluator`-Interface, getrennte Implementierungen
+- [x] Variant-Selector im SetupScreen (Texas ↔ Omaha)
+- [x] Type-System: `[Card, Card]` → `Card[]` in 58 Stellen (shared, engine, client)
+- [x] `findWinnerIndices` dispatched nach Hole-Card-Anzahl
+- [x] PlayerSeat rendert dynamisch 2–4 Karten
+- [x] TableScreen zeigt "PLO" statt "NLHE"
+- [x] Kalibrierung: 12 Archetyp-Formate, TAG VPIP 30.8% / PFR 14.8% / AF 2.89 / WTSD 33.4% (6/6 im Ziel)
+- [x] `weightedChoice`-Fallback fixt (best-action statt blind-fold)
+- [x] Aggression-Modifier `/5` → `/4` (LAG-Raise-Bonus von +6 → +7.5)
 
 ---
 
-## 🎯 0.7.2 — 2-7 Single Draw
+## 🎯 0.7.2 — WTSD (Postflop-Fold-Verhalten)
 
-**Ziel:** Architektur-Proof für Draw-Spiele außerhalb Community-Card.
+**Ziel:** Showdown-Rate senken — Bots folden postflop zu selten.
+
+- **Problem**: Alle Archetypen sehen zu viele Showdowns (TAG PLO 6-max: 39.9%,
+  Target 28–38%). "Medium"-Hände callen postflop zu oft (Category-Base: +20).
+- **Ansatz**: Variant-spezifische Category-Scores. PLO "medium" call=+5 statt
+  NLHE +20. NLHE-Tabelle bleibt unangetastet, PLO bekommt konservativere Werte.
+- **Umsetzung**: `GameVariant`-Konfiguration um Category-Score-Tabelle erweitern.
+  `bot-action-scoring.ts` liest Scores aus Variant-Konfig statt globalem Param.
+- **Hebel**: Alle Archetypen, größter struktureller Einzelfix.
+
+---
+
+## 🎯 0.7.3 — Personality-Tuning (LAG AF / Nit VPIP)
+
+**Ziel:** Archetypen spielen ihre Rolle — LAG aggressiver, Nit tighter.
+
+- **Problem**: LAG AF zu niedrig (PLO 1.45, Target 2.5+), Nit VPIP zu hoch
+  (PLO 27.8%, Target 14–22%). Category-Base-Scores dominieren Personality.
+- **Ansatz**: Aufbauend auf 0.7.2 — die variant-spezifischen Category-Scores
+  erlauben pro Archetyp unterschiedliche Fold/Call/Raise-Basen. LAG kriegt
+  höhere Raise-Base, Nit höhere Fold-Base.
+- **Hebel**: 2 Archetypen, nutzt die in 0.7.2 geschaffene Infrastruktur.
+
+---
+
+## 🎯 0.7.4 — Session-Statistiken
+
+**Ziel:** Live-Feedback während der Session.
+
+- [ ] Live-VPIP/PFR/3-Bet in einklappbarer Kopfzeile
+- [ ] Ergebnis in BB pro Session
+- [ ] BB/100 als primäre Vergleichsmetrik
+- [ ] PokerStars-Sessionlog aus Hand-Events
+
+---
+
+## 🎯 0.7.5 — UI-Skalierung & Responsive Layout
+
+**Ziel:** Auf Tablets und kleinen Bildschirmen testbar — mehr Dev-Bandbreite.
+
+- [ ] **Actionleiste**: verdeckt auf Desktop untere Spieler-Sitze → in Tisch-Layout integrieren oder kollabierbar machen
+- [ ] **Table-Shell**: `aspect-ratio` statt fester `vh`-Berechnung, füllt verfügbaren Platz
+- [ ] **PlayerSeat**: Schriftgrößen, Avatar, Chip-Anzeige mit `clamp()` skalieren
+- [ ] **Cards**: Größen für kleine Viewports optimieren
+- [ ] **Setup-Screen**: Inputs und Layout für schmale Bildschirme
+- [ ] **Replayer**: Steuerung auf kleinen Screens bedienbar
+- [ ] **Touch**: Rechtsklick-Rebuy durch Long-Press oder sichtbaren Button ersetzen
+- [ ] **Hochformat-Tablet**: Layout bricht nicht auseinander
+- [ ] **PlayerSeat-Positionierung**: Padding zur Tischkante, Kollisionsvermeidung
+
+> Tablet läuft im Browser (GitHub Pages) — keine APK nötig.
+
+---
+
+# Phase 4 — Neue Variante & Spielkomfort
+
+## 🎯 0.8.0 — 2-7 Single Draw
+
+**Ziel:** Erste Draw-Variante, Architektur-Proof für Kartentausch.
 
 - [ ] 2-7-Lowball-Handrangfolge
-- [ ] Draw-Phase und Kartentausch
+- [ ] `DrawPhaseDefinition` in `GameVariant` (Kartenanzahl pro Draw, max Draws)
+- [ ] Draw-Phase und Kartentausch in der Engine
+- [ ] `VariantEvaluator`: Draw-Qualität, Discard-Empfehlungen, Pat/Snowing
 - [ ] Pat/Draw-Status + Snowing-Logik
 - [ ] Draw-spezifische Action History
 - [ ] Grundlegende Regelhinweise in der UI
 
 ---
 
-## 🎯 0.7.3 — Stud Light (Architektur-Proof: offene Karten)
+## 🎯 0.8.1 — HU-Strategie (Heads-up)
 
-**Ziel:** Prüfen, ob `BotContext` offene Gegnerkarten als neue Informationsebene aufnehmen kann.
+**Ziel:** Heads-up spielt sich fundamental anders als Full-Ring — eigener Pfad.
 
-- [ ] Engine: Stud-Regeln (Ante, Bring-in, 3rd/4th/5th/6th/7th Street)
-- [ ] `BotGameView` um `visibleOpponentCards` erweitern
-- [ ] Vereinfachte Hand-Evaluation (nur Kategorien, kein volles Scoring)
-- [ ] Dummy-Bot: liest offene Karten, trifft keine strategischen Entscheidungen
-- [ ] Keine vollständige Stud-Bot-AI — nur Architektur-Validierung
+- [ ] HU-spezifische Preflop-Ranges (NLHE + PLO)
+- [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz)
+- [ ] Kalibrierung: HU-Formate für alle Archetypen
 
 ---
 
-## 🎯 0.7.4 — UI-Skalierung & Responsive Layout
+## 🎯 0.8.2 — Tischkomfort & Branding
 
-**Ziel:** Auf Tablets und kleinen Bildschirmen spielbar, Actionleiste verdeckt keine Tischelemente.
-
-- [ ] **Actionleiste**: verdeckt auf Desktop untere Spieler-Sitze → in Tisch-Layout integrieren oder kollabierbar machen
-- [ ] **Table-Shell**: `aspect-ratio` statt fester `vh`-Berechnung, füllt verfügbaren Platz
-- [ ] **PlayerSeat**: Schriftgrößen, Avatar, Chip-Anzeige mit `clamp()` skalieren
-- [ ] **Cards**: Größen für kleine Viewports optimieren (aktuell clamp-Minimum zu klein)
-- [ ] **Setup-Screen**: Inputs und Layout für schmale Bildschirme
-- [ ] **Replayer**: Steuerung auf kleinen Screens bedienbar
-- [ ] **Touch**: Rechtsklick-Rebuy durch Long-Press oder sichtbaren Button ersetzen
-- [ ] **Hochformat-Tablet**: Layout bricht nicht auseinander
-- [ ] **PlayerSeat-Positionierung**: Panels ragen in Tisch oder Karten werden am Rand abgeschnitten — `getSeatPosition` braucht Padding zur Tischkante und Kollisionsvermeidung zwischen benachbarten Sitzen
-
----
-
-## 🎯 0.8.0 — Postflop-Fixes: Fold-to-CBet & WTSD
-
-**Ziel:** Die letzen zwei strukturellen Postflop-Probleme beheben — Gegner folden zu oft auf C-Bets, Bots gehen zu oft zum Showdown.
-
-- [ ] **Fold-to-CBet-Analyse**: Debug-Export → Contribution-Breakdown → lokalen Bug identifizieren (Methodik wie beim Free-Card-Bug)
-- [ ] **Fold-to-CBet-Fix**: Baseline/Gewichtung der Fold-Entscheidung bei Gegner-Aggression korrigieren
-- [ ] **WTSD-Analyse**: Session-Evaluator um WTSD-Patterns erweitern
-- [ ] **WTSD-Fix**: Showdown-Häufigkeit senken (zu viele Calls mit One-Pair)
-- [ ] Postflop-Kalibrierung: Fold-to-CBet und WTSD als Targets aufnehmen
-- [ ] `hand.strength` als Analyse-Werkzeug ausbauen (Debug-Export, Session-Evaluator)
-
-> **Architektur-Entscheidung**: Der Hybrid-Ansatz (Kategorien + Strength-Bonus) bleibt final.
-> `hand.strength` dient als Diagnose-Tool, nicht als Scoring-Ersatz.
-> Kategorien strukturieren Entscheidungen, Strength verfeinert und analysiert.
-
----
-
-# Phase 4 — Spielkomfort und v1.0
-
-## 🎯 0.8.1 — Session-Statistiken
-
-- [ ] Live-VPIP/PFR/3-Bet in einklappbarer Kopfzeile
-- [ ] Ergebnis in BB pro Session
-- [ ] PokerStars-Sessionlog aus Hand-Events
-
-## 🎯 0.8.2 — Globale Statistiken
-
-- [ ] Persistente, versionierte Globalstatistik (Sessions, WTSD, W$SD, BB/100)
-- [ ] Filter nach Variante, Tischgröße, Stakes, Zeitraum
-- [ ] BB/100 als primäre Vergleichsmetrik
-
-## 🎯 0.9.0 — Tischkomfort
+**Ziel:** UI-Polish vor dem Release.
 
 - [ ] BB-Anzeige-Modus (Stacks, Bets, Pot in BB)
 - [ ] Währungswahl um "Keine" erweitern (nur Zahlen, kein €/$)
 - [ ] 4-Color-Deck-Option
 - [ ] Min-/Max-Bet direkt in der Oberfläche
-- [ ] Handbeschreibung variantenspezifisch (z.B. "Two Pair, A's & Q's") — optional zuschaltbar, standardmäßig aus
+- [ ] **Branding-Review**: Action-Buttons von PokerStars-Rot auf CPCdigital-Farbschema
 
-## 🎯 0.9.1 — Session-Flexibilität
+---
+
+## 🎯 0.8.3 — Session-Flexibilität
+
+**Ziel:** Mehr Kontrolle über die Session.
 
 - [ ] Hero-Name im Setup wählbar (statt immer "You")
-- [ ] Bot-Avatare: 44 Bilder für alle Identities (aktuell nur Initial-Fallback)
-
+- [ ] Bot-Avatare: 44 Bilder für alle Identities
 - [ ] Individuelle Starting-Stacks pro Bot
 - [ ] Konfigurierbare Buy-in-Grenzen (40–250 BB)
-- [ ] Frei wählbare Rebuy-Beträge
 - [ ] Session-Setup mit Variante + Schwierigkeitsmix
 
-## 🎯 0.9.2 — Präsentation
+---
+
+## 🎯 0.8.4 — Präsentation
+
+**Ziel:** Letzter Schliff für v1.0.
 
 - [ ] Animationen (Karten, Chips)
 - [ ] Sound-Effekte
-- [ ] Tablet-tauglich: Querformat, Touch-Bedienung, kein Zoom nötig
 - [ ] Performance-Test für lange Sessions
-
-> Tablet läuft im Browser (GitHub Pages) — keine APK nötig.
 
 ---
 
 ## 🎯 1.0.0 — Stable Core Release
 
-**Ziel:** Ein stabiles Offline-Pokerspiel und belastbares Fundament für die Learning-Erweiterung.
+**Ziel:** Ein stabiles Offline-Pokerspiel mit 3 Varianten und belastbarem Fundament
+für die Learning-Erweiterung.
 
 ### Enthalten
 
 - [x] NLHE vollständig spielbar
-- [ ] Omaha High vollständig spielbar
+- [x] Omaha High vollständig spielbar
 - [ ] 2-7 Single Draw als erste seltene Variante
-- [ ] Stud Light als Architektur-Proof für Spiele mit offenen Karten
-- [ ] mehrere unterscheidbare Bot-Persönlichkeiten
-- [ ] Skill, Reads und Mental State
+- [ ] 4 unterscheidbare Bot-Archetypen mit Personality, Skill, Reads, Mental State
 - [ ] vollständige Hand History und Replay
 - [ ] Decision Records und erklärbare Bot-Scores
-- [ ] robuste Engine- und Bot-Tests
+- [ ] Session-Statistiken (Live-VPIP/PFR, BB/100)
+- [ ] responsive UI (Tablet, Touch)
 - [ ] stabiles Desktop-Packaging
 - [ ] Dokumentation für Architektur und Variantenmodule
 
 ### Optional (post-1.0)
 
-- [ ] Session-Log (PokerStars-Dealer-Stil, links unten, einklappbar) — Live-Hand-History als Text
+- [ ] Session-Log (PokerStars-Dealer-Stil, links unten, einklappbar)
 
 ### Packaging
 
 - [ ] Windows
 - [ ] Linux / AppImage
 - [ ] macOS, soweit Build-Umgebung verfügbar
+
+### Nach v1.0 verschoben
+
+- **Stud Light** (Architektur-Proof offene Karten) — technische Vorarbeit für Razz/Stud, kein Consumer-Feature
+- **Globale Statistiken** (Session-übergreifend, Filter nach Variante/Stakes) — braucht mehrere Sessions als Datenbasis
 
 ---
 

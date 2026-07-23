@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { Player, PlayerAction } from '@cpc/shared'
 import { PokerGame } from './game'
 import { replayHand } from './hand-replay'
-import { TEXAS_HOLDEM, validateGameVariant, type GameVariant } from './game-variant'
+import { validateGameVariant, type GameVariant } from './game-variant'
+import { TEXAS_HOLDEM } from './variants/texas-holdem'
 
 function makePlayers(chips = 1000, count = 3): Player[] {
   return Array.from({ length: count }, (_, seatIndex) => ({

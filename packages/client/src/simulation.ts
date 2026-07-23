@@ -1,7 +1,7 @@
 // Bot archetype calibration across common table formats.
 // Run with: npx tsx packages/client/src/simulation.ts
 
-import { createSeededRandom, PokerGame } from '@cpc/poker-engine'
+import { createSeededRandom, OMAHA_HIGH, PokerGame } from '@cpc/poker-engine'
 import type { Player, PlayerAction, PublicGameState } from '@cpc/shared'
 import {
   CALLING_STATION_PERSONALITY,
@@ -43,6 +43,8 @@ interface CalibrationProfile {
   personality: BotPersonality
   formats: FormatConfig[]
 }
+
+const CALIB_VARIANT = process.env.CALIB_VARIANT || 'texas-holdem'
 
 const TAG_FORMATS: FormatConfig[] = [
   {
@@ -116,7 +118,109 @@ const CALLING_STATION_FORMATS: FormatConfig[] = [
   },
 ]
 
-const CALIBRATION_PROFILES: CalibrationProfile[] = [
+// Omaha (PLO) targets — higher VPIP, lower AF, more calling
+const PLO_TAG_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [22, 32], pfr: [12, 20], threeBet: [5, 11], cBet: [35, 55], aggressionFactor: [1.5, 3.5], wtsd: [28, 38] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [28, 38], pfr: [15, 24], threeBet: [7, 13], cBet: [35, 55], aggressionFactor: [1.5, 3.5], wtsd: [28, 38] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [45, 65], pfr: [30, 48], threeBet: [10, 20], cBet: [40, 60], aggressionFactor: [2.0, 5.0], wtsd: [30, 45] },
+  },
+]
+
+const PLO_NIT_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [14, 22], pfr: [8, 14], threeBet: [3, 7], cBet: [30, 50], aggressionFactor: [1.5, 3.5], wtsd: [25, 36] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [18, 28], pfr: [10, 17], threeBet: [4, 9], cBet: [30, 50], aggressionFactor: [1.5, 3.5], wtsd: [25, 36] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [30, 45], pfr: [15, 30], threeBet: [6, 12], cBet: [35, 55], aggressionFactor: [2.0, 4.5], wtsd: [28, 42] },
+  },
+]
+
+const PLO_LAG_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [29, 40], pfr: [18, 28], threeBet: [8, 16], cBet: [40, 60], aggressionFactor: [2.5, 6.0], wtsd: [26, 37] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [35, 48], pfr: [22, 32], threeBet: [9, 18], cBet: [40, 60], aggressionFactor: [2.5, 6.0], wtsd: [26, 37] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [50, 70], pfr: [35, 52], threeBet: [12, 24], cBet: [45, 65], aggressionFactor: [3.0, 8.0], wtsd: [28, 42] },
+  },
+]
+
+const PLO_CS_FORMATS: FormatConfig[] = [
+  {
+    name: 'Full Ring (9-max)',
+    playerCount: 9,
+    target: { vpip: [32, 48], pfr: [5, 14], threeBet: [1, 7], cBet: [20, 40], aggressionFactor: [0.5, 2.0], wtsd: [35, 48] },
+  },
+  {
+    name: '6-max',
+    playerCount: 6,
+    target: { vpip: [42, 60], pfr: [7, 17], threeBet: [2, 8], cBet: [20, 40], aggressionFactor: [0.5, 2.0], wtsd: [35, 48] },
+  },
+  {
+    name: 'Heads-up',
+    playerCount: 2,
+    target: { vpip: [60, 82], pfr: [15, 32], threeBet: [3, 12], cBet: [25, 45], aggressionFactor: [0.8, 2.5], wtsd: [38, 52] },
+  },
+]
+
+const CALIBRATION_PROFILES: CalibrationProfile[] = CALIB_VARIANT === 'omaha-high' ? [
+  {
+    name: 'TAG (PLO)',
+    seed: 'tag-plo-calibration-v1',
+    archetypeId: 'tag',
+    personality: TAG_PERSONALITY,
+    formats: PLO_TAG_FORMATS,
+  },
+  {
+    name: 'Nit (PLO)',
+    seed: 'nit-plo-calibration-v1',
+    archetypeId: 'nit',
+    personality: NIT_PERSONALITY,
+    formats: PLO_NIT_FORMATS,
+  },
+  {
+    name: 'LAG (PLO)',
+    seed: 'lag-plo-calibration-v1',
+    archetypeId: 'lag',
+    personality: LAG_PERSONALITY,
+    formats: PLO_LAG_FORMATS,
+  },
+  {
+    name: 'Calling Station (PLO)',
+    seed: 'cs-plo-calibration-v1',
+    archetypeId: 'calling-station',
+    personality: CALLING_STATION_PERSONALITY,
+    formats: PLO_CS_FORMATS,
+  },
+] : [
   {
     name: 'TAG',
     seed: 'tag-calibration-v1',
@@ -258,6 +362,7 @@ function simulateFormat(
     bigBlind: BIG_BLIND,
     smallBlind: SMALL_BLIND,
     seed: `${seedNamespace}:deck`,
+    ...(CALIB_VARIANT === 'omaha-high' ? { variant: OMAHA_HIGH } : {}),
   })
   const stats = createStats()
   const startedAt = Date.now()
@@ -311,7 +416,8 @@ function simulateFormat(
         game.applyAction(botId, action)
       } catch {
         stats.actionErrors++
-        action = { type: 'fold' }
+        const ctx = game.getPublicState().bettingContext
+        action = ctx?.legalActions.check ? { type: 'check' } : { type: 'fold' }
         game.applyAction(botId, action)
       }
 
@@ -493,6 +599,7 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
 }
 
 let calibrationFailed = false
+console.log(`\n=== CPCdigital Calibration — ${CALIB_VARIANT === 'omaha-high' ? 'Omaha High (PLO)' : 'Texas Hold\'em (NLHE)'} ===`)
 for (const profile of CALIBRATION_PROFILES) {
   console.log(`\n${profile.name} simulation · ${HANDS_PER_FORMAT.toLocaleString('en-US')} hands per format`)
   for (const format of profile.formats) {

@@ -454,8 +454,10 @@ function detectFlushDanger(context: DecisionContext): number {
 
   if (maxCount < 3) return 0
 
-  const playerHasSuit = context.gameView.myCards.some(c => c.suit === maxSuit)
-  if (playerHasSuit) return 0
+  const playerSuitCount = context.gameView.myCards.filter(c => c.suit === maxSuit).length
+  const holeCardsPerPlayer = context.gameView.myCards.length
+  const neededForRedraw = holeCardsPerPlayer >= 4 ? 2 : 1
+  if (playerSuitCount >= neededForRedraw) return 0
 
   return maxCount
 }

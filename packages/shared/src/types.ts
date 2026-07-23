@@ -126,7 +126,7 @@ export type GameState = PublicGameState
 /** Private view delivered to exactly one authenticated/local player. */
 export interface PlayerGameView {
   state: PublicGameState
-  ownCards: [Card, Card] | null
+  ownCards: Card[] | null
 }
 
 export interface HandResult {
@@ -184,7 +184,7 @@ export interface DecisionSnapshot {
   decisionIndex: number
   playerId: PlayerId
   visibleState: DecisionVisibleState
-  ownCards: [Card, Card]
+  ownCards: Card[]
   bettingContext: BettingContext
   position: DecisionPosition
   actionHistory: DecisionActionHistoryEvent[]
@@ -236,7 +236,7 @@ export type HandEvent =
       playerId: PlayerId
       amount: number
     }
-  | { type: 'CardsRevealed'; playerId: PlayerId; cards: [Card, Card] }
+  | { type: 'CardsRevealed'; playerId: PlayerId; cards: Card[] }
   | {
       type: 'PotAwarded'
       potIndex: number
@@ -276,7 +276,7 @@ export type HandReplayEvent =
   | { type: 'PlayerActed'; phase: ActiveGamePhase; playerName: string; action: string; amount: number; totalBet: number; toCall: number; currentBetBefore: number; potAfter: number; source: 'player' | 'forced' }
   | { type: 'CommunityCardDealt'; phase: ActiveGamePhase; cards: Card[] }
   | { type: 'UncalledBetReturned'; phase: ActiveGamePhase; playerName: string; amount: number }
-  | { type: 'CardsRevealed'; playerName: string; cards: [Card, Card] }
+  | { type: 'CardsRevealed'; playerName: string; cards: Card[] }
   | { type: 'PotAwarded'; potIndex: number; potType: 'main' | 'side'; playerName: string; amount: number; handName: string; isSplit: boolean }
   | { type: 'HandEnded'; reason: 'showdown' | 'uncontested'; totalPot: number; results: { playerName: string; amount: number; handName: string }[] }
 

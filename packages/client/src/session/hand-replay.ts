@@ -1,4 +1,4 @@
-// PokerStars-style hand history formatter and deterministic replay data.
+// CPCdigital hand history formatter and replay data.
 import type { Card, HandEvent, HandResult, Player } from '@cpc/shared'
 
 export interface BotDecisionInfo {
@@ -14,9 +14,10 @@ export interface ReplayFrame {
   phase: string
   actorId?: string
   actorName?: string
-  actorCards?: [Card, Card]
+  actorCards?: Card[]
   action?: string
-  amount?: number
+  amount?: number  // total bet for display (e.g. "calls 0.09")
+  betAmount?: number  // incremental chips added this action (for bet tracking)
   communityCards: Card[]
   pot: number
   playerStacks: Record<string, number>
@@ -33,7 +34,7 @@ export interface HandReplay {
   blinds: { small: number; big: number }
   players: { id: string; name: string; seat: number; chips: number }[]
   dealerId: string
-  holeCards: Record<string, [Card, Card]>
+  holeCards: Record<string, Card[]>
   frames: ReplayFrame[]
   results: HandResult[]
   totalPot: number
@@ -62,6 +63,13 @@ function formatAmount(amount: number): string {
   return amount.toFixed(2)
 }
 
+function formatVariantName(variantId: string): string {
+  switch (variantId) {
+    case 'omaha-high': return 'Omaha Pot Limit'
+    default: return 'Hold\'em No Limit'
+  }
+}
+
 /** Generate PokerStars-style text hand history */
 export function formatHandHistory(replay: HandReplay): string {
   const lines: string[] = []
@@ -69,7 +77,7 @@ export function formatHandHistory(replay: HandReplay): string {
   const sb = replay.blinds.small
 
   lines.push(
-    `PokerStars Hand #${replay.handNumber}: ${replay.variant} `
+    `CPCdigital Hand #${replay.handNumber}: ${replay.variant} `
     + `(${formatAmount(sb)}/${formatAmount(bb)}) - ${replay.date}`
   )
   lines.push(`Table 'CPCdigital' ${replay.players.length}-max Seat #${replay.players[0].seat + 1} is the button`)
@@ -180,7 +188,7 @@ export function formatHandHistory(replay: HandReplay): string {
 export function buildReplayFromSession(
   handNumber: number,
   handEvents: { event: HandEvent }[],
-  holeCards: Record<string, [Card, Card]>,
+  holeCards: Record<string, Card[]>,
   results: HandResult[],
   playerNames: Map<string, string>,
   botDecisions?: BotDecisionInfo[],
@@ -214,6 +222,7 @@ export function buildReplayFromSession(
       } else if (action.type === 'call') {
         amount = event.totalBet
       }
+      const betAmount = event.amount  // incremental chips committed
 
       lastPot = event.potAfter
       frames.push({
@@ -224,6 +233,7 @@ export function buildReplayFromSession(
         actorCards: holeCards[event.playerId] ?? undefined,
         action: actionLabel,
         amount,
+        betAmount,
         communityCards: [],
         pot: event.potAfter,
         playerStacks: {},
@@ -299,7 +309,7 @@ export function buildReplayFromSession(
   return {
     handNumber,
     date: new Date().toISOString(),
-    variant: 'Hold\'em No Limit',
+    variant: formatVariantName(handStart.event.variantId),
     blinds: { small: handStart.event.smallBlind, big: handStart.event.bigBlind },
     players,
     dealerId: handStart.event.dealerId,

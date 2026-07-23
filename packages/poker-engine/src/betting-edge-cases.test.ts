@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Player, PlayerAction } from '@cpc/shared'
 import { PokerGame } from './game'
-import { TEXAS_HOLDEM, type GameVariant } from './game-variant'
+import type { GameVariant } from './game-variant'
+import { TEXAS_HOLDEM } from './variants/texas-holdem'
 
 const config = { smallBlind: 10, bigBlind: 20 }
 

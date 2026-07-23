@@ -81,7 +81,7 @@ export function ActionButtons({
   const setThreeXRaise = () => applyRaise(calculateThreeXRaise(currentBet, bigBlind), 'up')
   const threeXLabel = currentBet > bigBlind ? '3×' : '3 BB'
   const setMaxRaise = () => applyRaise(sliderMax, 'up')
-  const isAllInSelected = !canMakeFullRaise || isMaximumChipAmount(sliderValue, maxRaise)
+  const isAllInSelected = !canMakeFullRaise || (isMaximumChipAmount(sliderValue, maxRaise) && !canRaise)
   const aggressiveActionLabel = getAggressiveActionLabel(currentBet)
   const actionForAmount = (amount: number): PlayerAction => (
     isMaximumChipAmount(amount, maxRaise)

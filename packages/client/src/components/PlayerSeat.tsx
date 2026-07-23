@@ -8,7 +8,7 @@ import type { PlayerActionLabel } from '../action-display'
 import { getBotAvatarUrl } from '../bot-avatars'
 
 export function PlayerSeat({
-  player, seatIndex, seatCount, isMe, isCurrent, avatarKey, actionLabel, myCards, revealedCards, showCards,
+  player, seatIndex, seatCount, isMe, isCurrent, avatarKey, actionLabel, myCards, revealedCards, showCards, holeCardCount,
   currency, startingChips, rebuyPending, onRebuy,
 }: {
   player: Player
@@ -18,8 +18,9 @@ export function PlayerSeat({
   isCurrent: boolean
   avatarKey?: string
   actionLabel?: PlayerActionLabel
-  myCards?: [Card, Card] | null
-  revealedCards?: [Card, Card]
+  myCards?: Card[] | null
+  revealedCards?: Card[]
+  holeCardCount?: number
   showCards: boolean
   currency: DisplayCurrency
   startingChips: number
@@ -35,6 +36,11 @@ export function PlayerSeat({
   const canPeekFoldedCards = isMe && isFolded && !!myCards
   const isPeekingFoldedCards = canPeekFoldedCards && isHovering
   const showHoleCards = (showCards && (!isMe || !!visibleCards)) || isPeekingFoldedCards
+  const cardBackCount = () => {
+    if (isMe && myCards) return myCards.length
+    if (revealedCards) return revealedCards.length
+    return holeCardCount ?? 2
+  }
   const canRebuy = player.chips < startingChips && !rebuyPending
   const avatarUrl = getBotAvatarUrl(avatarKey)
   const visibleAvatarUrl = avatarUrl === failedAvatarUrl ? null : avatarUrl
@@ -101,20 +107,33 @@ export function PlayerSeat({
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
-            gap: 1,
+            gap: 2,
+            justifyContent: 'center',
             zIndex: 0,
             filter: isPeekingFoldedCards ? 'grayscale(0.18) saturate(0.82) brightness(0.9)' : 'none',
             transition: 'filter 140ms ease',
           }}>
             {visibleCards ? (
               <>
-                <CardView card={visibleCards[0]} />
-                <CardView card={visibleCards[1]} />
+                {visibleCards.map((card, i) => (
+                  <div key={i} style={{
+                    marginLeft: i === 0 ? 0 : visibleCards.length <= 2 ? 0 : -16,
+                    zIndex: i,
+                  }}>
+                    <CardView card={card} />
+                  </div>
+                ))}
               </>
             ) : (
               <>
-                <CardBack />
-                <CardBack />
+                {Array.from({ length: cardBackCount() }, (_, i) => (
+                  <div key={i} style={{
+                    marginLeft: i === 0 ? 0 : cardBackCount() <= 2 ? 0 : -16,
+                    zIndex: i,
+                  }}>
+                    <CardBack />
+                  </div>
+                ))}
               </>
             )}
           </div>

@@ -64,7 +64,7 @@ export interface RebuyPolicy {
   rebuyWhenShortBb: number | null
 }
 
-function rollRebuyPolicy(archetypeId: BotArchetypeId, maniac: boolean, random: () => number): RebuyPolicy {
+export function rollRebuyPolicy(archetypeId: BotArchetypeId, maniac: boolean, random: () => number): RebuyPolicy {
   if (maniac) {
     return {
       rebuyThresholdBb: 50 + Math.round(random() * 40),

@@ -14,7 +14,13 @@ export function weightedChoice(
   rng: RandomSource = defaultRandom,
 ): PlayerAction {
   const candidates = actions.filter(action => action.utility > 0)
-  if (candidates.length === 0) return { type: 'fold' }
+  if (candidates.length === 0) {
+    if (actions.length > 0) {
+      const best = actions.reduce((a, b) => a.utility > b.utility ? a : b)
+      return best.action
+    }
+    return { type: 'fold' }
+  }
 
   const sorted = [...candidates].sort((left, right) => right.utility - left.utility)
   const threshold = sorted[0].utility * 0.85
