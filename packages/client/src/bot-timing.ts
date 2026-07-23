@@ -23,8 +23,8 @@ const NLHE_TIMING: Readonly<BotTimingPolicy> = {
 }
 
 const OMAHA_TIMING: Readonly<BotTimingPolicy> = {
-  minimumReactionMs: 3000,
-  maximumReactionMs: 8000,
+  minimumReactionMs: 2000,
+  maximumReactionMs: 5500,
   maximumComplexityBonusMs: 5000,
   difficultAllInBonusMs: 4000,
   hardMaximumReactionMs: 20000,
