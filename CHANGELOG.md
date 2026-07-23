@@ -39,6 +39,17 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
 
 
+## [0.7.3] — 2026-07-23
+
+### Changed
+
+- **Personality-Tuning**: Aggression-Modifier `/4` → `/3.5` (LAG-Raise-Bonus +1.07),
+  RiskTolerance-Call `/6` → `/8` (LAG-Call −0.75, Nit-Call +1.04)
+- TAG PLO: VPIP 22.7% / PFR 15.3% / AF 2.89 / WTSD 34.1% — 6/6 in Range
+- Nit PLO: WTSD 45→41% (Richtung stimmt, aber noch über Target)
+- LAG PLO: AF 1.60→1.73 (Richtung stimmt, aber noch unter Target)
+- CS PLO 6-max: VPIP 60.0% jetzt in Range (war 60.8%)
+
 ## [0.7.2] — 2026-07-23
 
 ### Changed
@@ -228,7 +239,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/kaizo101/CPCdigital/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/kaizo101/CPCdigital/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kaizo101/CPCdigital/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kaizo101/CPCdigital/compare/v0.6.0...v0.7.0
