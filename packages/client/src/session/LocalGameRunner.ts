@@ -612,15 +612,6 @@ export class LocalGameRunner {
     this.showdownCards = { ...this.game.getRevealedCards() }
     const bigBlind = this.game?.getPublicState().bigBlind ?? 20
 
-    recordHand(
-      this.sessionStats,
-      this.players.map(p => p.id),
-      this.heroId,
-      this.currentHandNumber,
-      gs.players.find(p => p.id === this.heroId)?.chips ?? 0,
-      this.game.getPublicHandHistory(),
-    )
-
     // Update mental state for all bots based on hand results
     for (const [botId, botState] of this.botStates) {
       const event = this.detectMentalEvent(botId, results, bigBlind, gs)
@@ -700,6 +691,19 @@ export class LocalGameRunner {
     this.runoutStartCardCount = null
     this._lastResults = results
     this.syncChips()
+
+    const gs = this.game?.getPublicState()
+    if (gs) {
+      recordHand(
+        this.sessionStats,
+        this.players.map(p => p.id),
+        this.heroId,
+        this.currentHandNumber,
+        gs.players.find(p => p.id === this.heroId)?.chips ?? 0,
+        this.game!.getPublicHandHistory(),
+      )
+    }
+
     this.notify()
 
     if (this.autoStartTimer) clearTimeout(this.autoStartTimer)
