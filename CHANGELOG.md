@@ -39,6 +39,26 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
 
 
+## [Unreleased]
+
+### Added
+
+- **Hero-Bust-Handling**: `startHand()` retryed alle 2s wenn Hero 0 Chips hat. Hero verpasst keine Hand mehr.
+
+### Changed
+
+- **NLHE-Bedenkzeit reduziert**: 1.8–4.5s → 1.2–3.0s (Preflop war zu langsam)
+- **SessionStats-Redesign**: Stats per Toggle (📊), inline im Header (kein Dropdown), Bot-Daten nur via Ctrl+D
+
+### Fixed
+
+- **BB-Tracking**: Erste Hand wurde nicht gezählt (`heroPrevChips` startete als `null`), Rebuy verfälschte die Bilanz (wurde als Profit gezählt)
+- **Runout-Spoiler**: Chips, `isSittingOut` und BB-Stats springen nicht mehr voreilig — warten auf `finishHandPresentation`
+- **Replayer-Crash**: `step` out-of-bounds beim Hand-Wechsel (letzter Zug → vorherige Hand)
+- **Hero-Rebuy**: `applyPendingRebuys` setzt jetzt `isSittingOut = false` — Hero blieb nach Rebuy auf "Sitting Out" hängen
+- **Session-Log-Privacy**: "Dealt to"-Zeilen zeigen nur noch Hero-Karten, nicht Bot-Hole-Cards
+- **Bot-Rebuy-Spoiler**: `savedState` wird jetzt VOR `processAutoRebuys` captured — rebuyter Stack nicht während Runout sichtbar
+
 ## [0.7.4] — 2026-07-23
 
 ### Added
