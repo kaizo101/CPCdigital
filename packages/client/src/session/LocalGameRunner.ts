@@ -612,6 +612,13 @@ export class LocalGameRunner {
     this.showdownCards = { ...this.game.getRevealedCards() }
     const bigBlind = this.game?.getPublicState().bigBlind ?? 20
 
+    const revealStages = this.runoutStartCardCount == null
+      ? []
+      : getRunoutRevealStages(this.runoutStartCardCount, gs.communityCards.length)
+    const savedState = revealStages.length > 0
+      ? new Map(this.players.map(p => [p.id, { chips: p.chips, isSittingOut: p.isSittingOut }]))
+      : null
+
     // Update mental state for all bots based on hand results
     for (const [botId, botState] of this.botStates) {
       const event = this.detectMentalEvent(botId, results, bigBlind, gs)
@@ -637,12 +644,8 @@ export class LocalGameRunner {
     const resultDisplayMs = Object.keys(this.showdownCards).length > 0
       ? SHOWDOWN_DISPLAY_MS
       : UNCONTESTED_RESULT_DISPLAY_MS
-    const revealStages = this.runoutStartCardCount == null
-      ? []
-      : getRunoutRevealStages(this.runoutStartCardCount, gs.communityCards.length)
 
-    if (revealStages.length > 0) {
-      const savedState = new Map(this.players.map(p => [p.id, { chips: p.chips, isSittingOut: p.isSittingOut }]))
+    if (revealStages.length > 0 && savedState) {
       this._lastResults = null
       this.notify()
       this.revealRunoutStages(
