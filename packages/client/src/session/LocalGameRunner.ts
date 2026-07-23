@@ -409,7 +409,16 @@ export class LocalGameRunner {
         this.syncChips()
       }
       const retry = this.players.filter(p => p.chips > 0 && !p.isSittingOut)
-      if (retry.length < 2) return
+      if (retry.length < 2) {
+        // Hero busted and hasn't rebought yet — wait and retry
+        const heroBusted = !this.players.find(p => p.id === this.heroId && p.chips > 0)
+        if (heroBusted) {
+          this.notify()
+          if (this.autoStartTimer) clearTimeout(this.autoStartTimer)
+          this.autoStartTimer = setTimeout(() => this.startHand(), 2000)
+        }
+        return
+      }
     }
 
     this._lastResults = null

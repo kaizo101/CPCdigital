@@ -445,6 +445,27 @@ für die Learning-Erweiterung.
 
 ---
 
+## 🎯 1.1.0 — Bankroll-System
+
+**Ziel:** Start-Bankroll, Stake-Progression und session-übergreifendes Tracking.
+
+- **Konzept**: Hero startet mit einer festen Bankroll (z.B. 40 Buy-ins für NL10).
+  Bei ausreichend Gewinn (z.B. 40 Buy-ins für nächsthöheres Limit) steigt er auf,
+  bei Verlust unter die Schwelle steigt er ab. Buy-in = 100 BB des aktuellen Limits.
+- [ ] Start-Bankroll im Setup wählbar (z.B. 200€ = 40 Buy-ins à 5€ für NL5)
+- [ ] Stake-Stufen: NL2 / NL5 / NL10 / NL25 / NL50, PLO entsprechend
+- [ ] Bankroll-Tracking über Sessions hinweg (persistent)
+- [ ] Auf-/Abstieg automatisch bei Erreichen der Schwelle (z.B. 40 BI für nächstes Limit)
+- [ ] Anzeige: aktuelle Bankroll, aktuelles Limit, BB/100, nächste Schwelle
+- [ ] Reset-Option im Setup
+- [ ] Rebuy-Betrag frei wählbar (40–250 BB) — kein automatischer Rebuy, bewusste Entscheidung
+
+> **Abgrenzung zu Session-Stats (0.7.4)**: Session-Stats tracken VPIP/PFR/BB innerhalb
+> einer Session. Das Bankroll-System trackt die gesamte Bankroll über Sessions hinweg
+> und steuert die Stakes.
+
+---
+
 # Phase 5 — Learning Layer ab v1.x
 
 ## 🎯 1.1.0 — Wiki und Glossar
