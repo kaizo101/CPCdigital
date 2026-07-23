@@ -102,7 +102,9 @@ export class BotRebuyManager {
       const player = this.players.find(candidate => candidate.id === playerId)
       if (player && player.chips < this._startingChips) {
         player.chips = this._startingChips
+        player.isSittingOut = false
         this.game.setPlayerChips(playerId, this._startingChips)
+        this.game.setPlayerSittingOut(playerId, false)
       }
     }
     this.pendingRebuyPlayerIds.clear()
