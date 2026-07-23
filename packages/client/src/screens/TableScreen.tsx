@@ -263,11 +263,39 @@ export function TableScreen({
           }
         }
         @media (max-height: 450px) {
+          html, body, #root {
+            overflow: hidden;
+            height: 100dvh;
+          }
+          .game-layout {
+            overflow: hidden;
+          }
           .table-main {
-            padding: 20px 8px 80px;
+            padding: 8px 6px 80px;
+          }
+          .table-stage {
+            padding: 0 2px;
           }
           .bottom-dock {
-            padding: 0 8px 4px;
+            padding: 0 4px 2px;
+            gap: 4px;
+          }
+          .bottom-dock > div {
+            gap: 4px !important;
+            padding: 4px 6px !important;
+            margin-top: 4px !important;
+          }
+          .bottom-dock > div > div:nth-child(2) {
+            display: none;
+          }
+          .bottom-dock button {
+            min-height: 44px !important;
+            font-size: 14px !important;
+            padding: 6px 8px !important;
+          }
+          .bottom-dock input[type="text"] {
+            width: 60px !important;
+            font-size: 11px !important;
           }
         }
       `}</style>
