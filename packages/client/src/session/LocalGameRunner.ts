@@ -650,7 +650,7 @@ export class LocalGameRunner {
       : getRunoutRevealStages(this.runoutStartCardCount, gs.communityCards.length)
 
     if (revealStages.length > 0) {
-      const savedChips = new Map(this.players.map(p => [p.id, p.chips]))
+      const savedState = new Map(this.players.map(p => [p.id, { chips: p.chips, isSittingOut: p.isSittingOut }]))
       this._lastResults = null
       this.notify()
       this.revealRunoutStages(
@@ -659,7 +659,7 @@ export class LocalGameRunner {
         results,
         resultDisplayMs,
         getRunoutStageDelay(this.runoutStartCardCount ?? 0),
-        savedChips,
+        savedState,
       )
       return
     }
@@ -673,20 +673,20 @@ export class LocalGameRunner {
     results: HandResult[],
     resultDisplayMs: number,
     stageDelayMs: number,
-    savedChips: Map<string, number>,
+    savedState: Map<string, { chips: number; isSittingOut: boolean }>,
   ): void {
     if (this.runoutTimer) clearTimeout(this.runoutTimer)
     this.runoutTimer = setTimeout(() => {
       this.runoutTimer = null
-      for (const [id, chips] of savedChips) {
+      for (const [id, state] of savedState) {
         const p = this.players.find(pl => pl.id === id)
-        if (p) p.chips = chips
+        if (p) { p.chips = state.chips; p.isSittingOut = state.isSittingOut }
       }
       this.visibleCommunityCardCount = stages[stageIndex]
       this.notify()
 
       if (stageIndex + 1 < stages.length) {
-        this.revealRunoutStages(stages, stageIndex + 1, results, resultDisplayMs, stageDelayMs, savedChips)
+        this.revealRunoutStages(stages, stageIndex + 1, results, resultDisplayMs, stageDelayMs, savedState)
         return
       }
 
