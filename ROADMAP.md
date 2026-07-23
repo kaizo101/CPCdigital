@@ -447,18 +447,47 @@ für die Learning-Erweiterung.
 
 ## 🎯 1.1.0 — Bankroll-System
 
-**Ziel:** Start-Bankroll, Stake-Progression und session-übergreifendes Tracking.
+**Ziel:** Spielgeld kriegt Wert durch Konsequenz. Gutes Bankroll-Management führt zum
+Aufstieg, schlechtes zum Abstieg. Kurze Stacks und "eh egal, ist nur Spielgeld" werden
+durch Guardrails verhindert.
 
-- **Konzept**: Hero startet mit einer festen Bankroll (z.B. 40 Buy-ins für NL10).
-  Bei ausreichend Gewinn (z.B. 40 Buy-ins für nächsthöheres Limit) steigt er auf,
-  bei Verlust unter die Schwelle steigt er ab. Buy-in = 100 BB des aktuellen Limits.
-- [ ] Start-Bankroll im Setup wählbar (z.B. 200€ = 40 Buy-ins à 5€ für NL5)
-- [ ] Stake-Stufen: NL2 / NL5 / NL10 / NL25 / NL50, PLO entsprechend
-- [ ] Bankroll-Tracking über Sessions hinweg (persistent)
-- [ ] Auf-/Abstieg automatisch bei Erreichen der Schwelle (z.B. 40 BI für nächstes Limit)
-- [ ] Anzeige: aktuelle Bankroll, aktuelles Limit, BB/100, nächste Schwelle
-- [ ] Reset-Option im Setup
-- [ ] Rebuy-Betrag frei wählbar (40–250 BB) — kein automatischer Rebuy, bewusste Entscheidung
+### Konzept
+
+- **Start-Bankroll**: Fixer Betrag (z.B. €200 = 40 BI für NL5). Kein freies Wählen —
+  der Spieler startet mit genug Tiefe, um echtes Poker zu spielen.
+- **Stake-Leiter**:
+
+  | Stake | Blinds | Buy-in (60–100 BB) | Aufstieg ab | Abstieg unter |
+  |-------|--------|---------------------|-------------|---------------|
+  | NL2 | 0.01/0.02 | €1.20–2.00 | €80 (40 BI) | €40 (20 BI) |
+  | NL5 | 0.02/0.05 | €3.00–5.00 | €200 | €100 |
+  | NL10 | 0.05/0.10 | €6.00–10.00 | €400 | €200 |
+  | NL25 | 0.10/0.25 | €15.00–25.00 | €1.000 | €500 |
+  | NL50 | 0.25/0.50 | €30.00–50.00 | €2.000 | €1.000 |
+
+- **Guardrails**: Spieler KANN auf höhere Stakes springen, aber nur wenn die
+  Bankroll das Minimum (20 BI für den Ziel-Stake) deckt. Der Stake-Button ist
+  ausgegraut, Tooltip: "Du brauchst mindestens €X für NL50". Keine Short-Stack-
+  Option — Buy-in immer 60–100 BB.
+
+- **Rebuy**: 1× pro Hand möglich, Betrag wird von der Bankroll abgezogen.
+  Buy-in-Betrag frei wählbar innerhalb der Range (60–100 BB). Kein Auto-Rebuy.
+
+- **Auf-/Abstieg**: Automatisch. 40 BI für den nächsthöheren Stake erreicht → Aufstieg.
+  Unter 20 BI gefallen → Abstieg mit Meldung.
+
+- **Getrennte Bankrolls**: NLHE und PLO separat — verschiedene Spiele, verschiedene
+  Bankrolls. Der Spieler kann in NLHE auf NL25 sein und in PLO auf NL5.
+
+- **Game Over**: Bankroll unter 1 BI für NL2 → zurück zum Setup mit der Option
+  neu zu starten. Session-Stats bleiben erhalten (Lessons Learned).
+
+- [ ] Start-Bankroll (fix €200) im Setup
+- [ ] Stake-Selector mit Guardrails (ausgegraut wenn Bankroll zu niedrig)
+- [ ] Buy-in-Slider (60–100 BB) im Setup + Rebuy-Dialog
+- [ ] Bankroll-Tracking persistent über Sessions
+- [ ] Aufstiegs-/Abstiegs-Benachrichtigung
+- [ ] BB/100 und Bankroll in der Session-Stats-Kopfleiste
 
 > **Abgrenzung zu Session-Stats (0.7.4)**: Session-Stats tracken VPIP/PFR/BB innerhalb
 > einer Session. Das Bankroll-System trackt die gesamte Bankroll über Sessions hinweg
