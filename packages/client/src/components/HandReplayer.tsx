@@ -43,8 +43,9 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   const [showHistory, setShowHistory] = useState(false)
 
   const frames = replay.frames
-  const currentFrame = frames[step]
   const maxStep = frames.length - 1
+  const safeStep = Math.min(step, Math.max(0, maxStep))
+  const currentFrame = frames[safeStep]
 
   const boardCards: Card[] = []
   const playerStatus: Record<string, 'active' | 'folded' | 'all-in'> = {}
@@ -70,7 +71,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
     playerChips[p.id] = p.chips
   }
 
-  for (let i = 0; i <= step; i++) {
+  for (let i = 0; i <= safeStep; i++) {
     const f = frames[i]
     if (f.type === 'community') {
       boardCards.push(...f.communityCards)
@@ -127,7 +128,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
 
   useEffect(() => {
     if (!autoPlay) return
-    if (step >= maxStep) { setAutoPlay(false); return }
+    if (safeStep >= maxStep) { setAutoPlay(false); return }
     const delay = currentFrame?.type === 'community' ? 800 : 500
     const timer = setTimeout(() => setStep(s => s + 1), delay)
     return () => clearTimeout(timer)
@@ -360,13 +361,13 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
         display: 'flex', alignItems: 'center', gap: 10,
         background: 'rgba(0,0,0,0.5)', zIndex: 10,
       }}>
-        <button onClick={() => setStep(0)} disabled={step === 0} style={navBtnStyle}>⏮</button>
-        <button onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0} style={navBtnStyle}>◀</button>
+        <button onClick={() => setStep(0)} disabled={safeStep === 0} style={navBtnStyle}>⏮</button>
+        <button onClick={() => setStep(s => Math.max(0, s - 1))} disabled={safeStep === 0} style={navBtnStyle}>◀</button>
         <span style={{ fontSize: 13, color: '#9ca3af', minWidth: 72, textAlign: 'center' }}>
-          {step + 1}/{maxStep + 1}
+          {safeStep + 1}/{maxStep + 1}
         </span>
-        <button onClick={() => setStep(s => Math.min(maxStep, s + 1))} disabled={step === maxStep} style={navBtnStyle}>▶</button>
-        <button onClick={() => setStep(maxStep)} disabled={step === maxStep} style={navBtnStyle}>⏭</button>
+        <button onClick={() => setStep(s => Math.min(maxStep, s + 1))} disabled={safeStep >= maxStep} style={navBtnStyle}>▶</button>
+        <button onClick={() => setStep(maxStep)} disabled={safeStep >= maxStep} style={navBtnStyle}>⏭</button>
         <button
           onClick={() => setAutoPlay(a => !a)}
           style={{
