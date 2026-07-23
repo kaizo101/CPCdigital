@@ -80,28 +80,28 @@ export function rollRebuyPolicy(archetypeId: BotArchetypeId, maniac: boolean, ra
         rebuyThresholdBb: 25 + Math.round(random() * 30),
         maxRebuys: 1 + Math.round(random() * 2),
         leaveOnBust: random() < 0.15,
-        rebuyWhenShortBb: random() < 0.3 ? 8 + Math.round(random() * 5) : null,
+        rebuyWhenShortBb: random() < 0.7 ? 10 + Math.round(random() * 10) : null,
       }
     case 'nit':
       return {
         rebuyThresholdBb: random() < 0.3 ? 10 + Math.round(random() * 15) : null,
         maxRebuys: random() < 0.4 ? 1 : 0,
         leaveOnBust: random() < 0.6,
-        rebuyWhenShortBb: null,
+        rebuyWhenShortBb: random() < 0.5 ? 5 + Math.round(random() * 10) : null,
       }
     case 'lag':
       return {
         rebuyThresholdBb: 50 + Math.round(random() * 40),
         maxRebuys: 2 + Math.round(random() * 4),
         leaveOnBust: false,
-        rebuyWhenShortBb: 6 + Math.round(random() * 8),
+        rebuyWhenShortBb: random() < 0.8 ? 5 + Math.round(random() * 10) : null,
       }
     case 'calling-station':
       return {
         rebuyThresholdBb: 20 + Math.round(random() * 25),
         maxRebuys: 1 + Math.round(random() * 3),
         leaveOnBust: random() < 0.2,
-        rebuyWhenShortBb: random() < 0.4 ? 6 + Math.round(random() * 6) : null,
+        rebuyWhenShortBb: random() < 0.6 ? 5 + Math.round(random() * 7) : null,
       }
   }
 }
