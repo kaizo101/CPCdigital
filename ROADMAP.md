@@ -454,6 +454,17 @@ durch Guardrails verhindert.
 
 ### Konzept
 
+Der Setup-Screen bekommt einen Modus-Toggle:
+
+| Modus | Stakes | Buy-in | Rebuys | Bankroll |
+|-------|--------|--------|--------|----------|
+| **Training** (Status quo) | Frei wählbar | Startstack = 100 BB | Unbegrenzt, Auto | Kein Tracking |
+| **Bankroll** (1.0.1) | Guardrail (20 BI min) | 60–100 BB | 1×/Hand, von BR abgezogen | Persistent, Auf-/Abstieg |
+
+Training ist die Sandbox: neue Varianten ausprobieren, Strategien testen, ohne Konsequenzen.
+Bankroll ist der Ernstfall: jedes Buy-in zählt, jeder Rebuy kostet, schlechtes BRM → Abstieg.
+Session-Stats (VPIP/PFR/BB aus 0.7.4) laufen in beiden Modi.
+
 - **Start-Bankroll**: Fixer Betrag (z.B. €200 = 40 BI für NL5). Kein freies Wählen —
   der Spieler startet mit genug Tiefe, um echtes Poker zu spielen.
 - **Stake-Leiter**:
