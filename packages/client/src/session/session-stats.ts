@@ -15,6 +15,7 @@ export interface SessionStatsData {
   totalHands: number
   variantId: string
   bigBlind: number
+  heroPrevChips: number | null
 }
 
 export function createSessionStats(variantId: string, bigBlind: number): SessionStatsData {
@@ -24,6 +25,7 @@ export function createSessionStats(variantId: string, bigBlind: number): Session
     totalHands: 0,
     variantId,
     bigBlind,
+    heroPrevChips: null,
   }
 }
 
@@ -32,10 +34,14 @@ export function recordHand(
   playerIds: string[],
   heroId: string,
   handNumber: number,
-  results: { playerId: string; amount: number }[],
+  heroChips: number,
   events: readonly { type: string; playerId?: string; action?: { type: string } }[],
 ): void {
   stats.totalHands = handNumber
+
+  const heroResult = stats.heroPrevChips != null ? (heroChips - stats.heroPrevChips) : 0
+  stats.heroBBWon += heroResult / stats.bigBlind
+  stats.heroPrevChips = heroChips
 
   const preflopEvents = events.filter(e => e.type === 'PlayerActed')
   const preflopRaises = preflopEvents.filter(e => e.action?.type === 'raise').length
@@ -59,11 +65,6 @@ export function recordHand(
     const ps = ensurePlayer(stats, playerId)
     if (threeBetSenders.has(playerId)) ps.threeBets++
     if (preflopRaises > 0) ps.threeBetOpportunities++
-  }
-
-  const heroResult = results.find(r => r.playerId === heroId)
-  if (heroResult) {
-    stats.heroBBWon += heroResult.amount / stats.bigBlind
   }
 }
 

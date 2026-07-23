@@ -616,7 +616,7 @@ export class LocalGameRunner {
       this.players.map(p => p.id),
       this.heroId,
       this.currentHandNumber,
-      results,
+      gs.players.find(p => p.id === this.heroId)?.chips ?? 0,
       this.game.getPublicHandHistory(),
     )
 
