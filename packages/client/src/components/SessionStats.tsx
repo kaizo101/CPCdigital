@@ -20,7 +20,7 @@ export function SessionStats({
   if (stats.totalHands === 0) return null
 
   return (
-    <>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
       <button
         onClick={() => setVisible(!visible)}
         title={visible ? 'Stats ausblenden' : 'Stats einblenden'}
@@ -88,16 +88,22 @@ export function SessionStats({
 
       {visible && showDebug && (
         <div style={{
-          padding: '6px 12px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.1)',
-          background: 'rgba(14,116,144,0.12)',
+          position: 'absolute',
+          top: '100%',
+          right: 0,
+          marginTop: 6,
+          padding: 12,
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.12)',
+          background: 'rgba(17,18,21,0.97)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          minWidth: 320,
+          zIndex: 100,
           fontFamily: 'monospace',
           fontSize: 11,
           color: '#bae6fd',
-          minWidth: 320,
         }}>
-          <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4 }}>
+          <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 6 }}>
             Session · {stats.totalHands} hands · {bbPer100.toFixed(1)} BB/100
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -137,7 +143,7 @@ export function SessionStats({
           <button
             onClick={onExport}
             style={{
-              marginTop: 6,
+              marginTop: 8,
               padding: '3px 8px',
               borderRadius: 4,
               border: '1px solid rgba(255,255,255,0.1)',
@@ -152,6 +158,6 @@ export function SessionStats({
           </button>
         </div>
       )}
-    </>
+    </div>
   )
 }
