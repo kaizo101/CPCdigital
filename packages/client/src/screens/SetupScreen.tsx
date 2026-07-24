@@ -198,7 +198,7 @@ export function SetupScreen({
                 />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, color: '#9ca3af' }}>Starting Chips</span>
+                <span style={{ fontSize: 12, color: '#9ca3af' }}>Starting Amount</span>
                 <input type="number" min={options.bigBlind || 0.01} step={0.01} value={options.startingChips} onChange={e => setOptions({ ...options, startingChips: +e.target.value })} style={inputStyle} />
               </label>
             </div>
