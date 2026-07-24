@@ -189,7 +189,7 @@ export function TableScreen({
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 140px 20px 260px;
+          padding: 100px 20px 260px;
           box-sizing: border-box;
         }
         .table-screen {
@@ -209,7 +209,7 @@ export function TableScreen({
           box-sizing: border-box;
         }
         .table-shell {
-          width: min(100%, calc((100vh - 470px) * 2.38));
+          width: min(100%, calc((100vh - 370px) * 2.38));
         }
         .bottom-dock {
           position: absolute;
