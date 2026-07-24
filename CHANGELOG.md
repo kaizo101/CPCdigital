@@ -44,11 +44,17 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 ### Added
 
 - **Hero-Bust-Handling**: `startHand()` retryed alle 2s wenn Hero 0 Chips hat. Hero verpasst keine Hand mehr.
+- **SetupScreen-Format-Buttons**: Bot-Slider → 3 Buttons (Heads-up / 6-max / Full Ring)
+- **Touch-Support**: Long-Press (600ms) öffnet Rebuy-Menü auf Touch-Geräten
 
 ### Changed
 
 - **NLHE-Bedenkzeit reduziert**: 1.8–4.5s → 1.2–3.0s (Preflop war zu langsam)
 - **SessionStats-Redesign**: Stats per Toggle (📊), inline im Header (kein Dropdown), Bot-Daten nur via Ctrl+D
+- **UI-Skalierung**: Cards kleiner (46→36px min), ActionButtons kompakter (74→56px minHeight), Table-Paddings symmetrisch (140/210px)
+- **Rebuy-Policy**: `rebuyWhenShortBb`-Chance für TAG (30→70%), Nit (0→50%), CS (40→60%) — verhindert 0.5-BB-Zombie-Bots
+- **Header**: "X Spieler" → Format-Name (Heads-up / 6-max / Full Ring)
+- **SetupScreen-Label**: "Starting Chips" → "Starting Amount"
 
 ### Fixed
 
@@ -58,6 +64,9 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Hero-Rebuy**: `applyPendingRebuys` setzt jetzt `isSittingOut = false` — Hero blieb nach Rebuy auf "Sitting Out" hängen
 - **Session-Log-Privacy**: "Dealt to"-Zeilen zeigen nur noch Hero-Karten, nicht Bot-Hole-Cards
 - **Bot-Rebuy-Spoiler**: `savedState` wird jetzt VOR `processAutoRebuys` captured — rebuyter Stack nicht während Runout sichtbar
+- **Omaha Split-Pot**: `findWinnerIndices` verglich nur Rank (1–9), ignorierte Kicker. Jetzt pokersolver-`Hand.winners()` für korrekten Vergleich
+- **Actionbar-Overlap**: Bottom-Padding 130→260px, Table-Shell-Formel an neue Paddings angepasst (320→470)
+- **Landscape-Phone**: Media Query `max-height: 450px` verhindert Scrollen, reduziert Paddings
 
 ## [0.7.4] — 2026-07-23
 
