@@ -206,23 +206,40 @@ export function SetupScreen({
 
           <div className="setup-sidebar">
             <section style={{ background: 'rgba(255,255,255,0.04)', padding: 18, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div style={{ fontSize: 11, color: '#8f98a4', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Bots</div>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, color: '#9ca3af' }}>Anzahl Bots (1-{maxBots})</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={maxBots}
-                  step={1}
-                  value={botCount}
-                  onChange={e => {
-                    const count = clamp(+e.target.value || 1, 1, maxBots)
-                    setBotCount(count)
-                    setOptions({ ...options, maxPlayers: count + 1 })
-                  }}
-                  style={inputStyle}
-                />
-              </label>
+              <div style={{ fontSize: 11, color: '#8f98a4', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Tischgröße</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                {([
+                  { count: 1, label: 'Heads-up', total: 2 },
+                  { count: 5, label: '6-max', total: 6 },
+                  { count: 8, label: 'Full Ring', total: 9 },
+                ] as const).map(format => {
+                  const selected = botCount === format.count
+                  return (
+                    <button
+                      key={format.count}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setBotCount(format.count)
+                        setOptions({ ...options, maxPlayers: format.total })
+                      }}
+                      style={{
+                        padding: '8px 9px',
+                        borderRadius: 7,
+                        border: selected ? '1px solid rgba(125,211,252,0.7)' : '1px solid rgba(255,255,255,0.1)',
+                        background: selected ? 'rgba(14,116,144,0.25)' : '#0e1116',
+                        color: selected ? '#bae6fd' : '#aab2bd',
+                        fontFamily: 'inherit',
+                        fontSize: 12,
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {format.label}
+                    </button>
+                  )
+                })}
+              </div>
             </section>
 
             <section style={{ background: 'rgba(255,255,255,0.04)', padding: 18, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -321,7 +338,7 @@ export function SetupScreen({
               opacity: validationError ? 0.55 : 1,
               boxShadow: '0 10px 22px rgba(0,0,0,0.28)',
             }}>
-              Spiel starten ({botCount} Bots)
+              Spiel starten ({botCount === 1 ? 'Heads-up' : botCount === 5 ? '6-max' : 'Full Ring'})
             </button>
           </div>
         </div>
