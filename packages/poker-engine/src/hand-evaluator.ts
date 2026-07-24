@@ -17,12 +17,13 @@ function toPokersolverCard(card: Card): string {
 export interface HandResult {
   rank: number   // higher = better (1=high card … 9=straight flush)
   name: string   // e.g. 'Full House' or 'A High'
+  cards: string[]  // pokersolver card strings for the best 5-card hand
 }
 
 export function evaluateHand(holeCards: Card[], communityCards: Card[]): HandResult {
   const allCards = [...holeCards, ...communityCards].map(toPokersolverCard)
   const hand = Hand.solve(allCards)
-  return { rank: hand.rank, name: hand.descr }
+  return { rank: hand.rank, name: hand.descr, cards: hand.cards.map((c: { value: string; suit: string }) => c.value + c.suit) }
 }
 
 /** Omaha evaluation: must use exactly 2 hole + 3 community cards. */
@@ -30,7 +31,7 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ha
   const boardCards = communityCards.map(toPokersolverCard)
   const hole = holeCards.map(toPokersolverCard)
 
-  let best: { rank: number; name: string } | null = null
+  let best: { rank: number; name: string; cards: string[] } | null = null
 
   // Try all combinations: 2 of 4 hole cards + 3 of 5 community cards
   for (let h1 = 0; h1 < hole.length - 1; h1++) {
@@ -38,9 +39,10 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ha
       for (let c1 = 0; c1 < boardCards.length - 2; c1++) {
         for (let c2 = c1 + 1; c2 < boardCards.length - 1; c2++) {
           for (let c3 = c2 + 1; c3 < boardCards.length; c3++) {
-            const hand = Hand.solve([hole[h1], hole[h2], boardCards[c1], boardCards[c2], boardCards[c3]])
+            const cards = [hole[h1], hole[h2], boardCards[c1], boardCards[c2], boardCards[c3]]
+            const hand = Hand.solve(cards)
             if (!best || hand.rank > best.rank) {
-              best = { rank: hand.rank, name: hand.descr }
+              best = { rank: hand.rank, name: hand.descr, cards }
             }
           }
         }
@@ -48,7 +50,7 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ha
     }
   }
 
-  return best ?? { rank: 1, name: 'High Card' }
+  return best ?? { rank: 1, name: 'High Card', cards: [] }
 }
 
 export function describeWinningHand(
@@ -103,12 +105,10 @@ export function findWinnerIndices(
 
   if (isOmaha) {
     const results = hands.map(h => evaluateOmahaHand(h.holeCards, h.communityCards))
-    let bestRank = 0
-    for (const r of results) {
-      if (r.rank > bestRank) bestRank = r.rank
-    }
-    return results
-      .map((r, i) => r.rank >= bestRank ? i : -1)
+    const solved = results.map(r => Hand.solve(r.cards))
+    const winners = Hand.winners(solved)
+    return solved
+      .map((h, i) => winners.includes(h) ? i : -1)
       .filter(i => i !== -1)
   }
 
