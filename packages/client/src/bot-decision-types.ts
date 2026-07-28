@@ -64,6 +64,7 @@ export interface BotGameView {
 
 export interface DecisionContext {
   gameView: BotGameView
+  variantId: string
   botId: string
   botState: BotState
   position: Position

@@ -140,7 +140,7 @@ function runSession(): void {
         const botName = botNames.get(botId)!
 
         try {
-          const botContext = createBotContext(botId, botView, game.getPublicHandHistory())
+          const botContext = createBotContext(botId, botView, game.getPublicHandHistory(), archetypeId)
           const decision = decideBotDecision(botContext, botState, decisionRandom)
 
           game.applyAction(botId, decision.action)

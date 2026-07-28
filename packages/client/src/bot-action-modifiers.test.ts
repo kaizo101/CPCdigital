@@ -32,6 +32,7 @@ function makeContext(
     },
     botId: 'bot-1',
     botState,
+    variantId: 'texas-holdem',
     position: 'middle',
     playerCount: 6,
     boardTexture: 'dry',

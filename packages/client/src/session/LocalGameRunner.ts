@@ -490,7 +490,7 @@ export class LocalGameRunner {
     let decision: BotDecision
     let complexity: DecisionComplexity
     try {
-      botContext = createBotContext(botId, botView, this.game.getPublicHandHistory())
+      botContext = createBotContext(botId, botView, this.game.getPublicHandHistory(), identityArchetypeId(botState))
       decision = decideBotDecision(botContext, botState, this.botRandom, this.botHabits.get(botId))
       action = decision.action
       complexity = assessDecisionComplexity(botContext, decision.decisionResult)

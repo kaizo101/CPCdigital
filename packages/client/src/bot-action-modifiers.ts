@@ -3,6 +3,10 @@ import type { DecisionContext, ScoredAction, ScoreContribution } from './bot-dec
 import { isAtLeast } from './bot-variant-evaluation'
 import { determineLineCommitment, lineCommitmentModifiers } from './bot-line-planning'
 
+function personalityDivisor(base: number, context: DecisionContext): number {
+  return context.variantId === 'omaha-high' ? base * 1.3 : base
+}
+
 export function applyPersonalityModifiers(
   actions: ScoredAction[],
   context: DecisionContext,
@@ -21,7 +25,7 @@ export function applyPersonalityModifiers(
       contributions.push({
         category: 'personality',
         label: 'Aggression',
-        value: (aggression - 50) / 3.5,
+        value: (aggression - 50) / personalityDivisor(3.5, context),
       })
       if (aggression < 30) {
         contributions.push({
@@ -35,18 +39,18 @@ export function applyPersonalityModifiers(
       contributions.push({
         category: 'personality',
         label: 'Aggression reduces folding',
-        value: -(aggression - 50) / 10,
+        value: -(aggression - 50) / personalityDivisor(10, context),
       })
       if (marginalHand) {
         contributions.push({
           category: 'personality',
           label: 'Risk tolerance affects folding',
-          value: -(riskTolerance - 50) / 6,
+          value: -(riskTolerance - 50) / personalityDivisor(6, context),
         })
         contributions.push({
           category: 'personality',
           label: 'Patience supports folding',
-          value: (patience - 50) / 8,
+          value: (patience - 50) / personalityDivisor(8, context),
         })
       }
     }
@@ -54,29 +58,30 @@ export function applyPersonalityModifiers(
       const hand = context.handAssessment
       const isDeadAir = hand.category === 'air' && hand.drawTypes.length === 0
       const callModScale = isDeadAir ? 0.5 : 1.0
+      const ploCallDampener = context.variantId === 'omaha-high' ? 2.0 : 1.0
       contributions.push({
         category: 'personality',
         label: 'Risk tolerance affects calling',
-        value: (riskTolerance - 50) / 8 * callModScale,
+        value: (riskTolerance - 50) / personalityDivisor(8, context) * callModScale / ploCallDampener,
       })
       contributions.push({
         category: 'personality',
         label: 'Patience reduces marginal calls',
-        value: -(patience - 50) / 12 * callModScale,
+        value: -(patience - 50) / personalityDivisor(12, context) * callModScale / ploCallDampener,
       })
     }
     if (aggressiveAction && scored.intent === 'bluff') {
       contributions.push({
         category: 'personality',
         label: 'Bluff frequency',
-        value: (bluffFrequency - 50) / 10,
+        value: (bluffFrequency - 50) / personalityDivisor(10, context),
       })
     }
     if (aggressiveAction && marginalHand) {
       contributions.push({
         category: 'personality',
         label: 'Risk tolerance affects aggression',
-        value: (riskTolerance - 50) / 5,
+        value: (riskTolerance - 50) / personalityDivisor(5, context),
       })
       contributions.push({
         category: 'personality',
@@ -106,7 +111,15 @@ export function applyPersonalityModifiers(
       const archetypeName = botState.personality.archetype.name
       const archetypeId = mapArchetypeName(archetypeName)
       const patMods = PATIENCE_BEHAVIOR_MODIFIERS[archetypeId]
-      if (patMods) applyMentalPatienceModifiers(scored, intensity, patMods, contributions)
+      if (patMods) {
+        const ploCallScale = (context.variantId === 'omaha-high' && scored.action.type === 'call') ? 0.15 : 1.0
+        if (ploCallScale !== 1.0) {
+          const scaledMods: PatienceModifiers = { ...patMods, call: Math.round(patMods.call * ploCallScale) }
+          applyMentalPatienceModifiers(scored, intensity, scaledMods, contributions)
+        } else {
+          applyMentalPatienceModifiers(scored, intensity, patMods, contributions)
+        }
+      }
     }
 
     if (context.botHabits) {

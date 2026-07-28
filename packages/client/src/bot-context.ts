@@ -7,6 +7,7 @@ import type {
   PlayerId,
   PublicGameState,
 } from '@cpc/shared'
+import type { BotArchetypeId } from './bot-archetypes'
 import type { Position } from './bot-types'
 
 export interface BotPosition extends DecisionPosition {
@@ -26,12 +27,14 @@ export interface BotContext {
   bettingContext: BettingContext
   position: BotPosition
   actionHistory: DecisionActionHistoryEvent[]
+  archetypeId?: BotArchetypeId
 }
 
 export function createBotContext(
   playerId: PlayerId,
   playerView: Readonly<PlayerGameView>,
   publicHandHistory: readonly HandEvent[],
+  archetypeId?: BotArchetypeId,
 ): BotContext {
   const sourceState = playerView.state
   if (sourceState.phase === 'waiting' || sourceState.phase === 'showdown') {
@@ -84,6 +87,7 @@ export function createBotContext(
       .map(event => event.type === 'PlayerActed'
         ? { ...event, action: { ...event.action } }
         : { ...event }),
+    archetypeId,
   }
 }
 

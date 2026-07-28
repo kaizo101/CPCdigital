@@ -1,13 +1,27 @@
 // Omaha High hand evaluation — must use exactly 2 hole cards + 3 community cards.
 import type { Card } from '@cpc/shared'
+import type { Position } from './bot-types'
 import type { VariantEvaluator, HandStrengthCategory, VariantHandAssessment, BoardTexture } from './bot-variant-evaluation'
-import { PLO_CATEGORY_SCORES } from './bot-category-scores'
+import { getPloScores } from './bot-category-scores'
 import { evaluateOmahaHand } from '@cpc/poker-engine'
+
+function positionStrengthAdjust(position: Position, tableSize: number): number {
+  if (tableSize === 2) {
+    return position === 'late' ? 3 : 0
+  }
+  const map: Record<Position, number> = {
+    early: -8,
+    middle: 0,
+    late: 8,
+    blinds: 3,
+  }
+  return map[position] ?? 0
+}
 
 export const omahaVariantEvaluator: VariantEvaluator = {
   variantId: 'omaha-high',
   evaluate(context) {
-    const { ownCards, publicState } = context
+    const { ownCards, publicState, position } = context
     const communityCards = publicState.communityCards
 
     if (communityCards.length === 0) {
@@ -17,9 +31,9 @@ export const omahaVariantEvaluator: VariantEvaluator = {
       const facingRaise = context.bettingContext.toCall > context.publicState.bigBlind
       return {
         variantId: this.variantId,
-        handAssessment: preflopAssess(ownCards, facingRaise, raiseCount),
+        handAssessment: preflopAssess(ownCards, facingRaise, raiseCount, position.category, position.tableSize),
         boardTexture: 'neutral' as const,
-        categoryScores: PLO_CATEGORY_SCORES,
+        categoryScores: getPloScores(context.archetypeId, false),
       }
     }
 
@@ -35,7 +49,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const drawTypes = identifyOmahaDrawTypes(ownCards, communityCards, rank)
     const boardGotWorse = false
     const strength = calculateOmahaStrength(rank, drawQuality, cleanOuts, communityCards.length)
-    const category = categorizeOmaha(rank, drawQuality, cleanOuts, communityCards.length)
+    const category = categorizeOmaha(rank, drawQuality, cleanOuts, communityCards)
 
     return {
       variantId: this.variantId,
@@ -55,12 +69,20 @@ export const omahaVariantEvaluator: VariantEvaluator = {
         strength,
       },
       boardTexture: analyzeOmahaBoardTexture(communityCards),
-      categoryScores: PLO_CATEGORY_SCORES,
+      categoryScores: getPloScores(context.archetypeId, true),
     }
   },
 }
 
-function preflopAssess(ownCards: Card[], facingRaise: boolean, raiseCount: number): VariantHandAssessment {
+const PLO_PREFLOP_THRESHOLDS = [
+  { min: 75, category: 'premium' as HandStrengthCategory },
+  { min: 55, category: 'strong' as HandStrengthCategory },
+  { min: 25, category: 'good' as HandStrengthCategory },
+  { min: 18, category: 'medium' as HandStrengthCategory },
+  { min: 12, category: 'marginal' as HandStrengthCategory },
+]
+
+function preflopAssess(ownCards: Card[], facingRaise: boolean, raiseCount: number, position: Position, tableSize: number): VariantHandAssessment {
   const suitedCount = countSuitedGroups(ownCards)
   const connectedness = preflopConnectedness(ownCards)
   const highCardPoints = ownCards.reduce((sum, c) => sum + rankValue(c), 0)
@@ -97,12 +119,12 @@ function preflopAssess(ownCards: Card[], facingRaise: boolean, raiseCount: numbe
     strength = Math.max(1, strength - 12)
   }
 
-  const category: HandStrengthCategory =
-    strength >= 78 ? 'premium' :
-    strength >= 58 ? 'strong' :
-    strength >= 27 ? 'good' :
-    strength >= 20 ? 'medium' :
-    strength >= 10 ? 'marginal' : 'weak'
+  const adjustedStrength = Math.max(1, Math.min(100, strength + positionStrengthAdjust(position, tableSize)))
+
+  let category: HandStrengthCategory = 'weak'
+  for (const t of PLO_PREFLOP_THRESHOLDS) {
+    if (adjustedStrength >= t.min) { category = t.category; break }
+  }
 
   return {
     category,
@@ -121,8 +143,9 @@ function preflopAssess(ownCards: Card[], facingRaise: boolean, raiseCount: numbe
   }
 }
 
-function categorizeOmaha(rank: number, drawQuality: number, cleanOuts: number, communityCount: number): HandStrengthCategory {
+function categorizeOmaha(rank: number, drawQuality: number, cleanOuts: number, communityCards: Card[]): HandStrengthCategory {
   const strongDraw = drawQuality >= 6 || cleanOuts >= 12
+  const boardPairRank = communityCards.length >= 3 ? findBoardPairRank(communityCards) : 0
 
   if (rank >= 9) return 'premium'
   if (rank >= 8) return 'premium'
@@ -130,9 +153,27 @@ function categorizeOmaha(rank: number, drawQuality: number, cleanOuts: number, c
   if (rank >= 6) return strongDraw ? 'strong' : 'good'
   if (rank >= 5) return strongDraw ? 'good' : 'medium'
   if (rank >= 4) return 'good'
-  if (rank >= 3) return strongDraw ? 'medium' : (drawQuality >= 3 ? 'marginal' : 'weak')
-  if (rank >= 2) return drawQuality >= 3 ? 'marginal' : 'weak'
+  if (rank >= 3) {
+    if (boardPairRank > 0) return strongDraw ? 'medium' : (drawQuality >= 3 ? 'marginal' : 'weak')
+    return strongDraw ? 'good' : (drawQuality >= 3 ? 'medium' : 'marginal')
+  }
+  if (rank >= 2) {
+    if (strongDraw) return 'marginal'
+    if (drawQuality >= 3 && boardPairRank === 0) return 'marginal'
+    return 'weak'
+  }
   return 'air'
+}
+
+function findBoardPairRank(communityCards: Card[]): number {
+  const rankCounts = new Map<Card['rank'], number>()
+  for (const c of communityCards) {
+    rankCounts.set(c.rank, (rankCounts.get(c.rank) ?? 0) + 1)
+  }
+  for (const [rank, count] of rankCounts) {
+    if (count >= 2) return rankValue({ rank, suit: 'clubs' })
+  }
+  return 0
 }
 
 function calculateOmahaStrength(rank: number, drawQuality: number, cleanOuts: number, communityCount: number): number {

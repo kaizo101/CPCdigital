@@ -111,6 +111,7 @@ export function decideBotDecision(
 
   const context: DecisionContext = {
     gameView,
+    variantId: evaluation.variantId,
     botId,
     botState,
     position,
@@ -237,7 +238,9 @@ function legalizeBotAction(
   const betStep = calculateChipUnit(state.smallBlind, state.bigBlind)
   const snappedAmount = roundToCents(Math.round(action.amount / betStep) * betStep)
   const raiseAmount = Math.max(legal.raise.minAmount, snappedAmount)
-  if (raiseAmount >= legal.raise.maxAmount) return { type: 'all-in' }
+  if (raiseAmount >= legal.raise.maxAmount) {
+    return legal.allInAmount != null ? { type: 'all-in' } : { type: 'raise', amount: legal.raise.maxAmount }
+  }
 
   return { type: 'raise', amount: raiseAmount }
 }

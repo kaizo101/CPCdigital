@@ -119,8 +119,10 @@ PokerPlayer
 - [x] Archetypen pro Session seedbar mischen und vor Wiederholungen gleichmäßig verteilen
 - [x] `BotIdentity` mit Name, `avatarKey` und stabilen Grundtendenzen getrennt von Archetyp und Skill modellieren
 - [x] versionierten deterministischen Identity-Generator mit einer ersten 32-Bot-Testpopulation aufbauen
-- [ ] generierten Roster bis v1.0 auf ungefähr 80–100 Identitäten ausbauen, technisch offen erweiterbar halten (aktuell 44/100)
+- [x] Infrastructure für Generation, Persistenz und Session-Auswahl (Roster-Grundlage seit v0.4 stabil)
 - [x] persistenten lokalen Bot-Roster mit über mehrere Sessions wiederkehrenden Identitäten aufbauen
+
+> **Roster-Erweiterung (44→80+):** Läuft inkrementell über mehrere Releases. Pro Minor-Version kommen 5–10 neue Identitäten dazu. Ziel ist keine feste Zahl, sondern ausreichende Abwechslung für Sessions ohne schnelle Wiederholungen.
 - [x] Identitäts-Seed, Session-Varianz und Hand-/Decision-RNG getrennt und reproduzierbar verwenden
 - [x] wiedererkennbare Gewohnheiten ermöglichen, ohne Entscheidungen vollständig vorhersehbar zu machen
 - [x] Archetyp und Skill nicht durch Namen oder offen sichtbare Kategorien verraten
@@ -308,9 +310,9 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## ⚠️ 0.7.5 — UI-Skalierung & Responsive Layout (in Arbeit)
+## ✅ 0.7.5 — UI-Skalierung & Responsive Layout (abgeschlossen)
 
-**Ziel:** Auf allen Geräten gut spielbar — Desktop, Tablet, Phone-Landscape.
+**Ziel:** Grundgerüst für skalierbares Layout — Desktop, Tablet, Phone-Landscape.
 
 - [x] Actionbar-Overlap behoben (Bottom-Padding 260px, Formel 470px)
 - [x] Cards: Clamp-Minimum reduziert (36/50px statt 46/64px)
@@ -318,45 +320,66 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [x] Touch: Long-Press (600ms) öffnet Rebuy-Menü
 - [x] Landscape-Lock + Media Query (`max-height: 450px`)
 - [x] Short-Stack-Rebuy: Bot-Zombies mit 0.5 BB verhindert
-- [ ] **Desktop/Tablet**: Layout-Abstände feinjustieren, Header-Kompression, Table-Shell-Formel
-- [ ] **Phone-Landscape**: Actionbar zu dominant, Slider ausgeblendet → Usability leidet
-- [ ] **Replayer**: Steuerung auf kleinen Screens → später
-- [ ] Portrait-Modus: bewusst nicht supported (zu schmal für Poker-Layout)
+- [x] Grundlegende UI-Skalierung für 3 Ziel-Plattformen
+- [x] Portrait-Modus: bewusst nicht supported (zu schmal für Poker-Layout)
 
-> Grundgerüst steht, aber alle Plattformen brauchen noch Feinjustierung.
+> Foundation für v0.9.0 gelegt. Feinschliff und Tablet-Desktop-Polish folgen dort.
 
 ---
 
-## 🎯 0.7.6 — Personality-Refactoring (LAG / Nit)
+## ✅ 0.7.6 — PLO-Archetyp-Scores & Positions-Kalibrierung
 
-**Ziel:** Archetypen spielen konsistent ihre Rolle — LAG aggressiver, Nit tighter.
+**Ziel:** PLO-Bots spielen positionsbewusst + Archetyp-Charakteristik korrekt.
 
-- **Problem**: Personality-Modifier (±5–10) können Category-Base-Scores (±20–30) nicht
-  gegensteuern. v0.7.3 (Aggression /3.5) war nur inkrementell — LAG AF 1.60→1.73
-  (Target 2.5+), Nit WTSD 45%→41% (Target 25–36%). Die Gap bleibt strukturell.
+### Iteration 1 — Positions-Fix
+- `preflopAssess` ignorierte Position → `positionStrengthAdjust()` eingebaut
+- Multi-way: `early: -8, middle: 0, late: +8, blinds: +3`
+- HU: `late: +3, blinds: 0`
 
-- **Ansatz**: Archetyp-spezifische Modifier, die als Base-Offset wirken — nicht mehr
-  nur Nenner-Tuning an gemeinsamen Formeln. Drei Optionen, sortiert nach Aufwand:
+### Iteration 2 — Archetyp-spezifische PLO-Category-Scores
+- Vier separate Score-Tabellen (TAG/Nit/LAG/CS) in `bot-category-scores.ts`
+- Delta-over-TAG-Pattern → nur Abweichungen von TAG explizit
+- `PLO_CATEGORY_SCORES` → `getPloScores(archetypeId, isPostflop)`
 
-  | Option | Mechanismus | Aufwand |
-  |--------|-------------|---------|
-  | A: Multiplier | Pro Archetyp ein Skalierungsfaktor auf alle Personality-Modifier. LAG ×1.5, Nit ×2.0 auf Fold-Bonus | Gering (∼10 Zeilen) |
-  | B: Base-Offset | Pro Archetyp fester Additiv-Wert auf Raise/Fold/Call. LAG raise +12, Nit fold +12 | Mittel (∼30 Zeilen) |
-  | C: Archetyp-Score-Tables | Wie 0.7.2 (Variant-Category-Scores), aber pro Archetyp statt pro Variante. Hat höchste Präzision, aber 4× den Konfigurationsaufwand | Hoch (∼100 Zeilen) |
+### Iteration 3 — Preflop/Postflop getrennt
+- CS WTSD 75%→46% durch postflop-Call-Senkung + Check-Senkung
+- Nit VPIP 24%→17% durch angehobene Preflop-Marginal-Scores
+- LAG VPIP 28%→32% durch reduzierte Fold-Scores
+- `BotContext.archetypeId` + `createBotContext`-Parameter ergänzt
+- `ploCallScale=0.15` (Patience-Call-Dämpfung) bleibt aktiv
 
-  Empfehlung: **Option B (Base-Offset)** als erster Versuch. Wenn nicht ausreichend,
-  eskaliert zu Option C.
+### Iteration 4 — LAG AF & C-Bet final (geschlossen)
+- LAG AF FR 1.97→**2.49**, C-Bet FR 38%→**40.4%**  
+- raise.medium 8→15, raise.marginal 0→5, call.medium 3→-1, call.marginal -3→-7
+- Erkenntnis: Preflop/Postflop-Split auch für LAG nötig; higher Postflop-Raise-Scores kompensieren VPIP-Verdünnung
+- LAG 6-max: AF 2.61, WTSD 26.9% — beide im Ziel
 
-- **Umsetzung**: `bot-action-modifiers.ts` erweitern um `getArchetypeModifiers(id)`.
-  Pro Archetyp: `{ raiseBonus: number, foldBonus: number, callBonus: number }`.
-  Werte initial aus der v0.7.3-Kalibrierung abgeleitet:
-  - TAG: `{ raise: 0, fold: 0, call: 0 }` (Referenz, unverändert)
-  - LAG: `{ raise: +12, fold: -8, call: -4 }` (mehr Raises, weniger Calls/Folds)
-  - Nit: `{ raise: -4, fold: +12, call: -8 }` (mehr Folds, weniger Calls/Raises)
-  - CS: `{ raise: -8, fold: -8, call: +12 }` (mehr Calls, weniger Raises/Folds)
+### Ergebnisse (5k PLO — final, alle Archetypen)
 
-- **Hebel**: LAG AF, LAG PFR, Nit WTSD — 8–10 rote Metriken in PLO. NLHE-Kalibrierung
-  muss nach Änderung verifiziert werden (Regression-Check).
+| Archetyp | FR VPIP | FR AF | FR WTSD | 6M VPIP | 6M WTSD |
+|----------|---------|-------|---------|---------|---------|
+| TAG | 23.7% ✅ | 3.06 ⚠️ | 33.5% ✅ | 29.4% ✅ | 30.8% ✅ |
+| Nit | 17.0% ✅ | 4.49 ⚠️ | 43.7% ⚠️ | 21.8% ✅ | 45.4% ⚠️ |
+| LAG | **31.7%** ✅ | **2.49** ⚠️ | **28.7%** ✅ | **39.0%** ✅ | **26.9%** ✅ |
+| CS | 40.1% ✅ | 1.06 ✅ | **45.6%** ✅ | 40.4% ⚠️ | **42.7%** ✅ |
+
+### Bekannte Abweichungen
+
+| Metrik | Wert | Target | Grund |
+|--------|------|--------|-------|
+| TAG AF | 3.06/3.81 | 1.5-3.5 | PLO-typisch erhöht (mehr Draw-Calls) |
+| Nit WTSD | 43.7% | 25-36% | checked-down bei checked-to-Spots |
+| LAG AF FR | 2.49 | 2.5-6 | 0.01 unter Grenze, ≈ Rauschen |
+| LAG CBet FR | 40.4% | 40-60% | Knapp im Ziel, leicht erhöhbare Postflop-Raise-Scores |
+| CS HU | — | — | keine HU-spezifischen Scores |
+| CS 6M VPIP | 40.4% | 42-60% | 1.6pp unter Target |
+
+### Dateien
+- `packages/client/src/omaha-hand-evaluation.ts` — `positionStrengthAdjust()`, `getPloScores(isPostflop)`
+- `packages/client/src/bot-category-scores.ts` — per-archetype + per-street Score-Tabellen
+- `packages/client/src/bot-context.ts` — `archetypeId` in `BotContext` + `createBotContext`-Parameter
+
+> **Identitäten**: +5 neue (Gesamt 49/80+)
 
 ---
 
@@ -364,60 +387,118 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ## 🎯 0.8.0 — HU-Strategie (Heads-up)
 
-**Ziel:** Heads-up spielt sich fundamental anders als Full-Ring — eigener Pfad.
-Bekannte, diagnostizierte Baustelle aus der 0.7.1-Kalibrierung.
+**Ziel:** Heads-up-Verhalten messbar verbessern. Kalibrierungs-Targets existieren bereits in `simulation.ts`, die tatsächlichen Werte weichen aber ab — Diagnose aus der 0.7.1-Kalibrierung.
 
-- [ ] HU-spezifische Preflop-Ranges (NLHE + PLO)
-- [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz)
-- [ ] Kalibrierung: HU-Formate für alle Archetypen
+- [ ] HU-spezifische Preflop-Ranges validieren und nachjustieren (Anker in `preflop-ranges.ts` vorhanden)
+- [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz, Bluff-Rate)
+- [ ] HU-Kalibrierung: bestehende Targets in `simulation.ts` schärfen (alle 4 Archetypen, NLHE + PLO)
+
+### Begleitend: Refactoring & Tests
+
+- [ ] `LocalGameRunner.ts`: Replay-Builder in eigenes Modul auslagern
+- [ ] Integrationstests für HU-Szenarien
+- [ ] Kalibrierungs-Lauf mit 10k Händen pro Format als Pre-Release-Check
+
+> **Identitäten**: +10 neue (Gesamt 59/80+)
 
 ---
 
-## 🎯 0.8.1 — 2-7 Single Draw
+## 🎯 0.8.1 — 2-7 Single Draw (deferred)
 
 **Ziel:** Erste Draw-Variante, Architektur-Proof für Kartentausch.
 
+> **Status:** Zurückgestellt. Der Einstieg erfordert grundlegendes Regelverständnis für 2-7 Lowball, das im aktuellen Entwicklungsfokus (Personality, HU, technische Schuld) nicht liegt. Wird reaktiviert wenn der Fokus auf Varianten wechselt.
+
 - [ ] 2-7-Lowball-Handrangfolge
-- [ ] `DrawPhaseDefinition` in `GameVariant` (Kartenanzahl pro Draw, max Draws)
+- [ ] `DrawPhaseDefinition` in `GameVariant`
 - [ ] Draw-Phase und Kartentausch in der Engine
 - [ ] `VariantEvaluator`: Draw-Qualität, Discard-Empfehlungen, Pat/Snowing
 - [ ] Pat/Draw-Status + Snowing-Logik
 - [ ] Draw-spezifische Action History
 - [ ] Grundlegende Regelhinweise in der UI
 
----
-
-## 🎯 0.8.2 — Tischkomfort & Branding
-
-**Ziel:** UI-Polish vor dem Release.
-
-- [ ] BB-Anzeige-Modus (Stacks, Bets, Pot in BB)
-- [ ] Währungswahl um "Keine" erweitern (nur Zahlen, kein €/$)
-- [ ] 4-Color-Deck-Option
-- [ ] Min-/Max-Bet direkt in der Oberfläche
-- [ ] **Branding-Review**: Action-Buttons von PokerStars-Rot auf CPCdigital-Farbschema
+> **Identitäten**: +10 neue wenn aktiviert (Gesamt 69/80+)
 
 ---
 
-## 🎯 0.8.3 — Session-Flexibilität
+## 🎯 0.8.2 — Session-Flexibilität
 
 **Ziel:** Mehr Kontrolle über die Session.
 
 - [ ] Hero-Name im Setup wählbar (statt immer "You")
-- [ ] Bot-Avatare: 44 Bilder für alle Identities
 - [ ] Individuelle Starting-Stacks pro Bot
 - [ ] Konfigurierbare Buy-in-Grenzen (40–250 BB)
 - [ ] Session-Setup mit Variante + Schwierigkeitsmix
 
+### Begleitend: Tests
+
+- [ ] Integrationstests für Session-Flow (Setup → mehrere Hände → Rebuy)
+
+> **Identitäten**: +10 neue (Gesamt 69/80+)
+
 ---
 
-## 🎯 0.8.4 — Präsentation
+## 🎯 0.8.3 — Technische Schuld & Testabdeckung
 
-**Ziel:** Letzter Schliff für v1.0.
+**Ziel:** Code-Basis konsolidieren und Testlücken schließen vor dem großen UI-Release.
 
-- [ ] Animationen (Karten, Chips)
-- [ ] Sound-Effekte
-- [ ] Performance-Test für lange Sessions
+### Refactoring
+
+- [ ] `game.ts` splitten: Showdown-Logik, Player-Management und Betting-Round jeweils in eigene Dateien
+- [ ] `LocalGameRunner.ts` splitten: remaining responsibilities entflechten (nach 0.8.0-Vorschritt)
+- [ ] Veraltete Bot-Dateien aufräumen (`bot.ts`, doppelte Helfer)
+
+### Tests
+
+- [ ] Integrationstests: Engine + LocalGameRunner als durchgehende Pipeline (Hand von Blinds bis Showdown)
+- [ ] Component-Tests: PokerTable, PlayerSeat, ActionButtons, HandReplayer
+- [ ] Randfall-Tests: Empty-State (0 Spieler), Bust-zu-Ende, schnelle Neustarts
+
+> **Identitäten**: +10 neue + Avatare für alle (Gesamt 79/80+)
+
+---
+
+## 🎯 0.9.0 — UI & Präsentation
+
+**Ziel:** Komplette UI-Überarbeitung nach Backend-Stabilisierung. Alle visuellen und interaktiven Verbesserungen in einem Release gebündelt, damit das Backend bis dahin ungestört reifen kann.
+
+> Enthält die ehemaligen Meilensteine 0.8.2 (Tischkomfort) und 0.8.4 (Präsentation) sowie den UI-Feinschliff aus 0.7.5.
+
+### 0.9.1 — TableGeometry & Layout
+
+**Ziel:** Mathematische Tischgeometrie statt Hardcode-Presets. Saubere, responsive Basis für alle Bildschirmgrößen.
+
+- [ ] **TableGeometry SSOT**: Ellipsen-basierte Sitzberechnung (Achsen, Mittelpunkt) statt getrennter Presets für Seat/Bet/Button-Positionen
+- [ ] **Responsive-Feinschliff**: Desktop/Tablet-Layout-Abstände, Header-Kompression, Table-Shell-Formel finalisieren
+- [ ] **Phone-Landscape**: Actionbar-Usability, Slider nicht versteckt, kompakte Buttons
+- [ ] **Replayer-Touch**: Steuerung auf kleinen Screens (Wisch-Gesten, größere Buttons)
+
+### 0.9.2 — Branding & Controls
+
+**Ziel:** CPCdigital-eigenes Erscheinungsbild statt PokerStars-Optik.
+
+- [ ] **Branding-Review**: Action-Buttons von PokerStars-Rot auf CPCdigital-Farbschema
+- [ ] 4-Color-Deck-Option (alternative Kartendarstellung)
+- [ ] BB-Anzeige-Modus (Stacks, Bets, Pot in Big Blinds)
+- [ ] Währungswahl um "Keine" erweitern (nur Zahlen, kein €/$)
+- [ ] Min-/Max-Bet direkt in der Oberfläche anzeigen
+- [ ] Session-Log (PokerStars-Dealer-Stil, einklappbar links unten)
+
+### 0.9.3 — Animationen & Sound
+
+**Ziel:** Spielgefühl durch visuelles und akustisches Feedback.
+
+- [ ] Karten-Animationen (Deal, Flip, Muck)
+- [ ] Chip-Animationen (Bets, Pot-Zusammenfassung, Gewinn-Verschiebung)
+- [ ] Sound-Effekte (Karten, Chips, Showdown, Session-Events)
+
+### 0.9.4 — Performance & UI-Testing
+
+**Ziel:** Performance-Check und UI-Stabilität vor v1.0.
+
+- [ ] Performance-Test für lange Sessions (>500 Hände) mit UI-Komponenten
+- [ ] Render-Tests für neue UI-Komponenten (TableGeometry, Animationen)
+- [ ] responsive Test-Matrix (Desktop, Tablet, Phone-Landscape)
 
 ---
 
@@ -435,13 +516,8 @@ für die Learning-Erweiterung.
 - [ ] vollständige Hand History und Replay
 - [ ] Decision Records und erklärbare Bot-Scores
 - [ ] Session-Statistiken (Live-VPIP/PFR, BB/100)
-- [ ] responsive UI (Tablet, Touch)
 - [ ] stabiles Desktop-Packaging
 - [ ] Dokumentation für Architektur und Variantenmodule
-
-### Optional (post-1.0)
-
-- [ ] Session-Log (PokerStars-Dealer-Stil, links unten, einklappbar)
 
 ### Packaging
 
@@ -664,14 +740,14 @@ aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
 
 Die Smartphone-Darstellung von Poker ist auf kleinen Bildschirmen eine große UX-Herausforderung.
 Ob die APK ein vollständiges Spiel, ein reiner Lernclient oder nur Tablet-optimiert bleibt,
-wird nach v0.9.2 entschieden.
+wird nach v0.9.4 entschieden.
 
 - [ ] Capacitor-Setup und APK-Pipeline
 - [ ] entweder: Phone-Layout (radial, Overlay-Aktionen, nur Querformat)
 - [ ] oder: beschnittene Version (z.B. max 6-max, keine komplexen Varianten)
 - [ ] oder: APK streichen, Fokus auf Browser (GitHub Pages)
 
-> Touch-Optimierung und responsive UI werden bereits in 0.7.5 (Scaling) und 0.8.4 (Präsentation) behandelt.
+> Touch-Optimierung und responsive UI werden in 0.7.5 (Grundlage) und 0.9.0 (Überarbeitung) behandelt.
 
 ---
 
@@ -707,7 +783,6 @@ Sie können in zukünftige Phasen einsortiert oder verworfen werden.
 | Mixed Games (HORSE) | Variante | Rotation mehrerer Varianten, Session-Format |
 | Tournament-Modus | Spielmodus | Blinds steigen, Payout-Struktur, ICM |
 | Lokaler Multiplayer | Plattform | Hot-Seat, gleicher Rechner |
-| Session-Log (Live-Dealer-Text) | UI | PokerStars-Dealer-Stil, einklappbar links unten |
 
 ---
 

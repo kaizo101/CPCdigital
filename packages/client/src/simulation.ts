@@ -411,7 +411,7 @@ function simulateFormat(
 
       let action: PlayerAction
       try {
-        const botContext = createBotContext(botId, botView, game.getPublicHandHistory())
+        const botContext = createBotContext(botId, botView, game.getPublicHandHistory(), profile.archetypeId)
         action = decideBotAction(botContext, botState, decisionRandom)
         game.applyAction(botId, action)
       } catch {

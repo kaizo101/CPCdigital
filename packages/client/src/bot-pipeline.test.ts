@@ -50,6 +50,7 @@ function context(
     },
     botId: 'bot',
     botState: createBotState(TAG_PERSONALITY, 50, () => 0.5),
+    variantId: 'texas-holdem',
     position: 'late',
     playerCount: 2,
     boardTexture: 'neutral',
