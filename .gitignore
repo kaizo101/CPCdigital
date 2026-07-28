@@ -16,3 +16,4 @@ Cards (large)/
 calibration/*.backup
 *.calib-backup
 avatar-prompts.json
+.reference/
