@@ -51,11 +51,11 @@ Derzeit enthalten sind unter anderem:
 
 Noch nicht als stabiler Funktionsumfang enthalten sind weitere Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
 
-Bis zur geplanten Veröffentlichung des Hauptrepositorys bleibt die
-**[cpcdigital-demo](https://github.com/kaizo101/cpcdigital-demo)** mit ihrem
-[Live-Deployment auf GitHub Pages](https://kaizo101.github.io/cpcdigital-demo/)
-die offizielle Webdemo. Der spätere direkte Pages-Build aus diesem Repository
-ist vorbereitet, aber solange das Repository privat ist ausdrücklich deaktiviert.
+Die offizielle **[Browser-Demo](https://kaizo101.github.io/CPCdigital/)** wird
+direkt aus diesem öffentlichen Repository über GitHub Pages gebaut. Die frühere
+URL im Repository
+[cpcdigital-demo](https://github.com/kaizo101/cpcdigital-demo) bleibt vorerst als
+Weiterleitung und zur Bewahrung ihrer Historie bestehen.
 
 ## Voraussetzungen
 
@@ -155,10 +155,10 @@ der Bereitstellung des korrespondierenden Quellcodes erfüllen. Für eine späte
 über ein Netzwerk angebotene modifizierte Version gilt zusätzlich Abschnitt 13
 der AGPLv3.
 
-Während der Übergangsphase besitzt die separat veröffentlichte Demo ein eigenes
-Repository und wird dort eigenständig unter `AGPL-3.0-only` mit dem zugehörigen
-Web-Quellcode angeboten. Nach dem öffentlichen Pages-Cutover soll dieses
-Repository die einzige offizielle Quellcodebasis werden.
+Dieses Repository ist die offizielle Quellcodebasis der
+[GitHub-Pages-Demo](https://kaizo101.github.io/CPCdigital/). Das frühere
+Demo-Repository bleibt für seine historische Revision eigenständig unter
+`AGPL-3.0-only` lizenziert und verweist auf diesen Stand.
 
 ## Hinweis
 

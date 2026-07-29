@@ -421,9 +421,10 @@ Strategiemeilenstein vereinheitlichen.
 - [x] CI, Dependabot, Dependency Review, CodeQL und gegatetes Pages-Deployment vorbereiten
 - [x] Demo-Sync bis zum Cutover auf eine öffentliche Positivliste begrenzen
 - [x] formellen Secret-Scan über die vollständige Git-Historie dokumentieren
-- [ ] Hauptrepository nach finaler Inhaltsprüfung öffentlich schalten
-- [ ] Pages auf das Hauptrepository umstellen und altes Demo-Repository weiterleiten
-- [ ] Secret Scanning und Push Protection nach dem Visibility-Wechsel aktivieren
+- [x] Hauptrepository nach finaler Inhaltsprüfung öffentlich schalten
+- [x] Pages auf das Hauptrepository umstellen und altes Demo-Repository weiterleiten
+- [x] Secret Scanning und Push Protection nach dem Visibility-Wechsel aktivieren
+- [x] initiale CodeQL-Funde durch Rate Limits für Auth-, History- und Statistik-Routen schließen
 
 - [ ] Phone-Landscape 844×390 ohne Seat-/Actionbar-Überlagerung
 - [ ] Portrait-Guard mit verständlichem Hinweis statt defektem Layout

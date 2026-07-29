@@ -204,28 +204,32 @@ Für spätere Binärpakete gilt insbesondere:
 - Lizenzen und erforderliche Hinweise gebündelter Drittanbieterkomponenten erhalten
 - bei einer modifizierten netzwerkfähigen v2-Version einen gut sichtbaren kostenlosen Source-Zugang bereitstellen
 
-Bis zum öffentlichen Cutover ist das eigenständige Demo-Repository nicht Teil
-dieses Repositorys. Es weist `AGPL-3.0-only` separat aus und wird über
-`scripts/sync-demo.sh` aus einer expliziten Positivliste erzeugt.
+Der direkte Pages-Build liegt in `.github/workflows/pages.yml`. Er deployt
+ausschließlich `packages/client/dist` aus `master` und bettet dieses Repository
+als Source-Link ein. Die offizielle Demo ist unter
+<https://kaizo101.github.io/CPCdigital/> erreichbar.
 
-Der künftige direkte Pages-Build liegt in `.github/workflows/pages.yml`. Er
-deployt ausschließlich `packages/client/dist`, bettet dieses Repository als
-Source-Link ein und läuft nur, wenn GitHub das Repository als öffentlich meldet.
+Das frühere Repository `cpcdigital-demo` liefert nur noch eine statische
+Weiterleitung aus. Sein alter Quellstand bleibt in der Git-Historie erhalten;
+der vorherige Positivlisten-Sync wurde nach dem erfolgreichen Cutover entfernt.
+Eine Archivierung erfolgt erst nach einer angemessenen Übergangszeit.
 
-## Public-Release-Checkliste
+## Public-Release- und Betriebskontrollen
 
-Vor der Umstellung des Hauptrepositorys auf öffentlich:
+Der öffentliche Cutover vom 29.07.2026 umfasste:
 
-1. vollständigen Secret-Scan über Arbeitsbaum und Git-Historie ausführen
-2. `npm ci --ignore-scripts`, `npm test`, `npm run build` und `npm audit` prüfen
-3. kontrollieren, dass lokale Datenbanken, `.env`-Dateien und Referenzordner nie
-   getrackt wurden
-4. offene 0.7.7-Release-Gates in der Roadmap abschließen und Release taggen
-5. Repository-Sichtbarkeit erst nach expliziter Freigabe ändern
-6. Secret Scanning, Push Protection, CodeQL und Pages auf GitHub aktivieren
-7. Pages-Bundle auf Version, AGPL-Hinweis und Source-Link prüfen
-8. bisheriges Demo-Repository zunächst auf eine Weiterleitung reduzieren und
-   erst nach einer Übergangszeit archivieren
+1. vollständigen Secret-Scan über Arbeitsbaum und Git-Historie
+2. `npm ci --ignore-scripts`, `npm test`, `npm run build` und `npm audit`
+3. Kontrolle auf getrackte Datenbanken, `.env`-Dateien, Schlüssel und Credentials
+4. Secret Scanning, Push Protection, Private Vulnerability Reporting und CodeQL
+5. ausschließlich GitHub-eigene, vollständig per Commit-SHA fixierte Actions
+6. Schutz von `master` gegen Löschen und Force-Push
+7. Prüfung des Pages-Bundles auf Version, AGPL-Hinweis und Source-Link
+8. Browserprüfung der Weiterleitung vom früheren Demo-Repository
+
+Für weitere Releases bleiben Tests, Build, Audit, CodeQL und die
+variant-spezifischen Kalibrierungsgates verpflichtend. Ein `v0.7.7`-Tag wird erst
+nach Abschluss der weiterhin offenen Roadmap-Punkte erstellt.
 
 Der aktuelle technische Befund ist im
 [Public-Readiness-Audit vom 29.07.2026](security/audits/2026-07-29-public-readiness.md)

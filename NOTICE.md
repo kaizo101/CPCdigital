@@ -14,6 +14,6 @@ Abhängigkeiten und sonstiges Material Dritter bleiben unter ihren jeweiligen
 Lizenzen. Deren Metadaten sind insbesondere in den Package-Manifests und im
 Lockfile dokumentiert.
 
-Das separate Repository `cpcdigital-demo` gehört nicht automatisch zu diesem
-Lizenzumfang. Es wird eigenständig unter `AGPL-3.0-only` mit einem auf den
-öffentlichen Webbuild begrenzten Quellumfang bereitgestellt.
+Das frühere Repository `cpcdigital-demo` bleibt für die dortige Git-Historie
+eigenständig unter `AGPL-3.0-only` lizenziert. Die aktuelle Webdemo und ihr
+korrespondierender Quellcode werden aus diesem Hauptrepository bereitgestellt.

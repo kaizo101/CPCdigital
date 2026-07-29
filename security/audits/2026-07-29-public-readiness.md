@@ -38,23 +38,39 @@ veröffentlicht.
 - Stats mit ungültigem Token: HTTP 401
 - neu erzeugte SQLite-, WAL- und SHM-Dateien: Modus `600`
 
+## Kontrollierter öffentlicher Cutover
+
+Nach expliziter Freigabe wurden am 29.07.2026 zusätzlich geprüft und umgesetzt:
+
+- Hauptrepository auf öffentlich umgestellt
+- Secret Scanning und Push Protection aktiviert; keine Alerts nach dem
+  History-Backfill
+- Dependabot-Sicherheitsupdates und Private Vulnerability Reporting aktiviert
+- GitHub Actions auf GitHub-eigene Actions mit vollständigem Commit-SHA-Pinning
+  beschränkt
+- aktives Ruleset schützt `master` gegen Löschen und Force-Push, ohne direkte
+  Fast-Forward-Pushes oder den bisherigen Entwicklungsfluss zu blockieren
+- GitHub Pages unter <https://kaizo101.github.io/CPCdigital/> aktiviert und das
+  Live-Bundle auf Version `0.7.6`, AGPL-Hinweis und korrekten Source-Link geprüft
+- initialer CodeQL-Lauf fand fünf fehlende Rate Limits in Auth-, History- und
+  Statistik-Routen; Commit `66e5505` behob alle fünf Alerts, der Folgelauf
+  markierte sie automatisch als `fixed`
+- die frühere URL <https://kaizo101.github.io/cpcdigital-demo/> liefert eine
+  statische Weiterleitung auf die neue Demo; Repository und Historie bleiben
+  während der Übergangszeit erhalten
+
+Die optionalen Secret-Scanning-Modi für Non-Provider-Patterns und Validity
+Checks waren für das aktuelle Konto nicht verfügbar und blieben deaktiviert.
+Die regulären Provider-Scans und Push Protection sind aktiv.
+
 ## Bewusst verbleibende Schritte
 
-- Repository bleibt bis zur expliziten Freigabe privat.
-- CodeQL und Pages sind vorbereitet, aber durch die Repository-Sichtbarkeit gegated.
-- GitHub Secret Scanning und Push Protection werden erst nach dem Wechsel auf
-  öffentlich aktiviert und kontrolliert.
-- Repository-Rulesets sind im aktuellen privaten Tarifzustand nicht verfügbar
-  und werden nach dem Visibility-Wechsel eingerichtet.
-- GitHub Actions ist aktiv; die Repository-Einstellung erzwingt derzeit keine
-  SHA-Pins. Alle eingecheckten Workflows pinnen ihre Actions dennoch bereits auf
-  vollständige Commit-SHAs.
-- Das bestehende Demo-Repository bleibt bis zum bestätigten Pages-Cutover live.
 - Ein `v0.7.7`-Tag wird erst nach Abschluss der übrigen Roadmap-Gates erstellt.
+- Das frühere Demo-Repository wird erst nach einer Übergangszeit archiviert.
 
 ## Werkzeuggrenzen
 
 Der Scan reduziert das Risiko versehentlich veröffentlichter Secrets, beweist
-aber nicht die Abwesenheit jedes denkbaren vertraulichen Inhalts. Vor dem
-Visibility-Wechsel ist deshalb weiterhin eine bewusste Inhaltsprüfung von
-Roadmap, Kalibrierungsdaten, Server-Prototyp und historischen Commits erforderlich.
+aber nicht die Abwesenheit jedes denkbaren vertraulichen Inhalts. GitHub Secret
+Scanning, Push Protection und wiederkehrende Inhaltsprüfungen bleiben deshalb
+auch nach dem Visibility-Wechsel erforderlich.

@@ -8,10 +8,10 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Added
 
-- **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright, Beitragsregeln und Trennung zur eigenständigen Demo dokumentiert.
-- **Demo-Sicherheit**: Öffentlichen Demo-Sync auf eine Positivliste umgestellt, AGPL-/Source-Hinweis ergänzt und CI um Tests vor dem GitHub-Pages-Deployment erweitert.
+- **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright und Beitragsregeln dokumentiert.
+- **Demo-Sicherheit**: Öffentlichen Demo-Sync zunächst auf eine Positivliste umgestellt und nach dem Pages-Cutover durch eine statische Weiterleitung auf das Hauptrepository ersetzt.
 - **Abhängigkeiten**: Vite/Vitest sowie sicherheitsrelevante transitive Express-/Socket.IO-Abhängigkeiten auf behobene Versionen aktualisiert.
-- **Public Readiness**: Sicherheitsrichtlinie, reproduzierbare CI, Dependabot, Dependency Review, CodeQL und ein auf öffentliche Sichtbarkeit begrenztes Pages-Deployment ergänzt.
+- **Public Readiness**: Sicherheitsrichtlinie, reproduzierbare CI, Dependabot, Dependency Review, CodeQL und ein auf öffentliche Sichtbarkeit begrenztes Pages-Deployment ergänzt; Hauptrepository und offizielle Demo veröffentlicht.
 - **Server-Konfigurationstests**: JWT-Secret, Host- und Port-Validierung in die Root-Test-Suite aufgenommen.
 
 ### Security
@@ -20,6 +20,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Lokale Angriffsfläche**: Standardbindung auf `127.0.0.1` begrenzt und History-/Statistik-Endpunkte mit Bearer-Authentifizierung geschützt.
 - **Persistenz**: SQLite-Daten, WAL und SHM werden mit privaten Dateirechten erzeugt; Docker-Build-Kontext schließt lokale Secrets, Datenbanken und Arbeitsdateien aus.
 - **QA-Zugangsdaten**: Feste Dummy-Passwörter durch pro Prozess generierte Zufallswerte ersetzt.
+- **Rate Limits**: Registrierung und Login sowie authentifizierte History- und Statistik-Routen gegen automatisierten Missbrauch und ungebremste Abfragen begrenzt.
+- **GitHub-Härtung**: Secret Scanning, Push Protection, Private Vulnerability Reporting, SHA-Pinning für Actions und Schutz von `master` gegen Löschen und Force-Push aktiviert.
 
 ## [0.7.6] — 2026-07-29
 
