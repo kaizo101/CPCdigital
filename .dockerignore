@@ -1,0 +1,26 @@
+.git
+.github
+.agents
+.claude
+.codex
+.reference
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.db
+*.db-shm
+*.db-wal
+.local-data
+node_modules
+**/node_modules
+dist
+**/dist
+calibration
+Cards (large)
+*.mp4
+*.webm

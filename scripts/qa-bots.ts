@@ -10,10 +10,12 @@
  *   invalid-action-bot     — tries illegal actions, verifies server rejects them
  */
 
+import { randomBytes } from 'node:crypto'
 import { io as ioClient } from 'socket.io-client'
 import type { ClientToServerEvents, GameState, ServerToClientEvents } from '@cpc/shared'
 
 const SERVER = process.env.SERVER_URL ?? 'http://localhost:3001'
+const BOT_PASSWORD = randomBytes(24).toString('base64url')
 const [, , inviteCode, botType] = process.argv
 
 if (!inviteCode || !botType) {
@@ -68,7 +70,7 @@ async function runDisconnectBot(token: string, name: string) {
       setTimeout(async () => {
         console.log(`[${name}] reconnecting...`)
         reconnected = true
-        const newToken = await registerOrLogin(name, 'qapassword123')
+        const newToken = await registerOrLogin(name, BOT_PASSWORD)
         socket = ioClient(SERVER, { auth: { token: newToken } })
         socket.on('connect', () => {
           console.log(`[${name}] reconnect socket connected`)
@@ -164,7 +166,7 @@ async function runInvalidActionBot(token: string, name: string) {
 const botName = `qa-${botType}-${Math.random().toString(36).slice(2, 6)}`
 
 try {
-  const token = await registerOrLogin(botName, 'qapassword123')
+  const token = await registerOrLogin(botName, BOT_PASSWORD)
 
   switch (botType) {
     case 'disconnect-after-flop':

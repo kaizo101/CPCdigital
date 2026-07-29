@@ -51,20 +51,24 @@ Derzeit enthalten sind unter anderem:
 
 Noch nicht als stabiler Funktionsumfang enthalten sind weitere Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
 
-Eine öffentliche Demo ohne Server/Secrets gibt es unter **[cpcdigital-demo](https://github.com/kaizo101/cpcdigital-demo)** mit [Live-Deployment auf GitHub Pages](https://kaizo101.github.io/cpcdigital-demo/).
+Bis zur geplanten Veröffentlichung des Hauptrepositorys bleibt die
+**[cpcdigital-demo](https://github.com/kaizo101/cpcdigital-demo)** mit ihrem
+[Live-Deployment auf GitHub Pages](https://kaizo101.github.io/cpcdigital-demo/)
+die offizielle Webdemo. Der spätere direkte Pages-Build aus diesem Repository
+ist vorbereitet, aber solange das Repository privat ist ausdrücklich deaktiviert.
 
 ## Voraussetzungen
 
-- eine aktuelle Node.js-LTS-Version
+- Node.js 24 LTS
 - npm
 - eine Desktop-Umgebung, in der Electron ausgeführt werden kann
 
 ## Lokale Entwicklung
 
-Abhängigkeiten installieren:
+Abhängigkeiten reproduzierbar installieren:
 
 ```bash
-npm install
+npm ci
 ```
 
 Vite und Electron im Entwicklungsmodus starten:
@@ -120,12 +124,20 @@ packages/
 
 Die laufende Offline-App importiert oder benötigt das Server-Paket nicht. Es bleibt bewusst als ruhender Prototyp für eine mögliche v2-Integration im Repository; bis dahin ist es weder Produktionspfad noch Teil des v1-Releaseumfangs.
 
+Der Server startet absichtlich nicht ohne ein mindestens 32 Byte langes
+`JWT_SECRET` und bindet standardmäßig nur an `127.0.0.1`. Eine lokale
+Beispielkonfiguration steht in [`.env.example`](.env.example). Ein Secret lässt
+sich beispielsweise mit `openssl rand -hex 32` erzeugen. Weitere Hinweise zu
+Netzwerkgrenzen und vertraulichen Meldungen stehen in
+[`SECURITY.md`](SECURITY.md).
+
 ## Projektdokumentation
 
 - [Roadmap](ROADMAP.md) — geplante Entwicklungsphasen und langfristige Vision
 - [Changelog](CHANGELOG.md) — tatsächlich veröffentlichte Änderungen je Version
 - [Entwicklerdokumentation](DEV.md) — Architektur, Kalibrierung, Debugging
 - [Beitragsrichtlinien](CONTRIBUTING.md) — Rechte und Lizenzierung eingereichter Beiträge
+- [Sicherheitsrichtlinie](SECURITY.md) — unterstützte Stände und vertrauliche Meldungen
 
 ## Lizenz
 
@@ -143,8 +155,10 @@ der Bereitstellung des korrespondierenden Quellcodes erfüllen. Für eine späte
 über ein Netzwerk angebotene modifizierte Version gilt zusätzlich Abschnitt 13
 der AGPLv3.
 
-Die separat veröffentlichte Demo besitzt ein eigenes Repository und wird dort
-eigenständig unter `AGPL-3.0-only` mit dem zugehörigen Web-Quellcode angeboten.
+Während der Übergangsphase besitzt die separat veröffentlichte Demo ein eigenes
+Repository und wird dort eigenständig unter `AGPL-3.0-only` mit dem zugehörigen
+Web-Quellcode angeboten. Nach dem öffentlichen Pages-Cutover soll dieses
+Repository die einzige offizielle Quellcodebasis werden.
 
 ## Hinweis
 

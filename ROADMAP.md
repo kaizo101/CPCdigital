@@ -410,7 +410,20 @@ korrekte Draw-Auswertung nicht für alte Kalibrierungswerte zurückgedreht.
 ## 🎯 0.7.7 — Stabilisierung nach UI-Rollback
 
 **Ziel:** Die nach dem Rollback belegten Regressionen schließen und die
-Entwicklungswerkzeuge vor dem nächsten Strategiemeilenstein vereinheitlichen.
+Entwicklungswerkzeuge sowie die öffentliche Projektbasis vor dem nächsten
+Strategiemeilenstein vereinheitlichen.
+
+### Public Readiness
+
+- [x] AGPL-, Beitrags- und Sicherheitsdokumentation einchecken
+- [x] Server ohne JWT-Fallback, standardmäßig lokale Bindung und private Datenbankrechte
+- [x] Authentifizierung für History- und Statistik-Endpunkte ergänzen
+- [x] CI, Dependabot, Dependency Review, CodeQL und gegatetes Pages-Deployment vorbereiten
+- [x] Demo-Sync bis zum Cutover auf eine öffentliche Positivliste begrenzen
+- [x] formellen Secret-Scan über die vollständige Git-Historie dokumentieren
+- [ ] Hauptrepository nach finaler Inhaltsprüfung öffentlich schalten
+- [ ] Pages auf das Hauptrepository umstellen und altes Demo-Repository weiterleiten
+- [ ] Secret Scanning und Push Protection nach dem Visibility-Wechsel aktivieren
 
 - [ ] Phone-Landscape 844×390 ohne Seat-/Actionbar-Überlagerung
 - [ ] Portrait-Guard mit verständlichem Hinweis statt defektem Layout

@@ -30,3 +30,7 @@ Copyright © 2026 Lukas Schäfer.
 Der korrespondierende Quellcode des live ausgelieferten Builds befindet sich in
 diesem Repository. Copyright- und Asset-Hinweise stehen in
 [NOTICE.md](NOTICE.md).
+
+Das Repository wird automatisch aus einer Positivliste erzeugt. Hinweise zu
+Beiträgen und vertraulichen Meldungen stehen in
+[CONTRIBUTING.md](CONTRIBUTING.md) und [SECURITY.md](SECURITY.md).

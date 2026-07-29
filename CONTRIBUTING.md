@@ -16,3 +16,15 @@ werden.
 
 Für größere Änderungen bitte zunächst ein Issue mit Ziel, Umfang und möglichen
 Auswirkungen auf Engine, Replays, persistente Daten oder Kalibrierung anlegen.
+
+Vermutete Sicherheitslücken oder versehentlich veröffentlichte Zugangsdaten
+bitte nicht als öffentliches Issue melden, sondern gemäß
+[`SECURITY.md`](SECURITY.md) vertraulich einreichen.
+
+Vor einem Pull Request bitte mindestens folgende Prüfungen lokal ausführen:
+
+```bash
+npm ci --ignore-scripts
+npm test
+npm run build
+```

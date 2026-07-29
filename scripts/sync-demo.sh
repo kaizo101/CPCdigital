@@ -33,12 +33,13 @@ mkdir -p "$STAGING_DIR/.github/workflows" "$STAGING_DIR/packages"
 
 # Explicit allowlist: only files required to build, inspect and license the web demo.
 cp "$SOURCE_DIR/LICENSE" "$STAGING_DIR/LICENSE"
-cp "$SOURCE_DIR/CONTRIBUTING.md" "$STAGING_DIR/CONTRIBUTING.md"
 cp "$SOURCE_DIR/tsconfig.base.json" "$STAGING_DIR/tsconfig.base.json"
 cp "$SOURCE_DIR/package-lock.json" "$STAGING_DIR/package-lock.json"
 cp "$SOURCE_DIR/scripts/demo/package.json" "$STAGING_DIR/package.json"
 cp "$SOURCE_DIR/scripts/demo/README.md" "$STAGING_DIR/README.md"
 cp "$SOURCE_DIR/scripts/demo/NOTICE.md" "$STAGING_DIR/NOTICE.md"
+cp "$SOURCE_DIR/scripts/demo/CONTRIBUTING.md" "$STAGING_DIR/CONTRIBUTING.md"
+cp "$SOURCE_DIR/scripts/demo/SECURITY.md" "$STAGING_DIR/SECURITY.md"
 cp "$SOURCE_DIR/scripts/demo/gitignore" "$STAGING_DIR/.gitignore"
 cp "$SOURCE_DIR/scripts/demo/deploy.yml" "$STAGING_DIR/.github/workflows/deploy.yml"
 

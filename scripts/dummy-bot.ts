@@ -9,6 +9,7 @@
  *   npx tsx scripts/dummy-bot.ts ABC123 3
  */
 
+import { randomBytes } from 'node:crypto'
 import { io } from 'socket.io-client'
 import type { GameState, PlayerAction } from '@cpc/shared'
 
@@ -67,7 +68,7 @@ function randomAction(state: GameState, myId: string): PlayerAction {
 
 async function spawnBot(index: number) {
   const username = `bot_${index}_${Date.now()}`
-  const password = 'botpassword123'
+  const password = randomBytes(24).toString('base64url')
 
   let token: string
   try {

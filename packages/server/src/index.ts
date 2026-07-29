@@ -1,16 +1,23 @@
-import express from 'express'
+import express, { type RequestHandler } from 'express'
+import fs from 'node:fs'
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
 import { io as createSocketClient, type Socket as ClientSocket } from 'socket.io-client'
 import jwt from 'jsonwebtoken'
 import type { ChatMessage, ClientToServerEvents, JwtPayload, Player, PublicGameState, ServerToClientEvents } from '@cpc/shared'
 import { PokerGame } from '@cpc/poker-engine'
-import authRouter, { JWT_SECRET } from './auth-router.js'
+import { serverConfig } from './runtime-config.js'
+import authRouter from './auth-router.js'
 import { tableManager } from './table-manager.js'
 import { getHandRecord, getHandSummaries, getSessionStats, saveHand } from './history-db.js'
 
 const app = express()
 const httpServer = createServer(app)
+const appVersion = (
+  JSON.parse(fs.readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')) as {
+    version: string
+  }
+).version
 
 app.use(express.json())
 app.use('/auth', authRouter)
@@ -27,6 +34,25 @@ declare module 'socket.io' {
     userId: number
     username: string
     role: JwtPayload['role']
+  }
+}
+
+const requireHttpAuth: RequestHandler = (req, res, next) => {
+  const authorization = req.get('authorization')
+  const token = authorization?.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length)
+    : undefined
+
+  if (!token) {
+    res.status(401).json({ error: 'Authentication required' })
+    return
+  }
+
+  try {
+    jwt.verify(token, serverConfig.jwtSecret, { algorithms: ['HS256'] })
+    next()
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired token' })
   }
 }
 
@@ -281,7 +307,10 @@ function connectBot(inviteCode: string, startingChips: number): Promise<Player> 
     const userId = nextBotUserId++
     const username = `Bot ${nextBotNumber++}`
     const payload: JwtPayload = { userId, username, role: 'player' }
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+    const token = jwt.sign(payload, serverConfig.jwtSecret, {
+      algorithm: 'HS256',
+      expiresIn: '7d',
+    })
     const socket = createSocketClient(process.env.SERVER_URL ?? `http://127.0.0.1:${PORT}`, {
       path: '/socket.io',
       auth: { token },
@@ -376,7 +405,9 @@ io.use((socket, next) => {
   const token = socket.handshake.auth?.token as string | undefined
   if (!token) return next(new Error('Authentication required'))
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload
+    const payload = jwt.verify(token, serverConfig.jwtSecret, {
+      algorithms: ['HS256'],
+    }) as JwtPayload
     socket.data.userId = payload.userId
     socket.data.username = payload.username
     socket.data.role = payload.role
@@ -390,24 +421,24 @@ io.use((socket, next) => {
 // HTTP
 // ---------------------------------------------------------------------------
 
-const PORT = process.env.PORT ?? 3001
+const { port: PORT, host: HOST } = serverConfig
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', version: '0.2.1' })
+  res.json({ status: 'ok', version: appVersion })
 })
 
-app.get('/history', (_req, res) => {
+app.get('/history', requireHttpAuth, (_req, res) => {
   res.json(getHandSummaries())
 })
 
-app.get('/history/:id', (req, res) => {
+app.get('/history/:id', requireHttpAuth, (req, res) => {
   const id = parseInt(req.params.id, 10)
   const record = getHandRecord(id)
   if (!record) { res.status(404).json({ error: 'Not found' }); return }
   res.json(record)
 })
 
-app.get('/stats', (_req, res) => {
+app.get('/stats', requireHttpAuth, (_req, res) => {
   res.json(getSessionStats())
 })
 
@@ -618,6 +649,6 @@ io.on('connection', (socket) => {
   })
 })
 
-httpServer.listen(PORT, () => {
-  console.log(`[server] running on http://localhost:${PORT}`)
+httpServer.listen(PORT, HOST, () => {
+  console.log(`[server] running on http://${HOST}:${PORT}`)
 })

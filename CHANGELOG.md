@@ -11,6 +11,15 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright, Beitragsregeln und Trennung zur eigenständigen Demo dokumentiert.
 - **Demo-Sicherheit**: Öffentlichen Demo-Sync auf eine Positivliste umgestellt, AGPL-/Source-Hinweis ergänzt und CI um Tests vor dem GitHub-Pages-Deployment erweitert.
 - **Abhängigkeiten**: Vite/Vitest sowie sicherheitsrelevante transitive Express-/Socket.IO-Abhängigkeiten auf behobene Versionen aktualisiert.
+- **Public Readiness**: Sicherheitsrichtlinie, reproduzierbare CI, Dependabot, Dependency Review, CodeQL und ein auf öffentliche Sichtbarkeit begrenztes Pages-Deployment ergänzt.
+- **Server-Konfigurationstests**: JWT-Secret, Host- und Port-Validierung in die Root-Test-Suite aufgenommen.
+
+### Security
+
+- **Server-Fail-Closed**: Unsicheren JWT-Default entfernt; der Prototyp startet nur noch mit einem mindestens 32 Byte langen Secret.
+- **Lokale Angriffsfläche**: Standardbindung auf `127.0.0.1` begrenzt und History-/Statistik-Endpunkte mit Bearer-Authentifizierung geschützt.
+- **Persistenz**: SQLite-Daten, WAL und SHM werden mit privaten Dateirechten erzeugt; Docker-Build-Kontext schließt lokale Secrets, Datenbanken und Arbeitsdateien aus.
+- **QA-Zugangsdaten**: Feste Dummy-Passwörter durch pro Prozess generierte Zufallswerte ersetzt.
 
 ## [0.7.6] — 2026-07-29
 

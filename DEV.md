@@ -3,10 +3,10 @@
 ## Quick-Start
 
 ```bash
-npm install
+npm ci
 npm run dev          # Vite + Electron
-npm test             # 251 Tests in ~2.5s
-npm run build        # Client + Engine + Electron bauen
+npm test             # 258 Tests
+npm run build        # alle Workspaces bauen und Client typprüfen
 ```
 
 ## Architektur-Überblick
@@ -72,6 +72,24 @@ Base(Hand-Kategorie) + Position + Board-Texture + Gegner-Reads
 4. UI: Setup-Screen um Variantenauswahl erweitern
 
 Der Bot-Stack (Scoring, Habits, Mental State, Reads) arbeitet auf dem generischen `VariantHandAssessment`-Interface — keine Änderungen nötig.
+
+### Ruhenden Server-Prototyp lokal starten
+
+Der Server gehört nicht zum v1-Laufzeitpfad und wird von `npm run dev` nicht
+gestartet. Für eine bewusste lokale Ausführung müssen mindestens ein starkes
+JWT-Secret und ein lokaler Datenbankpfad gesetzt werden:
+
+```bash
+export JWT_SECRET="$(openssl rand -hex 32)"
+export DB_PATH="./.local-data/cpcdigital.db"
+npm run dev --workspace @cpc/server
+```
+
+Ohne `HOST` bindet der Prozess ausschließlich an `127.0.0.1`. Für eine
+Container- oder Netzwerkfreigabe müssen `HOST`, `CLIENT_ORIGIN`, TLS am
+vorgeschalteten Proxy und die Persistenz bewusst konfiguriert werden. History-
+und Statistik-Endpunkte verlangen einen gültigen Bearer-Token. Die
+Beispielvariablen stehen in [`.env.example`](.env.example).
 
 ### Game-Loop
 
@@ -151,9 +169,9 @@ Jeder Bot durchläuft pro Entscheidung ~15 Modifier-Funktionen, die additive Bei
 
 ## Tests
 
-- `npm test` führt 251 Tests in ~2.5s aus (Vitest)
+- `npm test` führt 258 Tests aus (Vitest)
 - Testdateien liegen neben den Source-Dateien (`*.test.ts`)
-- Engine-Tests separat in `packages/poker-engine/`
+- Client-, Engine- und Server-Konfigurationstests laufen in getrennten Workspaces
 - Kalibrierung ist NICHT Teil der Test-Suite (Laufzeit), sondern separates Skript
 
 ## Debug-Modus
@@ -186,9 +204,32 @@ Für spätere Binärpakete gilt insbesondere:
 - Lizenzen und erforderliche Hinweise gebündelter Drittanbieterkomponenten erhalten
 - bei einer modifizierten netzwerkfähigen v2-Version einen gut sichtbaren kostenlosen Source-Zugang bereitstellen
 
-Das eigenständige Demo-Repository ist kein Teil dieses Repositorys. Es weist
-`AGPL-3.0-only` separat aus und wird über `scripts/sync-demo.sh` aus einer
-expliziten Positivliste erzeugt.
+Bis zum öffentlichen Cutover ist das eigenständige Demo-Repository nicht Teil
+dieses Repositorys. Es weist `AGPL-3.0-only` separat aus und wird über
+`scripts/sync-demo.sh` aus einer expliziten Positivliste erzeugt.
+
+Der künftige direkte Pages-Build liegt in `.github/workflows/pages.yml`. Er
+deployt ausschließlich `packages/client/dist`, bettet dieses Repository als
+Source-Link ein und läuft nur, wenn GitHub das Repository als öffentlich meldet.
+
+## Public-Release-Checkliste
+
+Vor der Umstellung des Hauptrepositorys auf öffentlich:
+
+1. vollständigen Secret-Scan über Arbeitsbaum und Git-Historie ausführen
+2. `npm ci --ignore-scripts`, `npm test`, `npm run build` und `npm audit` prüfen
+3. kontrollieren, dass lokale Datenbanken, `.env`-Dateien und Referenzordner nie
+   getrackt wurden
+4. offene 0.7.7-Release-Gates in der Roadmap abschließen und Release taggen
+5. Repository-Sichtbarkeit erst nach expliziter Freigabe ändern
+6. Secret Scanning, Push Protection, CodeQL und Pages auf GitHub aktivieren
+7. Pages-Bundle auf Version, AGPL-Hinweis und Source-Link prüfen
+8. bisheriges Demo-Repository zunächst auf eine Weiterleitung reduzieren und
+   erst nach einer Übergangszeit archivieren
+
+Der aktuelle technische Befund ist im
+[Public-Readiness-Audit vom 29.07.2026](security/audits/2026-07-29-public-readiness.md)
+dokumentiert.
 
 ## Bekannte Limitationen
 
@@ -198,5 +239,5 @@ expliziten Positivliste erzeugt.
 - **Persistenter Roster**: Bot-Identities werden in localStorage gespeichert. Nach Browser-Daten-Löschung wird ein neuer Roster generiert.
 - **Lokales Hand-Archiv**: Die letzten 200 Replays liegen in localStorage und gehen beim Löschen der Browser-Daten verloren.
 - **Electron-only Replay-Fenster**: Separate BrowserWindows funktionieren nur in Electron. Im Browser fällt das Replay auf ein Overlay zurück.
-- **Ruhender Server-Prototyp**: `packages/server` bleibt bewusst für eine mögliche v2-Integration erhalten, wird aber vom Offline-Client nicht importiert und ist kein v1-Produktionspfad.
+- **Ruhender Server-Prototyp**: `packages/server` bleibt bewusst für eine mögliche v2-Integration erhalten, wird aber vom Offline-Client nicht importiert und ist kein v1-Produktionspfad. Seine aktuelle Härtung ersetzt kein Produktions-Sicherheitsaudit.
 - **Formatierung**: Eine gemeinsame Prettier-Konfiguration ist noch nicht eingecheckt und wird in v0.7.7 als eigener mechanischer Commit eingeführt.

@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:24-slim
 
 # native deps for better-sqlite3
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
@@ -17,6 +17,14 @@ RUN npm ci
 COPY packages/shared ./packages/shared
 COPY packages/poker-engine ./packages/poker-engine
 COPY packages/server ./packages/server
+
+RUN mkdir -p /app/data && chown -R node:node /app
+
+USER node
+
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV DB_PATH=/app/data/cpcdigital.db
 
 EXPOSE 3001
 

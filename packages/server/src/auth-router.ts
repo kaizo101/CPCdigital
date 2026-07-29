@@ -1,14 +1,9 @@
 import { Router } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import { serverConfig } from './runtime-config.js'
 import db from './db.js'
 import type { JwtPayload, UserRole } from '@cpc/shared'
-
-export const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production'
-
-if (!process.env.JWT_SECRET) {
-  console.warn('[auth] WARNING: JWT_SECRET not set, using insecure default. Set it in production!')
-}
 
 const router = Router()
 
@@ -45,7 +40,10 @@ router.post('/register', async (req, res) => {
     const userId = result.lastInsertRowid as number
 
     const payload: JwtPayload = { userId, username, role: 'player' }
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+    const token = jwt.sign(payload, serverConfig.jwtSecret, {
+      algorithm: 'HS256',
+      expiresIn: '7d',
+    })
 
     res.status(201).json({ token, username, role: 'player' })
   } catch {
@@ -69,7 +67,10 @@ router.post('/login', async (req, res) => {
   }
 
   const payload: JwtPayload = { userId: user.id, username: user.username, role: user.role }
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+  const token = jwt.sign(payload, serverConfig.jwtSecret, {
+    algorithm: 'HS256',
+    expiresIn: '7d',
+  })
 
   res.json({ token, username: user.username, role: user.role })
 })
