@@ -12,8 +12,8 @@ veröffentlicht.
 
 ## Ergebnisse
 
-- Gitleaks `8.30.1`: 84 Commits einschließlich Readiness-Commit, rund 1,47 MB
-  Git-Historie, keine Leaks
+- Gitleaks `8.30.1`: vollständige erreichbare Git-Historie einschließlich der
+  Public-Readiness-Commits, keine Leaks
 - Gitleaks-Binärarchiv vor Ausführung gegen die offizielle SHA-256-Prüfsumme verifiziert
 - keine getrackten `.env`-, Datenbank-, Private-Key- oder Credential-Dateien
 - keine eingebetteten Zugangsdaten in der Git-Remote-URL
