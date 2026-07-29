@@ -5,8 +5,9 @@
 ```bash
 npm ci
 npm run dev          # Vite + Electron
-npm test             # 258 Tests
+npm test             # 259 Tests
 npm run build        # alle Workspaces bauen und Client typprüfen
+npm run test:responsive
 ```
 
 ## Architektur-Überblick
@@ -169,10 +170,19 @@ Jeder Bot durchläuft pro Entscheidung ~15 Modifier-Funktionen, die additive Bei
 
 ## Tests
 
-- `npm test` führt 258 Tests aus (Vitest)
+- `npm test` führt 259 Tests aus (Vitest)
 - Testdateien liegen neben den Source-Dateien (`*.test.ts`)
 - Client-, Engine- und Server-Konfigurationstests laufen in getrennten Workspaces
+- `npm run test:responsive` startet den gebauten Client in Chrome/Chromium und
+  prüft 1440×1000, 1024×768, 844×390 und 390×844 auf abgeschnittene Karten,
+  Sitze, Actionbar-Überlagerungen und den Portrait-Guard
 - Kalibrierung ist NICHT Teil der Test-Suite (Laufzeit), sondern separates Skript
+
+Der Responsive-Smoke setzt einen vorherigen Client-Build voraus und verwendet
+`CHROME_PATH`, falls Chrome/Chromium nicht an einem üblichen Systempfad liegt.
+Mit `CPC_RESPONSIVE_SCREENSHOT_DIR=/ziel` schreibt er zusätzlich je Viewport
+einen Screenshot. Er definiert bewusst nur äußere Akzeptanzgrenzen und greift
+nicht der für 0.9.0 geplanten TableGeometry-SSOT vor.
 
 ## Debug-Modus
 

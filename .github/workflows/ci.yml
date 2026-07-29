@@ -37,5 +37,8 @@ jobs:
       - name: Build all workspaces
         run: npm run build
 
+      - name: Run responsive browser smoke tests
+        run: npm run test:responsive
+
       - name: Audit dependencies
         run: npm audit --audit-level=high

@@ -16,6 +16,7 @@
     "electron:dev": "npm run build -w @cpc/electron && electron packages/electron",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:responsive": "node scripts/responsive-smoke.mjs",
     "calibrate:bots": "tsx packages/client/src/simulation.ts"
   },
   "devDependencies": {

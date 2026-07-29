@@ -426,10 +426,19 @@ Strategiemeilenstein vereinheitlichen.
 - [x] Secret Scanning und Push Protection nach dem Visibility-Wechsel aktivieren
 - [x] initiale CodeQL-Funde durch Rate Limits für Auth-, History- und Statistik-Routen schließen
 
-- [ ] Phone-Landscape 844×390 ohne Seat-/Actionbar-Überlagerung
-- [ ] Portrait-Guard mit verständlichem Hinweis statt defektem Layout
-- [ ] Desktop 1440×1000 und Tablet 1024×768 mit belastbarem Sicherheitsabstand
-- [ ] Responsive Component-/Browser-Tests für die vier geprüften Viewports
+### Responsive Safety Pass
+
+Bewusst ohne Vorgriff auf die für 0.9.0 geplante TableGeometry-SSOT: Die
+Positions-Presets bleiben unverändert; abgesichert werden nur äußeres Layout,
+Bedienbarkeit und messbare Viewport-Grenzen.
+
+- [x] Phone-Landscape 844×390 ohne Seat-/Actionbar-Überlagerung
+- [x] Portrait-Guard mit verständlichem Hinweis statt defektem Layout
+- [x] Desktop 1440×1000 und Tablet 1024×768 mit belastbarem Sicherheitsabstand
+- [x] Responsive Component-/Browser-Tests für die vier geprüften Viewports
+
+### Tooling und PLO-Kontrolle
+
 - [ ] Prettier-Konfiguration als separaten mechanischen Commit einführen
 - [ ] Dokumentierte Format- und Lint-Befehle ergänzen
 - [ ] PLO TAG/LAG C-Bet und 3-Bet auf Basis der neuen 10k-Baseline gezielt prüfen

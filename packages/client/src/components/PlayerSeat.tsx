@@ -94,7 +94,7 @@ export function PlayerSeat({
   }
 
   return (
-    <div style={{
+    <div className="player-seat" style={{
       position: 'absolute',
       left: position.left,
       top: position.top,
@@ -118,7 +118,7 @@ export function PlayerSeat({
         transition: 'opacity 140ms ease',
       }}>
         {showHoleCards && (
-          <div style={{
+          <div className="player-seat-cards" style={{
             position: 'absolute',
             bottom: 50,
             left: '50%',
@@ -156,7 +156,7 @@ export function PlayerSeat({
           </div>
         )}
 
-        <div style={{
+        <div className="player-seat-panel" style={{
           position: 'relative',
           zIndex: 1,
           minWidth: avatarKey ? 138 : 120,
@@ -171,7 +171,7 @@ export function PlayerSeat({
           transition: 'transform 180ms ease, box-shadow 180ms ease',
         }}>
           {avatarKey && (
-            <div style={{
+            <div className="player-seat-avatar" style={{
               position: 'absolute',
               left: -4,
               top: '50%',
@@ -207,7 +207,7 @@ export function PlayerSeat({
               ) : avatarInitials}
             </div>
           )}
-          <div style={{
+          <div className="player-seat-name" style={{
             color: '#ffffff',
             fontSize: 14,
             fontWeight: 700,
@@ -218,11 +218,11 @@ export function PlayerSeat({
           }}>
             {player.name}
           </div>
-          <div style={{ color: '#d8dde3', fontSize: 14, fontWeight: 700 }}>
+          <div className="player-seat-chips" style={{ color: '#d8dde3', fontSize: 14, fontWeight: 700 }}>
             {formatChips(player.chips, currency)}
           </div>
           {(player.status !== 'waiting' || player.isSittingOut) && (
-            <div style={{
+            <div className="player-seat-status" style={{
               marginTop: 1,
               fontSize: 10,
               color: player.isSittingOut ? '#9cc6ff' : isFolded ? '#d5d0ca' : '#92d767',
@@ -236,7 +236,7 @@ export function PlayerSeat({
       </div>
 
       {isCurrent && (
-        <div style={{
+        <div className="player-seat-turn" style={{
           marginTop: 4,
           display: 'inline-flex',
           alignItems: 'center',

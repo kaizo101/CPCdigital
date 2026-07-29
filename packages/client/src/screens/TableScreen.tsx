@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import type { Card, HandResult, Player, PlayerAction, PublicGameState, TableOptions } from '@cpc/shared'
 import { createRoot } from 'react-dom/client'
 import { SessionStats } from '../components/SessionStats'
+import { PortraitGuard } from '../components/PortraitGuard'
 import { PokerTable, TablePot, CommunityCards, BetStack, TablePositionButtons } from '../components/PokerTable'
 import { PlayerSeat } from '../components/PlayerSeat'
 import { ActionButtons } from '../components/ActionButtons'
@@ -157,7 +158,7 @@ export function TableScreen({
   const canAct = !!(isMyTurn && inActiveHand && bettingContext?.playerId === heroId)
 
   return (
-    <div style={{
+    <div className="table-screen-root" style={{
       maxWidth: '100%',
       width: '100%',
       margin: 0,
@@ -178,6 +179,18 @@ export function TableScreen({
           width: 100%;
           background: #0a0b0d;
           overflow-x: hidden;
+        }
+        .table-screen-root {
+          min-height: 100dvh;
+        }
+        .landscape-game {
+          display: flex;
+          flex: 1;
+          min-height: 0;
+          flex-direction: column;
+        }
+        .portrait-guard {
+          display: none;
         }
         .game-layout {
           position: relative;
@@ -211,7 +224,7 @@ export function TableScreen({
           box-sizing: border-box;
         }
         .table-shell {
-          width: min(100%, calc((100vh - 370px) * 2.38));
+          width: min(100%, calc((100dvh - 472px) * 2.38));
         }
         .bottom-dock {
           position: absolute;
@@ -230,24 +243,65 @@ export function TableScreen({
           z-index: 45;
           padding: 0 0 16px 16px;
         }
-        @media (max-width: 860px) {
-          .game-layout {
-            height: auto;
-            overflow: auto;
-            display: flex;
-            flex-direction: column;
+        @media (orientation: portrait) {
+          .landscape-game {
+            display: none;
           }
-          .table-main,
-          .table-screen {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            height: auto;
-            padding: 0;
+          .portrait-guard {
+            display: grid;
+            flex: 1;
+            min-height: 0;
+            place-items: center;
+            padding: 24px;
+          }
+        }
+        @media (orientation: landscape) and (max-height: 450px) and (max-width: 900px) {
+          html, body, #root {
+            overflow: hidden;
+            height: 100dvh;
+          }
+          .table-screen-root {
+            padding: 6px 8px 8px !important;
+          }
+          .game-toolbar {
+            flex-wrap: nowrap !important;
+            gap: 8px !important;
+            margin-bottom: 4px !important;
+            padding: 6px 8px !important;
+          }
+          .game-toolbar-title {
+            font-size: 18px !important;
+            margin-bottom: 0 !important;
+          }
+          .game-toolbar-meta {
+            font-size: 8px !important;
+            white-space: nowrap;
+          }
+          .game-toolbar-actions {
+            gap: 5px !important;
+          }
+          .game-toolbar-actions button {
+            min-height: 34px;
+            padding: 6px 9px !important;
+            font-size: 10px !important;
+          }
+          .game-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(286px, 35vw);
+            gap: 6px;
+            overflow: hidden;
+          }
+          .table-main {
+            position: static;
+            min-width: 0;
+            padding: 64px 58px 68px;
+          }
+          .table-screen,
+          .table-stage {
+            min-width: 0;
+            height: 100%;
           }
           .table-stage {
-            position: static;
-            min-height: auto;
             padding: 0;
           }
           .table-shell {
@@ -255,54 +309,78 @@ export function TableScreen({
             min-width: 0;
           }
           .bottom-dock {
-            display: flex;
-            flex-direction: column;
+            position: static;
+            min-width: 0;
             padding: 0;
+            align-items: center;
+          }
+          .bottom-dock > div {
+            width: 100% !important;
+            box-sizing: border-box;
+            gap: 4px !important;
+            padding: 4px 6px !important;
+            margin-top: 0 !important;
+          }
+          .bottom-dock button {
+            min-height: 38px !important;
+            font-size: 11px !important;
+            padding: 5px 6px !important;
+          }
+          .bottom-dock input[type="text"] {
+            width: 52px !important;
+            font-size: 11px !important;
+          }
+          .bottom-dock input[type="range"] {
+            min-width: 0;
+          }
+          .player-seat {
+            width: 116px !important;
+          }
+          .player-seat-panel {
+            min-width: 96px !important;
+            min-height: 42px !important;
+            padding: 4px 8px 4px 38px !important;
+          }
+          .player-seat-avatar {
+            left: -2px !important;
+            width: 40px !important;
+            height: 40px !important;
+          }
+          .player-seat-name,
+          .player-seat-chips {
+            font-size: 10px !important;
+          }
+          .player-seat-status {
+            font-size: 7px !important;
+          }
+          .player-seat-turn {
+            margin-top: 2px !important;
+            padding: 2px 5px !important;
+            font-size: 7px !important;
+          }
+          .player-seat-cards {
+            bottom: 36px !important;
+          }
+          .playing-card,
+          .playing-card-back {
+            width: 24px !important;
+            height: 34px !important;
+          }
+          .playing-card--large {
+            width: 30px !important;
+            height: 42px !important;
           }
           .debug-dock {
             position: fixed;
-            padding: 0 0 10px 10px;
-          }
-        }
-        @media (max-height: 450px) {
-          html, body, #root {
-            overflow: hidden;
-            height: 100dvh;
-          }
-          .game-layout {
-            overflow: hidden;
-          }
-          .table-main {
-            padding: 8px 6px 80px;
-          }
-          .table-stage {
-            padding: 0 2px;
-          }
-          .bottom-dock {
-            padding: 0 4px 2px;
-            gap: 4px;
-          }
-          .bottom-dock > div {
-            gap: 4px !important;
-            padding: 4px 6px !important;
-            margin-top: 4px !important;
-          }
-          .bottom-dock > div > div:nth-child(2) {
-            display: none;
-          }
-          .bottom-dock button {
-            min-height: 44px !important;
-            font-size: 14px !important;
-            padding: 6px 8px !important;
-          }
-          .bottom-dock input[type="text"] {
-            width: 60px !important;
-            font-size: 11px !important;
+            padding: 0 0 6px 6px;
           }
         }
       `}</style>
 
-      <div style={{
+      <PortraitGuard onBack={onBack} />
+
+      <div className="landscape-game" data-testid="landscape-game">
+      <div className="game-toolbar" style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -315,12 +393,12 @@ export function TableScreen({
         padding: '10px 12px',
       }}>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 2, letterSpacing: 0.3, color: '#f3f4f6' }}>CPCdigital</div>
-          <div style={{ color: '#8f98a4', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
+          <div className="game-toolbar-title" style={{ fontSize: 24, fontWeight: 700, marginBottom: 2, letterSpacing: 0.3, color: '#f3f4f6' }}>CPCdigital</div>
+          <div className="game-toolbar-meta" style={{ color: '#8f98a4', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
             v{APP_VERSION} · {gameState?.variantId === 'omaha-high' ? 'PLO' : 'NLHE'} · Blinds {options.smallBlind}/{options.bigBlind} · {players.length === 2 ? 'Heads-up' : players.length <= 6 ? '6-max' : 'Full Ring'}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="game-toolbar-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SessionStats
             stats={sessionStats}
             playerNames={playerNames}
@@ -464,6 +542,7 @@ export function TableScreen({
           />
         </div>
         )}
+      </div>
       </div>
     </div>
   )

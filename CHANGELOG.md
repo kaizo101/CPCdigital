@@ -13,6 +13,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Abhängigkeiten**: Vite/Vitest sowie sicherheitsrelevante transitive Express-/Socket.IO-Abhängigkeiten auf behobene Versionen aktualisiert.
 - **Public Readiness**: Sicherheitsrichtlinie, reproduzierbare CI, Dependabot, Dependency Review, CodeQL und ein auf öffentliche Sichtbarkeit begrenztes Pages-Deployment ergänzt; Hauptrepository und offizielle Demo veröffentlicht.
 - **Server-Konfigurationstests**: JWT-Secret, Host- und Port-Validierung in die Root-Test-Suite aufgenommen.
+- **Responsive-Regressionstests**: Produktionsbuild in Chrome/Chromium für Desktop, Tablet, Phone-Landscape und Phone-Portrait auf sichtbare Karten, Sitze, Aktionen und Viewport-Grenzen abgesichert.
+
+### Fixed
+
+- **Responsive Safety Pass**: Actionbar erhält im Phone-Landscape einen eigenen kompakten Bereich, Desktop und Tablet halten Abstand zum Hero-Seat und Portrait zeigt einen verständlichen Querformat-Hinweis.
 
 ### Security
 

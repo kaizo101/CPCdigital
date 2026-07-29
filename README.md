@@ -103,6 +103,13 @@ Alle Pakete bauen und den Client dabei typprüfen:
 npm run build
 ```
 
+Den gebauten Client anschließend in den vier unterstützten Referenz-Viewports
+mit Chrome/Chromium prüfen:
+
+```bash
+npm run test:responsive
+```
+
 Unter Linux kann die gebaute Offline-App außerdem über das vorhandene Startskript gestartet werden:
 
 ```bash

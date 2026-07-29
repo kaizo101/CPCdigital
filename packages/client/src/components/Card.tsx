@@ -15,7 +15,7 @@ export function CardView({ card, large }: { card: Card; large?: boolean }) {
   const rankSize = large ? 'clamp(18px, 2vw, 34px)' : 'clamp(15px, 1.65vw, 28px)'
   const suitCenter = large ? 'clamp(22px, 2.75vw, 48px)' : 'clamp(18px, 2.1vw, 38px)'
   return (
-    <div style={{
+    <div className={large ? 'playing-card playing-card--large' : 'playing-card'} style={{
       display: 'inline-flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -48,7 +48,7 @@ export function CardBack() {
   const w = 'clamp(36px, 3.2vw + 0.4vh, 82px)'
   const h = 'clamp(50px, 4.5vw + 0.6vh, 115px)'
   return (
-    <div style={{
+    <div className="playing-card-back" style={{
       display: 'inline-flex',
       width: w,
       height: h,
