@@ -46,7 +46,8 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const vulnerability = calculateOmahaVulnerability(rank, cleanOuts, communityCards.length)
     const showdownValue = calculateOmahaShowdownValue(rank, drawQuality)
     const relativeStrength = calculateOmahaRelativeStrength(rank, cleanOuts)
-    const drawTypes = identifyOmahaDrawTypes(ownCards, communityCards, rank)
+    const isRiver = communityCards.length === 5
+    const drawTypes = isRiver ? [] : identifyOmahaDrawTypes(ownCards, communityCards, rank)
     const boardGotWorse = false
     const strength = calculateOmahaStrength(rank, drawQuality, cleanOuts, communityCards.length)
     const category = categorizeOmaha(rank, drawQuality, cleanOuts, communityCards)
@@ -288,6 +289,9 @@ function analyzeOmahaBoardTexture(communityCards: Card[]): BoardTexture {
 }
 
 function countFlushDraws(ownCards: Card[], communityCards: Card[]) {
+  const remaining = 5 - communityCards.length
+  if (remaining === 0) return { nutFlushDraw: false, flushDraw: 0, secondFlushDraw: false }
+
   const suitCounts = new Map<string, { count: number; hasAce: boolean }>()
   for (const c of [...communityCards, ...ownCards]) {
     const entry = suitCounts.get(c.suit) ?? { count: 0, hasAce: false }
@@ -296,15 +300,21 @@ function countFlushDraws(ownCards: Card[], communityCards: Card[]) {
     suitCounts.set(c.suit, entry)
   }
 
+  const boardSuits = new Map<string, number>()
+  for (const c of communityCards) {
+    boardSuits.set(c.suit, (boardSuits.get(c.suit) ?? 0) + 1)
+  }
+
   let nutFlushDraw = false
   let flushDraw = 0
   let secondFlushDraw = false
 
-  for (const [, info] of suitCounts) {
-    if (info.count >= 4) {
+  for (const [suit, info] of suitCounts) {
+    const onBoard = boardSuits.get(suit) ?? 0
+    if (info.count >= 4 && onBoard + remaining >= 3) {
       if (info.hasAce) nutFlushDraw = true
       else flushDraw++
-    } else if (info.count === 3 && info.hasAce) {
+    } else if (info.count === 3 && info.hasAce && onBoard + remaining >= 3) {
       secondFlushDraw = true
     }
   }

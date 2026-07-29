@@ -77,7 +77,8 @@ function scoreCheck(context: DecisionContext): ScoredAction {
   const analysis = context.streetAnalysis
 
   // Free card for draw: only benefits non-PFA callers, not the preflop aggressor
-  if (hand.drawTypes.length > 0 && !(analysis && gameView.phase === 'flop' && analysis.iAmPreflopAggressor)) {
+  // Must have remaining cards (not river) and the draw must be mathematically possible
+  if (hand.drawTypes.length > 0 && gameView.phase !== 'river' && !(analysis && gameView.phase === 'flop' && analysis.iAmPreflopAggressor)) {
     contributions.push(factor('hand-strength', 'Free card for draw', 10))
   }
   if (position === 'late') contributions.push(factor('position', 'Late position information', 10))
