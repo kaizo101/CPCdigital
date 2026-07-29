@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { rateLimit } from 'express-rate-limit'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { serverConfig } from './runtime-config.js'
@@ -6,6 +7,20 @@ import db from './db.js'
 import type { JwtPayload, UserRole } from '@cpc/shared'
 
 const router = Router()
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many registration attempts. Please try again later.' },
+})
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Please try again later.' },
+})
 
 interface UserRow {
   id: number
@@ -14,7 +29,7 @@ interface UserRow {
   role: UserRole
 }
 
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   const { username, password } = req.body as { username?: string; password?: string }
 
   if (!username || !password) {
@@ -51,7 +66,7 @@ router.post('/register', async (req, res) => {
   }
 })
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body as { username?: string; password?: string }
 
   if (!username || !password) {

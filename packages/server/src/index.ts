@@ -1,4 +1,5 @@
 import express, { type RequestHandler } from 'express'
+import { rateLimit } from 'express-rate-limit'
 import fs from 'node:fs'
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
@@ -55,6 +56,14 @@ const requireHttpAuth: RequestHandler = (req, res, next) => {
     res.status(401).json({ error: 'Invalid or expired token' })
   }
 }
+
+const authenticatedDataLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' },
+})
 
 // ---------------------------------------------------------------------------
 // Game state
@@ -427,18 +436,18 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', version: appVersion })
 })
 
-app.get('/history', requireHttpAuth, (_req, res) => {
+app.get('/history', authenticatedDataLimiter, requireHttpAuth, (_req, res) => {
   res.json(getHandSummaries())
 })
 
-app.get('/history/:id', requireHttpAuth, (req, res) => {
+app.get('/history/:id', authenticatedDataLimiter, requireHttpAuth, (req, res) => {
   const id = parseInt(req.params.id, 10)
   const record = getHandRecord(id)
   if (!record) { res.status(404).json({ error: 'Not found' }); return }
   res.json(record)
 })
 
-app.get('/stats', requireHttpAuth, (_req, res) => {
+app.get('/stats', authenticatedDataLimiter, requireHttpAuth, (_req, res) => {
   res.json(getSessionStats())
 })
 
