@@ -59,7 +59,7 @@ Weiterleitung und zur Bewahrung ihrer Historie bestehen.
 
 ## Voraussetzungen
 
-- Node.js 24 LTS
+- Node.js 24 LTS (entsprechend [`.nvmrc`](.nvmrc); Node.js 26 wird derzeit nicht unterstützt)
 - npm
 - eine Desktop-Umgebung, in der Electron ausgeführt werden kann
 
@@ -70,6 +70,13 @@ Abhängigkeiten reproduzierbar installieren:
 ```bash
 npm ci
 ```
+
+Das Repository erlaubt die für Electron, esbuild und die nativen
+Server-Abhängigkeiten benötigten Install-Skripte über eine versionsgebundene
+`allowScripts`-Policy. Wurde Electron zuvor mit einer nicht unterstützten
+Node-Version oder blockierten Install-Skripten unvollständig installiert,
+zunächst Node.js 24 aktivieren, `node_modules/electron` entfernen und
+`npm install` erneut ausführen.
 
 Vite und Electron im Entwicklungsmodus starten:
 

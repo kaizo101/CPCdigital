@@ -12,6 +12,8 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "./start.sh",
+    "predev": "node scripts/check-runtime.mjs",
     "dev": "concurrently -n vite,electron -c blue,green \"npm run dev -w @cpc/client\" \"wait-on http://localhost:5173 && npm run dev -w @cpc/electron\"",
     "electron:dev": "npm run build -w @cpc/electron && electron packages/electron",
     "build": "npm run build --workspaces --if-present",
@@ -24,5 +26,11 @@
     "electron": "^41.1.1",
     "typescript": "^5.4.0",
     "wait-on": "^7.2.0"
+  },
+  "allowScripts": {
+    "electron@41.1.1": true,
+    "esbuild@0.28.1": true,
+    "bcrypt@6.0.0": true,
+    "better-sqlite3@12.8.0": true
   }
 }

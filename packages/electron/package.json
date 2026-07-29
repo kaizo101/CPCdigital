@@ -5,6 +5,7 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
+    "start": "electron .",
     "dev": "tsc && electron .",
     "build": "tsc"
   },

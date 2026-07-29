@@ -2,6 +2,9 @@
 
 ## Quick-Start
 
+Node.js 24 LTS aus [`.nvmrc`](.nvmrc) verwenden; Node.js 26 liegt außerhalb des
+unterstützten Bereichs.
+
 ```bash
 npm ci
 npm run dev          # Vite + Electron
@@ -9,6 +12,12 @@ npm test             # 259 Tests
 npm run build        # alle Workspaces bauen und Client typprüfen
 npm run test:responsive
 ```
+
+Die versionsgebundene `allowScripts`-Policy in `package.json` erlaubt nur die
+benötigten Install-Skripte von Electron, esbuild, bcrypt und better-sqlite3.
+Bei Updates dieser Pakete muss die freigegebene Version bewusst mit aktualisiert
+werden. `npm run dev` und `./start.sh` prüfen vor dem Start, ob das Electron-Binary
+vollständig installiert ist.
 
 ## Architektur-Überblick
 

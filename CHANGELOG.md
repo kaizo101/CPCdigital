@@ -9,6 +9,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 ### Added
 
 - **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright und Beitragsregeln dokumentiert.
+- **Lokaler Electron-Start**: Versionsgebundene Freigaben für erforderliche Dependency-Install-Skripte und eine Runtime-Prüfung mit konkreter Reparaturanweisung ergänzt.
 - **Demo-Sicherheit**: Öffentlichen Demo-Sync zunächst auf eine Positivliste umgestellt und nach dem Pages-Cutover durch eine statische Weiterleitung auf das Hauptrepository ersetzt.
 - **Abhängigkeiten**: Vite/Vitest sowie sicherheitsrelevante transitive Express-/Socket.IO-Abhängigkeiten auf behobene Versionen aktualisiert.
 - **Public Readiness**: Sicherheitsrichtlinie, reproduzierbare CI, Dependabot, Dependency Review, CodeQL und ein auf öffentliche Sichtbarkeit begrenztes Pages-Deployment ergänzt; Hauptrepository und offizielle Demo veröffentlicht.
@@ -17,6 +18,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Fixed
 
+- **Startskript**: Build und Electron-Start verwenden die definierten npm-Workspace-Skripte und brechen bei Fehlern zuverlässig ab.
 - **Responsive Safety Pass**: Actionbar erhält im Phone-Landscape einen eigenen kompakten Bereich, Desktop und Tablet halten Abstand zum Hero-Seat und Portrait zeigt einen verständlichen Querformat-Hinweis.
 
 ### Security
