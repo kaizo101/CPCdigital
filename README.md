@@ -125,6 +125,26 @@ Die laufende Offline-App importiert oder benötigt das Server-Paket nicht. Es bl
 - [Roadmap](ROADMAP.md) — geplante Entwicklungsphasen und langfristige Vision
 - [Changelog](CHANGELOG.md) — tatsächlich veröffentlichte Änderungen je Version
 - [Entwicklerdokumentation](DEV.md) — Architektur, Kalibrierung, Debugging
+- [Beitragsrichtlinien](CONTRIBUTING.md) — Rechte und Lizenzierung eingereichter Beiträge
+
+## Lizenz
+
+CPCdigital steht unter der
+[GNU Affero General Public License Version 3](LICENSE) (`AGPL-3.0-only`).
+Copyright © 2026 Lukas Schäfer.
+
+Der Lizenzumfang umfasst den Quellcode und die für CPCdigital erstellten
+Projektassets dieses Repositorys, einschließlich der mit ChatGPT erzeugten
+Avatarbilder. Abhängigkeiten und sonstiges Material Dritter behalten ihre
+jeweiligen Lizenzen; Details stehen in [NOTICE.md](NOTICE.md).
+
+Wer veränderte Versionen verteilt, muss die Bedingungen der AGPLv3 einschließlich
+der Bereitstellung des korrespondierenden Quellcodes erfüllen. Für eine später
+über ein Netzwerk angebotene modifizierte Version gilt zusätzlich Abschnitt 13
+der AGPLv3.
+
+Die separat veröffentlichte Demo besitzt ein eigenes Repository und wird durch
+diese Lizenzierung nicht automatisch erfasst.
 
 ## Hinweis
 

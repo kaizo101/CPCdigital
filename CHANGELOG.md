@@ -6,6 +6,10 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+### Added
+
+- **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright, Beitragsregeln und Trennung zur eigenständigen Demo dokumentiert.
+
 ## [0.7.6] — 2026-07-29
 
 ### Added

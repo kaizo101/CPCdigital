@@ -172,6 +172,23 @@ Der Session-Debug-Export (JSON) enthält den kompletten Spielverlauf inkl. priva
 3. Mit Step-Through und "Cards on" den Spielverlauf nachvollziehen
 4. Bot-Entscheidungsgründe im Debug-Inspector prüfen
 
+## Lizenz und Distribution
+
+Das Repository ist unter `AGPL-3.0-only` lizenziert. Die vollständigen Bedingungen
+stehen in [`LICENSE`](LICENSE), Copyright- und Scope-Angaben in
+[`NOTICE.md`](NOTICE.md). Beiträge werden gemäß
+[`CONTRIBUTING.md`](CONTRIBUTING.md) unter derselben Lizenz angenommen.
+
+Für spätere Binärpakete gilt insbesondere:
+
+- Lizenztext und erforderliche Copyright-Hinweise mit ausliefern
+- den exakt zum Binärpaket gehörenden korrespondierenden Quellcode gleichwertig zugänglich machen
+- Lizenzen und erforderliche Hinweise gebündelter Drittanbieterkomponenten erhalten
+- bei einer modifizierten netzwerkfähigen v2-Version einen gut sichtbaren kostenlosen Source-Zugang bereitstellen
+
+Das eigenständige Demo-Repository ist kein Teil dieses Repositorys und muss seine
+Lizenz separat ausweisen.
+
 ## Bekannte Limitationen
 
 - **Scoring ist additiv**: Beiträge werden summiert, kein Clamping zwischen Schichten. Ein extremer Habit (+30) kann alle anderen Modifier überschreiben.
