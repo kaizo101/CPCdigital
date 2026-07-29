@@ -1,57 +1,79 @@
 #!/usr/bin/env bash
-# Sync CPCdigital source → cpcdigital-demo for GitHub Pages deployment.
-# The demo repo's CI (.github/workflows/deploy.yml) builds and deploys automatically.
-# Run this after each release to update the demo's source code.
+# Build a minimal, public-safe CPCdigital web-demo mirror and optionally publish it.
 set -euo pipefail
 
-DEMO_DIR="/tmp/cpcdigital-demo"
-DEMO_REPO="https://github.com/kaizo101/cpcdigital-demo.git"
+SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+DEMO_DIR="${CPC_DEMO_DIR:-/tmp/cpcdigital-demo}"
+DEMO_REPO="${CPC_DEMO_REPO:-https://github.com/kaizo101/cpcdigital-demo.git}"
+PUSH_CHANGES=false
 
-echo "=== Syncing CPCdigital → cpcdigital-demo ==="
+if [[ "${1:-}" == "--push" ]]; then
+  PUSH_CHANGES=true
+elif [[ -n "${1:-}" ]]; then
+  echo "Usage: $0 [--push]"
+  exit 2
+fi
 
-if [ -d "$DEMO_DIR/.git" ]; then
-  echo "Pulling demo repo..."
+echo "=== Preparing CPCdigital public demo ==="
+
+if [[ -d "$DEMO_DIR/.git" ]]; then
+  if [[ -n "$(git -C "$DEMO_DIR" status --porcelain)" ]]; then
+    echo "Refusing to overwrite a dirty demo checkout: $DEMO_DIR"
+    exit 1
+  fi
   git -C "$DEMO_DIR" pull --ff-only
 else
-  echo "Cloning demo repo..."
   git clone "$DEMO_REPO" "$DEMO_DIR"
 fi
 
-echo "Syncing source files (excluding .git, .github, secrets, server)..."
-rsync -av --delete \
-  --exclude='.git' \
-  --exclude='.gitignore' \
-  --exclude='.github' \
-  --exclude='node_modules' \
-  --exclude='packages/server' \
-  --exclude='secrets' \
-  --exclude='avatar-workflow.json' \
-  --exclude='ComfyUI' \
-  --exclude='.tmp-frames' \
-  --exclude='.tmp-ps-frames' \
-  --exclude='Cards (large)' \
-  --exclude='*.mp4' \
-  --exclude='*.webm' \
-  --exclude='docker-compose.yml' \
-  --exclude='data.db' \
-  --exclude='data.db-shm' \
-  --exclude='data.db-wal' \
-  --exclude='.claude' \
-  "$(dirname "$0")/../" "$DEMO_DIR/"
+STAGING_DIR="$(mktemp -d /tmp/cpcdigital-demo-stage.XXXXXX)"
+trap 'rm -rf "$STAGING_DIR"' EXIT
 
-echo "Restoring demo's .github/ (CI workflow)..."
-git -C "$DEMO_DIR" checkout HEAD -- .github/ 2>/dev/null || true
+mkdir -p "$STAGING_DIR/.github/workflows" "$STAGING_DIR/packages"
 
-echo "Checking for changes..."
-cd "$DEMO_DIR"
-if git diff --quiet && git diff --cached --quiet; then
-  echo "No changes — demo is up to date."
+# Explicit allowlist: only files required to build, inspect and license the web demo.
+cp "$SOURCE_DIR/LICENSE" "$STAGING_DIR/LICENSE"
+cp "$SOURCE_DIR/CONTRIBUTING.md" "$STAGING_DIR/CONTRIBUTING.md"
+cp "$SOURCE_DIR/tsconfig.base.json" "$STAGING_DIR/tsconfig.base.json"
+cp "$SOURCE_DIR/package-lock.json" "$STAGING_DIR/package-lock.json"
+cp "$SOURCE_DIR/scripts/demo/package.json" "$STAGING_DIR/package.json"
+cp "$SOURCE_DIR/scripts/demo/README.md" "$STAGING_DIR/README.md"
+cp "$SOURCE_DIR/scripts/demo/NOTICE.md" "$STAGING_DIR/NOTICE.md"
+cp "$SOURCE_DIR/scripts/demo/gitignore" "$STAGING_DIR/.gitignore"
+cp "$SOURCE_DIR/scripts/demo/deploy.yml" "$STAGING_DIR/.github/workflows/deploy.yml"
+
+for package_name in client poker-engine shared; do
+  rsync -a \
+    --exclude='node_modules' \
+    --exclude='dist' \
+    "$SOURCE_DIR/packages/$package_name/" "$STAGING_DIR/packages/$package_name/"
+done
+
+# Make the public repository exactly match the allowlisted staging tree.
+rsync -a --delete --exclude='.git' "$STAGING_DIR/" "$DEMO_DIR/"
+
+echo "Reconciling the lockfile for the reduced web-only workspace..."
+npm install --package-lock-only --ignore-scripts --workspaces=false --prefix "$DEMO_DIR"
+
+echo "Installing, testing and building the public demo..."
+npm ci --ignore-scripts --prefix "$DEMO_DIR"
+npm test --prefix "$DEMO_DIR"
+npm run build --prefix "$DEMO_DIR"
+
+if [[ -z "$(git -C "$DEMO_DIR" status --porcelain)" ]]; then
+  echo "No changes — demo is already up to date."
   exit 0
 fi
 
-echo "Changes detected. Committing..."
-git add -A
-git commit -m "Sync from CPCdigital $(date +%Y-%m-%d)" || true
-git push
+git -C "$DEMO_DIR" status --short
 
-echo "=== Done. CI will deploy to GitHub Pages. ==="
+if [[ "$PUSH_CHANGES" != true ]]; then
+  echo "Validation passed. Review $DEMO_DIR; publish from a clean checkout with --push."
+  exit 0
+fi
+
+git -C "$DEMO_DIR" add -A
+git -C "$DEMO_DIR" commit -m "Sync CPCdigital v0.7.6 and add AGPL-3.0-only"
+git -C "$DEMO_DIR" push origin master
+
+echo "=== Demo pushed; GitHub Pages deployment has been triggered. ==="

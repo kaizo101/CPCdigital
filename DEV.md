@@ -186,8 +186,9 @@ Für spätere Binärpakete gilt insbesondere:
 - Lizenzen und erforderliche Hinweise gebündelter Drittanbieterkomponenten erhalten
 - bei einer modifizierten netzwerkfähigen v2-Version einen gut sichtbaren kostenlosen Source-Zugang bereitstellen
 
-Das eigenständige Demo-Repository ist kein Teil dieses Repositorys und muss seine
-Lizenz separat ausweisen.
+Das eigenständige Demo-Repository ist kein Teil dieses Repositorys. Es weist
+`AGPL-3.0-only` separat aus und wird über `scripts/sync-demo.sh` aus einer
+expliziten Positivliste erzeugt.
 
 ## Bekannte Limitationen
 

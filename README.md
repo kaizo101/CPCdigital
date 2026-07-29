@@ -143,8 +143,8 @@ der Bereitstellung des korrespondierenden Quellcodes erfüllen. Für eine späte
 über ein Netzwerk angebotene modifizierte Version gilt zusätzlich Abschnitt 13
 der AGPLv3.
 
-Die separat veröffentlichte Demo besitzt ein eigenes Repository und wird durch
-diese Lizenzierung nicht automatisch erfasst.
+Die separat veröffentlichte Demo besitzt ein eigenes Repository und wird dort
+eigenständig unter `AGPL-3.0-only` mit dem zugehörigen Web-Quellcode angeboten.
 
 ## Hinweis
 

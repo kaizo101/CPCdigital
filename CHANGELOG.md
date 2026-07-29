@@ -9,6 +9,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 ### Added
 
 - **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright, Beitragsregeln und Trennung zur eigenständigen Demo dokumentiert.
+- **Demo-Sicherheit**: Öffentlichen Demo-Sync auf eine Positivliste umgestellt, AGPL-/Source-Hinweis ergänzt und CI um Tests vor dem GitHub-Pages-Deployment erweitert.
+- **Abhängigkeiten**: Vite/Vitest sowie sicherheitsrelevante transitive Express-/Socket.IO-Abhängigkeiten auf behobene Versionen aktualisiert.
 
 ## [0.7.6] — 2026-07-29
 

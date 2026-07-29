@@ -1,0 +1,21 @@
+{
+  "name": "cpcdigital-demo",
+  "productName": "CPCdigital Demo",
+  "private": true,
+  "version": "0.7.6",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "workspaces": [
+    "packages/client",
+    "packages/poker-engine",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @cpc/client",
+    "build": "npm run build -w @cpc/client",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}

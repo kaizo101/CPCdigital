@@ -1,6 +1,6 @@
 import type { TableOptions } from '@cpc/shared'
 import { calculateStartingStack, clamp, type DisplayCurrency } from '../utils/format'
-import { APP_VERSION } from '../app-version'
+import { APP_SOURCE_URL, APP_VERSION } from '../app-version'
 
 const BLIND_PRESETS = [
   { smallBlind: 0.01, bigBlind: 0.02 },
@@ -140,6 +140,31 @@ export function SetupScreen({
             </span>
           </div>
           <p style={{ color: '#8f98a4', margin: 0 }}>Texas Hold'em gegen Bots</p>
+          <div style={{ color: '#6f7884', fontSize: 10, marginTop: 7 }}>
+            Freie Software ·{' '}
+            <a
+              href="https://www.gnu.org/licenses/agpl-3.0.html"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: '#8f98a4' }}
+            >
+              AGPL-3.0-only
+            </a>
+            {' '}· ohne Gewährleistung
+            {APP_SOURCE_URL && (
+              <>
+                {' '}·{' '}
+                <a
+                  href={APP_SOURCE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: '#a5dff5' }}
+                >
+                  Quellcode
+                </a>
+              </>
+            )}
+          </div>
         </header>
 
         <div className="setup-grid">

@@ -15,4 +15,5 @@ Lizenzen. Deren Metadaten sind insbesondere in den Package-Manifests und im
 Lockfile dokumentiert.
 
 Das separate Repository `cpcdigital-demo` gehört nicht automatisch zu diesem
-Lizenzumfang; für die Demo gilt ausschließlich die dort ausgewiesene Lizenz.
+Lizenzumfang. Es wird eigenständig unter `AGPL-3.0-only` mit einem auf den
+öffentlichen Webbuild begrenzten Quellumfang bereitgestellt.
