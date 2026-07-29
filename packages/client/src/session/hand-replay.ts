@@ -22,6 +22,7 @@ export interface ReplayFrame {
   pot: number
   playerStacks: Record<string, number>
   playerStatuses: Record<string, string>
+  playerBets?: Record<string, number>
   isRevealed: boolean
   index: number
   total: number
@@ -38,7 +39,36 @@ export interface HandReplay {
   frames: ReplayFrame[]
   results: HandResult[]
   totalPot: number
+  pots?: Array<{ potIndex: number; potType: 'main' | 'side'; amount: number }>
   botDecisions: BotDecisionInfo[]
+}
+
+const HAND_REPLAY_ARCHIVE_KEY = 'cpcdigital-hand-history'
+const MAX_ARCHIVED_HANDS = 200
+
+export function loadHandReplayArchive(): HandReplay[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(HAND_REPLAY_ARCHIVE_KEY) ?? '[]')
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((replay): replay is HandReplay =>
+      typeof replay === 'object'
+      && replay !== null
+      && typeof (replay as HandReplay).handNumber === 'number'
+      && Array.isArray((replay as HandReplay).frames)
+    ).slice(-MAX_ARCHIVED_HANDS)
+  } catch {
+    return []
+  }
+}
+
+export function appendHandReplayToArchive(replay: HandReplay): HandReplay[] {
+  const archive = [...loadHandReplayArchive(), replay].slice(-MAX_ARCHIVED_HANDS)
+  try {
+    localStorage.setItem(HAND_REPLAY_ARCHIVE_KEY, JSON.stringify(archive))
+  } catch {
+    // The in-memory session replay remains available if storage is unavailable.
+  }
+  return archive
 }
 
 function cardToString(card: Card): string {
@@ -80,7 +110,8 @@ export function formatHandHistory(replay: HandReplay): string {
     `CPCdigital Hand #${replay.handNumber}: ${replay.variant} `
     + `(${formatAmount(sb)}/${formatAmount(bb)}) - ${replay.date}`
   )
-  lines.push(`Table 'CPCdigital' ${replay.players.length}-max Seat #${replay.players[0].seat + 1} is the button`)
+  const dealer = replay.players.find(player => player.id === replay.dealerId)
+  lines.push(`Table 'CPCdigital' ${replay.players.length}-max Seat #${(dealer?.seat ?? 0) + 1} is the button`)
   for (const p of replay.players) {
     lines.push(`Seat ${p.seat + 1}: ${p.name} (${formatAmount(p.chips)} in chips)`)
   }
@@ -147,6 +178,15 @@ export function formatHandHistory(replay: HandReplay): string {
         case 'all-in':
           lines.push(`${name}: raises to ${formatAmount(frame.amount ?? 0)} and is all-in`)
           break
+        case 'all-in-call':
+          lines.push(`${name}: calls ${formatAmount(frame.amount ?? 0)} and is all-in`)
+          break
+        case 'all-in-bet':
+          lines.push(`${name}: bets ${formatAmount(frame.amount ?? 0)} and is all-in`)
+          break
+        case 'all-in-raise':
+          lines.push(`${name}: raises to ${formatAmount(frame.amount ?? 0)} and is all-in`)
+          break
       }
     }
 
@@ -171,11 +211,13 @@ export function formatHandHistory(replay: HandReplay): string {
       lines.push(`Board [${cardsToString(accumulatedBoard)}]`)
     }
     for (const p of replay.players) {
-      const result = replay.results.find(r => r.playerId === p.id)
-      if (result) {
-        const hand = result.handName ? ` (${result.handName})` : ''
-        if (result.amount > 0) {
-          lines.push(`Seat ${p.seat + 1}: ${p.name} collected (${formatAmount(result.amount)})${hand}`)
+      const playerResults = replay.results.filter(result => result.playerId === p.id)
+      if (playerResults.length > 0) {
+        const amount = playerResults.reduce((sum, result) => sum + result.amount, 0)
+        const handName = playerResults.find(result => result.handName)?.handName
+        const hand = handName ? ` (${handName})` : ''
+        if (amount > 0) {
+          lines.push(`Seat ${p.seat + 1}: ${p.name} collected (${formatAmount(amount)})${hand}`)
         } else {
           lines.push(`Seat ${p.seat + 1}: ${p.name} mucked${hand}`)
         }
@@ -209,24 +251,55 @@ export function buildReplayFromSession(
   const frames: ReplayFrame[] = []
   let stepIndex = 0
   let lastPot = 0
+  const playerStacks = Object.fromEntries(players.map(player => [player.id, player.chips]))
+  const playerStatuses = Object.fromEntries(players.map(player => [player.id, 'active']))
+  const playerBets = Object.fromEntries(players.map(player => [player.id, 0]))
+  const potsByIndex = new Map<number, { potIndex: number; potType: 'main' | 'side'; amount: number }>()
+  for (const { event } of handEvents) {
+    if (event.type !== 'PotAwarded') continue
+    const existing = potsByIndex.get(event.potIndex)
+    if (existing) existing.amount += event.amount
+    else potsByIndex.set(event.potIndex, {
+      potIndex: event.potIndex,
+      potType: event.potType,
+      amount: event.amount,
+    })
+  }
+
+  const snapshot = () => ({
+    playerStacks: { ...playerStacks },
+    playerStatuses: { ...playerStatuses },
+    playerBets: { ...playerBets },
+  })
 
   for (const { event } of handEvents) {
-    if (event.type === 'PlayerActed') {
+    if (event.type === 'BlindPosted') {
+      playerStacks[event.playerId] = (playerStacks[event.playerId] ?? 0) - event.amount
+      playerBets[event.playerId] = event.totalBet
+      lastPot += event.amount
+    } else if (event.type === 'PlayerActed') {
       const action = event.action
       let actionLabel: string = action.type
       let amount: number | undefined
 
       if (action.type === 'raise') {
-        actionLabel = action.type
+        actionLabel = event.currentBetBefore === 0 ? 'bet' : 'raise'
         amount = event.totalBet
       } else if (action.type === 'all-in') {
-        actionLabel = 'all-in'
-        amount = event.totalBet
+        const aggressive = event.totalBet > event.currentBetBefore
+        actionLabel = aggressive
+          ? event.currentBetBefore === 0 ? 'all-in-bet' : 'all-in-raise'
+          : 'all-in-call'
+        amount = aggressive ? event.totalBet : event.amount
       } else if (action.type === 'call') {
-        amount = event.totalBet
+        amount = event.amount
       }
       const betAmount = event.amount  // incremental chips committed
 
+      playerStacks[event.playerId] = (playerStacks[event.playerId] ?? 0) - event.amount
+      playerBets[event.playerId] = event.totalBet
+      if (action.type === 'fold') playerStatuses[event.playerId] = 'folded'
+      if (action.type === 'all-in') playerStatuses[event.playerId] = 'all-in'
       lastPot = event.potAfter
       frames.push({
         type: 'action',
@@ -239,25 +312,25 @@ export function buildReplayFromSession(
         betAmount,
         communityCards: [],
         pot: event.potAfter,
-        playerStacks: {},
-        playerStatuses: {},
+        ...snapshot(),
         isRevealed: false,
         index: stepIndex++,
         total: 0,
       })
     } else if (event.type === 'CommunityCardDealt') {
+      for (const playerId of Object.keys(playerBets)) playerBets[playerId] = 0
       frames.push({
         type: 'community',
         phase: event.phase,
         communityCards: event.cards,
         pot: lastPot,
-        playerStacks: {},
-        playerStatuses: {},
+        ...snapshot(),
         isRevealed: false,
         index: stepIndex++,
         total: 0,
       })
     } else if (event.type === 'CardsRevealed') {
+      for (const playerId of Object.keys(playerBets)) playerBets[playerId] = 0
       const cards = holeCards[event.playerId]
       frames.push({
         type: 'showdown',
@@ -267,26 +340,33 @@ export function buildReplayFromSession(
         actorCards: cards ?? undefined,
         communityCards: [],
         pot: lastPot,
-        playerStacks: {},
-        playerStatuses: {},
+        ...snapshot(),
         isRevealed: true,
         index: stepIndex++,
         total: 0,
       })
-    } else if (event.type === 'HandEnded') {
-      lastPot = event.totalPot
+    } else if (event.type === 'UncalledBetReturned') {
+      playerStacks[event.playerId] = (playerStacks[event.playerId] ?? 0) + event.amount
+      playerBets[event.playerId] = Math.max(0, (playerBets[event.playerId] ?? 0) - event.amount)
+      lastPot = Math.max(0, lastPot - event.amount)
       frames.push({
         type: 'result',
-        phase: 'result',
+        phase: event.phase,
+        action: 'uncalled',
+        actorId: event.playerId,
+        actorName: playerNames.get(event.playerId) ?? event.playerId,
+        amount: event.amount,
         communityCards: [],
-        pot: event.totalPot,
-        playerStacks: {},
-        playerStatuses: {},
+        pot: lastPot,
+        ...snapshot(),
         isRevealed: false,
         index: stepIndex++,
         total: 0,
       })
     } else if (event.type === 'PotAwarded') {
+      playerStacks[event.playerId] = (playerStacks[event.playerId] ?? 0) + event.amount
+      for (const playerId of Object.keys(playerBets)) playerBets[playerId] = 0
+      lastPot = Math.max(0, lastPot - event.amount)
       frames.push({
         type: 'result',
         phase: 'result',
@@ -296,8 +376,19 @@ export function buildReplayFromSession(
         amount: event.amount,
         communityCards: !event.isSplit ? [] : [],
         pot: lastPot,
-        playerStacks: {},
-        playerStatuses: {},
+        ...snapshot(),
+        isRevealed: false,
+        index: stepIndex++,
+        total: 0,
+      })
+    } else if (event.type === 'HandEnded') {
+      lastPot = 0
+      frames.push({
+        type: 'result',
+        phase: 'result',
+        communityCards: [],
+        pot: 0,
+        ...snapshot(),
         isRevealed: false,
         index: stepIndex++,
         total: 0,
@@ -320,6 +411,7 @@ export function buildReplayFromSession(
     frames,
     results,
     totalPot: results.reduce((sum, r) => sum + (r.amount ?? 0), 0),
+    pots: [...potsByIndex.values()].sort((left, right) => left.potIndex - right.potIndex),
     botDecisions: botDecisions ?? [],
   }
 }

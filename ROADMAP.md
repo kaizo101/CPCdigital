@@ -122,7 +122,9 @@ PokerPlayer
 - [x] Infrastructure für Generation, Persistenz und Session-Auswahl (Roster-Grundlage seit v0.4 stabil)
 - [x] persistenten lokalen Bot-Roster mit über mehrere Sessions wiederkehrenden Identitäten aufbauen
 
-> **Roster-Erweiterung (44→80+):** Läuft inkrementell über mehrere Releases. Pro Minor-Version kommen 5–10 neue Identitäten dazu. Ziel ist keine feste Zahl, sondern ausreichende Abwechslung für Sessions ohne schnelle Wiederholungen.
+> **Roster-Erweiterung (44→80+):** Läuft inkrementell und qualitätsgetrieben.
+> Neue Identitäten werden ergänzt, wenn Session-Wiederholungen oder fehlende
+> Charakterprofile einen konkreten Bedarf zeigen; es gibt keine Quote pro Release.
 - [x] Identitäts-Seed, Session-Varianz und Hand-/Decision-RNG getrennt und reproduzierbar verwenden
 - [x] wiedererkennbare Gewohnheiten ermöglichen, ohne Entscheidungen vollständig vorhersehbar zu machen
 - [x] Archetyp und Skill nicht durch Namen oder offen sichtbare Kategorien verraten
@@ -310,20 +312,25 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 ---
 
-## ✅ 0.7.5 — UI-Skalierung & Responsive Layout (abgeschlossen)
+## ⚠️ 0.7.5 — UI-Skalierung & Responsive Layout (teilweise regressiert)
 
 **Ziel:** Grundgerüst für skalierbares Layout — Desktop, Tablet, Phone-Landscape.
 
-- [x] Actionbar-Overlap behoben (Bottom-Padding 260px, Formel 470px)
-- [x] Cards: Clamp-Minimum reduziert (36/50px statt 46/64px)
-- [x] ActionButtons: minHeight 74→56px, fontSize 18→16
-- [x] Touch: Long-Press (600ms) öffnet Rebuy-Menü
-- [x] Landscape-Lock + Media Query (`max-height: 450px`)
-- [x] Short-Stack-Rebuy: Bot-Zombies mit 0.5 BB verhindert
-- [x] Grundlegende UI-Skalierung für 3 Ziel-Plattformen
-- [x] Portrait-Modus: bewusst nicht supported (zu schmal für Poker-Layout)
+- [x] Cards: Clamp-Minimum reduziert (36/50 px statt 46/64 px)
+- [x] Action Buttons: `minHeight` 74→56 px, `fontSize` 18→16 px
+- [x] Touch: Long-Press (600 ms) öffnet das Rebuy-Menü
+- [x] Short-Stack-Rebuy: Bot-Zombies mit 0,5 BB verhindert
+- [ ] **Teilweise:** Actionbar-Abstand auf Desktop und Tablet vorhanden, aber sehr knapp
+- [ ] **Teilweise:** `max-height: 450px`-Regeln vorhanden, Phone-Landscape bleibt jedoch unbenutzbar
+- [ ] Echten Portrait-Hinweis beziehungsweise Orientation-Guard implementieren
+- [ ] Tisch, Hero-Seat und Actionbar auf 844×390 ohne Überlagerung darstellen
+- [ ] Table-Shell-Berechnung als einzige nachvollziehbare Geometriequelle konsolidieren
 
-> Foundation für v0.9.0 gelegt. Feinschliff und Tablet-Desktop-Polish folgen dort.
+> **Rollback-Audit vom 29.07.2026:** 1440×1000 ist nutzbar, 1024×768 knapp,
+> 844×390 überlagert mehrere Seats und 390×844 besitzt keinen Portrait-Guard.
+> Die frühere Behauptung „abgeschlossen“ sowie die dokumentierte 470-px-Formel
+> entsprechen dem aktuellen Code nicht mehr. Die offenen Punkte gehen in v0.7.7
+> und die geometrische Neufassung in v0.9.0.
 
 ---
 
@@ -348,42 +355,74 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - `BotContext.archetypeId` + `createBotContext`-Parameter ergänzt
 - `ploCallScale=0.15` (Patience-Call-Dämpfung) bleibt aktiv
 
-### Iteration 4 — LAG AF & C-Bet final (geschlossen)
+### Iteration 4 — LAG AF & C-Bet
 - LAG AF FR 1.97→**2.49**, C-Bet FR 38%→**40.4%**  
 - raise.medium 8→15, raise.marginal 0→5, call.medium 3→-1, call.marginal -3→-7
 - Erkenntnis: Preflop/Postflop-Split auch für LAG nötig; higher Postflop-Raise-Scores kompensieren VPIP-Verdünnung
 - LAG 6-max: AF 2.61, WTSD 26.9% — beide im Ziel
 
-### Ergebnisse (5k PLO — final, alle Archetypen)
+### Korrektheit, Replays und Sessiondaten
+
+- [x] PLO-Draws über physische ungesehene Karten und exakt 2 Hole Cards + 3 Board Cards bestimmen
+- [x] Flush-Draws, Wraps, Wheel-Outs, River-Draws und bereits gemachte Straights korrigieren
+- [x] VPIP/PFR/3-Bet einmal pro Spieler und Hand erfassen
+- [x] Replay-Stacks, Calls, All-ins, Uncalled Bets, Split-/Side-Pots und Dealer-Seat korrigieren
+- [x] Persistentes Replay-Archiv der letzten 200 Hände bereitstellen
+- [x] Opponent Reads, Mental Events und Rebuy-RNG korrigieren
+- [x] PLO-Pot-Maximum per Tastatur als legales Raise senden
+- [x] Engine-Rangfolge und vier PLO-Hole-Cards im Debugexport korrigieren
+
+### Ergebnisse (10k PLO je Archetyp und Format)
 
 | Archetyp | FR VPIP | FR AF | FR WTSD | 6M VPIP | 6M WTSD |
 |----------|---------|-------|---------|---------|---------|
-| TAG | 23.7% ✅ | 3.06 ⚠️ | 33.5% ✅ | 29.4% ✅ | 30.8% ✅ |
-| Nit | 17.0% ✅ | 4.49 ⚠️ | 43.7% ⚠️ | 21.8% ✅ | 45.4% ⚠️ |
-| LAG | **31.7%** ✅ | **2.49** ⚠️ | **28.7%** ✅ | **39.0%** ✅ | **26.9%** ✅ |
-| CS | 40.1% ✅ | 1.06 ✅ | **45.6%** ✅ | 40.4% ⚠️ | **42.7%** ✅ |
+| TAG | 26,05% ✅ | 3,74 ⚠️ | 36,4% ✅ | 32,00% ✅ | 35,1% ✅ |
+| Nit | 19,36% ✅ | 5,75 ⚠️ | 46,5% ⚠️ | 24,44% ✅ | 46,0% ⚠️ |
+| LAG | 34,55% ✅ | 3,15 ✅ | 28,4% ✅ | 41,93% ✅ | 26,3% ✅ |
+| CS | 45,54% ✅ | 1,13 ✅ | 42,2% ✅ | 44,64% ✅ | 44,1% ✅ |
+
+Der deterministische A/B-Lauf gegen den Stand vor der physischen Draw-Korrektur
+erreicht 43/72 statt 44/72 Zielkorridoren. Die Gesamtgüte bleibt damit praktisch
+gleich, während sich einzelne Treffer verschieben. Deshalb wird die fachlich
+korrekte Draw-Auswertung nicht für alte Kalibrierungswerte zurückgedreht.
 
 ### Bekannte Abweichungen
 
 | Metrik | Wert | Target | Grund |
 |--------|------|--------|-------|
-| TAG AF | 3.06 FR, 3.81 6-max | 1.5-3.5 | PLO-typisch erhöht (mehr Draw-Calls) |
-| Nit WTSD | 43.7% | 25-36% | checked-down bei checked-to-Spots |
-| LAG AF FR | 2.49 | 2.5-6 | 0.01 unter Grenze – könnte Rauschen sein (Vermutung, nicht validiert → 10-20k nötig) |
-| LAG CBet FR | 40.4% | 40-60% | Knapp im Ziel, leicht erhöhbare Postflop-Raise-Scores |
-| CS HU | — | — | keine HU-spezifischen Scores |
-| CS 6M VPIP | 40.4% | 42-60% | 1.6pp unter Target |
+| TAG 3-Bet / C-Bet | FR 14,71% / 28,9% | 5–11% / 35–55% | Nach korrekter `T`- und Draw-Auswertung gezielt neu kalibrieren |
+| TAG AF | 3,74 FR, 4,71 6-max | 1,5–3,5 | Raise-/Call-Verhältnis nach Draw-Korrektur verschoben |
+| Nit AF / WTSD | 5,75 / 46,5% FR | 1,5–3,5 / 25–36% | Checked-down und niedrige Call-Rate strukturell trennen |
+| LAG C-Bet | 29,0% FR, 36,9% 6-max | 40–60% | Initiative separat von Gesamtaggression kalibrieren |
+| HU | archetypabhängig | siehe `simulation.ts` | Benötigt eigene Ranges und Scores in v0.8.0 |
 
 ### Dateien
 - `packages/client/src/omaha-hand-evaluation.ts` — `positionStrengthAdjust()`, `getPloScores(isPostflop)`
 - `packages/client/src/bot-category-scores.ts` — per-archetype + per-street Score-Tabellen
 - `packages/client/src/bot-context.ts` — `archetypeId` in `BotContext` + `createBotContext`-Parameter
 
-> **Identitäten**: +5 neue (Gesamt 49/80+)
+> **Identitäten:** Der Roster bleibt bei 44 Einträgen. Wachstum wird nicht mehr
+> künstlich an jede Minor-Version gekoppelt, sondern bedarfs- und qualitätsgetrieben
+> als fortlaufender Produktstrang behandelt.
 
 ---
 
-# Phase 4 — Release-Vorbereitung & neue Variante
+## 🎯 0.7.7 — Stabilisierung nach UI-Rollback
+
+**Ziel:** Die nach dem Rollback belegten Regressionen schließen und die
+Entwicklungswerkzeuge vor dem nächsten Strategiemeilenstein vereinheitlichen.
+
+- [ ] Phone-Landscape 844×390 ohne Seat-/Actionbar-Überlagerung
+- [ ] Portrait-Guard mit verständlichem Hinweis statt defektem Layout
+- [ ] Desktop 1440×1000 und Tablet 1024×768 mit belastbarem Sicherheitsabstand
+- [ ] Responsive Component-/Browser-Tests für die vier geprüften Viewports
+- [ ] Prettier-Konfiguration als separaten mechanischen Commit einführen
+- [ ] Dokumentierte Format- und Lint-Befehle ergänzen
+- [ ] PLO TAG/LAG C-Bet und 3-Bet auf Basis der neuen 10k-Baseline gezielt prüfen
+
+---
+
+# Phase 4 — Stabilisierung & Release-Vorbereitung
 
 ## 🎯 0.8.0 — HU-Strategie (Heads-up)
 
@@ -393,60 +432,24 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz, Bluff-Rate)
 - [ ] HU-Kalibrierung: bestehende Targets in `simulation.ts` schärfen (alle 4 Archetypen, NLHE + PLO)
 
-### Begleitend: Refactoring & Tests
+### Release-Gate
 
-- [ ] `LocalGameRunner.ts`: Replay-Builder in eigenes Modul auslagern
 - [ ] Integrationstests für HU-Szenarien
-- [ ] Kalibrierungs-Lauf mit 10k Händen pro Format als Pre-Release-Check
-
-> **Identitäten**: +10 neue (Gesamt 59/80+)
-
----
-
-## 🎯 0.8.1 — 2-7 Single Draw (deferred)
-
-**Ziel:** Erste Draw-Variante, Architektur-Proof für Kartentausch.
-
-> **Status:** Zurückgestellt. Der Einstieg erfordert grundlegendes Regelverständnis für 2-7 Lowball, das im aktuellen Entwicklungsfokus (Personality, HU, technische Schuld) nicht liegt. Wird reaktiviert wenn der Fokus auf Varianten wechselt.
-
-- [ ] 2-7-Lowball-Handrangfolge
-- [ ] `DrawPhaseDefinition` in `GameVariant`
-- [ ] Draw-Phase und Kartentausch in der Engine
-- [ ] `VariantEvaluator`: Draw-Qualität, Discard-Empfehlungen, Pat/Snowing
-- [ ] Pat/Draw-Status + Snowing-Logik
-- [ ] Draw-spezifische Action History
-- [ ] Grundlegende Regelhinweise in der UI
-
-> **Identitäten**: +10 neue wenn aktiviert (Gesamt 69/80+)
+- [ ] 3k-Entwicklungsläufe ohne Invalid-Action-Fallbacks
+- [ ] 10k-Release-Lauf für alle vier Archetypen in NLHE und PLO
 
 ---
 
-## 🎯 0.8.2 — Session-Flexibilität
-
-**Ziel:** Mehr Kontrolle über die Session.
-
-- [ ] Hero-Name im Setup wählbar (statt immer "You")
-- [ ] Individuelle Starting-Stacks pro Bot
-- [ ] Konfigurierbare Buy-in-Grenzen (40–250 BB)
-- [ ] Session-Setup mit Variante + Schwierigkeitsmix
-
-### Begleitend: Tests
-
-- [ ] Integrationstests für Session-Flow (Setup → mehrere Hände → Rebuy)
-
-> **Identitäten**: +10 neue (Gesamt 69/80+)
-
----
-
-## 🎯 0.8.3 — Technische Schuld & Testabdeckung
+## 🎯 0.8.1 — Technische Schuld & Testabdeckung
 
 **Ziel:** Code-Basis konsolidieren und Testlücken schließen vor dem großen UI-Release.
 
 ### Refactoring
 
 - [ ] `game.ts` splitten: Showdown-Logik, Player-Management und Betting-Round jeweils in eigene Dateien
-- [ ] `LocalGameRunner.ts` splitten: remaining responsibilities entflechten (nach 0.8.0-Vorschritt)
+- [ ] `LocalGameRunner.ts` splitten: verbleibende Zuständigkeiten nach v0.8.0 entflechten
 - [ ] Veraltete Bot-Dateien aufräumen (`bot.ts`, doppelte Helfer)
+- [ ] Ruhendes `server`-Paket klar vom v1-Buildpfad getrennt halten und v2-Schnittstellenannahmen dokumentieren
 
 ### Tests
 
@@ -454,26 +457,39 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] Component-Tests: PokerTable, PlayerSeat, ActionButtons, HandReplayer
 - [ ] Randfall-Tests: Empty-State (0 Spieler), Bust-zu-Ende, schnelle Neustarts
 
-> **Identitäten**: +10 neue + Avatare für alle (Gesamt 79/80+)
+---
+
+## 🎯 0.8.2 — Session-Flexibilität
+
+**Ziel:** Mehr Kontrolle über die Session.
+
+- [ ] Hero-Name im Setup wählbar (statt immer „You“)
+- [ ] Individuelle Starting-Stacks pro Bot
+- [ ] Konfigurierbare Buy-in-Grenzen (40–250 BB)
+- [ ] Session-Setup mit Variante + Schwierigkeitsmix
+- [ ] Integrationstests für Session-Flow (Setup → mehrere Hände → Rebuy)
+
+### Fortlaufend: Bot-Identitäten
+
+- Neue Identitäten nur ergänzen, wenn Namen, Avatare, Traits und Wiedererkennbarkeit gemeinsam geprüft sind.
+- Keine feste Quote pro Minor-Version; Session-Abwechslung und Wiederholungsrate bestimmen den Bedarf.
+- Persistenzmigrationen und deterministische Seeds bleiben Release-Gates für Roster-Änderungen.
 
 ---
 
-## 🎯 0.9.0 — UI & Präsentation
+## 🎯 0.9.0 — TableGeometry & Responsive Layout
 
-**Ziel:** Komplette UI-Überarbeitung nach Backend-Stabilisierung. Alle visuellen und interaktiven Verbesserungen in einem Release gebündelt, damit das Backend bis dahin ungestört reifen kann.
-
-> Enthält die ehemaligen Meilensteine 0.8.2 (Tischkomfort) und 0.8.4 (Präsentation) sowie den UI-Feinschliff aus 0.7.5.
-
-### 0.9.1 — TableGeometry & Layout
-
-**Ziel:** Mathematische Tischgeometrie statt Hardcode-Presets. Saubere, responsive Basis für alle Bildschirmgrößen.
+**Ziel:** Mathematische Tischgeometrie statt Hardcode-Presets und eine belastbare responsive Basis.
 
 - [ ] **TableGeometry SSOT**: Ellipsen-basierte Sitzberechnung (Achsen, Mittelpunkt) statt getrennter Presets für Seat/Bet/Button-Positionen
-- [ ] **Responsive-Feinschliff**: Desktop/Tablet-Layout-Abstände, Header-Kompression, Table-Shell-Formel finalisieren
-- [ ] **Phone-Landscape**: Actionbar-Usability, Slider nicht versteckt, kompakte Buttons
+- [ ] Desktop-/Tablet-Abstände, Header-Kompression und Table-Shell-Formel finalisieren
+- [ ] Phone-Landscape: Actionbar-Usability, sichtbarer Slider und kompakte Buttons
 - [ ] **Replayer-Touch**: Steuerung auf kleinen Screens (Wisch-Gesten, größere Buttons)
+- [ ] Viewport-Matrix automatisiert gegen Überlagerungen und abgeschnittene Controls prüfen
 
-### 0.9.2 — Branding & Controls
+---
+
+## 🎯 0.9.1 — Branding & Controls
 
 **Ziel:** CPCdigital-eigenes Erscheinungsbild statt PokerStars-Optik.
 
@@ -484,7 +500,9 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] Min-/Max-Bet direkt in der Oberfläche anzeigen
 - [ ] Session-Log (PokerStars-Dealer-Stil, einklappbar links unten)
 
-### 0.9.3 — Animationen & Sound
+---
+
+## 🎯 0.9.2 — Animationen & Sound
 
 **Ziel:** Spielgefühl durch visuelles und akustisches Feedback.
 
@@ -492,32 +510,42 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 - [ ] Chip-Animationen (Bets, Pot-Zusammenfassung, Gewinn-Verschiebung)
 - [ ] Sound-Effekte (Karten, Chips, Showdown, Session-Events)
 
-### 0.9.4 — Performance & UI-Testing
+---
+
+## 🎯 0.9.3 — Performance, Accessibility & UI-Testing
 
 **Ziel:** Performance-Check und UI-Stabilität vor v1.0.
 
 - [ ] Performance-Test für lange Sessions (>500 Hände) mit UI-Komponenten
 - [ ] Render-Tests für neue UI-Komponenten (TableGeometry, Animationen)
 - [ ] responsive Test-Matrix (Desktop, Tablet, Phone-Landscape)
+- [ ] Tastatursteuerung, Fokusführung, Kontrast und Reduced-Motion prüfen
 
 ---
 
 ## 🎯 1.0.0 — Stable Core Release
 
-**Ziel:** Ein stabiles Offline-Pokerspiel mit 3 Varianten und belastbarem Fundament
-für die Learning-Erweiterung.
+**Ziel:** Ein stabiles Offline-Pokerspiel mit NLHE und PLO sowie belastbarem
+Fundament für spätere Lern- und Variantenmodule.
 
 ### Enthalten
 
 - [x] NLHE vollständig spielbar
 - [x] Omaha High vollständig spielbar
-- [ ] 2-7 Single Draw als erste seltene Variante
 - [ ] 4 unterscheidbare Bot-Archetypen mit Personality, Skill, Reads, Mental State
 - [ ] vollständige Hand History und Replay
 - [ ] Decision Records und erklärbare Bot-Scores
 - [ ] Session-Statistiken (Live-VPIP/PFR, BB/100)
 - [ ] stabiles Desktop-Packaging
 - [ ] Dokumentation für Architektur und Variantenmodule
+
+### Release-Gates
+
+- [ ] Keine bekannten kritischen Engine-, Replay- oder Datenintegritätsfehler
+- [ ] NLHE- und PLO-Kalibrierung auf der dokumentierten 10k-Release-Stufe
+- [ ] Desktop-, Tablet- und unterstütztes Landscape-Layout bestehen die responsive Testmatrix
+- [ ] Migrationen für Roster, Replays und Sessiondaten sind rückwärtsverträglich getestet
+- [ ] Server-Paket ist nachweislich kein Laufzeitbestandteil des Offline-v1-Builds
 
 ### Packaging
 
@@ -527,7 +555,8 @@ für die Learning-Erweiterung.
 
 ### Nach v1.0 verschoben
 
-- **Stud Light** (Architektur-Proof offene Karten) — jetzt Teil von 1.7.0 (Stud-Familie)
+- **2-7 Draw Family** — Single Draw und Triple Draw als gemeinsamer Architekturstrang
+- **Stud Light** (Architektur-Proof offene Karten) — Teil der späteren Stud-Familie
 
 ---
 
@@ -687,15 +716,18 @@ aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
 > Neue Varianten bauen auf den existierenden Architektur-Grundlagen auf
 > und profitieren direkt von Wiki, Tutorials und Rätseln aus Phase 6.
 
-## 🎯 1.5.0 — 2-7 Triple Draw
+## 🎯 1.5.0 — 2-7 Draw Family
 
-**Ziel:** Direkte Erweiterung von 2-7 Single Draw (0.8.1) — drei Draws statt einem.
+**Ziel:** Draw-Poker nach dem stabilen v1-Kern als zusammenhängendes
+Variantenmodul einführen, zunächst Single Draw und darauf aufbauend Triple Draw.
 
-- [ ] drei Draw- und vier Setzrunden
-- [ ] Fixed-Limit-Struktur
-- [ ] Draw-History über mehrere Runden
-- [ ] angepasste Bot-Strategien (mehrstufiges Pat/Draw/Bluff)
-- [ ] Tutorial- und Rätselmaterial
+- [ ] 2-7-Lowball-Handrangfolge
+- [ ] `DrawPhaseDefinition`, Kartentausch und Draw-History in der Engine
+- [ ] 2-7 Single Draw mit No-Limit-Setzstruktur
+- [ ] `VariantEvaluator` für Draw-Qualität, Discards, Pat und Snowing
+- [ ] anschließend Triple Draw mit drei Draws und vier Fixed-Limit-Setzrunden
+- [ ] mehrstufige Pat-/Draw-/Bluff-Strategien für Bots
+- [ ] Regelhinweise, Tutorial- und Rätselmaterial
 
 ---
 
@@ -730,7 +762,7 @@ aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
 - [ ] Seven Card Stud (High, 7 Cards, offene Karten)
 - [ ] `BotContext` um `visibleOpponentCards` erweitert
 - [ ] Ante-, Bring-in- und Street-Logik (3rd–7th Street)
-- [ ] Vereinfachte Bot-AI für Stud (aufbauend auf Stud Light aus v0.7.3)
+- [ ] Vereinfachte Bot-AI für Stud als erster Architektur-Proof
 
 ---
 
@@ -740,14 +772,14 @@ aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
 
 Die Smartphone-Darstellung von Poker ist auf kleinen Bildschirmen eine große UX-Herausforderung.
 Ob die APK ein vollständiges Spiel, ein reiner Lernclient oder nur Tablet-optimiert bleibt,
-wird nach v0.9.4 entschieden.
+wird nach v0.9.3 entschieden.
 
 - [ ] Capacitor-Setup und APK-Pipeline
 - [ ] entweder: Phone-Layout (radial, Overlay-Aktionen, nur Querformat)
 - [ ] oder: beschnittene Version (z.B. max 6-max, keine komplexen Varianten)
 - [ ] oder: APK streichen, Fokus auf Browser (GitHub Pages)
 
-> Touch-Optimierung und responsive UI werden in 0.7.5 (Grundlage) und 0.9.0 (Überarbeitung) behandelt.
+> Touch-Optimierung und responsive UI werden in 0.7.7 (Stabilisierung) und 0.9.0 (Neufassung) behandelt.
 
 ---
 
@@ -798,7 +830,7 @@ packages/
 ├── poker-engine/                  ✓ Regeln, State Machine, Hand-Evaluator
 ├── shared/                        ✓ gemeinsame Typen
 ├── electron/                      ✓ Desktop-Wrapper (main, preload)
-├── server/                        älterer Online-Prototyp (ungenutzt)
+├── server/                        ruhender Online-Prototyp für eine mögliche v2-Integration
 │
 │   # Zielarchitektur (noch nicht umgesetzt):
 ├── variant-modules/               NLHE, Omaha, 2-7 Draw, Stud (je eigener Ordner)

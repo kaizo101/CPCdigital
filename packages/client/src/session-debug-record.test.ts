@@ -59,4 +59,35 @@ describe('session debug record', () => {
     expect(createSessionDebugFilename('2026-07-19T20:15:30.123Z'))
       .toBe('cpcdigital-session-debug_2026-07-19_20-15-30-123.json')
   })
+
+  it('exports all four Omaha hole cards in compact bot decisions', () => {
+    vi.useFakeTimers()
+    const runner = new LocalGameRunner()
+    runner.setupTable({
+      smallBlind: 10,
+      bigBlind: 20,
+      startingChips: 2000,
+      maxPlayers: 2,
+      seed: 'omaha-debug-record',
+    }, 1, true, 'omaha-high')
+    runner.startHand()
+
+    for (let step = 0; step < 20 && runner.getBotDebugDecisions().length === 0; step++) {
+      const gameState = runner.state.gameState
+      if (!gameState) throw new Error('Expected an active game')
+
+      if (runner.state.isMyTurn) {
+        const legal = gameState.bettingContext?.legalActions
+        if (!legal) throw new Error('Expected legal actions for hero')
+        runner.playerAction(legal.check ? { type: 'check' } : { type: 'call' })
+      } else {
+        vi.advanceTimersByTime(6000)
+      }
+    }
+
+    const record = runner.createSessionDebugRecord('test', 'EUR')
+    expect(record.botDecisions).not.toHaveLength(0)
+    expect(record.botDecisions[0].snapshot.hand.split(' ')).toHaveLength(4)
+    runner.cleanup()
+  })
 })

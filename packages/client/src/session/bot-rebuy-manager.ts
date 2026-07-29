@@ -29,6 +29,7 @@ export class BotRebuyManager {
   private observedVpipPlayersByBot: Map<string, Set<string>>
   private playerNames: Map<string, string>
   private onChanged: (() => void) | null
+  private random: () => number
 
   constructor(
     game: PokerGame | null,
@@ -43,6 +44,7 @@ export class BotRebuyManager {
     startingChips: number,
     rebuyEnabled: boolean,
     onChanged?: () => void,
+    random: () => number = Math.random,
   ) {
     this.game = game
     this.players = players
@@ -56,6 +58,7 @@ export class BotRebuyManager {
     this._startingChips = startingChips
     this._rebuyEnabled = rebuyEnabled
     this.onChanged = onChanged ?? null
+    this.random = random
   }
 
   get rebuyEnabled(): boolean {
@@ -166,7 +169,7 @@ export class BotRebuyManager {
       if (this.replacementQueue.some(r => r.botId === botId)) continue
       const player = this.players.find(p => p.id === botId)
       if (player && player.chips <= 0) {
-        const delay = 2 + Math.floor(Math.random() * 5)
+        const delay = 2 + Math.floor(this.random() * 5)
         this.replacementQueue.push({
           botId,
           availableAfterHand: currentHandNumber + delay,
@@ -203,7 +206,8 @@ export class BotRebuyManager {
 
     const { roster } = loadPersistentRoster()
     const usedIds = new Set([...this.botIdentities.values()].map((id: BotIdentity) => id.id))
-    const freshIdentity = roster.identities.find(id => !usedIds.has(id.id))
+    const candidates = roster.identities.filter(id => !usedIds.has(id.id))
+    const freshIdentity = candidates[Math.floor(this.random() * candidates.length)]
     if (!freshIdentity) return
 
     const archetype = getBotArchetype(freshIdentity.archetypeId)

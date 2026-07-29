@@ -51,8 +51,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   const playerStatus: Record<string, 'active' | 'folded' | 'all-in'> = {}
   const playerBets: Record<string, number> = {}
   const playerChips: Record<string, number> = {}
-  let wonBy: string | null = null
-  let wonAmount = 0
+  const wonAmounts: Record<string, number> = {}
   const revealedCards: Record<string, Card[]> = {}
 
   const firstHoleCardCount = () => {
@@ -80,24 +79,36 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
     }
     if (f.type === 'action') {
       if (f.action === 'fold') playerStatus[f.actorId!] = 'folded'
-      if (f.action === 'all-in') playerStatus[f.actorId!] = 'all-in'
+      if (f.action?.startsWith('all-in')) playerStatus[f.actorId!] = 'all-in'
       if (f.betAmount != null && f.actorId) {
         playerBets[f.actorId] = (playerBets[f.actorId] ?? 0) + f.betAmount
+        playerChips[f.actorId] = Math.max(0, (playerChips[f.actorId] ?? 0) - f.betAmount)
       }
     }
     if (f.type === 'showdown' && f.actorId && f.actorCards) {
       revealedCards[f.actorId] = f.actorCards
     }
     if (f.type === 'result' && f.actorId && f.amount) {
-      wonBy = f.actorId
-      wonAmount = f.amount
+      if (f.action === 'award') {
+        wonAmounts[f.actorId] = (wonAmounts[f.actorId] ?? 0) + f.amount
+      }
+    }
+    if (Object.keys(f.playerStacks).length > 0) {
+      Object.assign(playerChips, f.playerStacks)
+    }
+    if (f.playerBets && Object.keys(f.playerBets).length > 0) {
+      Object.assign(playerBets, f.playerBets)
+    }
+    if (Object.keys(f.playerStatuses).length > 0) {
+      Object.assign(playerStatus, f.playerStatuses)
     }
   }
 
-  const pot = wonBy ? 0 : (currentFrame?.pot ?? replay.totalPot)
+  const hasAward = Object.keys(wonAmounts).length > 0
+  const pot = currentFrame?.pot ?? replay.totalPot
   const currentActorId = currentFrame?.type === 'action' ? currentFrame.actorId : null
   const phase = currentFrame?.phase ?? 'preflop'
-  const isActive = phase !== 'waiting' && phase !== 'showdown' && !wonBy
+  const isActive = phase !== 'waiting' && phase !== 'showdown' && !hasAward
 
   const players: Player[] = replay.players.map(p => ({
     id: p.id,
@@ -145,6 +156,9 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
         case 'call': return `${name} callt ${formatChipSimple(frame.amount ?? 0)}`
         case 'raise': return `${name} raist ${formatChipSimple(frame.amount ?? 0)}`
         case 'all-in': return `${name} all-in ${formatChipSimple(frame.amount ?? 0)}`
+        case 'all-in-call': return `${name} callt all-in ${formatChipSimple(frame.amount ?? 0)}`
+        case 'all-in-bet': return `${name} setzt all-in ${formatChipSimple(frame.amount ?? 0)}`
+        case 'all-in-raise': return `${name} raist all-in auf ${formatChipSimple(frame.amount ?? 0)}`
         default: return `${name} ${frame.action}`
       }
     }
@@ -283,8 +297,8 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
               <button onClick={() => { exportCurrentHand(false); setShowExportMenu(false) }} style={menuItemStyle}>Diese Hand (Text)</button>
               {debugMode && <button onClick={() => { exportCurrentHand(true); setShowExportMenu(false) }} style={menuItemStyle}>Diese Hand (Text + Entscheidungen)</button>}
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '2px 0' }} />
-              <button onClick={() => { exportSession(false); setShowExportMenu(false) }} style={menuItemStyle}>Ganze Session (Text)</button>
-              {debugMode && <button onClick={() => { exportSession(true); setShowExportMenu(false) }} style={menuItemStyle}>Ganze Session (Text + Entscheidungen)</button>}
+              <button onClick={() => { exportSession(false); setShowExportMenu(false) }} style={menuItemStyle}>Alle geladenen Hände (Text)</button>
+              {debugMode && <button onClick={() => { exportSession(true); setShowExportMenu(false) }} style={menuItemStyle}>Alle geladenen Hände (Text + Entscheidungen)</button>}
             </div>,
             document.body
           )}
@@ -321,11 +335,11 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
               borderRadius: 24, padding: '8px 10px 0',
             }}>
               <PokerTable>
-                <TablePot pot={pot} sidePots={[]} currency={currency} />
+                <TablePot pot={pot} sidePots={hasAward ? [] : replay.pots} currency={currency} />
                 <CommunityCards cards={boardCards} phase={phase} />
                 {orderedPlayers.map((player, index) => (
                   <Fragment key={player.id}>
-                    <BetStack amount={player.roundBet + (player.id === wonBy ? wonAmount : 0)} seatIndex={index} seatCount={orderedPlayers.length} currency={currency} />
+                    <BetStack amount={player.roundBet + (wonAmounts[player.id] ?? 0)} seatIndex={index} seatCount={orderedPlayers.length} currency={currency} />
                     <TablePositionButtons
                       labels={buttonAssignments[player.id] ?? []}
                       seatIndex={index}

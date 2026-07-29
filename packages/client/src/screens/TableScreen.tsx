@@ -81,6 +81,7 @@ export function TableScreen({
   onRebuy,
   onExportDebugRecord,
   handReplays,
+  archivedHandReplays,
   sessionStats,
   playerNames,
   onExportSessionLog,
@@ -103,6 +104,7 @@ export function TableScreen({
   onRebuy: (playerId: string) => void
   onExportDebugRecord: () => void
   handReplays: readonly HandReplay[]
+  archivedHandReplays: readonly HandReplay[]
   sessionStats: any
   playerNames: Map<string, string>
   onExportSessionLog: () => void
@@ -351,6 +353,34 @@ export function TableScreen({
               </button>
             )
           })()}
+          <button
+            onClick={() => {
+              if (archivedHandReplays.length === 0) return
+              openReplayWindow(
+                archivedHandReplays,
+                archivedHandReplays.length - 1,
+                currency,
+                showDebug,
+              )
+            }}
+            disabled={archivedHandReplays.length === 0}
+            title={archivedHandReplays.length > 0
+              ? `Hand-Archiv öffnen (${archivedHandReplays.length})`
+              : 'Noch keine archivierten Hände'}
+            style={{
+              padding: '10px 12px', borderRadius: 6,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: archivedHandReplays.length > 0
+                ? 'linear-gradient(180deg, #30343c 0%, rgba(25,25,25,0.98) 100%)'
+                : '#1f2228',
+              color: archivedHandReplays.length > 0 ? '#9ca3af' : '#4b5563',
+              cursor: archivedHandReplays.length > 0 ? 'pointer' : 'not-allowed',
+              fontFamily: 'monospace', fontSize: 15,
+              opacity: archivedHandReplays.length > 0 ? 1 : 0.5,
+            }}
+          >
+            Archiv
+          </button>
           <button onClick={onBack} style={actionButtonStyle('#30343c', false)}>Zurück zum Setup</button>
         </div>
       </div>
@@ -440,10 +470,12 @@ export function TableScreen({
 }
 
 function openReplayWindow(replays: readonly HandReplay[], startIndex: number, currency: DisplayCurrency, debugMode: boolean): void {
-  const allReplays = [...replays].sort((a, b) => a.handNumber - b.handNumber)
+  // Keep archive insertion order: hand numbers restart with every session.
+  const allReplays = [...replays]
 
   const sessionKey = 'replay-session'
   localStorage.setItem(sessionKey, JSON.stringify(allReplays))
+  localStorage.setItem('replay-start-index', String(startIndex))
   localStorage.setItem('replay-debug', debugMode ? '1' : '0')
 
   // Try Electron IPC first

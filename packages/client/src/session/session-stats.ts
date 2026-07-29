@@ -1,5 +1,6 @@
 import type { HandReplay } from './hand-replay'
 import { formatHandHistory } from './hand-replay'
+import type { HandEvent, PlayerAction } from '@cpc/shared'
 
 export interface PlayerSessionStats {
   hands: number
@@ -31,41 +32,70 @@ export function createSessionStats(variantId: string, bigBlind: number): Session
 
 export function recordHand(
   stats: SessionStatsData,
-  playerIds: string[],
   heroId: string,
-  handNumber: number,
   heroChips: number,
-  events: readonly { type: string; playerId?: string; action?: { type: string } }[],
+  events: readonly HandEvent[],
 ): void {
-  stats.totalHands = handNumber
+  stats.totalHands++
 
   const heroResult = stats.heroPrevChips != null ? (heroChips - stats.heroPrevChips) : 0
   stats.heroBBWon += heroResult / stats.bigBlind
   stats.heroPrevChips = heroChips
 
-  const preflopEvents = events.filter(e => e.type === 'PlayerActed')
-  const preflopRaises = preflopEvents.filter(e => e.action?.type === 'raise').length
+  const handStart = events.find((event): event is Extract<HandEvent, { type: 'HandStarted' }> =>
+    event.type === 'HandStarted'
+  )
+  const playerIds = handStart?.players.map(player => player.playerId) ?? []
+  for (const playerId of playerIds) {
+    ensurePlayer(stats, playerId).hands++
+  }
+
+  const preflopEvents = events.filter(
+    (event): event is Extract<HandEvent, { type: 'PlayerActed' }> =>
+      event.type === 'PlayerActed' && event.phase === 'preflop',
+  )
+  const vpipPlayers = new Set<string>()
+  const pfrPlayers = new Set<string>()
+  const actedPlayers = new Set<string>()
+  const threeBetOpportunityPlayers = new Set<string>()
   const threeBetSenders = new Set<string>()
+  let raiseCount = 0
 
   for (const event of preflopEvents) {
-    if (!event.playerId) continue
-    const ps = ensurePlayer(stats, event.playerId)
-    ps.hands++
-
-    if (event.action?.type === 'call' || event.action?.type === 'raise' || event.action?.type === 'all-in') {
-      ps.vpipHands++
+    const firstAction = !actedPlayers.has(event.playerId)
+    if (firstAction && raiseCount === 1) {
+      threeBetOpportunityPlayers.add(event.playerId)
     }
-    if (event.action?.type === 'raise' || event.action?.type === 'all-in') {
-      if (preflopRaises > 1) threeBetSenders.add(event.playerId)
-      ps.pfrHands++
+    actedPlayers.add(event.playerId)
+
+    if (isVoluntaryPreflopAction(event.action)) {
+      vpipPlayers.add(event.playerId)
+    }
+    if (isAggressivePreflopAction(event)) {
+      pfrPlayers.add(event.playerId)
+      if (raiseCount === 1) threeBetSenders.add(event.playerId)
+      raiseCount++
     }
   }
 
-  for (const playerId of playerIds) {
+  for (const playerId of vpipPlayers) ensurePlayer(stats, playerId).vpipHands++
+  for (const playerId of pfrPlayers) ensurePlayer(stats, playerId).pfrHands++
+  for (const playerId of threeBetOpportunityPlayers) {
     const ps = ensurePlayer(stats, playerId)
     if (threeBetSenders.has(playerId)) ps.threeBets++
-    if (preflopRaises > 0) ps.threeBetOpportunities++
+    ps.threeBetOpportunities++
   }
+}
+
+function isVoluntaryPreflopAction(action: PlayerAction): boolean {
+  return action.type === 'call' || action.type === 'raise' || action.type === 'all-in'
+}
+
+function isAggressivePreflopAction(
+  event: Extract<HandEvent, { type: 'PlayerActed' }>,
+): boolean {
+  if (event.action.type === 'raise') return true
+  return event.action.type === 'all-in' && event.totalBet > event.currentBetBefore
 }
 
 export function getPlayerVPIP(stats: SessionStatsData, playerId: string): number {

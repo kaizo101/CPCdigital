@@ -67,8 +67,36 @@ export function decideBotDecision(
   const { handAssessment, boardTexture, preferredRaiseTo, categoryScores } = evaluation
   const metrics = deriveDecisionMetrics(bettingContext, state.bigBlind)
 
-  // Get opponent stats if available
-  const opponent = state.players.find(p => p.id !== botId && p.status === 'active')
+  const streetAnalysis = analyzeStreetAction(
+    botId,
+    botContext.actionHistory,
+    state.phase,
+    state.players.filter(p => p.status !== 'folded' && p.status !== 'waiting').map(p => p.id),
+  )
+
+  // Prefer the opponent whose aggression created the current decision. In
+  // checked or multiway spots, use the active opponent with the strongest read.
+  const latestAggressor = [...botContext.actionHistory].reverse().find(event =>
+    event.type === 'PlayerActed'
+    && event.phase === state.phase
+    && event.playerId !== botId
+    && (
+      event.action.type === 'raise'
+      || (event.action.type === 'all-in' && event.totalBet > event.currentBetBefore)
+    )
+  )
+  const activeOpponents = state.players.filter(player =>
+    player.id !== botId
+    && player.status !== 'folded'
+    && player.status !== 'waiting'
+  )
+  const opponent = latestAggressor
+    ? activeOpponents.find(player => player.id === latestAggressor.playerId)
+    : [...activeOpponents].sort((left, right) => {
+        const leftSamples = botState.reads.opponents.get(left.id)?.handsSampled ?? 0
+        const rightSamples = botState.reads.opponents.get(right.id)?.handsSampled ?? 0
+        return rightSamples - leftSamples
+      })[0]
   let opponentStats = undefined
   if (opponent) {
     const read = botState.reads.opponents.get(opponent.id)
@@ -101,13 +129,6 @@ export function decideBotDecision(
     })),
     dealerIndex: state.dealerIndex,
   }
-
-  const streetAnalysis = analyzeStreetAction(
-    botId,
-    botContext.actionHistory,
-    state.phase,
-    state.players.filter(p => p.status !== 'folded' && p.status !== 'waiting').map(p => p.id),
-  )
 
   const context: DecisionContext = {
     gameView,

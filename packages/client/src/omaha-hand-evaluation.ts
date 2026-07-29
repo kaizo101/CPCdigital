@@ -3,7 +3,7 @@ import type { Card } from '@cpc/shared'
 import type { Position } from './bot-types'
 import type { VariantEvaluator, HandStrengthCategory, VariantHandAssessment, BoardTexture } from './bot-variant-evaluation'
 import { getPloScores } from './bot-category-scores'
-import { evaluateOmahaHand } from '@cpc/poker-engine'
+import { createDeck, evaluateOmahaHand } from '@cpc/poker-engine'
 
 function positionStrengthAdjust(position: Position, tableSize: number): number {
   if (tableSize === 2) {
@@ -40,14 +40,15 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const evalResult = evaluateOmahaHand(ownCards, communityCards)
     const rank = evalResult.rank
 
-    const drawQuality = calculateOmahaDrawQuality(ownCards, communityCards)
-    const cleanOuts = calculateOmahaCleanOuts(ownCards, communityCards, rank)
+    const drawAnalysis = analyzeOmahaDraws(ownCards, communityCards)
+    const drawQuality = calculateOmahaDrawQuality(drawAnalysis)
+    const cleanOuts = calculateOmahaCleanOuts(drawAnalysis, rank)
     const nutPotential = assessOmahaNutPotential(rank, cleanOuts, communityCards.length)
     const vulnerability = calculateOmahaVulnerability(rank, cleanOuts, communityCards.length)
     const showdownValue = calculateOmahaShowdownValue(rank, drawQuality)
     const relativeStrength = calculateOmahaRelativeStrength(rank, cleanOuts)
     const isRiver = communityCards.length === 5
-    const drawTypes = isRiver ? [] : identifyOmahaDrawTypes(ownCards, communityCards, rank)
+    const drawTypes = isRiver ? [] : identifyOmahaDrawTypes(drawAnalysis)
     const boardGotWorse = false
     const strength = calculateOmahaStrength(rank, drawQuality, cleanOuts, communityCards.length)
     const category = categorizeOmaha(rank, drawQuality, cleanOuts, communityCards)
@@ -213,62 +214,49 @@ function assessOmahaNutPotential(rank: number, cleanOuts: number, communityCount
   return 'weak'
 }
 
-function calculateOmahaDrawQuality(ownCards: Card[], communityCards: Card[]): number {
-  if (communityCards.length < 3) return 0
-
-  const flushSuits = countFlushDraws(ownCards, communityCards)
-  const wrapCount = countWrapDraws(ownCards, communityCards)
-  const straightDraws = identifyStraightDraws(ownCards, communityCards)
+function calculateOmahaDrawQuality(draws: OmahaDrawAnalysis): number {
+  const wrapCount = draws.straightOutCards.length
 
   let score = 0
-  if (flushSuits.nutFlushDraw) score += 6
-  else if (flushSuits.flushDraw > 0) score += 3
-  if (flushSuits.secondFlushDraw) score += 2
+  if (draws.nutFlushDraw) score += 6
+  else if (draws.flushDrawSuits > 0) score += 3
+  if (draws.secondFlushDraw) score += 2
 
   if (wrapCount >= 13) score += 8
   else if (wrapCount >= 8) score += 5
-  else if (straightDraws.oeSd > 0) score += 3
-  else if (straightDraws.gutshot > 0) score += 1
+  else if (draws.straightOutRanks >= 2) score += 3
+  else if (draws.straightOutRanks === 1) score += 1
 
-  if (flushSuits.flushDraw > 0 && (wrapCount >= 8 || straightDraws.oeSd > 0)) score += 3
+  if (draws.flushOutCards.length > 0 && draws.straightOutCards.length > 0) score += 3
 
   return score
 }
 
-function calculateOmahaCleanOuts(ownCards: Card[], communityCards: Card[], rank: number): number {
-  if (communityCards.length < 3) return 0
+function calculateOmahaCleanOuts(draws: OmahaDrawAnalysis, rank: number): number {
   if (rank >= 9) return 0
 
-  const flushSuits = countFlushDraws(ownCards, communityCards)
-  const wrapCount = countWrapDraws(ownCards, communityCards)
-
-  let outs = 0
-  if (flushSuits.nutFlushDraw) outs += 9
-  else outs += flushSuits.flushDraw * 4
-
-  outs += Math.min(13, wrapCount)
-
-  return Math.min(25, outs)
+  const uniqueOuts = new Set(
+    [...draws.flushOutCards, ...draws.straightOutCards].map(cardKey),
+  )
+  return Math.min(25, uniqueOuts.size)
 }
 
-function identifyOmahaDrawTypes(ownCards: Card[], communityCards: Card[], rank: number): string[] {
+function identifyOmahaDrawTypes(draws: OmahaDrawAnalysis): string[] {
   const types: string[] = []
-  const flushSuits = countFlushDraws(ownCards, communityCards)
 
-  if (flushSuits.nutFlushDraw) types.push('nut-flush-draw')
-  else if (flushSuits.flushDraw > 0) types.push('flush-draw')
-  if (flushSuits.secondFlushDraw) types.push('second-flush-draw')
+  if (draws.nutFlushDraw) types.push('nut-flush-draw')
+  else if (draws.flushDrawSuits > 0) types.push('flush-draw')
+  if (draws.secondFlushDraw) types.push('second-flush-draw')
 
-  const wrapCount = countWrapDraws(ownCards, communityCards)
+  const wrapCount = draws.straightOutCards.length
   if (wrapCount >= 13) types.push('wrap-13+')
   else if (wrapCount >= 8) types.push('wrap-8+')
-  else {
-    const straight = identifyStraightDraws(ownCards, communityCards)
-    if (straight.oeSd > 0) types.push('oesd')
-    if (straight.gutshot > 0) types.push('gutshot')
-  }
+  else if (draws.straightOutRanks >= 2) types.push('oesd')
+  else if (draws.straightOutRanks === 1) types.push('gutshot')
 
-  if (flushSuits.flushDraw > 0 && (wrapCount >= 8 || types.includes('oesd'))) types.push('combo-draw')
+  if (draws.flushOutCards.length > 0 && draws.straightOutCards.length > 0) {
+    types.push('combo-draw')
+  }
 
   return types
 }
@@ -288,89 +276,117 @@ function analyzeOmahaBoardTexture(communityCards: Card[]): BoardTexture {
   return 'neutral'
 }
 
-function countFlushDraws(ownCards: Card[], communityCards: Card[]) {
-  const remaining = 5 - communityCards.length
-  if (remaining === 0) return { nutFlushDraw: false, flushDraw: 0, secondFlushDraw: false }
+interface OmahaDrawAnalysis {
+  straightOutCards: Card[]
+  straightOutRanks: number
+  flushOutCards: Card[]
+  flushDrawSuits: number
+  nutFlushDraw: boolean
+  secondFlushDraw: boolean
+}
 
-  const suitCounts = new Map<string, { count: number; hasAce: boolean }>()
-  for (const c of [...communityCards, ...ownCards]) {
-    const entry = suitCounts.get(c.suit) ?? { count: 0, hasAce: false }
-    entry.count++
-    if (c.rank === 'A') entry.hasAce = true
-    suitCounts.set(c.suit, entry)
+function analyzeOmahaDraws(ownCards: Card[], communityCards: Card[]): OmahaDrawAnalysis {
+  const empty: OmahaDrawAnalysis = {
+    straightOutCards: [],
+    straightOutRanks: 0,
+    flushOutCards: [],
+    flushDrawSuits: 0,
+    nutFlushDraw: false,
+    secondFlushDraw: false,
   }
+  if (communityCards.length < 3 || communityCards.length >= 5) return empty
 
-  const boardSuits = new Map<string, number>()
-  for (const c of communityCards) {
-    boardSuits.set(c.suit, (boardSuits.get(c.suit) ?? 0) + 1)
-  }
+  const knownCards = new Set([...ownCards, ...communityCards].map(cardKey))
+  const unseenCards = createDeck().filter(card => !knownCards.has(cardKey(card)))
+  const hasMadeStraight = hasOmahaStraight(ownCards, communityCards)
+  const hasMadeFlush = hasOmahaFlush(ownCards, communityCards)
 
+  const straightOutCards = hasMadeStraight
+    ? []
+    : unseenCards.filter(card => hasOmahaStraight(ownCards, [...communityCards, card]))
+
+  const flushOutCards: Card[] = []
+  let flushDrawSuits = 0
   let nutFlushDraw = false
-  let flushDraw = 0
   let secondFlushDraw = false
 
-  for (const [suit, info] of suitCounts) {
-    const onBoard = boardSuits.get(suit) ?? 0
-    if (info.count >= 4 && onBoard + remaining >= 3) {
-      if (info.hasAce) nutFlushDraw = true
-      else flushDraw++
-    } else if (info.count === 3 && info.hasAce && onBoard + remaining >= 3) {
-      secondFlushDraw = true
+  if (!hasMadeFlush) {
+    for (const suit of ['clubs', 'diamonds', 'hearts', 'spades'] as const) {
+      const suitedHoleCards = ownCards.filter(card => card.suit === suit)
+      const suitedBoardCards = communityCards.filter(card => card.suit === suit)
+      if (suitedHoleCards.length < 2 || suitedBoardCards.length !== 2) continue
+
+      const suitedOuts = unseenCards.filter(card => card.suit === suit)
+      if (suitedOuts.length === 0) continue
+      flushOutCards.push(...suitedOuts)
+      flushDrawSuits++
+
+      const boardRanks = new Set(suitedBoardCards.map(rankValue))
+      const availableRanks = Array.from({ length: 13 }, (_, index) => 14 - index)
+        .filter(rank => !boardRanks.has(rank))
+      const bestHoleRank = Math.max(...suitedHoleCards.map(rankValue))
+      if (bestHoleRank === availableRanks[0]) {
+        nutFlushDraw = true
+      } else if (bestHoleRank === availableRanks[1]) {
+        secondFlushDraw = true
+      }
     }
   }
 
-  return { nutFlushDraw, flushDraw, secondFlushDraw }
+  return {
+    straightOutCards,
+    straightOutRanks: new Set(straightOutCards.map(card => card.rank)).size,
+    flushOutCards,
+    flushDrawSuits,
+    nutFlushDraw,
+    secondFlushDraw,
+  }
 }
 
-function countWrapDraws(ownCards: Card[], communityCards: Card[]): number {
-  const allValues = [...ownCards, ...communityCards].map(c => rankValue(c))
-  const unique = [...new Set(allValues)].sort((a, b) => a - b)
-  let wrapOuts = 0
-
-  const generateCards: number[] = []
-  for (let i = 1; i <= 14; i++) {
-    if (!allValues.includes(i) || i === 14) generateCards.push(i)
-  }
-
-  for (const card of generateCards) {
-    const testValues = [...unique, card].sort((a, b) => a - b)
-    if (hasStraight(testValues, 5)) wrapOuts++
-  }
-
-  return Math.min(20, wrapOuts)
-}
-
-function identifyStraightDraws(ownCards: Card[], communityCards: Card[]) {
-  const allValues = [...ownCards, ...communityCards].map(c => rankValue(c))
-  const unique = [...new Set(allValues)].sort((a, b) => a - b)
-
-  let oeSd = 0
-  let gutshot = 0
-
-  for (let i = 1; i <= 14; i++) {
-    const testValues = [...unique, i].sort((a, b) => a - b)
-    if (hasStraight(testValues, 5)) {
-      const needed = i
-      const hasBothSides = unique.includes(needed - 1) && unique.includes(needed + 1)
-      if (hasBothSides) oeSd++
-      else gutshot++
-    }
-  }
-
-  return { oeSd: Math.min(2, oeSd), gutshot: Math.min(4, gutshot) }
-}
-
-function hasStraight(sortedValues: number[], length: number): boolean {
-  let consecutive = 1
-  for (let i = 1; i < sortedValues.length; i++) {
-    if (sortedValues[i] === sortedValues[i - 1] + 1) {
-      consecutive++
-      if (consecutive >= length) return true
-    } else if (sortedValues[i] !== sortedValues[i - 1]) {
-      consecutive = 1
+function hasOmahaStraight(ownCards: Card[], communityCards: Card[]): boolean {
+  if (ownCards.length < 2 || communityCards.length < 3) return false
+  for (const holePair of combinations(ownCards, 2)) {
+    for (const boardTrio of combinations(communityCards, 3)) {
+      if (isFiveCardStraight([...holePair, ...boardTrio])) return true
     }
   }
   return false
+}
+
+function hasOmahaFlush(ownCards: Card[], communityCards: Card[]): boolean {
+  if (ownCards.length < 2 || communityCards.length < 3) return false
+  for (const holePair of combinations(ownCards, 2)) {
+    if (holePair[0].suit !== holePair[1].suit) continue
+    for (const boardTrio of combinations(communityCards, 3)) {
+      if (boardTrio.every(card => card.suit === holePair[0].suit)) return true
+    }
+  }
+  return false
+}
+
+function isFiveCardStraight(cards: Card[]): boolean {
+  const ranks = new Set(cards.map(rankValue))
+  if (ranks.has(14)) ranks.add(1)
+  const sorted = [...ranks].sort((left, right) => left - right)
+  for (let index = 0; index <= sorted.length - 5; index++) {
+    if (sorted[index + 4] - sorted[index] === 4) return true
+  }
+  return false
+}
+
+function combinations<T>(values: readonly T[], count: number): T[][] {
+  if (count === 0) return [[]]
+  const result: T[][] = []
+  for (let index = 0; index <= values.length - count; index++) {
+    for (const rest of combinations(values.slice(index + 1), count - 1)) {
+      result.push([values[index], ...rest])
+    }
+  }
+  return result
+}
+
+function cardKey(card: Card): string {
+  return `${card.rank}:${card.suit}`
 }
 
 function countSuitedGroups(cards: Card[]): number {
@@ -410,7 +426,7 @@ function preflopHasAnyPair(cards: Card[]): boolean {
 function rankValue(card: Card): number {
   const map: Record<string, number> = {
     '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8,
-    '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14,
+    '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14,
   }
   return map[card.rank] ?? 0
 }

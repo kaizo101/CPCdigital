@@ -2,7 +2,7 @@
 
 Eine Offline-Poker-App für den Desktop: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung.
 
-Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.7.1** und bietet No-Limit Texas Hold'em und Pot-Limit Omaha High mit glaubwürdigen Bots, variant-spezifischer Handbewertung, kalibrierten Archetypen, Auto-Rebuys und Hand-Replays. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
+Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.7.6** und bietet No-Limit Texas Hold'em und Pot-Limit Omaha High mit glaubwürdigen Bots, variant-spezifischer Handbewertung, kalibrierten Archetypen, Auto-Rebuys und Hand-Replays. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
 
 ## Leitgedanken
 
@@ -42,8 +42,8 @@ Derzeit enthalten sind unter anderem:
 - kompakter JSON-Debug-Export (v2) für KI-gestützte Analyse
 - Mixed-Table-Kalibrierung und Balance-Simulation über alle Archetypen
 - Auto-Rebuys mit persönlichkeitsabhängigen Policies und Ersatz-Bots
-- grafisches Hand-Replay mit Step-Through, Autoplay und Session-Navigation
-- PokerStars-kompatible Hand-History (Export pro Hand oder ganze Session)
+- grafisches Hand-Replay mit Step-Through, Autoplay, Session-Navigation und lokalem Archiv der letzten 200 Hände
+- PokerStars-kompatible Hand-History (Export pro Hand oder alle geladenen Hände)
 - 7-stufige Handbewertung mit Board-Kontext (Premium bis Air)
 - Board-Verschlechterungserkennung und Protection-Betting
 - ReadTyp: Gegner-Bet-Sizing-Analyse mit Abweichungserkennung
@@ -90,7 +90,7 @@ npm run calibrate:bots
 Session-Evaluator mit Root-Cause-Analyse ausführen:
 
 ```bash
-npx tsx packages/client/src/session-evaluator.ts
+npx tsx packages/client/src/session/session-evaluator.ts
 ```
 
 Alle Pakete bauen und den Client dabei typprüfen:
@@ -115,10 +115,10 @@ packages/
 ├── poker-engine/    Pokerregeln, State Machine, Events und Replays
 ├── shared/          gemeinsam verwendete Typen
 ├── electron/        Desktop-Wrapper
-└── server/          älterer, aktuell nicht verwendeter Online-Prototyp
+└── server/          ruhender Online-Prototyp für eine mögliche v2-Integration
 ```
 
-Die laufende Offline-App benötigt das Server-Paket nicht. Eine Onlinefunktion ist vor v2.0 nicht vorgesehen.
+Die laufende Offline-App importiert oder benötigt das Server-Paket nicht. Es bleibt bewusst als ruhender Prototyp für eine mögliche v2-Integration im Repository; bis dahin ist es weder Produktionspfad noch Teil des v1-Releaseumfangs.
 
 ## Projektdokumentation
 

@@ -45,7 +45,10 @@ export default function App() {
       if (session) {
         try {
           const all: HandReplay[] = JSON.parse(session)
-          const idx = all.findIndex(r => r.handNumber === handNum)
+          const storedIndex = Number(localStorage.getItem('replay-start-index'))
+          const idx = Number.isInteger(storedIndex) && storedIndex >= 0 && storedIndex < all.length
+            ? storedIndex
+            : all.findIndex(r => r.handNumber === handNum)
           return { replays: all, startIndex: idx >= 0 ? idx : all.length - 1, debugMode }
         } catch { /* ignore */ }
       }
@@ -113,6 +116,7 @@ export default function App() {
           const hn = replayMode.replays[replayMode.startIndex]?.handNumber
           if (hn) localStorage.removeItem(`replay-${hn}`)
           localStorage.removeItem('replay-session')
+          localStorage.removeItem('replay-start-index')
           window.close()
         }}
       />
@@ -161,6 +165,7 @@ export default function App() {
       onRebuy={playerId => runner.requestRebuy(playerId)}
       onExportDebugRecord={handleExportDebugRecord}
       handReplays={localState.handReplays}
+      archivedHandReplays={localState.archivedHandReplays}
       sessionStats={localState.sessionStats}
       playerNames={playerNames}
       onExportSessionLog={() => {

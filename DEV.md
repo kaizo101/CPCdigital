@@ -5,7 +5,7 @@
 ```bash
 npm install
 npm run dev          # Vite + Electron
-npm test             # 228 Tests in ~1.5s
+npm test             # 251 Tests in ~2.5s
 npm run build        # Client + Engine + Electron bauen
 ```
 
@@ -22,25 +22,27 @@ packages/
 │   └── utils/            format, positions
 ├── poker-engine/src/     Regeln, State Machine, Hand-Evaluator
 ├── shared/src/           Typen (Player, Card, GameState, Events)
-└── electron/src/         Desktop-Wrapper (main, preload)
+├── electron/src/         Desktop-Wrapper (main, preload)
+└── server/src/           ruhender Online-Prototyp, nicht Teil des v1-Laufzeitpfads
 ```
 
 ### Wichtige Dateien
 
 | Datei | Zeilen | Verantwortung |
 |-------|--------|---------------|
-| `session/LocalGameRunner.ts` | 907 | Game-Loop, Bot-Management, Event-Capture |
-| `session/bot-rebuy-manager.ts` | 241 | Rebuys, Replacements, Leave-on-Bust |
-| `session/hand-replay.ts` | 310 | Replay-Builder, PokerStars-Formatierer |
-| `bot-action-scoring.ts` | 521 | Fold/Check/Call/Raise/All-In-Scoring |
-| `bot-action-modifiers.ts` | 291 | Persönlichkeit, Stack, Tilt-Modifier |
-| `bot-decision-metrics.ts` | 238 | SPR, Pot-Odds, Bet-Sizing |
-| `bot-params.ts` | 433 | Zentralisierte Tuning-Konstanten |
+| `session/LocalGameRunner.ts` | 980 | Game-Loop, Bot-Management, Event-Capture |
+| `session/bot-rebuy-manager.ts` | 243 | Rebuys, Replacements, Leave-on-Bust |
+| `session/hand-replay.ts` | 417 | Replay-Builder, Archiv, PokerStars-Formatierer |
+| `bot-action-scoring.ts` | 557 | Fold/Check/Call/Raise/All-In-Scoring |
+| `bot-action-modifiers.ts` | 306 | Persönlichkeit, Stack, Tilt-Modifier |
+| `bot-decision-metrics.ts` | 239 | SPR, Pot-Odds, Bet-Sizing |
+| `bot-params.ts` | 447 | Zentralisierte Tuning-Konstanten |
 | `bot-pipeline.ts` | 95 | Decision-Pipeline (Variant→Scoring→Auswahl) |
-| `nlhe-hand-evaluation.ts` | 719 | Hand-Kategorien, Draws, Vulnerability |
-| `bot-identities.ts` | 247 | Identity-Generator, Rebuy-Policies |
+| `nlhe-hand-evaluation.ts` | 752 | Hand-Kategorien, Draws, Vulnerability |
+| `omaha-hand-evaluation.ts` | 432 | PLO-Handbewertung, physische Draw-Outs |
+| `bot-identities.ts` | 252 | Identity-Generator, Rebuy-Policies |
 | `bot-habits.ts` | 271 | 12 Habits mit archetyp-spezifischen Präferenzen |
-| `poker-engine/src/game.ts` | 1050 | Engine: State Machine, Betting, Showdown |
+| `poker-engine/src/game.ts` | 1059 | Engine: State Machine, Betting, Showdown |
 
 ### Entscheidungs-Flow (Bot)
 
@@ -83,19 +85,34 @@ Setup → startHand() → postBlinds() → scheduleBotAction()
 
 ## Kalibrierung
 
-Die Bot-Kalibrierung (VPIP, PFR, 3-Bet) wird mit `npx tsx packages/client/src/simulation.ts` gemessen. Standard: 10.000 Hände pro Format × 3 Formate × 4 Archetypen = 120.000 Hände, Laufzeit ~5 Minuten.
+Die Bot-Kalibrierung (VPIP, PFR, 3-Bet, C-Bet, AF und WTSD) wird mit
+`npm run calibrate:bots` gemessen. Ohne `CALIB_HANDS` läuft die Release-Stufe mit
+10.000 Händen pro Format × 3 Formate × 4 Archetypen.
 
-Für statistisch signifikante Vergleiche zwischen Releases (p < 0.05, ±1%-Punkt) werden ~50.000 Hände pro Format benötigt. Das entspricht 600.000 Händen und ~15 Minuten Laufzeit. Ein solcher Lauf sollte vor jedem Minor-Release (v0.7.0, v0.8.0) durchgeführt werden.
+Für PLO wird `CALIB_VARIANT=omaha-high` gesetzt. Seeds und Handzahl müssen bei
+A/B-Vergleichen identisch bleiben. `CALIB_NO_EXIT=1` ist für Diagnoseberichte
+geeignet; ein Release-Gate darf Fehlschläge nicht damit ausblenden.
 
 Die Ergebnisse werden in `calibration/` versioniert abgelegt.
 
 ### Stichprobengrößen
 
-| Zweck | Hände/Format | Total | Laufzeit |
-|-------|-------------|-------|----------|
-| Dev (schnell) | 3.000 | 36k | ~90s |
-| Dev (Standard) | 10.000 | 120k | ~5min |
-| Pre-Release | 50.000 | 600k | ~25min |
+| Stufe | Hände/Format | Total | Einsatz |
+|-------|-------------:|------:|---------|
+| Smoke | 300 | 3.600 | Laufzeitfehler, Invalid Actions, grobe Ausreißer |
+| Entwicklung | 3.000 | 36.000 | Richtungsvergleich während gezieltem Tuning |
+| Release | 10.000 | 120.000 | reproduzierbarer Bericht vor botrelevanten Releases |
+| Bestätigung | 20.000–50.000 | 240.000–600.000 | knappe Grenzen oder statistisch auffällige A/B-Differenzen |
+
+Die Laufzeit hängt stark von Variante und Evaluator ab; physische PLO-Outs sind
+deutlich teurer als NLHE. Ein 20k–50k-Lauf ist daher kein pauschales Minor-Release-
+Ritual, sondern eine gezielte Bestätigung, wenn 10k keine klare Entscheidung erlaubt.
+
+Beispiel für einen PLO-Smoke-Lauf:
+
+```bash
+CALIB_VARIANT=omaha-high CALIB_HANDS=300 CALIB_NO_EXIT=1 npm run calibrate:bots
+```
 
 ## Parameter-System
 
@@ -134,7 +151,7 @@ Jeder Bot durchläuft pro Entscheidung ~15 Modifier-Funktionen, die additive Bei
 
 ## Tests
 
-- `npm test` führt 228 Tests in ~1.5s aus (Vitest)
+- `npm test` führt 251 Tests in ~2.5s aus (Vitest)
 - Testdateien liegen neben den Source-Dateien (`*.test.ts`)
 - Engine-Tests separat in `packages/poker-engine/`
 - Kalibrierung ist NICHT Teil der Test-Suite (Laufzeit), sondern separates Skript
@@ -159,6 +176,9 @@ Der Session-Debug-Export (JSON) enthält den kompletten Spielverlauf inkl. priva
 
 - **Scoring ist additiv**: Beiträge werden summiert, kein Clamping zwischen Schichten. Ein extremer Habit (+30) kann alle anderen Modifier überschreiben.
 - **Keine GTO-Basis**: Alle Entscheidungen basieren auf Heuristiken, nicht auf spielfheoretischen Berechnungen. Das ist gewollt (Casual statt Solver).
-- **Reads nur gegen Bots trainiert**: Die Read-Systeme lernen aus Bot-Verhalten, nicht aus menschlichem Spiel.
+- **Reads heuristisch kalibriert**: Bots beobachten Hero und andere Bots; echtes menschliches Spielverhalten ist noch nicht validiert.
 - **Persistenter Roster**: Bot-Identities werden in localStorage gespeichert. Nach Browser-Daten-Löschung wird ein neuer Roster generiert.
+- **Lokales Hand-Archiv**: Die letzten 200 Replays liegen in localStorage und gehen beim Löschen der Browser-Daten verloren.
 - **Electron-only Replay-Fenster**: Separate BrowserWindows funktionieren nur in Electron. Im Browser fällt das Replay auf ein Overlay zurück.
+- **Ruhender Server-Prototyp**: `packages/server` bleibt bewusst für eine mögliche v2-Integration erhalten, wird aber vom Offline-Client nicht importiert und ist kein v1-Produktionspfad.
+- **Formatierung**: Eine gemeinsame Prettier-Konfiguration ist noch nicht eingecheckt und wird in v0.7.7 als eigener mechanischer Commit eingeführt.

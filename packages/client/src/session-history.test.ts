@@ -85,6 +85,10 @@ describe('LocalGameRunner session history', () => {
     expect(first.state.sessionHistory.some(entry =>
       entry.event.type === 'PlayerActed' && entry.event.playerId.startsWith('bot-')
     )).toBe(true)
+    const debugRecord = first.createSessionDebugRecord('test', 'EUR')
+    expect(debugRecord.botProfiles.some(({ profile }) =>
+      profile.reads.some(read => read.playerId.startsWith('bot-'))
+    )).toBe(true)
 
     first.cleanup()
     second.cleanup()

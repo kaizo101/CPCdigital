@@ -83,11 +83,8 @@ export function ActionButtons({
   const setMaxRaise = () => applyRaise(sliderMax, 'up')
   const isAllInSelected = !canMakeFullRaise || (isMaximumChipAmount(sliderValue, maxRaise) && !canRaise)
   const aggressiveActionLabel = getAggressiveActionLabel(currentBet)
-  const actionForAmount = (amount: number): PlayerAction => (
-    isMaximumChipAmount(amount, maxRaise)
-      ? { type: 'all-in' }
-      : { type: 'raise', amount }
-  )
+  const actionForAmount = (amount: number): PlayerAction =>
+    getAggressiveActionForAmount(amount, canMakeFullRaise)
 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -244,4 +241,11 @@ export function ActionButtons({
       </div>
     </div>
   )
+}
+
+export function getAggressiveActionForAmount(
+  amount: number,
+  canMakeFullRaise: boolean,
+): PlayerAction {
+  return canMakeFullRaise ? { type: 'raise', amount } : { type: 'all-in' }
 }

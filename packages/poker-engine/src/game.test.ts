@@ -91,6 +91,17 @@ describe('startHand', () => {
     }
   })
 
+  it('sorts ten between jack and nine in private player views', () => {
+    const game = new PokerGame(makePlayers(2), config)
+    const internal = game as any
+    internal.holeCards = new Map([
+      ['p1', [card('9', 'clubs'), card('T', 'diamonds'), card('J', 'hearts')]],
+    ])
+
+    expect(game.getPlayerView('p1').ownCards?.map(current => current.rank))
+      .toEqual(['J', 'T', '9'])
+  })
+
   it('posts blinds and deducts from player chips', () => {
     const game = new PokerGame(makePlayers(3), config)
     game.startHand()

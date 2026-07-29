@@ -6,6 +6,7 @@ import type {
   Card,
   TableOptions,
   HandResult,
+  HandEvent,
 } from '@cpc/shared'
 import {
   createSessionStats,
@@ -55,9 +56,9 @@ function identityArchetypeId(botState: BotState): BotArchetypeId {
   return 'tag'
 }
 import type {
+  CompactDecisionSnapshot,
   SessionDebugRecord,
   SessionDebugRecordV2,
-  SessionDecisionSnapshot,
   SessionHistoryEvent,
 } from './session-debug-record'
 import {
@@ -65,7 +66,12 @@ import {
   SESSION_DEBUG_SCHEMA_VERSION,
 } from './session-debug-record'
 import type { DisplayCurrency } from '../utils/format'
-import { buildReplayFromSession, formatHandHistory } from './hand-replay'
+import {
+  appendHandReplayToArchive,
+  buildReplayFromSession,
+  formatHandHistory,
+  loadHandReplayArchive,
+} from './hand-replay'
 import type { HandReplay } from './hand-replay'
 import { BotRebuyManager } from './bot-rebuy-manager'
 import type { RebuyRequestStatus } from './bot-rebuy-manager'
@@ -88,6 +94,7 @@ export interface LocalGameState {
   sessionHistory: readonly SessionHistoryEvent[]
   pendingRebuyPlayerIds: readonly string[]
   handReplays: readonly HandReplay[]
+  archivedHandReplays: readonly HandReplay[]
   sessionStats: Readonly<SessionStatsData>
 }
 
@@ -110,7 +117,7 @@ export class LocalGameRunner {
   private showdownCards: Record<string, Card[]> = {}
   private sessionHistory: SessionHistoryEvent[] = []
   private sessionStats: SessionStatsData = createSessionStats('texas-holdem', 20)
-  private sessionDecisionSnapshots: any[] = []
+  private sessionDecisionSnapshots: CompactDecisionSnapshot[] = []
   private botDebugDecisions: BotDebugDecision[] = []
   private previousSnapshotActionCountPerHand = new Map<number, number>()
   private nextBotDebugSequence = 1
@@ -118,6 +125,7 @@ export class LocalGameRunner {
     null, [], new Set(), new Map(), new Map(), new Map(), new Map(), new Map(), new Map(), 0, true,
   )
   private handReplays: HandReplay[] = []
+  private archivedHandReplays: HandReplay[] = []
   private playerNames = new Map<string, string>()
   private runoutStartCardCount: number | null = null
   private visibleCommunityCardCount: number | null = null
@@ -143,6 +151,7 @@ export class LocalGameRunner {
         sessionHistory: [...this.sessionHistory],
         pendingRebuyPlayerIds: [...this.rebuyManager.pendingRebuyPlayerIds],
         handReplays: [...this.handReplays],
+        archivedHandReplays: [...this.archivedHandReplays],
         sessionStats: this.sessionStats,
       }
     }
@@ -167,6 +176,7 @@ export class LocalGameRunner {
       sessionHistory: [...this.sessionHistory],
       pendingRebuyPlayerIds: [...this.rebuyManager.pendingRebuyPlayerIds],
       handReplays: [...this.handReplays],
+      archivedHandReplays: [...this.archivedHandReplays],
       sessionStats: this.sessionStats,
     }
   }
@@ -177,7 +187,7 @@ export class LocalGameRunner {
   }
 
   /** Private debug/analysis data; deliberately excluded from public UI state. */
-  getPrivateDecisionSnapshots(): readonly SessionDecisionSnapshot[] {
+  getPrivateDecisionSnapshots(): readonly CompactDecisionSnapshot[] {
     return [...this.sessionDecisionSnapshots]
   }
 
@@ -205,7 +215,7 @@ export class LocalGameRunner {
         playerName: d.playerName,
         snapshot: {
           phase: d.context.publicState.phase,
-          hand: `${d.context.ownCards[0].rank}${d.context.ownCards[0].suit[0]} ${d.context.ownCards[1].rank}${d.context.ownCards[1].suit[0]}`,
+          hand: d.context.ownCards.map(card => `${card.rank}${card.suit[0]}`).join(' '),
           board: d.context.publicState.communityCards.map(c => `${c.rank}${c.suit[0]}`).join(' ') || '-',
           potOdds: Math.round(d.metrics.potOdds * 100),
           spr: Math.round(d.metrics.spr * 10) / 10,
@@ -317,6 +327,7 @@ export class LocalGameRunner {
     this.previousSnapshotActionCountPerHand.clear()
     this.nextBotDebugSequence = 1
     this.handReplays = []
+    this.archivedHandReplays = loadHandReplayArchive()
     this.playerNames.clear()
     this.playerNames.set(this.heroId, 'You')
     this.runoutStartCardCount = null
@@ -389,6 +400,7 @@ export class LocalGameRunner {
       options.startingChips,
       rebuyEnabled,
       () => this.notify(),
+      this.identityRandom,
     )
 
     this.notify()
@@ -573,7 +585,7 @@ export class LocalGameRunner {
     for (const event of newEvents) {
       if (event.type === 'PlayerActed') {
         const actionPlayerId = event.playerId
-        if (this.botIds.has(actionPlayerId)) continue
+        if (actionPlayerId === botId) continue
 
         const action = event.action
 
@@ -628,9 +640,19 @@ export class LocalGameRunner {
       ? new Map(this.players.map(p => [p.id, { chips: p.chips, isSittingOut: p.isSittingOut }]))
       : null
 
-    // Update mental state for all bots based on hand results
+    // Folded bots still observe actions that happened after their final decision.
     for (const [botId, botState] of this.botStates) {
-      const event = this.detectMentalEvent(botId, results, bigBlind, gs)
+      this.updateOpponentReads(botId, botState)
+    }
+
+    // Update mental state for all bots based on their actual net result.
+    for (const [botId, botState] of this.botStates) {
+      const event = detectMentalEventFromHand(
+        botId,
+        results,
+        bigBlind,
+        this.game.getPublicHandHistory(),
+      )
       recordHandResult(
         botState.memory,
         results.some(result => result.playerId === botId && result.amount > 0),
@@ -708,9 +730,7 @@ export class LocalGameRunner {
     if (gs) {
       recordHand(
         this.sessionStats,
-        this.players.map(p => p.id),
         this.heroId,
-        this.currentHandNumber,
         gs.players.find(p => p.id === this.heroId)?.chips ?? 0,
         this.game!.getPublicHandHistory(),
       )
@@ -722,33 +742,6 @@ export class LocalGameRunner {
     this.autoStartTimer = setTimeout(() => {
       this.startHand()
     }, resultDisplayMs)
-  }
-
-  private detectMentalEvent(botId: string, results: HandResult[], bigBlind: number, gameState: any): MentalEvent | null {
-    const wonResult = results.find(r => r.playerId === botId && r.amount > 0)
-    const potSize = results.reduce((sum, r) => sum + r.amount, 0)
-    const potBb = potSize / bigBlind
-
-    const opponentWinner = results.find(r => r.playerId !== botId && r.amount > 0)
-    const opponentId = opponentWinner?.playerId
-
-    if (wonResult) {
-      if (potBb < 5) {
-        return { type: 'won-small-pot', potBb }
-      } else if (potBb > 20) {
-        return { type: 'suckout-win', potBb }
-      } else {
-        return { type: 'won-small-pot', potBb }
-      }
-    } else {
-      if (potBb < 5) {
-        return { type: 'lost-small-pot', potBb, opponentId }
-      } else if (potBb > 20) {
-        return { type: 'lost-big-pot', potBb, opponentId }
-      } else {
-        return { type: 'lost-small-pot', potBb, opponentId }
-      }
-    }
   }
 
   private syncChips(): void {
@@ -811,14 +804,7 @@ export class LocalGameRunner {
     )
     if (replay) {
       this.handReplays.push(replay)
-      if (this.handReplays.length > 50) this.handReplays.shift()
-
-      try {
-        const stored = JSON.parse(localStorage.getItem('cpcdigital-hand-history') ?? '[]')
-        stored.push(replay)
-        if (stored.length > 200) stored.splice(0, stored.length - 200)
-        localStorage.setItem('cpcdigital-hand-history', JSON.stringify(stored))
-      } catch { /* localStorage full */ }
+      this.archivedHandReplays = appendHandReplayToArchive(replay)
     }
   }
 
@@ -913,6 +899,36 @@ export class LocalGameRunner {
     if (p) p.isSittingOut = sittingOut
     this.notify()
   }
+}
+
+export function detectMentalEventFromHand(
+  botId: string,
+  results: readonly HandResult[],
+  bigBlind: number,
+  history: readonly HandEvent[],
+): MentalEvent | null {
+  let invested = 0
+  for (const event of history) {
+    if ((event.type === 'BlindPosted' || event.type === 'PlayerActed') && event.playerId === botId) {
+      invested += event.amount
+    } else if (event.type === 'UncalledBetReturned' && event.playerId === botId) {
+      invested -= event.amount
+    }
+  }
+
+  const awarded = results
+    .filter(result => result.playerId === botId)
+    .reduce((sum, result) => sum + result.amount, 0)
+  const net = awarded - invested
+  if (Math.abs(net) < 0.005) return null
+
+  const potBb = Math.abs(net) / Math.max(bigBlind, 0.01)
+  if (net > 0) return { type: 'won-small-pot', potBb }
+
+  const opponentId = results.find(result => result.playerId !== botId && result.amount > 0)?.playerId
+  return potBb > 20
+    ? { type: 'lost-big-pot', potBb, opponentId }
+    : { type: 'lost-small-pot', potBb, opponentId }
 }
 
 function createBotDebugProfile(botState: BotState): BotDebugProfile {
