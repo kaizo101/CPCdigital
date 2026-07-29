@@ -367,7 +367,7 @@ Zwei TAG-Bots sollen dieselbe Grundstrategie besitzen, sich aber dennoch untersc
 
 | Metrik | Wert | Target | Grund |
 |--------|------|--------|-------|
-| TAG AF | 3.06/3.81 | 1.5-3.5 | PLO-typisch erhöht (mehr Draw-Calls) |
+| TAG AF | 3.06 FR, 3.81 6-max | 1.5-3.5 | PLO-typisch erhöht (mehr Draw-Calls) |
 | Nit WTSD | 43.7% | 25-36% | checked-down bei checked-to-Spots |
 | LAG AF FR | 2.49 | 2.5-6 | 0.01 unter Grenze – könnte Rauschen sein (Vermutung, nicht validiert → 10-20k nötig) |
 | LAG CBet FR | 40.4% | 40-60% | Knapp im Ziel, leicht erhöhbare Postflop-Raise-Scores |
