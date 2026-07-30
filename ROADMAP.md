@@ -407,7 +407,7 @@ korrekte Draw-Auswertung nicht für alte Kalibrierungswerte zurückgedreht.
 
 ---
 
-## 🎯 0.7.7 — Stabilisierung nach UI-Rollback
+## ✅ 0.7.7 — Stabilisierung nach UI-Rollback
 
 **Ziel:** Die nach dem Rollback belegten Regressionen schließen und die
 Entwicklungswerkzeuge sowie die öffentliche Projektbasis vor dem nächsten
@@ -437,11 +437,68 @@ Bedienbarkeit und messbare Viewport-Grenzen.
 - [x] Desktop 1440×1000 und Tablet 1024×768 mit belastbarem Sicherheitsabstand
 - [x] Responsive Component-/Browser-Tests für die vier geprüften Viewports
 
-### Tooling und PLO-Kontrolle
+### Android-Debug-Prototyp
 
-- [ ] Prettier-Konfiguration als separaten mechanischen Commit einführen
-- [ ] Dokumentierte Format- und Lint-Befehle ergänzen
-- [ ] PLO TAG/LAG C-Bet und 3-Bet auf Basis der neuen 10k-Baseline gezielt prüfen
+Der native Stand dient zunächst dem schnellen Test auf echten Smartphones. Er
+ist weder ein öffentliches APK-Release noch ein v1.0-Release-Gate; die
+Browser-Demo bleibt mobil bewusst auf einen funktionalen Fallback begrenzt.
+
+- [x] Capacitor 8, eingechecktes `android/`-Projekt und reproduzierbare
+  Sync-, Open-, Run- und Gradle-Check-Skripte
+- [x] Landscape-Vollbild mit Systemleisten-, Safe-Area-, Display-Cutout-,
+  Zurück-Taste- und Resume-Handling
+- [x] einfache vollflächige Setup-Maske und kompakte native Touch-Actionbar
+- [x] Android-spezifische Lesbarkeit für Board und Hero-Hole-Cards verbessern
+- [x] bekannte obere Karten-Clips mit einer begrenzten Sicherheitskorrektur
+  schließen, ohne die spätere TableGeometry vorwegzunehmen
+- [x] Web, Phone-Portrait, kompaktes Landscape und Desktop/Tablet per
+  `matchMedia` statt User-Agent-Heuristik trennen
+- [x] ersten qualitativen APK-Lauf auf echter Hardware durchführen,
+  Unstimmigkeiten sammeln und nach 0.7.7-Blocker versus
+  0.9.0-Geometriearbeit priorisieren
+- [x] Android-HandReplayer reproduzieren: Funktion bestätigt, gequetschte
+  mobile Geometrie nach 0.9.1 verschoben und nicht nutzbaren Export im
+  Android-Prototyp ausgeblendet
+- [x] verkürzten Kontrolllauf über NLHE/PLO sowie Heads-up/6-max/Full Ring,
+  Zurück-Taste und Resume abschließen
+
+> Gerätelauf und Kontrollmatrix sind im
+> [APK-Gerätebericht vom 30.07.2026](testing/apk/2026-07-30-device-inventory.md)
+> festgehalten. Der Replayer ist funktional, seine mobile Tischgeometrie bleibt
+> jedoch bewusst Bestandteil von 0.9.1.
+
+### Release-Gate
+
+- [x] qualitative APK-Bestandsaufnahme durchführen und Befunde in
+  0.7.7-Blocker versus spätere TableGeometry-/UX-Arbeit einordnen
+- [x] Android-HandReplayer als funktional, aber geometrisch noch nicht
+  releasefähig einordnen; funktionslosen Android-Export ausblenden und
+  vollständiges Touch-/Geometrie-Redesign nach 0.9.1 verschieben
+- [x] Bestehende Client-, Responsive- und Android-Debug-Builds erneut
+  erfolgreich ausführen
+- [x] verkürzte Varianten-, Format- und Lifecycle-Matrix auf echter Hardware
+  abschließen
+
+---
+
+## 🎯 0.7.8 — PLO-Baseline-Revalidierung
+
+**Ziel:** Die nach den fachlichen Draw- und Ranking-Korrekturen dokumentierten
+PLO-Abweichungen separat prüfen, ohne den bereits umfangreichen
+Stabilisierungsrelease 0.7.7 weiter zu vergrößern.
+
+- [ ] TAG- und LAG-C-Bet sowie 3-Bet auf Basis der aktuellen 10k-Baseline mit
+  identischen Seeds gezielt reproduzieren
+- [ ] Abweichungen zwischen Full Ring, 6-max und Heads-up fachlich trennen
+- [ ] Nur statistisch reproduzierbare Verschiebungen korrigieren; physisch
+  korrekte Draw- und Omaha-Regellogik nicht für alte Zielwerte zurückdrehen
+
+### Release-Gate
+
+- [ ] 3k-Entwicklungsläufe ohne Invalid-Action-Fallbacks
+- [ ] 10k-Bestätigungslauf für alle vier PLO-Archetypen und drei Formate
+- [ ] Kalibrierungsbericht mit Seeds, Vorher-/Nachher-Werten und verbleibenden
+  bekannten Abweichungen versionieren
 
 ---
 
@@ -473,11 +530,12 @@ Bedienbarkeit und messbare Viewport-Grenzen.
 - [ ] `LocalGameRunner.ts` splitten: verbleibende Zuständigkeiten nach v0.8.0 entflechten
 - [ ] Veraltete Bot-Dateien aufräumen (`bot.ts`, doppelte Helfer)
 - [ ] Ruhendes `server`-Paket klar vom v1-Buildpfad getrennt halten und v2-Schnittstellenannahmen dokumentieren
+- [ ] Prettier-Konfiguration als separaten mechanischen Commit einführen
+- [ ] Dokumentierte Format- und Lint-Befehle ergänzen
 
 ### Tests
 
 - [ ] Integrationstests: Engine + LocalGameRunner als durchgehende Pipeline (Hand von Blinds bis Showdown)
-- [ ] Component-Tests: PokerTable, PlayerSeat, ActionButtons, HandReplayer
 - [ ] Randfall-Tests: Empty-State (0 Spieler), Bust-zu-Ende, schnelle Neustarts
 
 ---
@@ -500,19 +558,127 @@ Bedienbarkeit und messbare Viewport-Grenzen.
 
 ---
 
-## 🎯 0.9.0 — TableGeometry & Responsive Layout
+## 🎯 0.8.3 — Persistenz & Recovery
 
-**Ziel:** Mathematische Tischgeometrie statt Hardcode-Presets und eine belastbare responsive Basis.
+**Ziel:** Lokale Nutzerdaten vor v1 kontrolliert laden, migrieren und bei
+Fehlern wiederherstellbar behandeln, statt beschädigte Einträge still zu
+verwerfen oder ungefragt durch Defaults zu ersetzen.
 
-- [ ] **TableGeometry SSOT**: Ellipsen-basierte Sitzberechnung (Achsen, Mittelpunkt) statt getrennter Presets für Seat/Bet/Button-Positionen
-- [ ] Desktop-/Tablet-Abstände, Header-Kompression und Table-Shell-Formel finalisieren
-- [ ] Phone-Landscape: Actionbar-Usability, sichtbarer Slider und kompakte Buttons
-- [ ] **Replayer-Touch**: Steuerung auf kleinen Screens (Wisch-Gesten, größere Buttons)
-- [ ] Viewport-Matrix automatisiert gegen Überlagerungen und abgeschnittene Controls prüfen
+- [ ] Gemeinsame versionierte Persistenzschicht für Roster, Replay-Archiv und
+  Einstellungen definieren
+- [ ] Gespeicherte Daten vor der Nutzung strukturell validieren und
+  Migrationen als deterministische, separat getestete Schritte ausführen
+- [ ] Beschädigte oder unbekannte Daten nicht still überschreiben; Recovery
+  mit verständlicher Meldung, Diagnoseexport und bewusstem Reset anbieten
+- [ ] Vollständigen lokalen Datenexport für Diagnose und Sicherung vor einem
+  Reset bereitstellen
+- [ ] Speicherfehler wie ungültiges JSON, unbekannte Schema-Version,
+  Quota-Überschreitung und nicht verfügbares `localStorage` testen
+- [ ] Roster, Replays und Einstellungen bleiben über unterstützte Upgrades
+  erhalten; eine laufende Hand oder Session wird nicht wiederaufgenommen
 
 ---
 
-## 🎯 0.9.1 — Branding & Controls
+## 🎯 0.8.4 — UI-Fundament
+
+**Ziel:** Komponenten, Styles und Tests für den großen Tischumbau vorbereiten,
+ohne vor 0.9.0 eine zweite sichtbare Geometrie einzuführen.
+
+- [ ] `PokerTable` sowie responsive Tisch-Styles aus `TableScreen` entkoppeln
+- [ ] Verantwortlichkeiten von TableSurface, TableStage, Pods, Karten, Bets,
+  Board, Pot und Controls als Komponenten- und Layer-Grenzen festlegen
+- [ ] Styling-Spike: Tailwind an einer repräsentativen UI-Komponente gegen
+  CSS-Klassen und Design-Tokens evaluieren und die Entscheidung vor 0.9.0
+  dokumentieren
+- [ ] Component-Tests für PokerTable, PlayerSeat, ActionButtons und
+  HandReplayer als Ausgangsbasis ergänzen
+- [ ] Referenz-Viewports und visuelle Abnahme-Checkpoints für den 0.9-Umbau
+  festhalten
+- [ ] Geführte Alpha mit klar abgegrenzten Rollen und den Vorlagen der
+  [Teststrategie](TESTING_STRATEGY.md) vorbereiten; keine breite Bewerbung als
+  fertiges Produkt
+
+---
+
+## 🎯 0.9.0 — TableSurface & TableGeometry
+
+**Ziel:** Eine gemeinsame visuelle und mathematische Tischbasis statt
+Hardcode-Presets. Die Tischschale wird zuerst als normierte Oberfläche
+festgelegt; TableGeometry, Pods, Karten und Bets verwenden anschließend
+dieselben Zonen als SSOT.
+
+### Iteration 1 — TableSurface
+
+- [ ] Präsentationales React-SVG mit echter Ellipse und festem
+  Zielverhältnis um 1,75:1 statt gestreckter Stadion-/Kapselform erstellen
+- [ ] Pseudo-3D-Schichtung aus sichtbarer Unterkante, dunkler Leder-Rail,
+  innerer Naht und gedecktem grünem Filz umsetzen
+- [ ] Betting-Line nur als optionales, sehr dezentes Skin-Detail behandeln;
+  Bet-Positionen dürfen nicht von ihrer Sichtbarkeit abhängen
+- [ ] Silhouette, Rail-Stärke und Materialwirkung vor der Integration separat
+  für Desktop und Android-Landscape visuell abnehmen
+
+### Iteration 2 — TableGeometry SSOT
+
+- [ ] Normierte Surface-, Seat-, Card- und Bet-Ellipsen mit gemeinsamem
+  Mittelpunkt und nachvollziehbaren Insets definieren
+- [ ] SVG und Positionsberechnung aus denselben Geometriewerten ableiten,
+  damit keine zweite visuelle Geometriequelle entsteht
+- [ ] Heads-up, 6-max und Full Ring aus der Geometrie berechnen statt
+  getrennte Seat-/Bet-/Button-Presets zu pflegen
+
+### Iteration 3 — Pod-Docking und Karten
+
+- [ ] Pods waagerecht und überwiegend außerhalb des Felts anordnen; das Felt
+  bleibt für Bets, Pot, Board und Ergebnisdarstellung frei
+- [ ] Avatarzentrum als stabilen Docking-Punkt verwenden; Podkörper auf linker
+  und rechter Tischhälfte gespiegelt vom Tisch weg wachsen lassen
+- [ ] Hole Cards aufrecht hinter dem jeweiligen Pod platzieren und teilweise
+  verdecken; feste Bühnen-Sicherheitszonen ersetzen sitzspezifische
+  Clipping-Korrekturen
+- [ ] Bets entlang der unsichtbaren inneren Bet-Ellipse eindeutig dem
+  jeweiligen Spieler zuordnen
+
+### Release-Gate
+
+- [ ] NLHE und PLO mit Heads-up, 6-max und Full Ring ohne Pod-, Karten- oder
+  Bet-Überlagerungen in den Desktop-Referenzmaßen
+- [ ] Automatisierte Geometrietests für Symmetrie, Bounding Boxes,
+  Bet-Zuordnung und stabile Reihenfolge
+- [ ] Visuelle Freigabe nach TableSurface und Pod-Docking statt ausschließlich
+  am Ende des Gesamtumbaus
+
+---
+
+## 🎯 0.9.1 — Responsive UI & Replay
+
+**Ziel:** Die gemeinsame Tischgeometrie auf alle unterstützten Oberflächen und
+den HandReplayer übertragen.
+
+- [ ] Desktop-, Tablet- und Android-Abstände, Header-Kompression und
+  Table-Shell-Formel aus derselben Geometriequelle ableiten
+- [ ] Phone-Landscape: Actionbar-Usability, sichtbaren Slider und kompakte
+  Buttons auf Basis der Android-Prototyperkenntnisse finalisieren
+- [ ] HandReplayer auf dieselbe TableSurface und TableGeometry umstellen
+- [ ] **Replayer-Touch**: Android-Overlay und kleine Browser-Screens mit
+  größeren Controls und geeigneten Touch-Gesten zuverlässig bedienbar machen
+- [ ] Browser-Mobile bleibt ein funktionaler Fallback; keine PWA und keine
+  vollständige Parität mit dem nativen Android-Layout
+
+### Release-Gate
+
+- [ ] NLHE und PLO mit Heads-up, 6-max und Full Ring auf Desktop, Tablet und
+  Android-Landscape ohne Pod-, Karten-, Bet- oder Control-Überlagerungen
+- [ ] Viewport- und Geräte-Matrix gegen abgeschnittene Inhalte, falsche
+  Bet-Zuordnung sowie Abweichungen zwischen Spiel und Replay
+- [ ] Visuelle Freigabe der finalen Plattformkomposition
+- [ ] Browser-Demo als öffentliche Beta mit bekannten Einschränkungen,
+  rollenbezogenen Formularen und getrennten Kanälen für Bugs und Eindrücke
+  ausweisen
+
+---
+
+## 🎯 0.9.2 — Branding & Controls
 
 **Ziel:** CPCdigital-eigenes Erscheinungsbild statt PokerStars-Optik.
 
@@ -525,24 +691,69 @@ Bedienbarkeit und messbare Viewport-Grenzen.
 
 ---
 
-## 🎯 0.9.2 — Animationen & Sound
+## 🎯 0.9.3 — Essenzielles visuelles und akustisches Feedback
 
-**Ziel:** Spielgefühl durch visuelles und akustisches Feedback.
+**Ziel:** Vor v1 eindeutiges, dezentes Spielgefühl schaffen, ohne Engine oder
+Replay von einer komplexen Animationspipeline abhängig zu machen.
 
-- [ ] Karten-Animationen (Deal, Flip, Muck)
-- [ ] Chip-Animationen (Bets, Pot-Zusammenfassung, Gewinn-Verschiebung)
-- [ ] Sound-Effekte (Karten, Chips, Showdown, Session-Events)
+- [ ] Rein präsentationale CSS-Animationen für Deal/Reveal, Bet-/Pot-Änderung,
+  aktiven Spieler und Gewinner
+- [ ] Animationen dürfen Eingabe, Engine-Fortschritt und deterministisches
+  Replay nicht steuern oder blockieren
+- [ ] Dezente offline erzeugte Web-Audio-Sounds für Karten, Chips und
+  Handabschluss; keine Musik und keine Stimmen
+- [ ] Persistenter globaler Mute-Schalter und konservative Standardlautstärke
+- [ ] `prefers-reduced-motion` respektieren und alle Zustände auch ohne
+  Animation eindeutig darstellen
 
 ---
 
-## 🎯 0.9.3 — Performance, Accessibility & UI-Testing
+## 🎯 0.9.4 — Hardening, Accessibility & UI-Testing
 
-**Ziel:** Performance-Check und UI-Stabilität vor v1.0.
+**Ziel:** Fehlerfälle, Desktop-Sicherheitsgrenzen, Performance und
+Bedienbarkeit vor dem Packaging gezielt absichern.
 
+- [ ] React-ErrorBoundary mit lokaler Recovery-Ansicht, Neustart,
+  Setup-Rückkehr und kopierbarem Diagnosebericht statt leerem Screen
+- [ ] Unbehandelte Fehler und Promise-Rejections ausschließlich lokal für den
+  Diagnoseexport erfassen; keine Telemetrie oder automatische Übertragung
+- [ ] Electron-Renderer mit Sandbox und Content Security Policy härten sowie
+  Navigation, externe Links und IPC-Eingaben auf erlaubte Fälle begrenzen
+- [ ] Vollständigen Spiel-Smoke ohne Netzwerkverbindung für den gebauten
+  Client und Electron durchführen
 - [ ] Performance-Test für lange Sessions (>500 Hände) mit UI-Komponenten
 - [ ] Render-Tests für neue UI-Komponenten (TableGeometry, Animationen)
 - [ ] responsive Test-Matrix (Desktop, Tablet, Phone-Landscape)
+- [ ] native Android-Matrix für Cutouts, Systemleisten, Zurück-Taste,
+  Resume-Verhalten und unterstützte Displaygrößen
 - [ ] Tastatursteuerung, Fokusführung, Kontrast und Reduced-Motion prüfen
+
+---
+
+## 🎯 0.9.5 — Packaging-Smoke & Release Candidate
+
+**Ziel:** Den Kandidaten für v1.0 auf den tatsächlich unterstützten
+Desktop-Plattformen bauen und mit einer schlanken, hobbyprojektgerechten
+Abschlusskontrolle prüfen.
+
+- [ ] Windows-Paket und Linux-AppImage aus dem versionierten Quellstand bauen
+- [ ] Beide Pakete auf einer sauberen Umgebung installieren beziehungsweise
+  starten und Setup, NLHE, PLO sowie Replay ohne Netzwerkverbindung prüfen
+- [ ] Lizenztext, Copyright-, Drittanbieter- und Source-Hinweise in beiden
+  Distributionswegen bereitstellen
+- [ ] Paketinhalt auf lokale Entwicklungsdaten, Secrets und unnötige
+  Server-Artefakte prüfen
+- [ ] Unterstützte Systeme, Installationsweg und bekannte Einschränkungen
+  knapp dokumentieren
+- [ ] Windows- und Linux-Artefakte als öffentliche Vorabversion mit
+  strukturiertem Fehlerformular gegen reale Installationen prüfen
+- [ ] Release-Candidate taggen und nach dem vollständigen Gate bis v1.0
+  inhaltlich unverändert lassen
+
+> Checksummen können mit geringem Aufwand ergänzt werden, blockieren v1 aber
+> nicht. Code-Signierung, Auto-Updates, bitgenau reproduzierbare Builds,
+> SBOM-/Provenance-Pipelines und eine breite Distributionsmatrix sind für den
+> nichtkommerziellen Erstrelease ausdrücklich kein Pflichtumfang.
 
 ---
 
@@ -555,10 +766,10 @@ Fundament für spätere Lern- und Variantenmodule.
 
 - [x] NLHE vollständig spielbar
 - [x] Omaha High vollständig spielbar
-- [ ] 4 unterscheidbare Bot-Archetypen mit Personality, Skill, Reads, Mental State
-- [ ] vollständige Hand History und Replay
-- [ ] Decision Records und erklärbare Bot-Scores
-- [ ] Session-Statistiken (Live-VPIP/PFR, BB/100)
+- [x] 4 unterscheidbare Bot-Archetypen mit Personality, Skill, Reads, Mental State
+- [x] vollständige Hand History und Replay
+- [x] Decision Records und erklärbare Bot-Scores
+- [x] Session-Statistiken (Live-VPIP/PFR, BB/100)
 - [ ] stabiles Desktop-Packaging
 - [ ] Dokumentation für Architektur und Variantenmodule
 
@@ -568,13 +779,25 @@ Fundament für spätere Lern- und Variantenmodule.
 - [ ] NLHE- und PLO-Kalibrierung auf der dokumentierten 10k-Release-Stufe
 - [ ] Desktop-, Tablet- und unterstütztes Landscape-Layout bestehen die responsive Testmatrix
 - [ ] Migrationen für Roster, Replays und Sessiondaten sind rückwärtsverträglich getestet
+- [ ] Beschädigte lokale Daten und UI-Laufzeitfehler führen zu einer
+  verständlichen Recovery statt stillem Datenverlust oder leerem Screen
+- [ ] Electron-Sandbox, CSP, Navigation, externe Links und IPC bestehen die
+  dokumentierten Sicherheitsprüfungen
 - [ ] Server-Paket ist nachweislich kein Laufzeitbestandteil des Offline-v1-Builds
+- [ ] Offene Blocker aus geführter Alpha, Browser-Beta und öffentlichem
+  Release-Candidate sind behoben oder nachvollziehbar außerhalb des
+  v1-Umfangs eingeordnet
+- [ ] Der geprüfte 0.9.5-Release-Candidate wird ohne funktionale Änderungen als
+  v1.0.0 veröffentlicht
 
 ### Packaging
 
 - [ ] Windows
 - [ ] Linux / AppImage
-- [ ] macOS, soweit Build-Umgebung verfügbar
+
+Der Android-Prototyp bleibt ein Entwicklungsziel und blockiert v1.0 nicht. Eine
+signierte APK/AAB sowie öffentliche Distribution werden erst nach der
+UI-Stabilisierung separat entschieden.
 
 ### Nach v1.0 verschoben
 
@@ -791,18 +1014,23 @@ Variantenmodul einführen, zunächst Single Draw und darauf aufbauend Triple Dra
 
 # Phase 8 — Plattformen & Multiplayer
 
-## 🎯 1.8.0 — Android (optional, Ausrichtung offen)
+## 🎯 1.8.0 — Android-Distribution (optional)
 
-Die Smartphone-Darstellung von Poker ist auf kleinen Bildschirmen eine große UX-Herausforderung.
-Ob die APK ein vollständiges Spiel, ein reiner Lernclient oder nur Tablet-optimiert bleibt,
-wird nach v0.9.3 entschieden.
+Die technische Grundlage und der lokale Debug-Workflow bestehen seit v0.7.7.
+Nach der UI- und Gerätevalidierung aus v0.9.0–v0.9.4 wird entschieden, ob daraus
+ein öffentlich vertriebener Android-Client entsteht. Der Prototyp darf
+unabhängig davon als internes Testziel weiterlaufen.
 
-- [ ] Capacitor-Setup und APK-Pipeline
-- [ ] entweder: Phone-Layout (radial, Overlay-Aktionen, nur Querformat)
-- [ ] oder: beschnittene Version (z.B. max 6-max, keine komplexen Varianten)
-- [ ] oder: APK streichen, Fokus auf Browser (GitHub Pages)
+- [ ] unterstützte Smartphones, Tablets, Tischformate und Varianten festlegen
+- [ ] App-Icons, Splashscreen, Berechtigungen und Produktionskonfiguration
+  abschließen
+- [ ] signierte APK/AAB reproduzierbar bauen und Upgrade-Pfad testen
+- [ ] AGPL-konforme Source-, Lizenz- und Drittanbieterhinweise im
+  Distributionsweg bereitstellen
+- [ ] GitHub Release, alternativen Store oder Play Store bewusst auswählen
 
-> Touch-Optimierung und responsive UI werden in 0.7.7 (Stabilisierung) und 0.9.0 (Neufassung) behandelt.
+> Eine PWA ist nicht vorgesehen. Geometriearbeit bleibt in 0.9.0,
+> Touch-Integration in 0.9.1 und die native Geräte-/Lifecycle-Matrix in 0.9.4.
 
 ---
 

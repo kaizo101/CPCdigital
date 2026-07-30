@@ -68,6 +68,10 @@ export function getSeatPosition(index: number, count: number): { left: string; t
   return positions[index] ?? positions[positions.length - 1]
 }
 
+export function isOppositeHeroSeat(index: number, count: number): boolean {
+  return getSeatPosition(index, count).top === '0%'
+}
+
 export function getBetPosition(index: number, count: number): { left: string; top: string } {
   const presets: Record<number, { left: string; top: string }[]> = {
     1: [{ left: '50%', top: '77.5%' }],

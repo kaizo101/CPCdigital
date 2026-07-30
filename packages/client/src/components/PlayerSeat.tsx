@@ -1,11 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Card, Player } from '@cpc/shared'
 import { CardView, CardBack } from './Card'
 import { formatChips, type DisplayCurrency } from '../utils/format'
-import { getSeatPosition } from '../utils/positions'
+import { getSeatPosition, isOppositeHeroSeat } from '../utils/positions'
 import type { PlayerActionLabel } from '../action-display'
 import { getBotAvatarUrl } from '../bot-avatars'
+
+export function canPeekFoldedHeroCards(
+  isMe: boolean,
+  isFolded: boolean,
+  hasCards: boolean,
+): boolean {
+  return isMe && isFolded && hasCards
+}
 
 export function PlayerSeat({
   player, seatIndex, seatCount, isMe, isCurrent, avatarKey, actionLabel, myCards, revealedCards, showCards, holeCardCount,
@@ -28,14 +36,18 @@ export function PlayerSeat({
   onRebuy: () => void
 }) {
   const [isHovering, setIsHovering] = useState(false)
+  const [isTouchPeeking, setIsTouchPeeking] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
-  const [longPressTimer, setLongPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null)
+  const seatRef = useRef<HTMLDivElement>(null)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const position = getSeatPosition(seatIndex, seatCount)
+  const isOppositeHero = isOppositeHeroSeat(seatIndex, seatCount)
+  const isUpperEdge = Number.parseFloat(position.top) <= 10
   const isFolded = player.status === 'folded'
   const visibleCards = revealedCards ?? (isMe ? myCards : null)
-  const canPeekFoldedCards = isMe && isFolded && !!myCards
-  const isPeekingFoldedCards = canPeekFoldedCards && isHovering
+  const canPeekFoldedCards = canPeekFoldedHeroCards(isMe, isFolded, !!myCards)
+  const isPeekingFoldedCards = canPeekFoldedCards && (isHovering || isTouchPeeking)
   const showHoleCards = (showCards && (!isMe || !!visibleCards)) || isPeekingFoldedCards
   const cardBackCount = () => {
     if (isMe && myCards) return myCards.length
@@ -68,6 +80,26 @@ export function PlayerSeat({
     }
   }, [contextMenu])
 
+  useEffect(() => {
+    if (canPeekFoldedCards) return
+    setIsTouchPeeking(false)
+  }, [canPeekFoldedCards])
+
+  useEffect(() => {
+    if (!isTouchPeeking) return
+    const closeTouchPeek = (event: PointerEvent) => {
+      if (!seatRef.current?.contains(event.target as Node)) {
+        setIsTouchPeeking(false)
+      }
+    }
+    document.addEventListener('pointerdown', closeTouchPeek)
+    return () => document.removeEventListener('pointerdown', closeTouchPeek)
+  }, [isTouchPeeking])
+
+  useEffect(() => () => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+  }, [])
+
   const openRebuyMenu = (event: React.MouseEvent<HTMLDivElement> | React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault()
     event.stopPropagation()
@@ -81,20 +113,29 @@ export function PlayerSeat({
   }
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (longPressTimer) clearTimeout(longPressTimer)
-    const timer = setTimeout(() => {
-      setLongPressTimer(null)
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+    if (event.pointerType !== 'mouse' && canPeekFoldedCards) {
+      setIsTouchPeeking(true)
+    }
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null
       openRebuyMenu(event)
     }, 600)
-    setLongPressTimer(timer)
   }
 
   const handlePointerUp = () => {
-    if (longPressTimer) { clearTimeout(longPressTimer); setLongPressTimer(null) }
+    if (!longPressTimerRef.current) return
+    clearTimeout(longPressTimerRef.current)
+    longPressTimerRef.current = null
   }
 
   return (
-    <div className="player-seat" style={{
+    <div
+      ref={seatRef}
+      className={`player-seat${seatCount >= 7 ? ' player-seat--dense' : ''}${isMe ? ' player-seat--hero' : ''}${avatarKey ? ' player-seat--with-avatar' : ''}${isUpperEdge ? ' player-seat--upper-edge' : ''}${isOppositeHero ? ' player-seat--opposite' : ''}`}
+      data-seat-count={seatCount}
+      data-seat-index={seatIndex}
+      style={{
       position: 'absolute',
       left: position.left,
       top: position.top,
@@ -102,13 +143,14 @@ export function PlayerSeat({
       width: `clamp(168px, 13.5vw, ${position.width}px)`,
       textAlign: 'center',
       zIndex: isCurrent ? 30 : 20,
-    }}
+      }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       onContextMenu={openRebuyMenu}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerUp}
       title="Rechtsklick oder lang drücken für Rebuy"
     >
       <div style={{
@@ -126,14 +168,15 @@ export function PlayerSeat({
             display: 'flex',
             gap: 2,
             justifyContent: 'center',
+            width: 'max-content',
             zIndex: 0,
             filter: isPeekingFoldedCards ? 'grayscale(0.18) saturate(0.82) brightness(0.9)' : 'none',
             transition: 'filter 140ms ease',
-          }}>
+          }} data-card-count={visibleCards?.length ?? cardBackCount()}>
             {visibleCards ? (
               <>
                 {visibleCards.map((card, i) => (
-                  <div key={i} style={{
+                  <div className="player-seat-card" key={i} style={{
                     marginLeft: i === 0 ? 0 : visibleCards.length <= 2 ? 0 : -16,
                     zIndex: i,
                   }}>
@@ -144,7 +187,7 @@ export function PlayerSeat({
             ) : (
               <>
                 {Array.from({ length: cardBackCount() }, (_, i) => (
-                  <div key={i} style={{
+                  <div className="player-seat-card" key={i} style={{
                     marginLeft: i === 0 ? 0 : cardBackCount() <= 2 ? 0 : -16,
                     zIndex: i,
                   }}>

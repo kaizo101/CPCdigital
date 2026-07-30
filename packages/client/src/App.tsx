@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { App as CapacitorApp } from '@capacitor/app'
 import type { PlayerAction, TableOptions } from '@cpc/shared'
 import { LocalGameRunner } from './session/LocalGameRunner'
 import { SetupScreen } from './screens/SetupScreen'
@@ -8,6 +9,7 @@ import { APP_VERSION } from './app-version'
 import { downloadSessionDebugRecord } from './session/session-debug-record'
 import { HandReplayer } from './components/HandReplayer'
 import type { HandReplay } from './session/hand-replay'
+import { applyAndroidSystemUi, isAndroidRuntime } from './native-runtime'
 
 type Screen = 'setup' | 'table'
 
@@ -100,6 +102,43 @@ export default function App() {
     runner.cleanup()
     setScreen('setup')
   }
+
+  useEffect(() => {
+    if (!isAndroidRuntime()) return
+
+    let disposed = false
+    let removeResumeListener: (() => Promise<void>) | undefined
+    let removeBackListener: (() => Promise<void>) | undefined
+
+    void CapacitorApp.addListener('resume', () => {
+      void applyAndroidSystemUi()
+    }).then(handle => {
+      if (disposed) void handle.remove()
+      else removeResumeListener = handle.remove
+    })
+
+    void CapacitorApp.addListener('backButton', () => {
+      const replayOverlay = document.getElementById('replay-overlay')
+      if (replayOverlay) {
+        replayOverlay.dispatchEvent(new Event('cpc-request-close'))
+        return
+      }
+      if (screen === 'table') {
+        handleBackToSetup()
+        return
+      }
+      void CapacitorApp.exitApp()
+    }).then(handle => {
+      if (disposed) void handle.remove()
+      else removeBackListener = handle.remove
+    })
+
+    return () => {
+      disposed = true
+      if (removeResumeListener) void removeResumeListener()
+      if (removeBackListener) void removeBackListener()
+    }
+  }, [screen])
 
   function handleExportDebugRecord() {
     downloadSessionDebugRecord(runner.createSessionDebugRecord(APP_VERSION, currency))

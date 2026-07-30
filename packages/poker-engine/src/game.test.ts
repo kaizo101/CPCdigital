@@ -91,6 +91,28 @@ describe('startHand', () => {
     }
   })
 
+  it('uses a configured dealer for the first hand and rotates normally afterwards', () => {
+    const game = new PokerGame(makePlayers(4), {
+      ...config,
+      initialDealerIndex: 3,
+    })
+
+    game.startHand()
+    expect(game.getPublicState().dealerIndex).toBe(3)
+
+    const internal = game as any
+    internal.state = { ...internal.state, phase: 'waiting' }
+    game.startHand()
+    expect(game.getPublicState().dealerIndex).toBe(0)
+  })
+
+  it('rejects an initial dealer outside the player roster', () => {
+    expect(() => new PokerGame(makePlayers(3), {
+      ...config,
+      initialDealerIndex: 3,
+    })).toThrow(/initial dealer index/i)
+  })
+
   it('sorts ten between jack and nine in private player views', () => {
     const game = new PokerGame(makePlayers(2), config)
     const internal = game as any

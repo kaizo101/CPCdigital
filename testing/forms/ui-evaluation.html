@@ -1,0 +1,1598 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>CPCdigital – UI-Bewertung</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --page: #07110f;
+        --panel: #101d1a;
+        --panel-soft: #142521;
+        --felt: #176b4a;
+        --felt-light: #28a06f;
+        --gold: #ddb866;
+        --text: #f4f1e8;
+        --muted: #b9c5be;
+        --line: #30443d;
+        --danger: #e28b82;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at top, #15362d 0, transparent 36rem),
+          var(--page);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(960px, calc(100% - 28px));
+        margin: 0 auto;
+        padding: 32px 0 72px;
+      }
+
+      header,
+      section {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: color-mix(in srgb, var(--panel) 94%, transparent);
+        box-shadow: 0 18px 50px rgb(0 0 0 / 24%);
+      }
+
+      header {
+        padding: clamp(22px, 5vw, 42px);
+        border-top: 4px solid var(--gold);
+      }
+
+      section {
+        margin-top: 18px;
+        padding: clamp(20px, 4vw, 32px);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 8px;
+        font-size: clamp(1.8rem, 5vw, 3rem);
+        line-height: 1.12;
+      }
+
+      h2 {
+        margin-bottom: 18px;
+        font-size: 1.35rem;
+      }
+
+      h3 {
+        margin-bottom: 7px;
+        font-size: 1rem;
+      }
+
+      .eyebrow {
+        margin-bottom: 8px;
+        color: var(--gold);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .lead,
+      .muted {
+        color: var(--muted);
+      }
+
+      .lead {
+        max-width: 72ch;
+        margin-bottom: 0;
+        font-size: 1.04rem;
+      }
+
+      .notice,
+      .milestone {
+        margin: 18px 0 0;
+        padding: 14px 16px;
+        border-left: 4px solid var(--felt-light);
+        border-radius: 8px;
+        background: var(--panel-soft);
+      }
+
+      .milestone {
+        border-left-color: var(--gold);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .span-2 {
+        grid-column: 1 / -1;
+      }
+
+      label,
+      fieldset {
+        display: block;
+        min-width: 0;
+      }
+
+      label > span,
+      legend {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        border: 1px solid #466158;
+        border-radius: 10px;
+        outline: none;
+        background: #091310;
+        color: var(--text);
+        font: inherit;
+      }
+
+      input,
+      select {
+        min-height: 46px;
+        padding: 9px 11px;
+      }
+
+      textarea {
+        min-height: 105px;
+        padding: 11px;
+        resize: vertical;
+      }
+
+      input:focus,
+      textarea:focus,
+      select:focus {
+        border-color: var(--felt-light);
+        box-shadow: 0 0 0 3px rgb(40 160 111 / 18%);
+      }
+
+      fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+
+      .choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .choice {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 42px;
+        padding: 8px 11px;
+        border: 1px solid #466158;
+        border-radius: 10px;
+        background: #091310;
+        cursor: pointer;
+      }
+
+      .choice input {
+        width: 18px;
+        min-height: auto;
+        height: 18px;
+        margin: 0;
+        accent-color: var(--felt-light);
+      }
+
+      .choice span {
+        margin: 0;
+        font-weight: 500;
+      }
+
+      .detail-gate {
+        border-color: #775f31;
+        background: linear-gradient(145deg, #1d2219, #111b18);
+      }
+
+      .gate-button {
+        width: 100%;
+        min-height: 52px;
+        margin-top: 8px;
+        border: 1px solid var(--gold);
+        border-radius: 12px;
+        background: transparent;
+        color: var(--gold);
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .review-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .review-row {
+        display: grid;
+        grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.7fr) 1.4fr;
+        gap: 12px;
+        align-items: center;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #0c1714;
+      }
+
+      .review-row p {
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .review-row input,
+      .review-row select {
+        min-height: 42px;
+      }
+
+      .scale-note {
+        margin: -4px 0 14px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      details {
+        margin-top: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #0c1714;
+      }
+
+      summary {
+        padding: 14px 16px;
+        color: var(--gold);
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .details-body {
+        padding: 0 16px 16px;
+      }
+
+      .actions {
+        position: sticky;
+        bottom: 12px;
+        z-index: 3;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgb(7 17 15 / 94%);
+        box-shadow: 0 12px 38px rgb(0 0 0 / 42%);
+        backdrop-filter: blur(12px);
+      }
+
+      button {
+        min-height: 44px;
+        padding: 9px 15px;
+        border: 1px solid #486159;
+        border-radius: 10px;
+        background: var(--panel-soft);
+        color: var(--text);
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      button.primary {
+        border-color: var(--felt-light);
+        background: var(--felt);
+      }
+
+      button.danger {
+        margin-left: auto;
+        color: var(--danger);
+      }
+
+      button:hover {
+        filter: brightness(1.12);
+      }
+
+      .save-state {
+        display: flex;
+        align-items: center;
+        flex: 1 1 100%;
+        min-height: 22px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .privacy {
+        margin: 20px 4px 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 760px) {
+        main {
+          width: min(100% - 18px, 960px);
+          padding-top: 10px;
+        }
+
+        .grid,
+        .review-row {
+          grid-template-columns: 1fr;
+        }
+
+        .span-2 {
+          grid-column: auto;
+        }
+
+        .actions {
+          position: static;
+        }
+
+        .actions button {
+          flex: 1 1 calc(50% - 8px);
+        }
+
+        button.danger {
+          margin-left: 0;
+        }
+      }
+
+      @media print {
+        :root {
+          color-scheme: light;
+        }
+
+        body {
+          background: white;
+          color: black;
+        }
+
+        main {
+          width: 100%;
+          padding: 0;
+        }
+
+        header,
+        section,
+        .review-row,
+        details {
+          break-inside: avoid;
+          border-color: #aaa;
+          background: white;
+          box-shadow: none;
+        }
+
+        .actions,
+        .gate-button {
+          display: none;
+        }
+
+        .lead,
+        .muted,
+        .privacy,
+        .scale-note {
+          color: #333;
+        }
+
+        input,
+        textarea,
+        select,
+        .choice {
+          border-color: #888;
+          background: white;
+          color: black;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">CPCdigital · Visuelle Evaluation</p>
+        <h1>UI- und Tischdesign-Bewertung</h1>
+        <p class="lead">
+          Dieser Test bewertet visuelle Hierarchie, Lesbarkeit,
+          Größenverhältnisse und Gestaltung. Bitte unterscheide möglichst
+          zwischen einem konkreten Bedien- oder Zuordnungsproblem und deinem
+          persönlichen Geschmack.
+        </p>
+        <p class="milestone">
+          Für externe Tests erst nach abgeschlossenem TableSurface- und
+          TableGeometry-Umbau in 0.9.0 verwenden; empfohlen ab 0.9.1, wenn
+          Desktop, Tablet, Android und Replay dieselbe Geometrie nutzen.
+        </p>
+        <p class="notice">
+          Bitte spiele zunächst mindestens 15–20 Hände und halte den
+          Ersteindruck fest, bevor du die detaillierten Bewertungskriterien
+          öffnest.
+        </p>
+      </header>
+
+      <form id="tester-form" data-form-id="ui-evaluation-v1">
+        <section data-export-title="Testumgebung">
+          <h2>1. Testumgebung</h2>
+          <div class="grid">
+            <label>
+              <span>Datum</span>
+              <input type="date" name="Datum" data-default-date />
+            </label>
+            <label>
+              <span>Optionales Tester-Kürzel</span>
+              <input
+                type="text"
+                name="Tester-Kürzel"
+                autocomplete="off"
+                placeholder="Kein Klarname erforderlich"
+              />
+            </label>
+            <label>
+              <span>CPCdigital-Version oder Commit</span>
+              <input
+                type="text"
+                name="Version / Commit"
+                placeholder="z. B. 0.9.1"
+              />
+            </label>
+            <label>
+              <span>UI-Meilenstein</span>
+              <select name="UI-Meilenstein">
+                <option value="">Bitte auswählen</option>
+                <option>0.9.0 – TableSurface und TableGeometry</option>
+                <option>0.9.1 – Responsive UI und Replay</option>
+                <option>0.9.2 – Branding und Controls</option>
+                <option>0.9.3 – Animationen und Sounds</option>
+                <option>Späterer Stand</option>
+              </select>
+            </label>
+            <label>
+              <span>Oberfläche</span>
+              <select name="Oberfläche">
+                <option value="">Bitte auswählen</option>
+                <option>Electron Desktop-App</option>
+                <option>Browser-Demo</option>
+                <option>Android-Prototyp</option>
+                <option>Windows-Paket</option>
+                <option>Linux AppImage</option>
+              </select>
+            </label>
+            <label>
+              <span>Betriebssystem und Gerät</span>
+              <input
+                type="text"
+                name="Betriebssystem und Gerät"
+                placeholder="z. B. Windows 11, 24-Zoll-Monitor"
+              />
+            </label>
+            <label>
+              <span>Viewport beziehungsweise Auflösung</span>
+              <input
+                type="text"
+                name="Viewport / Auflösung"
+                placeholder="z. B. 1440×1000"
+              />
+            </label>
+            <label>
+              <span>Eingabe und Ausrichtung</span>
+              <input
+                type="text"
+                name="Eingabe und Ausrichtung"
+                placeholder="z. B. Touch, Landscape"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section data-export-title="Testszenario">
+          <h2>2. Testszenario</h2>
+          <div class="grid">
+            <fieldset>
+              <legend>Variante</legend>
+              <div class="choices">
+                <label class="choice"
+                  ><input
+                    type="radio"
+                    name="Variante"
+                    value="NLHE"
+                  /><span>NLHE</span></label
+                >
+                <label class="choice"
+                  ><input
+                    type="radio"
+                    name="Variante"
+                    value="PLO"
+                  /><span>PLO</span></label
+                >
+                <label class="choice"
+                  ><input
+                    type="radio"
+                    name="Variante"
+                    value="Beide"
+                  /><span>Beide</span></label
+                >
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Tischgröße</legend>
+              <div class="choices">
+                <label class="choice"
+                  ><input
+                    type="checkbox"
+                    name="Tischgröße"
+                    value="Heads-up"
+                  /><span>Heads-up</span></label
+                >
+                <label class="choice"
+                  ><input
+                    type="checkbox"
+                    name="Tischgröße"
+                    value="6-max"
+                  /><span>6-max</span></label
+                >
+                <label class="choice"
+                  ><input
+                    type="checkbox"
+                    name="Tischgröße"
+                    value="Full Ring"
+                  /><span>Full Ring</span></label
+                >
+              </div>
+            </fieldset>
+            <label>
+              <span>Ungefähr gespielte Hände</span>
+              <input type="number" min="0" name="Gespielte Hände" />
+            </label>
+            <fieldset>
+              <legend>Replay ebenfalls geprüft?</legend>
+              <div class="choices">
+                <label class="choice"
+                  ><input
+                    type="radio"
+                    name="Replay geprüft"
+                    value="Ja"
+                  /><span>Ja</span></label
+                >
+                <label class="choice"
+                  ><input
+                    type="radio"
+                    name="Replay geprüft"
+                    value="Nein"
+                  /><span>Nein</span></label
+                >
+              </div>
+            </fieldset>
+          </div>
+        </section>
+
+        <section data-export-title="Unbeeinflusster Ersteindruck">
+          <h2>3. Unbeeinflusster Ersteindruck</h2>
+          <div class="grid">
+            <label class="span-2">
+              <span
+                >Welches Element hast du beim ersten Blick auf den Tisch zuerst
+                wahrgenommen?</span
+              >
+              <textarea name="Ersteindruck – Zuerst wahrgenommen"></textarea>
+            </label>
+            <label class="span-2">
+              <span
+                >Was war in den ersten Händen visuell sofort klar?</span
+              >
+              <textarea name="Ersteindruck – Sofort klar"></textarea>
+            </label>
+            <label class="span-2">
+              <span
+                >Was musstest du suchen, genauer lesen oder zunächst
+                erraten?</span
+              >
+              <textarea name="Ersteindruck – Unklar oder gesucht"></textarea>
+            </label>
+            <label class="span-2">
+              <span
+                >Beschreibe die Oberfläche spontan mit drei Begriffen.</span
+              >
+              <input
+                type="text"
+                name="Ersteindruck – Drei Begriffe"
+                placeholder="z. B. ruhig, dicht, hochwertig"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section class="detail-gate" data-export-title="Detailfreigabe">
+          <h2>4. Detaillierte Bewertung</h2>
+          <div id="detail-intro">
+            <p>
+              Die folgenden Kriterien lenken den Blick gezielt auf einzelne
+              UI-Bereiche. Öffne sie daher erst, wenn der unbeeinflusste
+              Ersteindruck festgehalten wurde.
+            </p>
+            <button class="gate-button" type="button" id="detail-button">
+              Ersteindruck abgeschlossen – Detailbewertung öffnen
+            </button>
+          </div>
+          <div id="detail-content" hidden>
+            <p class="notice">
+              Bei Bewertungen von 1 bis 5 bedeutet 1 „unklar beziehungsweise
+              sehr schwach“ und 5 „eindeutig beziehungsweise sehr gut“.
+              Konkrete Bemerkungen sind wichtiger als die Zahl allein.
+            </p>
+          </div>
+        </section>
+
+        <div id="gated-sections" hidden>
+          <section data-export-title="Visuelle Hierarchie und Zuordnung">
+            <h2>5. Visuelle Hierarchie und Zuordnung</h2>
+            <p class="scale-note">
+              Bewerte Erkennbarkeit und eindeutige Zuordnung, nicht die
+              strategische Bedeutung.
+            </p>
+            <div class="review-list">
+              <div class="review-row">
+                <p>Hero-Sitz und eigene Karten</p>
+                <select name="Bewertung – Hero und eigene Karten">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Hero und eigene Karten"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Aktiver Spieler</p>
+                <select name="Bewertung – Aktiver Spieler">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Aktiver Spieler"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Board und Pot</p>
+                <select name="Bewertung – Board und Pot">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Board und Pot"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Bets eindeutig den Spielern zugeordnet</p>
+                <select name="Bewertung – Bet-Zuordnung">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Bet-Zuordnung"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Gegnerische Karten eindeutig den Pods zugeordnet</p>
+                <select name="Bewertung – Karten-Zuordnung">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Karten-Zuordnung"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Actionbar gegenüber dem Tisch</p>
+                <select name="Bewertung – Actionbar-Hierarchie">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Actionbar-Hierarchie"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Gewinner und Handergebnis</p>
+                <select name="Bewertung – Gewinner und Ergebnis">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Gewinner und Ergebnis"
+                  placeholder="Bemerkung"
+                />
+              </div>
+            </div>
+            <label style="margin-top: 16px">
+              <span
+                >Gab es eine konkrete falsche Zuordnung? Bitte Situation und
+                Tischposition beschreiben.</span
+              >
+              <textarea name="Konkrete falsche Zuordnung"></textarea>
+            </label>
+          </section>
+
+          <section data-export-title="Tischform und Materialwirkung">
+            <h2>6. Tischform und Materialwirkung</h2>
+            <div class="grid">
+              <fieldset class="span-2">
+                <legend>Wie wirkt die Tischsilhouette?</legend>
+                <div class="choices">
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Tischsilhouette"
+                      value="Zu rund"
+                    /><span>Zu rund</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Tischsilhouette"
+                      value="Stimmig"
+                    /><span>Stimmig</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Tischsilhouette"
+                      value="Zu spitz"
+                    /><span>Zu spitz</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Tischsilhouette"
+                      value="Zu langgezogen"
+                    /><span>Zu langgezogen</span></label
+                  >
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Stärke der Rail</legend>
+                <div class="choices">
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Rail-Stärke"
+                      value="Zu dünn"
+                    /><span>Zu dünn</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Rail-Stärke"
+                      value="Stimmig"
+                    /><span>Stimmig</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Rail-Stärke"
+                      value="Zu massiv"
+                    /><span>Zu massiv</span></label
+                  >
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Pseudo-3D-Wirkung</legend>
+                <div class="choices">
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Pseudo-3D-Wirkung"
+                      value="Zu flach"
+                    /><span>Zu flach</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Pseudo-3D-Wirkung"
+                      value="Stimmig"
+                    /><span>Stimmig</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="Pseudo-3D-Wirkung"
+                      value="Zu stark"
+                    /><span>Zu stark</span></label
+                  >
+                </div>
+              </fieldset>
+              <label>
+                <span>Abgrenzung von Rail und Felt</span>
+                <select name="Bewertung – Rail/Felt-Abgrenzung">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+              </label>
+              <label>
+                <span>Felt bleibt visuell frei und nutzbar</span>
+                <select name="Bewertung – Freie Felt-Fläche">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+              </label>
+              <label class="span-2">
+                <span
+                  >Was wirkt am Tisch besonders stimmig oder
+                  unstimmig?</span
+                >
+                <textarea name="Kommentar – Tischdesign"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section data-export-title="Größenverhältnisse und Lesbarkeit">
+            <h2>7. Größenverhältnisse und Lesbarkeit</h2>
+            <p class="scale-note">
+              „Passend“ bedeutet: gut lesbar, eindeutig zugeordnet und ohne
+              unnötig viel Tischfläche zu verbrauchen.
+            </p>
+            <div class="review-list">
+              <div class="review-row">
+                <p>Pods und Avatare</p>
+                <select name="Größe – Pods und Avatare">
+                  <option value="">Bitte wählen</option>
+                  <option>Zu klein</option>
+                  <option>Passend</option>
+                  <option>Zu groß</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Pods und Avatare"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Hero-Hole-Cards</p>
+                <select name="Größe – Hero-Hole-Cards">
+                  <option value="">Bitte wählen</option>
+                  <option>Zu klein</option>
+                  <option>Passend</option>
+                  <option>Zu groß</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Hero-Hole-Cards"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Gegnerische Karten und Cardbacks</p>
+                <select name="Größe – Gegnerische Karten">
+                  <option value="">Bitte wählen</option>
+                  <option>Zu klein</option>
+                  <option>Passend</option>
+                  <option>Zu groß</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Gegnerische Karten"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Boardkarten</p>
+                <select name="Größe – Boardkarten">
+                  <option value="">Bitte wählen</option>
+                  <option>Zu klein</option>
+                  <option>Passend</option>
+                  <option>Zu groß</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Boardkarten"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Stacks, Bets und Pot</p>
+                <select name="Größe – Zahlen und Beträge">
+                  <option value="">Bitte wählen</option>
+                  <option>Zu klein</option>
+                  <option>Passend</option>
+                  <option>Zu groß</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Zahlen und Beträge"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Actionbar und Controls</p>
+                <select name="Größe – Actionbar und Controls">
+                  <option value="">Bitte wählen</option>
+                  <option>Zu klein</option>
+                  <option>Passend</option>
+                  <option>Zu groß</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Actionbar und Controls"
+                  placeholder="Bemerkung"
+                />
+              </div>
+            </div>
+            <div class="grid" style="margin-top: 16px">
+              <label>
+                <span>Lesbarkeit von Kartenrängen und Suits</span>
+                <select name="Bewertung – Kartenlesbarkeit">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+              </label>
+              <label>
+                <span>Lesbarkeit bei normalem Betrachtungsabstand</span>
+                <select name="Bewertung – Allgemeine Lesbarkeit">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+              </label>
+              <label class="span-2">
+                <span
+                  >Welche Elemente liefen aus ihren Boxen, überlappten oder
+                  wurden abgeschnitten?</span
+                >
+                <textarea name="Überlagerung oder Clipping"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section data-export-title="Controls und Zustände">
+            <h2>8. Controls und Zustände</h2>
+            <div class="review-list">
+              <div class="review-row">
+                <p>Verfügbare Aktionen sofort erkennbar</p>
+                <select name="Bewertung – Verfügbare Aktionen">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Verfügbare Aktionen"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Aktive, inaktive und gesperrte Controls unterscheidbar</p>
+                <select name="Bewertung – Control-Zustände">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Control-Zustände"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Bet-/Raise-Betrag und Grenzen verständlich</p>
+                <select name="Bewertung – Bet-Betrag">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Bet-Betrag"
+                  placeholder="Bemerkung"
+                />
+              </div>
+              <div class="review-row">
+                <p>Slider, Eingabefeld und Schrittsteuerung</p>
+                <select name="Bewertung – Bet-Steuerung">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                  <option>Nicht verwendet</option>
+                </select>
+                <input
+                  type="text"
+                  name="Kommentar – Bet-Steuerung"
+                  placeholder="Bemerkung"
+                />
+              </div>
+            </div>
+            <label style="margin-top: 16px">
+              <span
+                >Welche Aktion oder Zustandsänderung war visuell
+                missverständlich?</span
+              >
+              <textarea name="Missverständliche Aktion oder Zustand"></textarea>
+            </label>
+          </section>
+
+          <section data-export-title="Replay und Plattformkonsistenz">
+            <h2>9. Replay und Plattformkonsistenz</h2>
+            <div class="grid">
+              <label>
+                <span>Übereinstimmung von Spiel und Replay</span>
+                <select name="Bewertung – Spiel/Replay-Konsistenz">
+                  <option value="">1–5 / nicht geprüft</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                  <option>Nicht geprüft</option>
+                </select>
+              </label>
+              <label>
+                <span>Gesamte Plattformkomposition</span>
+                <select name="Bewertung – Plattformkomposition">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+              </label>
+              <label class="span-2">
+                <span
+                  >Welche Abweichungen zwischen Spiel, Replay oder einem
+                  anderen getesteten Gerät sind aufgefallen?</span
+                >
+                <textarea name="Plattform- oder Replay-Abweichungen"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section data-export-title="Subjektive Gestaltung">
+            <h2>10. Subjektive Gestaltung</h2>
+            <p class="muted">
+              Dieser Teil erfasst persönlichen Geschmack. Er wird bei der
+              Auswertung getrennt von Zuordnungs-, Lesbarkeits- und
+              Bedienproblemen betrachtet.
+            </p>
+            <div class="grid">
+              <label>
+                <span>Visuelle Qualität insgesamt</span>
+                <select name="Bewertung – Visuelle Qualität">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+              </label>
+              <label>
+                <span>Eigenständigkeit des Erscheinungsbilds</span>
+                <select name="Bewertung – Eigenständigkeit">
+                  <option value="">1–5</option>
+                  <option>1</option>
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                  <option>5</option>
+                </select>
+              </label>
+              <label class="span-2">
+                <span>Welcher UI-Bereich gefällt dir am besten und warum?</span>
+                <textarea name="Subjektiv – Bester Bereich"></textarea>
+              </label>
+              <label class="span-2">
+                <span
+                  >Welcher UI-Bereich gefällt dir am wenigsten und
+                  warum?</span
+                >
+                <textarea name="Subjektiv – Schwächster Bereich"></textarea>
+              </label>
+              <label class="span-2">
+                <span
+                  >Welche einzelne visuelle Änderung hätte den größten
+                  positiven Effekt?</span
+                >
+                <textarea name="Subjektiv – Wichtigste Änderung"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section data-export-title="Konkreter UI-Befund">
+            <h2>11. Konkreter UI-Befund</h2>
+            <p class="muted">
+              Für eine konkrete Überlagerung, falsche Zuordnung oder andere
+              visuelle Regression. Screenshots werden separat verschickt.
+            </p>
+            <details open>
+              <summary>UI-Befund erfassen</summary>
+              <div class="details-body grid">
+                <label>
+                  <span>Betroffener Bildschirm oder Zustand</span>
+                  <input
+                    type="text"
+                    name="UI-Befund – Bildschirm"
+                    placeholder="z. B. Full Ring am Turn"
+                  />
+                </label>
+                <label>
+                  <span>Tischposition oder UI-Bereich</span>
+                  <input
+                    type="text"
+                    name="UI-Befund – Bereich"
+                    placeholder="z. B. oberer rechter Pod"
+                  />
+                </label>
+                <label class="span-2">
+                  <span>Was ist konkret falsch oder schwer erkennbar?</span>
+                  <textarea name="UI-Befund – Beobachtung"></textarea>
+                </label>
+                <label class="span-2">
+                  <span>Was wäre stattdessen erwartet worden?</span>
+                  <textarea name="UI-Befund – Erwartung"></textarea>
+                </label>
+                <fieldset>
+                  <legend>Reproduzierbarkeit</legend>
+                  <div class="choices">
+                    <label class="choice"
+                      ><input
+                        type="radio"
+                        name="UI-Befund – Reproduzierbar"
+                        value="Jedes Mal"
+                      /><span>Jedes Mal</span></label
+                    >
+                    <label class="choice"
+                      ><input
+                        type="radio"
+                        name="UI-Befund – Reproduzierbar"
+                        value="Gelegentlich"
+                      /><span>Gelegentlich</span></label
+                    >
+                    <label class="choice"
+                      ><input
+                        type="radio"
+                        name="UI-Befund – Reproduzierbar"
+                        value="Unbekannt"
+                      /><span>Unbekannt</span></label
+                    >
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>Screenshot separat beigefügt?</legend>
+                  <div class="choices">
+                    <label class="choice"
+                      ><input
+                        type="radio"
+                        name="UI-Befund – Screenshot"
+                        value="Ja"
+                      /><span>Ja</span></label
+                    >
+                    <label class="choice"
+                      ><input
+                        type="radio"
+                        name="UI-Befund – Screenshot"
+                        value="Nein"
+                      /><span>Nein</span></label
+                    >
+                  </div>
+                </fieldset>
+              </div>
+            </details>
+          </section>
+
+          <section data-export-title="Abschluss">
+            <h2>12. Abschluss</h2>
+            <div class="grid">
+              <fieldset class="span-2">
+                <legend
+                  >Gibt es aus deiner Sicht einen UI-Blocker für den nächsten
+                  Entwicklungsstand?</legend
+                >
+                <div class="choices">
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="UI-Blocker"
+                      value="Nein"
+                    /><span>Nein</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="UI-Blocker"
+                      value="Unsicher"
+                    /><span>Unsicher</span></label
+                  >
+                  <label class="choice"
+                    ><input
+                      type="radio"
+                      name="UI-Blocker"
+                      value="Ja"
+                    /><span>Ja</span></label
+                  >
+                </div>
+              </fieldset>
+              <label class="span-2">
+                <span>Falls ja oder unsicher: welcher und warum?</span>
+                <textarea name="UI-Blocker – Begründung"></textarea>
+              </label>
+              <label class="span-2">
+                <span>Weitere Bemerkungen</span>
+                <textarea name="Weitere UI-Bemerkungen"></textarea>
+              </label>
+            </div>
+          </section>
+        </div>
+      </form>
+
+      <div class="actions">
+        <div class="save-state" id="save-state" aria-live="polite">
+          Antworten bleiben ausschließlich in diesem Browser.
+        </div>
+        <button type="button" class="primary" id="download-button">
+          Ergebnis herunterladen
+        </button>
+        <button type="button" id="copy-button">Antworten kopieren</button>
+        <button type="button" id="share-button" hidden>Teilen</button>
+        <button type="button" class="danger" id="reset-button">
+          Formular leeren
+        </button>
+      </div>
+
+      <p class="privacy">
+        Kein Upload, kein Tracking, kein Konto. Der Export enthält nur die
+        bewusst eingetragenen Antworten. Screenshots werden separat
+        verschickt.
+      </p>
+    </main>
+
+    <script>
+      (() => {
+        const form = document.querySelector("#tester-form");
+        const saveState = document.querySelector("#save-state");
+        const detailButton = document.querySelector("#detail-button");
+        const detailIntro = document.querySelector("#detail-intro");
+        const detailContent = document.querySelector("#detail-content");
+        const gatedSections = document.querySelector("#gated-sections");
+        const shareButton = document.querySelector("#share-button");
+        const storageKey = `cpcdigital-form:${form.dataset.formId}`;
+        const controls = [...form.elements].filter(
+          (control) =>
+            control.name &&
+            !["button", "submit", "file"].includes(control.type),
+        );
+
+        const setStatus = (message) => {
+          saveState.textContent = message;
+        };
+
+        const today = () => {
+          const now = new Date();
+          return new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+            .toISOString()
+            .slice(0, 10);
+        };
+
+        const collectState = () => {
+          const values = {};
+          for (const control of controls) {
+            if (control.type === "radio" || control.type === "checkbox") {
+              values[control.name] ??= [];
+              if (control.checked) values[control.name].push(control.value);
+            } else {
+              values[control.name] = control.value;
+            }
+          }
+          return {
+            values,
+            detailsVisible: !gatedSections.hidden,
+          };
+        };
+
+        const applyState = (state) => {
+          if (!state?.values) return;
+          for (const control of controls) {
+            const stored = state.values[control.name];
+            if (control.type === "radio" || control.type === "checkbox") {
+              control.checked =
+                Array.isArray(stored) && stored.includes(control.value);
+            } else if (typeof stored === "string") {
+              control.value = stored;
+            }
+          }
+          if (state.detailsVisible) {
+            detailContent.hidden = false;
+            gatedSections.hidden = false;
+            detailIntro.hidden = true;
+          }
+        };
+
+        const save = () => {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(collectState()));
+            setStatus(
+              `Lokal gespeichert · ${new Intl.DateTimeFormat("de", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              }).format(new Date())}`,
+            );
+          } catch {
+            setStatus(
+              "Lokales Speichern ist nicht verfügbar. Bitte Ergebnis herunterladen.",
+            );
+          }
+        };
+
+        const valueFor = (name) => {
+          const named = controls.filter((control) => control.name === name);
+          if (!named.length) return "";
+          if (
+            named[0].type === "radio" ||
+            named[0].type === "checkbox"
+          ) {
+            return named
+              .filter((control) => control.checked)
+              .map((control) => control.value)
+              .join(", ");
+          }
+          return named[0].value.trim();
+        };
+
+        const exportText = () => {
+          const lines = [
+            "CPCdigital – UI- und Tischdesign-Bewertung",
+            `Exportiert: ${new Intl.DateTimeFormat("de", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(new Date())}`,
+            "",
+            "Die Datei wurde lokal im Browser erstellt und nicht automatisch übertragen.",
+            "Beobachtbare UI-Befunde und subjektive Gestaltungseindrücke sind im Formular getrennt.",
+          ];
+
+          for (const section of form.querySelectorAll(
+            "section[data-export-title]",
+          )) {
+            const sectionControls = [
+              ...section.querySelectorAll("input, textarea, select"),
+            ].filter((control) => control.name);
+            const names = [...new Set(sectionControls.map((c) => c.name))];
+            const entries = names
+              .map((name) => [name, valueFor(name)])
+              .filter(([, value]) => value);
+            if (!entries.length) continue;
+            lines.push("", `## ${section.dataset.exportTitle}`, "");
+            for (const [name, value] of entries) {
+              lines.push(`${name}:`);
+              lines.push(value.replace(/\r\n/g, "\n"), "");
+            }
+          }
+
+          return `${lines.join("\n").trim()}\n`;
+        };
+
+        const fileName = () => {
+          const date = valueFor("Datum") || today();
+          return `cpcdigital-ui-test-${date}.txt`;
+        };
+
+        const download = () => {
+          const blob = new Blob([exportText()], {
+            type: "text/plain;charset=utf-8",
+          });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = fileName();
+          document.body.append(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setStatus(`Ergebnis als ${fileName()} heruntergeladen.`);
+        };
+
+        const copy = async () => {
+          const text = exportText();
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch {
+            const helper = document.createElement("textarea");
+            helper.value = text;
+            helper.style.position = "fixed";
+            helper.style.opacity = "0";
+            document.body.append(helper);
+            helper.select();
+            document.execCommand("copy");
+            helper.remove();
+          }
+          setStatus("Antworten in die Zwischenablage kopiert.");
+        };
+
+        const share = async () => {
+          const text = exportText();
+          const file = new File([text], fileName(), {
+            type: "text/plain",
+          });
+          try {
+            if (navigator.canShare?.({ files: [file] })) {
+              await navigator.share({
+                title: "CPCdigital UI-Bewertung",
+                files: [file],
+              });
+            } else {
+              await navigator.share({
+                title: "CPCdigital UI-Bewertung",
+                text,
+              });
+            }
+            setStatus("Teilen-Dialog geöffnet.");
+          } catch (error) {
+            if (error?.name !== "AbortError") {
+              setStatus(
+                "Teilen war nicht möglich. Bitte Ergebnis herunterladen oder kopieren.",
+              );
+            }
+          }
+        };
+
+        try {
+          const stored = localStorage.getItem(storageKey);
+          if (stored) applyState(JSON.parse(stored));
+        } catch {
+          setStatus("Lokaler Zwischenstand konnte nicht geladen werden.");
+        }
+
+        const dateInput = form.querySelector("[data-default-date]");
+        if (dateInput && !dateInput.value) {
+          dateInput.value = today();
+        }
+
+        form.addEventListener("input", save);
+        form.addEventListener("change", save);
+        document
+          .querySelector("#download-button")
+          .addEventListener("click", download);
+        document
+          .querySelector("#copy-button")
+          .addEventListener("click", copy);
+        document.querySelector("#reset-button").addEventListener("click", () => {
+          if (
+            !confirm(
+              "Wirklich alle lokal gespeicherten Antworten dieses Formulars löschen?",
+            )
+          ) {
+            return;
+          }
+          form.reset();
+          detailContent.hidden = true;
+          gatedSections.hidden = true;
+          detailIntro.hidden = false;
+          try {
+            localStorage.removeItem(storageKey);
+          } catch {
+            // Das sichtbare Formular kann trotzdem zurückgesetzt werden.
+          }
+          if (dateInput) {
+            dateInput.value = today();
+          }
+          setStatus("Formular und lokaler Zwischenstand wurden geleert.");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        detailButton.addEventListener("click", () => {
+          if (
+            !confirm(
+              "Ist der unbeeinflusste Ersteindruck vollständig festgehalten?",
+            )
+          ) {
+            return;
+          }
+          detailContent.hidden = false;
+          gatedSections.hidden = false;
+          detailIntro.hidden = true;
+          save();
+          detailContent.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+
+        if (navigator.share) {
+          shareButton.hidden = false;
+          shareButton.addEventListener("click", share);
+        }
+
+        save();
+      })();
+    </script>
+  </body>
+</html>

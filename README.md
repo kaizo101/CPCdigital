@@ -1,12 +1,12 @@
 # CPCdigital
 
-Eine Offline-Poker-App für den Desktop: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung.
+Eine primär für den Desktop entwickelte Offline-Poker-App: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung. Ein nativer Android-Debug-Prototyp ergänzt die Desktop-App als frühes mobiles Entwicklungsziel.
 
-Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.7.6** und bietet No-Limit Texas Hold'em und Pot-Limit Omaha High mit glaubwürdigen Bots, variant-spezifischer Handbewertung, kalibrierten Archetypen, Auto-Rebuys und Hand-Replays. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
+Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.7.7** und bietet No-Limit Texas Hold'em und Pot-Limit Omaha High mit glaubwürdigen Bots, variant-spezifischer Handbewertung, kalibrierten Archetypen, Auto-Rebuys und Hand-Replays. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
 
 ## Leitgedanken
 
-- **Offline First:** Das Spiel läuft vollständig lokal in Electron.
+- **Offline First:** Das Spiel läuft vollständig lokal in Electron oder aus dem gebündelten Android-WebView.
 - **Glaubwürdige Bots:** Persönlichkeit, Skill, Reads, Gewohnheiten und mentale Zustände sollen unterscheidbare Gegner erzeugen.
 - **Fair Play:** Bots erhalten nur Informationen, die auch ein realer Spieler kennen könnte.
 - **Casual statt Solver:** Menschlich wirkendes Spiel und Unterhaltung sind wichtiger als vorgetäuschte GTO-Perfektion.
@@ -48,8 +48,9 @@ Derzeit enthalten sind unter anderem:
 - Board-Verschlechterungserkennung und Protection-Betting
 - ReadTyp: Gegner-Bet-Sizing-Analyse mit Abweichungserkennung
 - Stack- und positionsabhängiges Raise-Sizing
+- nativer Android-Debug-Prototyp mit Capacitor, Landscape-Vollbild und kompakter Touch-Actionbar
 
-Noch nicht als stabiler Funktionsumfang enthalten sind weitere Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen und Online-Multiplayer. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
+Noch nicht als stabiler Funktionsumfang enthalten sind weitere Pokervarianten, persistente Sessionstatistiken, Tutorials, Analysen, Online-Multiplayer oder eine veröffentlichungsreife Android-App. Maßgeblich dafür ist die [Roadmap](ROADMAP.md).
 
 Die offizielle **[Browser-Demo](https://kaizo101.github.io/CPCdigital/)** wird
 direkt aus diesem öffentlichen Repository über GitHub Pages gebaut. Die frühere
@@ -57,11 +58,17 @@ URL im Repository
 [cpcdigital-demo](https://github.com/kaizo101/cpcdigital-demo) bleibt vorerst als
 Weiterleitung und zur Bewahrung ihrer Historie bestehen.
 
+Die Browser-Demo bietet auf Smartphones nur einen funktionalen, rudimentären
+Fallback. Die weitergehende mobile Optimierung findet im nativen
+Android-Prototyp statt; eine PWA und vollständige Feature-Parität der mobilen
+Webseite sind nicht vorgesehen.
+
 ## Voraussetzungen
 
 - Node.js 24 LTS (entsprechend [`.nvmrc`](.nvmrc); Node.js 26 wird derzeit nicht unterstützt)
 - npm
 - eine Desktop-Umgebung, in der Electron ausgeführt werden kann
+- optional für Android: Android Studio mit SDK 36 und ein Gerät oder Emulator
 
 ## Lokale Entwicklung
 
@@ -83,6 +90,36 @@ Vite und Electron im Entwicklungsmodus starten:
 ```bash
 npm run dev
 ```
+
+### Android-Debug-Prototyp
+
+Das native Projekt liegt eingecheckt unter `android/`. Nach Änderungen am
+Client werden Build und Capacitor-Assets synchronisiert und das Projekt in
+Android Studio geöffnet:
+
+```bash
+npm run android:sync
+npm run android:open
+```
+
+Alternativ baut und startet `npm run android:run` direkt auf einem verbundenen
+Gerät oder Emulator. Der vollständige lokale Check einschließlich
+`assembleDebug` läuft mit:
+
+```bash
+npm run android:check
+```
+
+Der Gradle-Wrapper verwendet nach Möglichkeit die Java-Runtime von Android
+Studio, da die systemweite Java-26-Runtime mit dem Android-Build derzeit nicht
+kompatibel ist. Web-Builds und Gradle-Ausgaben werden nur generiert und nicht
+eingecheckt.
+
+Der Android-Stand ist ein Debug-Prototyp ohne Release-Signierung oder
+Veröffentlichungspipeline. Setup und Tisch sind auf Landscape ausgelegt. Der
+HandReplayer ist funktional, seine Tischgeometrie wirkt auf kleinen Displays
+aber noch zu klein und gequetscht; die responsive Überarbeitung ist für
+v0.9.1 geplant.
 
 ## Tests und Build
 
@@ -128,12 +165,14 @@ Ein fertiges plattformspezifisches Installationspaket gehört noch nicht zum akt
 ## Projektstruktur
 
 ```text
-packages/
-├── client/          React-Oberfläche und aktuelle Bot-Decision-Engine
-├── poker-engine/    Pokerregeln, State Machine, Events und Replays
-├── shared/          gemeinsam verwendete Typen
-├── electron/        Desktop-Wrapper
-└── server/          ruhender Online-Prototyp für eine mögliche v2-Integration
+.
+├── packages/
+│   ├── client/          React-Oberfläche und aktuelle Bot-Decision-Engine
+│   ├── poker-engine/    Pokerregeln, State Machine, Events und Replays
+│   ├── shared/          gemeinsam verwendete Typen
+│   ├── electron/        Desktop-Wrapper
+│   └── server/          ruhender Online-Prototyp für eine mögliche v2-Integration
+└── android/             nativer Capacitor-Debug-Prototyp
 ```
 
 Die laufende Offline-App importiert oder benötigt das Server-Paket nicht. Es bleibt bewusst als ruhender Prototyp für eine mögliche v2-Integration im Repository; bis dahin ist es weder Produktionspfad noch Teil des v1-Releaseumfangs.
@@ -150,6 +189,8 @@ Netzwerkgrenzen und vertraulichen Meldungen stehen in
 - [Roadmap](ROADMAP.md) — geplante Entwicklungsphasen und langfristige Vision
 - [Changelog](CHANGELOG.md) — tatsächlich veröffentlichte Änderungen je Version
 - [Entwicklerdokumentation](DEV.md) — Architektur, Kalibrierung, Debugging
+- [Test- und Distributionsstrategie](TESTING_STRATEGY.md) — Teststufen, Rollen und Release-Kommunikation
+- [Tester-Formulare](TESTER_FORMS.md) — Vorlagen sowie lokale [HTML-Formulare](testing/forms/README.md) für Realismus-, Usability-, UI- und Betatests
 - [Beitragsrichtlinien](CONTRIBUTING.md) — Rechte und Lizenzierung eingereichter Beiträge
 - [Sicherheitsrichtlinie](SECURITY.md) — unterstützte Stände und vertrauliche Meldungen
 

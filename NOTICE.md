@@ -14,6 +14,11 @@ Abhängigkeiten und sonstiges Material Dritter bleiben unter ihren jeweiligen
 Lizenzen. Deren Metadaten sind insbesondere in den Package-Manifests und im
 Lockfile dokumentiert.
 
+Für das eingecheckte native Android-Projekt sind die dort enthaltenen
+projektspezifischen Anpassungen von diesem Lizenzumfang erfasst. Generierte
+Template- und Werkzeugbestandteile behalten ihre jeweiligen Upstream-Lizenzen;
+Einzelheiten stehen in [`android/NOTICE.md`](android/NOTICE.md).
+
 Das frühere Repository `cpcdigital-demo` bleibt für die dortige Git-Historie
 eigenständig unter `AGPL-3.0-only` lizenziert. Die aktuelle Webdemo und ihr
 korrespondierender Quellcode werden aus diesem Hauptrepository bereitgestellt.

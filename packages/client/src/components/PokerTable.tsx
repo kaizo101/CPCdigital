@@ -1,11 +1,16 @@
 import type { Card } from '@cpc/shared'
 import { CardView } from './Card'
 import { formatChips, type DisplayCurrency } from '../utils/format'
-import { getBetPosition, getTableButtonPosition, type TableButtonLabel } from '../utils/positions'
+import {
+  getBetPosition,
+  getTableButtonPosition,
+  isOppositeHeroSeat,
+  type TableButtonLabel,
+} from '../utils/positions'
 
 export function PokerTable({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
+    <div className="poker-table" style={{
       position: 'relative',
       width: '100%',
       maxWidth: 'none',
@@ -62,7 +67,7 @@ export function PokerTable({ children }: { children: React.ReactNode }) {
 
 export function TablePot({ pot, sidePots, currency }: { pot: number; sidePots?: { amount: number }[]; currency: DisplayCurrency }) {
   return (
-    <div style={{
+    <div className="table-pot" style={{
       position: 'absolute', left: '50%', top: '34%', transform: 'translate(-50%, -50%)',
       textAlign: 'center', zIndex: 10,
     }}>
@@ -90,7 +95,7 @@ export function TablePot({ pot, sidePots, currency }: { pot: number; sidePots?: 
 
 export function CommunityCards({ cards, phase }: { cards: Card[]; phase: string }) {
   return (
-    <div style={{
+    <div className="community-cards" style={{
       position: 'absolute',
       left: '50%',
       top: '50%',
@@ -138,9 +143,10 @@ export function TablePositionButtons({
 }) {
   if (labels.length === 0) return null
   const position = getTableButtonPosition(seatIndex, seatCount)
+  const isOppositeHero = isOppositeHeroSeat(seatIndex, seatCount)
 
   return (
-    <div style={{
+    <div className={`table-position-buttons${isHero ? ' table-position-buttons--hero' : ''}${isOppositeHero ? ' table-position-buttons--opposite' : ''}`} style={{
       position: 'absolute',
       left: position.left,
       top: position.top,
@@ -176,12 +182,24 @@ export function TablePositionButtons({
   )
 }
 
-export function BetStack({ amount, seatIndex, seatCount, currency }: { amount: number; seatIndex: number; seatCount: number; currency: DisplayCurrency }) {
+export function BetStack({
+  amount,
+  seatIndex,
+  seatCount,
+  currency,
+  isHero = false,
+}: {
+  amount: number
+  seatIndex: number
+  seatCount: number
+  currency: DisplayCurrency
+  isHero?: boolean
+}) {
   if (amount <= 0) return null
   const position = getBetPosition(seatIndex, seatCount)
 
   return (
-    <div style={{
+    <div className={`bet-stack${isHero ? ' bet-stack--hero' : ''}`} style={{
       position: 'absolute',
       left: position.left,
       top: position.top,

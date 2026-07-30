@@ -3,13 +3,15 @@ import type { SessionStatsData } from '../session/session-stats'
 import { getPlayerVPIP, getPlayerPFR, getPlayer3Bet, getBBPer100 } from '../session/session-stats'
 
 export function SessionStats({
-  stats, playerNames, heroId, onExport, showDebug,
+  stats, playerNames, heroId, onExport, showDebug, compact = false, allowExport = true,
 }: {
   stats: SessionStatsData
   playerNames: Map<string, string>
   heroId: string
   onExport: () => void
   showDebug: boolean
+  compact?: boolean
+  allowExport?: boolean
 }) {
   const [visible, setVisible] = useState(false)
   const heroVPIP = getPlayerVPIP(stats, heroId)
@@ -20,18 +22,25 @@ export function SessionStats({
   if (stats.totalHands === 0) return null
 
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div
+      className="session-stats"
+      data-compact={compact ? 'true' : 'false'}
+      style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}
+    >
       <button
         onClick={() => setVisible(!visible)}
+        aria-expanded={visible}
         title={visible ? 'Stats ausblenden' : 'Stats einblenden'}
         style={{
-          padding: '6px 10px',
+          minWidth: compact ? 29 : undefined,
+          minHeight: compact ? 28 : undefined,
+          padding: compact ? '3px 6px' : '6px 10px',
           borderRadius: 6,
           border: '1px solid rgba(255,255,255,0.15)',
           background: visible ? 'rgba(14,116,144,0.2)' : 'linear-gradient(180deg, #30343c 0%, rgba(25,25,25,0.98) 100%)',
           color: visible ? '#bae6fd' : '#9ca3af',
           fontFamily: 'monospace',
-          fontSize: 18,
+          fontSize: compact ? 14 : 18,
           lineHeight: 1,
           cursor: 'pointer',
           boxShadow: visible ? '0 0 0 2px rgba(125,211,252,0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(0,0,0,0.22)',
@@ -40,18 +49,27 @@ export function SessionStats({
         📊
       </button>
 
-      {visible && !showDebug && (
-        <div style={{
+      {visible && (!showDebug || compact) && (
+        <div className="session-stats-summary" style={{
+          position: compact ? 'absolute' : undefined,
+          top: compact ? 'calc(100% + 7px)' : undefined,
+          right: compact ? 0 : undefined,
+          zIndex: compact ? 120 : undefined,
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          padding: '6px 12px',
+          flexWrap: compact ? 'wrap' : undefined,
+          gap: compact ? 6 : 10,
+          width: compact ? 'max-content' : undefined,
+          maxWidth: compact ? 'calc(100vw - 20px)' : undefined,
+          padding: compact ? '7px 9px' : '6px 12px',
           borderRadius: 6,
           border: '1px solid rgba(255,255,255,0.1)',
-          background: 'rgba(14,116,144,0.12)',
+          background: compact ? 'rgba(10,17,21,0.98)' : 'rgba(14,116,144,0.12)',
+          boxShadow: compact ? '0 10px 24px rgba(0,0,0,0.52)' : undefined,
           fontFamily: 'monospace',
-          fontSize: 11,
+          fontSize: compact ? 9 : 11,
           color: '#bae6fd',
+          whiteSpace: 'nowrap',
         }}>
           <span>VPIP <strong>{heroVPIP.toFixed(0)}%</strong></span>
           <span style={{ color: '#4b5563' }}>·</span>
@@ -66,27 +84,29 @@ export function SessionStats({
           <span><strong>{bbPer100.toFixed(1)}</strong> BB/100</span>
           <span style={{ color: '#4b5563' }}>·</span>
           <span style={{ color: '#6b7280' }}>{stats.totalHands} hands</span>
-          <button
-            onClick={onExport}
-            title="Session-Log exportieren"
-            style={{
-              marginLeft: 2,
-              padding: '2px 6px',
-              borderRadius: 3,
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: 'transparent',
-              color: '#6b7280',
-              fontFamily: 'monospace',
-              fontSize: 10,
-              cursor: 'pointer',
-            }}
-          >
-            📄
-          </button>
+          {allowExport && (
+            <button
+              onClick={onExport}
+              title="Session-Log exportieren"
+              style={{
+                marginLeft: 2,
+                padding: '2px 6px',
+                borderRadius: 3,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'transparent',
+                color: '#6b7280',
+                fontFamily: 'monospace',
+                fontSize: 10,
+                cursor: 'pointer',
+              }}
+            >
+              📄
+            </button>
+          )}
         </div>
       )}
 
-      {visible && showDebug && (
+      {visible && showDebug && !compact && (
         <div style={{
           position: 'absolute',
           top: '100%',
@@ -140,22 +160,24 @@ export function SessionStats({
               })}
             </tbody>
           </table>
-          <button
-            onClick={onExport}
-            style={{
-              marginTop: 8,
-              padding: '3px 8px',
-              borderRadius: 4,
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: '#1f2228',
-              color: '#8f98a4',
-              fontFamily: 'monospace',
-              fontSize: 10,
-              cursor: 'pointer',
-            }}
-          >
-            📄 Export
-          </button>
+          {allowExport && (
+            <button
+              onClick={onExport}
+              style={{
+                marginTop: 8,
+                padding: '3px 8px',
+                borderRadius: 4,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#1f2228',
+                color: '#8f98a4',
+                fontFamily: 'monospace',
+                fontSize: 10,
+                cursor: 'pointer',
+              }}
+            >
+              📄 Export
+            </button>
+          )}
         </div>
       )}
     </div>

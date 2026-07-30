@@ -37,6 +37,8 @@ export interface GameConfig {
   bigBlind: number
   smallBlind: number
   variant?: GameVariant
+  /** Dealer for the first hand. Later hands continue rotating from this seat. */
+  initialDealerIndex?: number
   /** Deterministic deck stream for tests and reproducible sessions. Never expose a live seed to players. */
   seed?: RandomSeed
   /** Explicit random source for advanced tests. Mutually exclusive with seed. */
@@ -72,6 +74,7 @@ export class PokerGame {
   private bettingQueue: PlayerId[] = []              // ordered queue: next to act = [0]
   private random: RandomSource
   private variant: GameVariant
+  private initialDealerIndex: number | null
   private fullRaisesThisRound = 0
 
   private state: PublicGameState
@@ -86,12 +89,23 @@ export class PokerGame {
     if (config.seed !== undefined && config.random !== undefined) {
       throw new Error('GameConfig cannot specify both seed and random')
     }
+    if (
+      config.initialDealerIndex !== undefined
+      && (
+        !Number.isInteger(config.initialDealerIndex)
+        || config.initialDealerIndex < 0
+        || config.initialDealerIndex >= players.length
+      )
+    ) {
+      throw new Error('Initial dealer index must reference an existing player')
+    }
     this.variant = cloneGameVariant(config.variant ?? TEXAS_HOLDEM)
     validateGameVariant(this.variant)
     if (this.variant.holeCardsPerPlayer !== 2 && this.variant.holeCardsPerPlayer !== 4) {
       throw new Error('PokerGame currently supports variants with 2 or 4 hole cards')
     }
     this.random = config.random ?? (config.seed !== undefined ? createSeededRandom(config.seed) : secureRandom)
+    this.initialDealerIndex = config.initialDealerIndex ?? null
     this.state = {
       variantId: this.variant.id,
       phase: 'waiting',
@@ -100,7 +114,7 @@ export class PokerGame {
       pot: 0,
       sidePots: [],
       currentPlayerId: null,
-      dealerIndex: 0,
+      dealerIndex: config.initialDealerIndex ?? 0,
       bigBlind: config.bigBlind,
       smallBlind: config.smallBlind,
       currentBet: 0,
@@ -233,7 +247,10 @@ export class PokerGame {
     this.minRaise = this.getMinimumBetSize(openingPhase)
     this.fullRaisesThisRound = 0
 
-    const newDealerIndex = this.advanceDealerIndex(eligible)
+    const newDealerIndex = this.initialDealerIndex == null
+      ? this.advanceDealerIndex(eligible)
+      : this.resolveInitialDealerIndex(eligible, this.initialDealerIndex)
+    this.initialDealerIndex = null
 
     this.state = {
       ...this.state,
@@ -1055,5 +1072,15 @@ export class PokerGame {
       if (eligibleIds.has(this.state.players[idx].id)) return idx
     }
     return this.state.dealerIndex
+  }
+
+  private resolveInitialDealerIndex(eligible: Player[], preferredIndex: number): number {
+    const eligibleIds = new Set(eligible.map(player => player.id))
+    const playerCount = this.state.players.length
+    for (let offset = 0; offset < playerCount; offset++) {
+      const index = (preferredIndex + offset) % playerCount
+      if (eligibleIds.has(this.state.players[index].id)) return index
+    }
+    return preferredIndex
   }
 }

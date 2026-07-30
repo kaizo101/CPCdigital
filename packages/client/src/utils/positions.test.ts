@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { GameState, Player } from '@cpc/shared'
-import { getTableButtonAssignments, getTableButtonPosition } from './positions'
+import {
+  getTableButtonAssignments,
+  getTableButtonPosition,
+  isOppositeHeroSeat,
+} from './positions'
 
 const player = (id: string, seatIndex: number, status: Player['status'] = 'active'): Player => ({
   id,
@@ -49,5 +53,19 @@ describe('table button assignments', () => {
     expect(getTableButtonAssignments(state(players, 0))).toEqual({
       dealer: ['D'],
     })
+  })
+})
+
+describe('opposite hero seat', () => {
+  it('identifies the single top-center seat in even table formats', () => {
+    expect(isOppositeHeroSeat(1, 2)).toBe(true)
+    expect(isOppositeHeroSeat(3, 6)).toBe(true)
+    expect(isOppositeHeroSeat(4, 8)).toBe(true)
+  })
+
+  it('does not treat split upper seats as directly opposite the hero', () => {
+    expect(isOppositeHeroSeat(2, 5)).toBe(false)
+    expect(isOppositeHeroSeat(4, 9)).toBe(false)
+    expect(isOppositeHeroSeat(5, 9)).toBe(false)
   })
 })

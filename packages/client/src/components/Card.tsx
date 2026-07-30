@@ -31,14 +31,14 @@ export function CardView({ card, large }: { card: Card; large?: boolean }) {
       flexShrink: 0,
       position: 'relative',
     }}>
-      <div style={{ color, lineHeight: 1, textAlign: 'left' }}>
-        <div style={{ fontSize: rankSize, fontWeight: 800 }}>{card.rank}{suit}</div>
+      <div className="playing-card-corner playing-card-corner--top" style={{ color, lineHeight: 1, textAlign: 'left' }}>
+        <div className="playing-card-rank" style={{ fontSize: rankSize, fontWeight: 800 }}>{card.rank}{suit}</div>
       </div>
-      <div style={{ color, fontSize: suitCenter, textAlign: 'center', lineHeight: 1, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+      <div className="playing-card-suit" style={{ color, fontSize: suitCenter, textAlign: 'center', lineHeight: 1, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
         {suit}
       </div>
-      <div style={{ color, lineHeight: 1, textAlign: 'right', transform: 'rotate(180deg)', position: 'absolute', bottom: 2, right: 3 }}>
-        <div style={{ fontSize: rankSize, fontWeight: 800 }}>{card.rank}{suit}</div>
+      <div className="playing-card-corner playing-card-corner--bottom" style={{ color, lineHeight: 1, textAlign: 'right', transform: 'rotate(180deg)', position: 'absolute', bottom: 2, right: 3 }}>
+        <div className="playing-card-rank" style={{ fontSize: rankSize, fontWeight: 800 }}>{card.rank}{suit}</div>
       </div>
     </div>
   )

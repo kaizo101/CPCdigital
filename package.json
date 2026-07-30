@@ -2,7 +2,7 @@
   "name": "cpcdigital",
   "productName": "CPCdigital",
   "private": true,
-  "version": "0.7.6",
+  "version": "0.7.7",
   "license": "AGPL-3.0-only",
   "type": "module",
   "engines": {
@@ -19,9 +19,16 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:responsive": "node scripts/responsive-smoke.mjs",
-    "calibrate:bots": "tsx packages/client/src/simulation.ts"
+    "calibrate:bots": "tsx packages/client/src/simulation.ts",
+    "android:sync": "npm run build -w @cpc/client && cap sync android",
+    "android:open": "cap open android",
+    "android:run": "npm run android:sync && cap run android",
+    "android:gradle": "node scripts/android-gradle.mjs",
+    "android:check": "npm run android:sync && npm run android:gradle"
   },
   "devDependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/cli": "8.4.2",
     "concurrently": "^8.2.0",
     "electron": "^41.1.1",
     "typescript": "^5.4.0",

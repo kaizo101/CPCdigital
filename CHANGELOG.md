@@ -6,20 +6,43 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+## [0.7.7] — 2026-07-30
+
 ### Added
 
 - **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright und Beitragsregeln dokumentiert.
+- **Android-Prototyp**: Capacitor 8, ein eingechecktes Android-Projekt und Skripte für Sync, Android Studio, Debug-Deployment und Gradle-Validierung ergänzt.
+- **Native Runtime-Schicht**: Web und Android werden ohne User-Agent-Abfrage unterschieden; Android erhält Landscape-Ausrichtung, immersive Systemleisten, Display-Cutout-Unterstützung sowie Resume- und Zurück-Taste-Handling.
 - **Lokaler Electron-Start**: Versionsgebundene Freigaben für erforderliche Dependency-Install-Skripte und eine Runtime-Prüfung mit konkreter Reparaturanweisung ergänzt.
 - **Demo-Sicherheit**: Öffentlichen Demo-Sync zunächst auf eine Positivliste umgestellt und nach dem Pages-Cutover durch eine statische Weiterleitung auf das Hauptrepository ersetzt.
 - **Abhängigkeiten**: Vite/Vitest sowie sicherheitsrelevante transitive Express-/Socket.IO-Abhängigkeiten auf behobene Versionen aktualisiert.
 - **Public Readiness**: Sicherheitsrichtlinie, reproduzierbare CI, Dependabot, Dependency Review, CodeQL und ein auf öffentliche Sichtbarkeit begrenztes Pages-Deployment ergänzt; Hauptrepository und offizielle Demo veröffentlicht.
 - **Server-Konfigurationstests**: JWT-Secret, Host- und Port-Validierung in die Root-Test-Suite aufgenommen.
 - **Responsive-Regressionstests**: Produktionsbuild in Chrome/Chromium für Desktop, Tablet, Phone-Landscape und Phone-Portrait auf sichtbare Karten, Sitze, Aktionen und Viewport-Grenzen abgesichert.
+- **Test- und Distributionsstrategie**: Rollenbezogene Alpha-, Beta- und RC-Phasen sowie Feedback-Triage, Datenschutz und geeignete Zeitpunkte für breitere Projektvorstellungen dokumentiert.
+- **Lokale Tester-Formulare**: Eigenständige HTML-Bögen für blinden NLHE-FR-Realismus, Neulings-Usability, UI-/Tischdesign und allgemeines Beta-Feedback mit Browser-Autosave, Textdatei-Export, Kopieren und optionalem Smartphone-Teilen ergänzt.
+
+### Changed
+
+- **Mobile Zielsetzung**: Die GitHub-Pages-Demo bleibt ein funktionaler, bewusst rudimentärer Smartphone-Fallback; die weitergehende mobile Bedienung wird im nativen Android-Prototyp entwickelt. Eine PWA ist nicht vorgesehen.
+- **Android-Bedienung**: Setup und Tisch nutzen den verfügbaren Landscape-Bildschirm; die Actionbar fasst Hauptaktionen, Betrag, Schrittsteuerung und Slider in einer kompakten Zeile zusammen.
+- **Kleine Viewports**: Layout-Modi werden per `matchMedia` aus Breite, Höhe und Ausrichtung bestimmt, sodass geeignete Tablets weiterhin das Desktop-Layout verwenden können.
 
 ### Fixed
 
 - **Startskript**: Build und Electron-Start verwenden die definierten npm-Workspace-Skripte und brechen bei Fehlern zuverlässig ab.
 - **Responsive Safety Pass**: Actionbar erhält im Phone-Landscape einen eigenen kompakten Bereich, Desktop und Tablet halten Abstand zum Hero-Seat und Portrait zeigt einen verständlichen Querformat-Hinweis.
+- **Android-Vollbild**: Weißer Streifen am Kamera-Cutout entfernt und Safe Areas in den nativen Seitenrahmen übernommen.
+- **Android-Setup und Tisch**: Zeilenumbruch von „Starting Amount“, zu kleine Hero-/Board-Karten und abgeschnittene Karten der oberen Sitze im Prototyp korrigiert.
+- **Android-Geräteaufnahme**: Unlesbaren nativen Blind-Preset-Dialog durch eine vollständig sichtbare app-eigene Auswahl ersetzt, kompakte Statistik direkt über den Metadaten im Header verankert, direktes Touch-Peek gefoldeter Hero-Karten sowie spiegelbildliche Sicherheitsabstände für Dealer-Buttons bei Hero und gegenüberliegendem Bot korrigiert.
+- **Android-Actionbar**: Hauptaktionen gleichmäßig aufgeteilt, Slider in einem vertikal zentrierten Rahmen mit grober Skala touch-tauglicher gestaltet und 3-BB/3×-, Pot- und Max-Presets dauerhaft links oberhalb der sichtbaren Actionbar angedockt; die freie Eingabe bleibt als bewusste Sekundäraktion erhalten.
+- **Android-Export**: Im WebView nicht verlässlich nutzbare Hand- und Session-Exporte im Debug-Prototyp ausgeblendet.
+- **Session-Startdealer**: Der erste Dealer sitzt nicht mehr in jeder Session fest links vom Hero, sondern wird über einen eigenen Zufallsstrom gewählt; gesetzte Session-Seeds bleiben reproduzierbar und folgende Hände rotieren regulär.
+
+### Known limitations
+
+- **Android-HandReplayer**: Die Replay-Funktion ist grundsätzlich vorhanden, Tisch und Bedienelemente wirken auf kleinen Displays jedoch noch zu klein und gequetscht. Die responsive Überarbeitung ist für den gemeinsamen UI-/Replayer-Pass vorgesehen.
+- **Android-Distribution**: Es existiert ausschließlich ein lokaler Debug-Prototyp ohne Release-Signierung, Veröffentlichungsprozess oder zugesagte Gerätekompatibilität.
 
 ### Security
 
@@ -332,7 +355,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.6...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.7...HEAD
+[0.7.7]: https://github.com/kaizo101/CPCdigital/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/kaizo101/CPCdigital/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/kaizo101/CPCdigital/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/kaizo101/CPCdigital/compare/v0.7.3...v0.7.4

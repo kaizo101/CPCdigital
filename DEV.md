@@ -8,7 +8,7 @@ unterstützten Bereichs.
 ```bash
 npm ci
 npm run dev          # Vite + Electron
-npm test             # 259 Tests
+npm test             # alle Workspace-Tests
 npm run build        # alle Workspaces bauen und Client typprüfen
 npm run test:responsive
 ```
@@ -19,21 +19,80 @@ Bei Updates dieser Pakete muss die freigegebene Version bewusst mit aktualisiert
 werden. `npm run dev` und `./start.sh` prüfen vor dem Start, ob das Electron-Binary
 vollständig installiert ist.
 
+## Android-Debug-Workflow
+
+Der Android-Stand ist ein lokaler Capacitor-8-Prototyp, kein Release-Artefakt.
+Das native Projekt unter `android/`, `capacitor.config.ts` und die
+Runtime-Integration werden versioniert. Kopierte Web-Assets, `local.properties`,
+Gradle-Ausgaben und APKs bleiben generiert und werden nicht eingecheckt.
+
+Vorausgesetzt werden Node.js 24, Android Studio, SDK 36 sowie ein per ADB
+erreichbares Gerät oder ein Emulator. Der übliche Änderungszyklus ist:
+
+```bash
+npm run android:sync    # Client bauen und Web-Assets/Plugins synchronisieren
+npm run android:open    # Projekt in Android Studio öffnen
+npm run android:run     # alternativ synchronisieren und direkt deployen
+npm run android:check   # Sync plus Gradle assembleDebug
+```
+
+`scripts/android-gradle.mjs` sucht zuerst
+`CPC_ANDROID_JAVA_HOME`, danach die JBR einer über
+`CPC_ANDROID_STUDIO_HOME` oder an üblichen Orten gefundenen
+Android-Studio-Installation. Das SDK wird über `ANDROID_HOME`,
+`ANDROID_SDK_ROOT` oder `~/Android/Sdk` ermittelt. Damit bleibt der Build auch
+auf einem System mit inkompatiblem Java 26 reproduzierbar.
+
+Die native Runtime wird in `native-runtime.ts` erkannt. Android läuft in
+`sensorLandscape`, blendet die Systemleisten aus, verarbeitet Display-Cutouts
+über CSS-Safe-Areas und stellt den immersiven Zustand nach `resume` wieder her.
+Die native Zurück-Taste schließt zuerst geöffnete UI-Ebenen und beendet erst
+danach die App. Setup und Tisch besitzen einen einfachen Android-spezifischen
+Vollbildpfad; die Browser-Demo bleibt davon getrennt ein rudimentärer mobiler
+Fallback. Eine PWA ist nicht vorgesehen.
+
+### Abgeschlossene APK-Bestandsaufnahme
+
+Der qualitative Durchlauf und die verkürzte Kontrollmatrix auf echter Hardware
+sind abgeschlossen. Geprüft wurden:
+
+1. Setup, Tisch und Actionbar in NLHE und PLO prüfen.
+2. Heads-up, 6-max und Full Ring jeweils auf Zuordnung, Überlagerung und
+   abgeschnittene Karten oder Bets prüfen.
+3. Kamera-Cutout, Systemleisten, native Zurück-Taste sowie App-Wechsel und
+   Resume nachvollziehen.
+4. Board, Hero-Hole-Cards, obere Pods, Cardbacks, Stack- und Bet-Anzeigen
+   fotografisch beziehungsweise per Screenrecording vergleichen.
+5. Den funktionalen, aber geometrisch zu kleinen Android-HandReplayer in allen
+   Formaten kurz gegenprüfen; sein vollständiges Redesign bleibt in v0.9.1.
+6. Befunde als Blocker für 0.7.7, normales mobiles UX-Thema oder
+   TableGeometry-Arbeit für 0.9.0 klassifizieren.
+
+Gerätelauf und Kontrollmatrix sind im
+[APK-Gerätebericht vom 30.07.2026](testing/apk/2026-07-30-device-inventory.md)
+dokumentiert. Er trennt unmittelbar korrigierbare 0.7.7-Fehler von den
+bewusst für TableGeometry und Responsive UI zurückgestellten Punkten. Der
+Android-Replayer ist soweit beurteilbar funktional; seine zu kleine und
+gequetschte Tischgeometrie bleibt für v0.9.1 dokumentiert.
+
 ## Architektur-Überblick
 
 ### Pakete
 
 ```
-packages/
-├── client/src/           React UI + Bot-AI + Session-Management
-│   ├── session/          LocalGameRunner, Rebuys, Replay, Debug-Export
-│   ├── components/       PokerTable, PlayerSeat, Cards, HandReplayer
-│   ├── screens/          SetupScreen, TableScreen
-│   └── utils/            format, positions
-├── poker-engine/src/     Regeln, State Machine, Hand-Evaluator
-├── shared/src/           Typen (Player, Card, GameState, Events)
-├── electron/src/         Desktop-Wrapper (main, preload)
-└── server/src/           ruhender Online-Prototyp, nicht Teil des v1-Laufzeitpfads
+.
+├── packages/
+│   ├── client/src/           React UI + Bot-AI + Session-Management
+│   │   ├── session/          LocalGameRunner, Rebuys, Replay, Debug-Export
+│   │   ├── components/       PokerTable, PlayerSeat, Cards, HandReplayer
+│   │   ├── screens/          SetupScreen, TableScreen
+│   │   └── utils/            format, positions
+│   ├── poker-engine/src/     Regeln, State Machine, Hand-Evaluator
+│   ├── shared/src/           Typen (Player, Card, GameState, Events)
+│   ├── electron/src/         Desktop-Wrapper (main, preload)
+│   └── server/src/           ruhender Online-Prototyp, nicht Teil des v1-Laufzeitpfads
+├── android/                  nativer Capacitor-Debug-Prototyp
+└── capacitor.config.ts       native App- und Systemleisten-Konfiguration
 ```
 
 ### Wichtige Dateien
@@ -179,7 +238,7 @@ Jeder Bot durchläuft pro Entscheidung ~15 Modifier-Funktionen, die additive Bei
 
 ## Tests
 
-- `npm test` führt 259 Tests aus (Vitest)
+- `npm test` führt alle Workspace-Tests mit Vitest aus
 - Testdateien liegen neben den Source-Dateien (`*.test.ts`)
 - Client-, Engine- und Server-Konfigurationstests laufen in getrennten Workspaces
 - `npm run test:responsive` startet den gebauten Client in Chrome/Chromium und
@@ -192,6 +251,15 @@ Der Responsive-Smoke setzt einen vorherigen Client-Build voraus und verwendet
 Mit `CPC_RESPONSIVE_SCREENSHOT_DIR=/ziel` schreibt er zusätzlich je Viewport
 einen Screenshot. Er definiert bewusst nur äußere Akzeptanzgrenzen und greift
 nicht der für 0.9.0 geplanten TableGeometry-SSOT vor.
+
+### Externe Tests
+
+Externe Tests folgen der
+[Test- und Distributionsstrategie](TESTING_STRATEGY.md). Pokerrealismus,
+Bedienbarkeit für Neulinge und technische Betatests sind getrennte
+Testaufträge mit jeweils eigenem Bogen aus
+[TESTER_FORMS.md](TESTER_FORMS.md). Sie ergänzen automatisierte Tests und
+Kalibrierungen, ersetzen deren Release-Gates aber nicht.
 
 ## Debug-Modus
 
@@ -261,6 +329,8 @@ dokumentiert.
 - **Reads heuristisch kalibriert**: Bots beobachten Hero und andere Bots; echtes menschliches Spielverhalten ist noch nicht validiert.
 - **Persistenter Roster**: Bot-Identities werden in localStorage gespeichert. Nach Browser-Daten-Löschung wird ein neuer Roster generiert.
 - **Lokales Hand-Archiv**: Die letzten 200 Replays liegen in localStorage und gehen beim Löschen der Browser-Daten verloren.
-- **Electron-only Replay-Fenster**: Separate BrowserWindows funktionieren nur in Electron. Im Browser fällt das Replay auf ein Overlay zurück.
+- **Replay je Plattform**: Separate BrowserWindows funktionieren nur in Electron. Browser und Android verwenden ein Overlay; unter Android ist es funktional, wirkt derzeit aber zu klein und gequetscht. Die gemeinsame responsive Überarbeitung folgt in v0.9.1.
+- **Android nur als Debug-Prototyp**: Gerätekompatibilität, Release-Signierung, Distribution und vollständige mobile Feature-Parität sind noch nicht zugesagt. Die qualitative Erstaufnahme ist abgeschlossen; die vollständige Varianten-/Format-/Lifecycle-Matrix steht noch aus.
+- **Mobile Geometrie**: Sicherheitskorrekturen verhindern die derzeit bekannten oberen Karten-Clips. Eine konsistente Sitz-, Karten- und Bet-Geometrie folgt erst mit der TableGeometry-SSOT in v0.9.0.
 - **Ruhender Server-Prototyp**: `packages/server` bleibt bewusst für eine mögliche v2-Integration erhalten, wird aber vom Offline-Client nicht importiert und ist kein v1-Produktionspfad. Seine aktuelle Härtung ersetzt kein Produktions-Sicherheitsaudit.
-- **Formatierung**: Eine gemeinsame Prettier-Konfiguration ist noch nicht eingecheckt und wird in v0.7.7 als eigener mechanischer Commit eingeführt.
+- **Formatierung**: Eine gemeinsame Prettier-Konfiguration ist noch nicht eingecheckt und wird in v0.8.1 als eigener mechanischer Commit eingeführt.

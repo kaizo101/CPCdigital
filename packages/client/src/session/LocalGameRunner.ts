@@ -1,4 +1,11 @@
-import { createSeededRandom, PokerGame, TEXAS_HOLDEM, OMAHA_HIGH, type RandomSource } from '@cpc/poker-engine'
+import {
+  createSeededRandom,
+  secureRandom,
+  PokerGame,
+  TEXAS_HOLDEM,
+  OMAHA_HIGH,
+  type RandomSource,
+} from '@cpc/poker-engine'
 import type {
   Player,
   PlayerAction,
@@ -380,10 +387,14 @@ export class LocalGameRunner {
     this.sessionStats = createSessionStats(variantId, options.bigBlind)
     this.sessionStats.heroPrevChips = options.startingChips
 
+    const dealerRandom = seedNamespace === null
+      ? secureRandom
+      : createSeededRandom(`${seedNamespace}:dealer`)
     this.game = new PokerGame(this.players, {
       bigBlind: options.bigBlind,
       smallBlind: options.smallBlind,
       variant,
+      initialDealerIndex: Math.floor(dealerRandom() * this.players.length),
       ...(seedNamespace === null ? {} : { seed: `${seedNamespace}:deck` }),
     })
 

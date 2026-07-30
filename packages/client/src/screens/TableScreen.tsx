@@ -14,6 +14,8 @@ import { BotDebugInspector } from '../components/BotDebugInspector'
 import { HandReplayer } from '../components/HandReplayer'
 import type { HandReplay } from '../session/hand-replay'
 import { APP_VERSION } from '../app-version'
+import { useResponsiveLayout } from '../utils/responsive-layout'
+import { getAppRuntime, isAndroidRuntime } from '../native-runtime'
 
 const actionButtonStyle = (bg: string, disabled = false): React.CSSProperties => ({
   padding: '10px 18px',
@@ -111,6 +113,8 @@ export function TableScreen({
   onExportSessionLog: () => void
 }) {
   const [showDebug, setShowDebug] = useState(false)
+  const layout = useResponsiveLayout()
+  const runtime = getAppRuntime()
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -158,7 +162,7 @@ export function TableScreen({
   const canAct = !!(isMyTurn && inActiveHand && bettingContext?.playerId === heroId)
 
   return (
-    <div className="table-screen-root" style={{
+    <div className="table-screen-root" data-layout={layout} data-runtime={runtime} style={{
       maxWidth: '100%',
       width: '100%',
       margin: 0,
@@ -243,7 +247,337 @@ export function TableScreen({
           z-index: 45;
           padding: 0 0 16px 16px;
         }
-        @media (orientation: portrait) {
+        .table-screen-root[data-layout="phonePortrait"] {
+          height: 100dvh !important;
+        }
+        .table-screen-root[data-layout="phonePortrait"] .landscape-game {
+          display: none;
+        }
+        .table-screen-root[data-layout="phonePortrait"] .portrait-guard {
+          display: grid;
+          flex: 1;
+          min-height: 0;
+          place-items: center;
+          padding: 24px;
+        }
+        .compact-toolbar {
+          display: none;
+        }
+        .table-screen-root[data-layout="compactLandscape"] {
+          height: 100dvh !important;
+          min-height: 0;
+          padding: 4px 6px 5px !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] {
+          height: 100% !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .landscape-game {
+          gap: 4px;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .desktop-toolbar {
+          display: none !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .compact-toolbar {
+          position: relative;
+          z-index: 60;
+          height: 34px;
+          flex: 0 0 34px;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 6px;
+          padding: 2px 4px;
+          box-sizing: border-box;
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 8px;
+          background: linear-gradient(180deg, rgba(22,24,28,0.96) 0%, rgba(10,11,13,0.96) 100%);
+        }
+        .compact-toolbar-meta {
+          grid-column: 2;
+          overflow: hidden;
+          color: #9ca3af;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.55px;
+          text-align: center;
+          text-overflow: ellipsis;
+          text-transform: uppercase;
+          white-space: nowrap;
+        }
+        .compact-toolbar-actions {
+          grid-column: 3;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .compact-toolbar .session-stats[data-compact="true"] {
+          position: static !important;
+        }
+        .compact-toolbar .session-stats[data-compact="true"] .session-stats-summary {
+          position: absolute !important;
+          inset: 2px 104px 2px 62px !important;
+          z-index: 65 !important;
+          width: auto !important;
+          max-width: none !important;
+          min-width: 0;
+          justify-content: center;
+          flex-wrap: nowrap !important;
+          gap: 6px !important;
+          overflow: hidden;
+          padding: 3px 8px !important;
+          box-sizing: border-box;
+          border-radius: 6px !important;
+          box-shadow: none !important;
+        }
+        .compact-toolbar button {
+          min-width: 29px;
+          min-height: 28px;
+          padding: 3px 7px !important;
+          border-radius: 6px !important;
+          font-size: 11px !important;
+          line-height: 1 !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .game-layout {
+          position: relative;
+          display: grid;
+          grid-template-rows: minmax(0, 1fr) clamp(56px, 20dvh, 72px);
+          gap: 4px;
+          min-height: 0;
+          overflow: hidden;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .table-main {
+          position: relative;
+          min-width: 0;
+          min-height: 0;
+          padding: 20px 48px 18px;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .table-screen,
+        .table-screen-root[data-layout="compactLandscape"] .table-stage {
+          min-width: 0;
+          height: 100%;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .table-stage {
+          padding: 0;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .table-shell {
+          height: 100%;
+          width: auto;
+          max-width: 100%;
+          min-width: 0;
+          padding: 0 !important;
+          aspect-ratio: 3.18 / 1;
+          border-radius: 999px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .poker-table {
+          width: 100% !important;
+          height: 100% !important;
+          aspect-ratio: auto !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .bottom-dock {
+          position: relative;
+          display: flex;
+          min-width: 0;
+          min-height: 0;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 0;
+          border-radius: 8px;
+          background: transparent;
+          box-sizing: border-box;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .bottom-dock:empty::after {
+          content: "Warte auf Gegner …";
+          color: #515862;
+          font-size: 8px;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat {
+          width: 92px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--dense {
+          width: 78px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-panel {
+          min-width: 74px !important;
+          min-height: 36px !important;
+          padding: 3px 6px !important;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--with-avatar .player-seat-panel {
+          padding-left: 30px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--dense .player-seat-panel {
+          min-width: 64px !important;
+          min-height: 32px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--dense.player-seat--with-avatar .player-seat-panel {
+          padding-left: 26px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-avatar {
+          left: -1px !important;
+          width: 32px !important;
+          height: 32px !important;
+          font-size: 10px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--dense .player-seat-avatar {
+          width: 28px !important;
+          height: 28px !important;
+          font-size: 9px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-name,
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-chips {
+          font-size: 9px !important;
+          line-height: 1.05;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--dense .player-seat-name,
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--dense .player-seat-chips {
+          font-size: 8px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-status {
+          margin-top: 0 !important;
+          font-size: 6px !important;
+          line-height: 1;
+          letter-spacing: 0.35px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-turn {
+          display: none !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-cards {
+          bottom: 28px !important;
+          gap: 1px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--with-avatar .player-seat-cards {
+          left: calc(50% + 12px) !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--dense.player-seat--with-avatar .player-seat-cards {
+          left: calc(50% + 10px) !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .playing-card,
+        .table-screen-root[data-layout="compactLandscape"] .playing-card-back {
+          width: 18px !important;
+          height: 26px !important;
+          padding: 1px !important;
+          border-radius: 2px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .playing-card--large {
+          width: 24px !important;
+          height: 34px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--hero .playing-card {
+          width: 26px !important;
+          height: 36px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .playing-card-rank {
+          font-size: 6px !important;
+          line-height: 1 !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .playing-card-suit {
+          font-size: 9px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .playing-card--large .playing-card-rank {
+          font-size: 8px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .playing-card--large .playing-card-suit {
+          font-size: 12px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--hero .playing-card-rank {
+          font-size: 8px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat--hero .playing-card-suit {
+          font-size: 12px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .playing-card-corner--bottom {
+          right: 1px !important;
+          bottom: 1px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-cards[data-card-count="4"] > .player-seat-card {
+          margin-left: -7px !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .player-seat-cards[data-card-count="4"] > .player-seat-card:first-child {
+          margin-left: 0 !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .community-cards {
+          min-height: 34px !important;
+          gap: 3px !important;
+          padding: 3px 5px !important;
+          border-radius: 8px !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .playing-card--large,
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .player-seat--hero .playing-card {
+          width: 30px !important;
+          height: 42px !important;
+          padding: 2px !important;
+          border-radius: 3px !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .playing-card--large .playing-card-rank,
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .player-seat--hero .playing-card-rank {
+          font-size: 10px !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .playing-card--large .playing-card-suit,
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .player-seat--hero .playing-card-suit {
+          font-size: 14px !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .community-cards {
+          min-height: 48px !important;
+          gap: 4px !important;
+          padding: 3px 6px !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .player-seat--hero .player-seat-cards[data-card-count="4"] > .player-seat-card {
+          margin-left: -9px !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .player-seat--hero .player-seat-cards[data-card-count="4"] > .player-seat-card:first-child {
+          margin-left: 0 !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .player-seat--upper-edge {
+          transform: translate(-50%, -50%) translateY(16px) !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .player-seat--upper-edge.player-seat--opposite {
+          transform: translate(-50%, -50%) translateY(20px) !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .table-pot {
+          transform: translate(-50%, -50%) scale(0.82) !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .bet-stack,
+        .table-screen-root[data-layout="compactLandscape"] .table-position-buttons {
+          transform: translate(-50%, -50%) scale(0.72) !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .bet-stack--hero {
+          transform: translate(-50%, -50%) translateX(64px) scale(0.72) !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .table-position-buttons--hero {
+          transform: translate(-50%, -50%) translateX(-64px) scale(0.72) !important;
+        }
+        .table-screen-root[data-runtime="android"][data-layout="compactLandscape"] .table-position-buttons--opposite {
+          transform: translate(-50%, -50%) translateX(64px) scale(0.72) !important;
+        }
+        .table-screen-root[data-layout="compactLandscape"] .debug-dock {
+          display: none;
+        }
+        @media (orientation: landscape) and (max-height: 320px) and (max-width: 1000px) {
+          .table-screen-root[data-layout="compactLandscape"] .landscape-game {
+            position: relative;
+            gap: 0;
+          }
+          .table-screen-root[data-layout="compactLandscape"] .compact-toolbar {
+            position: absolute;
+            inset: 0 0 auto;
+            border-color: transparent;
+            background: transparent;
+          }
+          .table-screen-root[data-layout="compactLandscape"] .compact-toolbar-meta {
+            display: none;
+          }
+          .table-screen-root[data-layout="compactLandscape"] .game-layout {
+            flex: 1;
+            width: 100%;
+          }
+          .table-screen-root[data-layout="compactLandscape"] .table-main {
+            padding: 28px 44px 18px;
+          }
+        }
+        @media (orientation: portrait) and (max-width: 599px) {
           .landscape-game {
             display: none;
           }
@@ -255,12 +589,12 @@ export function TableScreen({
             padding: 24px;
           }
         }
-        @media (orientation: landscape) and (max-height: 450px) and (max-width: 900px) {
+        @media (orientation: landscape) and (max-height: 500px) and (max-width: 1000px) {
           html, body, #root {
             overflow: hidden;
             height: 100dvh;
           }
-          .table-screen-root {
+          .table-screen-root:not([data-layout="compactLandscape"]) {
             padding: 6px 8px 8px !important;
           }
           .game-toolbar {
@@ -285,30 +619,30 @@ export function TableScreen({
             padding: 6px 9px !important;
             font-size: 10px !important;
           }
-          .game-layout {
+          .table-screen-root:not([data-layout="compactLandscape"]) .game-layout {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(286px, 35vw);
             gap: 6px;
             overflow: hidden;
           }
-          .table-main {
+          .table-screen-root:not([data-layout="compactLandscape"]) .table-main {
             position: static;
             min-width: 0;
             padding: 64px 58px 68px;
           }
-          .table-screen,
-          .table-stage {
+          .table-screen-root:not([data-layout="compactLandscape"]) .table-screen,
+          .table-screen-root:not([data-layout="compactLandscape"]) .table-stage {
             min-width: 0;
             height: 100%;
           }
-          .table-stage {
+          .table-screen-root:not([data-layout="compactLandscape"]) .table-stage {
             padding: 0;
           }
-          .table-shell {
+          .table-screen-root:not([data-layout="compactLandscape"]) .table-shell {
             width: 100%;
             min-width: 0;
           }
-          .bottom-dock {
+          .table-screen-root:not([data-layout="compactLandscape"]) .bottom-dock {
             position: static;
             min-width: 0;
             padding: 0;
@@ -380,7 +714,69 @@ export function TableScreen({
       <PortraitGuard onBack={onBack} />
 
       <div className="landscape-game" data-testid="landscape-game">
-      <div className="game-toolbar" style={{
+      <div className="compact-toolbar" data-testid="compact-toolbar">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Zurück zum Setup"
+          style={actionButtonStyle('#30343c', false)}
+        >
+          ‹ Setup
+        </button>
+        <div className="compact-toolbar-meta">
+          {gameState?.variantId === 'omaha-high' ? 'PLO' : 'NLHE'}
+          {' · '}
+          {options.smallBlind}/{options.bigBlind}
+          {' · '}
+          {players.length === 2 ? 'Heads-up' : players.length <= 6 ? '6-max' : 'Full Ring'}
+        </div>
+        <div className="compact-toolbar-actions">
+          <SessionStats
+            stats={sessionStats}
+            playerNames={playerNames}
+            heroId="hero"
+            onExport={onExportSessionLog}
+            showDebug={showDebug}
+            compact
+            allowExport={runtime !== 'android'}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (handReplays.length === 0) return
+              openReplayWindow(handReplays, handReplays.length - 1, currency, showDebug)
+            }}
+            disabled={handReplays.length === 0}
+            aria-label="Letzte Hand wiederholen"
+            title={handReplays.length > 0 ? 'Letzte Hand wiederholen' : 'Keine Hand verfügbar'}
+            style={actionButtonStyle('#30343c', handReplays.length === 0)}
+          >
+            ↻
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (archivedHandReplays.length === 0) return
+              openReplayWindow(
+                archivedHandReplays,
+                archivedHandReplays.length - 1,
+                currency,
+                showDebug,
+              )
+            }}
+            disabled={archivedHandReplays.length === 0}
+            aria-label="Hand-Archiv öffnen"
+            title={archivedHandReplays.length > 0
+              ? `Hand-Archiv öffnen (${archivedHandReplays.length})`
+              : 'Noch keine archivierten Hände'}
+            style={actionButtonStyle('#30343c', archivedHandReplays.length === 0)}
+          >
+            ▤
+          </button>
+        </div>
+      </div>
+
+      <div className="game-toolbar desktop-toolbar" style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -405,6 +801,7 @@ export function TableScreen({
             heroId="hero"
             onExport={onExportSessionLog}
             showDebug={showDebug}
+            allowExport={runtime !== 'android'}
           />
           {(() => {
             const hasReplay = handReplays.length > 0
@@ -478,7 +875,13 @@ export function TableScreen({
                   <HandResultOverlay results={lastResults ?? []} players={players} currency={currency} />
                   {orderedPlayers.map((player: Player, index: number) => (
                     <Fragment key={player.id}>
-                      <BetStack amount={player.roundBet + (wonByPlayer[player.id] ?? 0)} seatIndex={index} seatCount={orderedPlayers.length} currency={currency} />
+                      <BetStack
+                        amount={player.roundBet + (wonByPlayer[player.id] ?? 0)}
+                        seatIndex={index}
+                        seatCount={orderedPlayers.length}
+                        currency={currency}
+                        isHero={player.id === heroId}
+                      />
                       <TablePositionButtons
                         labels={tableButtonAssignments[player.id] ?? []}
                         seatIndex={index}
@@ -531,6 +934,9 @@ export function TableScreen({
             setRaiseAmount={setRaiseAmount}
             onAction={onAction}
             currency={currency}
+            variant={layout === 'compactLandscape'
+              ? runtime === 'android' ? 'androidCompact' : 'webCompact'
+              : 'desktop'}
           />
         </div>
         {showDebug && (
@@ -567,6 +973,11 @@ function openReplayWindow(replays: readonly HandReplay[], startIndex: number, cu
     return
   }
 
+  if (isAndroidRuntime()) {
+    openOverlay(allReplays, startIndex, currency, debugMode)
+    return
+  }
+
   // Browser fallback
   const latest = allReplays[startIndex < allReplays.length ? startIndex : allReplays.length - 1]
   const base = window.location.href.split('#')[0]
@@ -581,7 +992,13 @@ function openOverlay(replays: readonly HandReplay[], startIndex: number, currenc
   container.id = 'replay-overlay'
   document.body.appendChild(container)
   const root = createRoot(container)
+  const close = () => {
+    container.removeEventListener('cpc-request-close', close)
+    root.unmount()
+    container.remove()
+  }
+  container.addEventListener('cpc-request-close', close, { once: true })
   root.render(
-    <HandReplayer replays={[...replays]} startIndex={startIndex} currency={currency} debugMode={debugMode} onClose={() => { root.unmount(); container.remove() }} />
+    <HandReplayer replays={[...replays]} startIndex={startIndex} currency={currency} debugMode={debugMode} onClose={close} />
   )
 }

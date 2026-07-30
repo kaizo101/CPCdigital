@@ -29,6 +29,37 @@ describe('LocalGameRunner session history', () => {
     runner.cleanup()
   })
 
+  it('selects a reproducible but non-fixed dealer for the first hand', () => {
+    const firstDealers = new Set<string>()
+    const dealerForSeed = (seed: string): string => {
+      const runner = new LocalGameRunner()
+      runner.setupTable({
+        smallBlind: 10,
+        bigBlind: 20,
+        startingChips: 1000,
+        maxPlayers: 6,
+        seed,
+      }, 5)
+      runner.startHand()
+      const handStart = runner.state.sessionHistory.find(entry =>
+        entry.event.type === 'HandStarted'
+      )
+      const dealerId = handStart?.event.type === 'HandStarted'
+        ? handStart.event.dealerId
+        : null
+      runner.cleanup()
+      if (!dealerId) throw new Error('Expected first hand dealer')
+      return dealerId
+    }
+
+    for (let index = 0; index < 12; index++) {
+      firstDealers.add(dealerForSeed(`initial-dealer-${index}`))
+    }
+
+    expect(firstDealers.size).toBeGreaterThan(1)
+    expect(dealerForSeed('same-session')).toBe(dealerForSeed('same-session'))
+  })
+
   it('reproduces cards, bot decisions, and session events from the same seed', () => {
     vi.useFakeTimers()
     const first = new LocalGameRunner()
