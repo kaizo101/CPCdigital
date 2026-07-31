@@ -1,0 +1,222 @@
+
+> cpcdigital@0.7.7 calibrate:bots
+> tsx packages/client/src/simulation.ts
+
+
+=== CPCdigital Calibration — Texas Hold'em (NLHE) ===
+
+TAG simulation · 3,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 3,000 · Player-hands: 27,000 · 1894ms
+VPIP: 19.68% (target 15–21%, in range)
+PFR:  14.83% (target 12–18%, in range)
+3-bet: 10.84% (target 6–13%, in range; 1168/10777 opportunities)
+Positions:
+  early     6000 hands · VPIP 18.93% · PFR 16.37%
+  middle    6000 hands · VPIP 19.55% · PFR 14.40%
+  late      9000 hands · VPIP 21.13% · PFR 17.08%
+  blinds    6000 hands · VPIP 18.37% · PFR 10.37%
+Actions: fold 67.2% · check 6.3% · call 6.7% · raise 16.7% · all-in 3.2%
+C-Bet: 65.4% (target 35–55%, too loose)
+Fold-to-CBet: 76.8%
+AF: 3.05 (target 2–5, in range)
+WTSD: 61.6%
+W$SD: 49.2%
+Invalid-action fallbacks: 0
+
+=== 6-max ===
+Hands: 3,000 · Player-hands: 18,000 · 1063ms
+VPIP: 26.26% (target 22–29%, in range)
+PFR:  19.36% (target 18–25%, in range)
+3-bet: 12.65% (target 8–15%, in range; 867/6856 opportunities)
+Positions:
+  early     3000 hands · VPIP 23.77% · PFR 19.13%
+  middle    3000 hands · VPIP 25.67% · PFR 20.60%
+  late      6000 hands · VPIP 30.68% · PFR 24.77%
+  blinds    6000 hands · VPIP 23.38% · PFR 13.45%
+Actions: fold 60.5% · check 8.7% · call 7.8% · raise 20.1% · all-in 2.8%
+C-Bet: 70.2% (target 35–55%, too loose)
+Fold-to-CBet: 79.8%
+AF: 3.98 (target 2–5, in range)
+WTSD: 49.6%
+W$SD: 49.6%
+Invalid-action fallbacks: 0
+
+=== Heads-up ===
+Hands: 3,000 · Player-hands: 6,000 · 590ms
+VPIP: 59.47% (target 45–65%, in range)
+PFR:  40.98% (target 35–55%, in range)
+3-bet: 17.22% (target 12–22%, in range; 345/2003 opportunities)
+Positions:
+  late      3000 hands · VPIP 77.87% · PFR 66.77%
+  blinds    3000 hands · VPIP 41.07% · PFR 15.20%
+Actions: fold 25.3% · check 27.7% · call 12.9% · raise 32.9% · all-in 1.2%
+C-Bet: 71.4% (target 40–65%, too loose)
+Fold-to-CBet: 94.0%
+AF: 9.26 (target 2.5–10, in range)
+WTSD: 32.2%
+W$SD: 53.1%
+Invalid-action fallbacks: 0
+
+Nit simulation · 3,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 3,000 · Player-hands: 27,000 · 1334ms
+VPIP: 12.87% (target 9–15%, in range)
+PFR:  8.83% (target 7–12%, in range)
+3-bet: 4.85% (target 3–9%, in range; 401/8263 opportunities)
+Positions:
+  early     6000 hands · VPIP 12.15% · PFR  8.80%
+  middle    6000 hands · VPIP 11.98% · PFR  7.92%
+  late      9000 hands · VPIP 15.20% · PFR 11.98%
+  blinds    6000 hands · VPIP 10.97% · PFR  5.03%
+Actions: fold 74.1% · check 10.2% · call 4.7% · raise 10.3% · all-in 0.7%
+C-Bet: 46.7% (target 33–55%, in range)
+Fold-to-CBet: 78.6%
+AF: 3.67 (target 2–5.5, in range)
+WTSD: 54.5%
+W$SD: 49.9%
+Invalid-action fallbacks: 0
+
+=== 6-max ===
+Hands: 3,000 · Player-hands: 18,000 · 916ms
+VPIP: 16.32% (target 13–19%, in range)
+PFR:  11.62% (target 10–15%, in range)
+3-bet: 5.94% (target 4–10%, in range; 298/5015 opportunities)
+Positions:
+  early     3000 hands · VPIP 13.97% · PFR 11.37%
+  middle    3000 hands · VPIP 15.70% · PFR 12.73%
+  late      6000 hands · VPIP 21.28% · PFR 15.68%
+  blinds    6000 hands · VPIP 12.85% · PFR  7.13%
+Actions: fold 69.0% · check 12.0% · call 5.1% · raise 12.9% · all-in 1.0%
+C-Bet: 53.7% (target 35–55%, in range)
+Fold-to-CBet: 83.0%
+AF: 4.41 (target 2–5.5, in range)
+WTSD: 53.4%
+W$SD: 51.9%
+Invalid-action fallbacks: 0
+
+=== Heads-up ===
+Hands: 3,000 · Player-hands: 6,000 · 309ms
+VPIP: 30.88% (target 30–45%, in range)
+PFR:  23.32% (target 16–35%, in range)
+3-bet: 8.05% (target 6–13%, in range; 101/1255 opportunities)
+Positions:
+  late      3000 hands · VPIP 48.53% · PFR 41.83%
+  blinds    3000 hands · VPIP 13.23% · PFR  4.80%
+Actions: fold 42.4% · check 22.6% · call 8.0% · raise 25.9% · all-in 1.0%
+C-Bet: 61.0% (target 40–60%, too loose)
+Fold-to-CBet: 85.9%
+AF: 6.51 (target 2.5–8, in range)
+WTSD: 43.6%
+W$SD: 53.6%
+Invalid-action fallbacks: 0
+
+LAG simulation · 3,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 3,000 · Player-hands: 27,000 · 1695ms
+VPIP: 26.93% (target 22–31%, in range)
+PFR:  18.29% (target 17–26%, in range)
+3-bet: 14.23% (target 8–18%, in range; 1590/11176 opportunities)
+Positions:
+  early     6000 hands · VPIP 25.05% · PFR 19.30%
+  middle    6000 hands · VPIP 27.60% · PFR 19.67%
+  late      9000 hands · VPIP 27.48% · PFR 20.12%
+  blinds    6000 hands · VPIP 27.30% · PFR 13.13%
+Actions: fold 59.0% · check 5.9% · call 11.6% · raise 18.9% · all-in 4.5%
+C-Bet: 86.5% (target 45–70%, too loose)
+Fold-to-CBet: 68.3%
+AF: 2.00 (target 1.8–6, in range)
+WTSD: 59.2%
+W$SD: 44.0%
+Invalid-action fallbacks: 0
+
+=== 6-max ===
+Hands: 3,000 · Player-hands: 18,000 · 1221ms
+VPIP: 35.35% (target 28–40%, in range)
+PFR:  24.03% (target 22–33%, in range)
+3-bet: 16.34% (target 10–20%, in range; 1286/7868 opportunities)
+Positions:
+  early     3000 hands · VPIP 32.70% · PFR 26.57%
+  middle    3000 hands · VPIP 34.33% · PFR 27.53%
+  late      6000 hands · VPIP 38.02% · PFR 28.05%
+  blinds    6000 hands · VPIP 34.52% · PFR 16.98%
+Actions: fold 51.5% · check 8.9% · call 12.6% · raise 23.2% · all-in 3.7%
+C-Bet: 82.0% (target 45–70%, too loose)
+Fold-to-CBet: 73.3%
+AF: 2.54 (target 2–6, in range)
+WTSD: 45.5%
+W$SD: 47.7%
+Invalid-action fallbacks: 0
+
+=== Heads-up ===
+Hands: 3,000 · Player-hands: 6,000 · 742ms
+VPIP: 86.28% (target 65–87%, in range)
+PFR:  54.92% (target 45–68%, in range)
+3-bet: 21.82% (target 14–28%, in range; 558/2557 opportunities)
+Positions:
+  late      3000 hands · VPIP 99.10% · PFR 85.23%
+  blinds    3000 hands · VPIP 73.47% · PFR 24.60%
+Actions: fold 18.6% · check 24.1% · call 17.6% · raise 38.1% · all-in 1.6%
+C-Bet: 93.3% (target 50–75%, too loose)
+Fold-to-CBet: 87.6%
+AF: 6.13 (target 3–10, in range)
+WTSD: 20.8%
+W$SD: 54.0%
+Invalid-action fallbacks: 0
+
+Calling Station simulation · 3,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 3,000 · Player-hands: 27,000 · 3330ms
+VPIP: 35.35% (target 28–43%, in range)
+PFR:  7.43% (target 5–14%, in range)
+3-bet: 1.54% (target 1–8%, in range; 114/7399 opportunities)
+Positions:
+  early     6000 hands · VPIP 27.45% · PFR  6.80%
+  middle    6000 hands · VPIP 34.78% · PFR  7.07%
+  late      9000 hands · VPIP 40.69% · PFR  8.38%
+  blinds    6000 hands · VPIP 35.80% · PFR  7.02%
+Actions: fold 34.6% · check 31.2% · call 24.6% · raise 9.0% · all-in 0.7%
+C-Bet: 47.4% (target 25–45%, too loose)
+Fold-to-CBet: 47.9%
+AF: 0.75 (target 0.5–2, in range)
+WTSD: 72.5%
+W$SD: 36.1%
+Invalid-action fallbacks: 0
+
+=== 6-max ===
+Hands: 3,000 · Player-hands: 18,000 · 2483ms
+VPIP: 43.82% (target 38–56%, in range)
+PFR:  10.17% (target 7–17%, in range)
+3-bet: 2.74% (target 2–9%, in range; 118/4299 opportunities)
+Positions:
+  early     3000 hands · VPIP 33.53% · PFR  8.27%
+  middle    3000 hands · VPIP 39.77% · PFR  9.57%
+  late      6000 hands · VPIP 54.73% · PFR 13.08%
+  blinds    6000 hands · VPIP 40.07% · PFR  8.52%
+Actions: fold 27.5% · check 37.5% · call 23.9% · raise 10.6% · all-in 0.5%
+C-Bet: 48.6% (target 25–45%, too loose)
+Fold-to-CBet: 57.8%
+AF: 1.01 (target 0.5–2, in range)
+WTSD: 68.0%
+W$SD: 40.0%
+Invalid-action fallbacks: 0
+
+=== Heads-up ===
+Hands: 3,000 · Player-hands: 6,000 · 1322ms
+VPIP: 64.27% (target 62–85%, in range)
+PFR:  17.75% (target 15–36%, in range)
+3-bet: 3.21% (target 2–13%, in range; 20/623 opportunities)
+Positions:
+  late      3000 hands · VPIP 98.33% · PFR 20.77%
+  blinds    3000 hands · VPIP 30.20% · PFR 14.73%
+Actions: fold 5.7% · check 64.2% · call 17.6% · raise 12.4% · all-in 0.1%
+C-Bet: 41.1% (target 30–50%, in range)
+Fold-to-CBet: 71.1%
+AF: 2.50 (target 1–3, in range)
+WTSD: 67.8%
+W$SD: 53.2%
+Invalid-action fallbacks: 0

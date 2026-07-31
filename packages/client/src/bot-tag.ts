@@ -166,6 +166,7 @@ export function decideBotDecision(
               botContext.archetypeId,
               getPreflopSituation(state, position),
               handAssessment.category,
+              botContext.position.tableSize,
             ))
       : undefined,
     opponentStats,

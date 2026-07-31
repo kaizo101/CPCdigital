@@ -26,8 +26,7 @@ const PLO_TAG_SCORES: CategoryScoreTable = {
   allIn: { air: -42, 'weak-draw': -15, 'weak-no-draw': -42, weak: -35, marginal: -25, medium: -18, good: 8, strong: 25, premium: 40 },
 }
 
-function plo(overrides: Partial<CategoryScoreTable>): CategoryScoreTable {
-  const base = PLO_TAG_SCORES
+function plo(overrides: Partial<CategoryScoreTable>, base: CategoryScoreTable = PLO_TAG_SCORES): CategoryScoreTable {
   return {
     fold: { ...base.fold, ...overrides.fold } as Record<string, number>,
     check: { ...base.check, ...overrides.check } as Record<string, number>,
@@ -66,13 +65,15 @@ const PLO_ARCHETYPE_PREFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
 }
 
 const PLO_ARCHETYPE_POSTFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
-  tag: PLO_TAG_SCORES,
+  tag: plo({
+    call: { marginal: 4, medium: 10, good: -2 },
+  }),
 
   nit: plo({
-    fold: { marginal: 16, medium: 10, good: -25, strong: -36 },
-    check: { marginal: 0, medium: -2 },
-    call: { marginal: -18, medium: -8, good: -14, strong: -14 },
-    raise: { marginal: -16, medium: -6, good: 0, strong: 6 },
+    fold: { marginal: -10, medium: 4, good: -25, strong: -36 },
+    check: { marginal: -8, medium: -2 },
+    call: { marginal: 50, medium: 36, good: -8, strong: -10 },
+    raise: { marginal: -12, medium: -10, good: -4, strong: 6 },
     allIn: { good: 2, strong: 18 },
   }),
 
@@ -88,14 +89,95 @@ const PLO_ARCHETYPE_POSTFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
     fold: { weak: 14, marginal: 18, medium: 12, good: -25, strong: -38 },
     check: { weak: 2, marginal: -6, medium: -8, good: -22 },
     call: { weak: -8, marginal: -28, medium: -18, good: -20, strong: -20, premium: -22 },
-    raise: { 'weak-draw': 8, marginal: -18, medium: -8, good: -2, strong: 2, premium: 10 },
+    raise: { 'weak-draw': 8, marginal: -22, medium: -12, good: -8, strong: -6, premium: 10 },
     allIn: { 'weak-draw': -22, marginal: -32, medium: -26, good: 0, strong: 10, premium: 24 },
   }),
 }
 
-export function getPloScores(archetypeId: BotArchetypeId | undefined, isPostflop: boolean): CategoryScoreTable {
-  const table = isPostflop ? PLO_ARCHETYPE_POSTFLOP : PLO_ARCHETYPE_PREFLOP
-  return archetypeId ? table[archetypeId] : PLO_TAG_SCORES
+/* ------------------------------------------------------------------ */
+/*  PLO turn/river score tables                                        */
+/*  Same delta-over-TAG pattern, but for turn/river only. Used to      */
+/*  separate "call cheap flop" from "fold expensive turn/river" so     */
+/*  AF (needs calls) and WTSD (needs late folds) can be tuned          */
+/*  independently. Entries default to the flop (postflop) table.       */
+/* ------------------------------------------------------------------ */
+
+const PLO_ARCHETYPE_TURN_RIVER: Record<BotArchetypeId, CategoryScoreTable> = {
+  tag: plo({
+    call: { medium: 6, good: 0 },
+  }),
+  lag: plo({
+    call: { marginal: -10, medium: -3 },
+    raise: { medium: 24, good: 34 },
+  }),
+  'calling-station': plo({
+    fold: { weak: 14, marginal: 18, medium: 12, good: -25, strong: -38 },
+    check: { weak: 2, marginal: -6, medium: -8, good: -22 },
+    call: { weak: -8, marginal: -28, medium: -18, good: -20, strong: -20, premium: -22 },
+    raise: { 'weak-draw': 8, marginal: -18, medium: -8, good: -2, strong: 2, premium: 10 },
+    allIn: { 'weak-draw': -22, marginal: -32, medium: -26, good: 0, strong: 10, premium: 24 },
+  }),
+
+  nit: plo({
+    fold: { marginal: 10, medium: 22, good: -25, strong: -36 },
+    check: { marginal: 0, medium: -18, good: -28 },
+    call: { marginal: -18, medium: -2, good: 4, strong: -4 },
+    raise: { marginal: -16, medium: -16, good: 12, strong: 4 },
+    allIn: { good: 2, strong: 18 },
+  }),
+}
+
+export type PloStreet = 'preflop' | 'flop' | 'turn-river'
+
+/* ------------------------------------------------------------------ */
+/*  PLO six-max postflop score overrides                               */
+/*  Tables for short-handed play (tableSize ≤ 6). Entries merge over   */
+/*  the archetype's full-ring table; missing archetypes fall back.     */
+/* ------------------------------------------------------------------ */
+
+const PLO_ARCHETYPE_POSTFLOP_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  'calling-station': plo(
+    {
+      raise: { marginal: -22, medium: -12, good: -2, strong: 2, premium: 10 },
+      call: { weak: -6, marginal: -12, medium: 2, good: 2 },
+    },
+    PLO_ARCHETYPE_POSTFLOP['calling-station'],
+  ),
+}
+
+const PLO_ARCHETYPE_TURN_RIVER_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  lag: plo(
+    {
+      fold: { marginal: -12, medium: -28 },
+      call: { marginal: -8, medium: -6 },
+    },
+    PLO_ARCHETYPE_TURN_RIVER.lag,
+  ),
+  'calling-station': plo(
+    {
+      fold: { weak: 20, marginal: 22, medium: 24 },
+      call: { weak: -14, medium: -6, good: -8, strong: -14, premium: -16 },
+    },
+    PLO_ARCHETYPE_TURN_RIVER['calling-station'],
+  ),
+}
+
+export function getPloScores(
+  archetypeId: BotArchetypeId | undefined,
+  street: PloStreet,
+  tableSize: number = 9,
+): CategoryScoreTable {
+  const archetype = archetypeId ?? 'tag'
+  const table = street === 'preflop'
+    ? PLO_ARCHETYPE_PREFLOP
+    : street === 'turn-river'
+      ? PLO_ARCHETYPE_TURN_RIVER
+      : PLO_ARCHETYPE_POSTFLOP
+  if (street !== 'preflop' && tableSize <= 6) {
+    const sixMax = street === 'turn-river' ? PLO_ARCHETYPE_TURN_RIVER_SIX_MAX : PLO_ARCHETYPE_POSTFLOP_SIX_MAX
+    return sixMax[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
+  }
+  return table[archetype] ?? PLO_TAG_SCORES
 }
 
 /* ------------------------------------------------------------------ */
@@ -108,7 +190,11 @@ export function getPloScores(archetypeId: BotArchetypeId | undefined, isPostflop
 
 export type PreflopStrategyAction = 'raise' | 'call' | 'fold'
 
-const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, Record<PreflopSituation, Partial<Record<HandStrengthCategory, PreflopStrategyAction>>>> = {
+export type PloPreflopStrategyTable = Record<PreflopSituation, Partial<Record<HandStrengthCategory, PreflopStrategyAction>>>
+
+export type PloPreflopStrategySixMaxTable = Partial<PloPreflopStrategyTable>
+
+const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, PloPreflopStrategyTable> = {
   tag: {
     unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'call' },
     'facing-open': { premium: 'raise', strong: 'raise', good: 'call', medium: 'call' },
@@ -131,12 +217,33 @@ const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, Record<PreflopSituation, Part
   },
 }
 
+/* ------------------------------------------------------------------ */
+/*  PLO six-max preflop strategy overrides                             */
+/*  Tables for short-handed play (tableSize ≤ 6). Missing archetypes   */
+/*  and entries fall back to the full-ring strategy table above.       */
+/* ------------------------------------------------------------------ */
+
+const PLO_PREFLOP_STRATEGY_SIX_MAX: Partial<Record<BotArchetypeId, PloPreflopStrategySixMaxTable>> = {
+  nit: {
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'fold', marginal: 'fold' },
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'call' },
+    'facing-3bet': { premium: 'raise', strong: 'raise' },
+  },
+  'calling-station': {
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'call' },
+  },
+}
+
 export function getPloPreflopAction(
   archetypeId: BotArchetypeId | undefined,
   situation: PreflopSituation,
   category: HandStrengthCategory,
+  tableSize: number = 9,
 ): PreflopStrategyAction {
-  return PLO_PREFLOP_STRATEGY[archetypeId ?? 'tag']?.[situation]?.[category] ?? 'fold'
+  const archetype = archetypeId ?? 'tag'
+  const table = PLO_PREFLOP_STRATEGY[archetype]
+  const sixMax = tableSize <= 6 ? PLO_PREFLOP_STRATEGY_SIX_MAX[archetype] : undefined
+  return (sixMax?.[situation] ?? table?.[situation])?.[category] ?? 'fold'
 }
 
 /* ------------------------------------------------------------------ */

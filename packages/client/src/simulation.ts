@@ -300,6 +300,7 @@ interface SimulationStats {
   actions: Record<PlayerAction['type'], number>
   actionErrors: number
   durationMs: number
+  decisionTrace?: Record<string, Record<string, Record<string, number>>>
 }
 
 function createPlayers(playerCount: number): Player[] {
@@ -348,6 +349,7 @@ function createStats(): SimulationStats {
     actions: { fold: 0, check: 0, call: 0, raise: 0, 'all-in': 0 },
     actionErrors: 0,
     durationMs: 0,
+    decisionTrace: {},
   }
 }
 
@@ -480,6 +482,15 @@ function simulateFormat(
           botId,
           isAggressiveAction(state, action),
         )
+      }
+
+      if (process.env.CALIB_TRACE === '1') {
+        const streetKey = state.phase as string
+        const catKey = handCategory ?? 'unknown'
+        const actKey = action.type as string
+        const byCat = stats.decisionTrace![streetKey] ?? (stats.decisionTrace![streetKey] = {})
+        const byAct = byCat[catKey] ?? (byCat[catKey] = {})
+        byAct[actKey] = (byAct[actKey] ?? 0) + 1
       }
 
       // Postflop tracking
@@ -659,6 +670,23 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
   console.log(`WTSD: ${wtsd.toFixed(1)}%` + (format.target.wtsd ? ` (target ${format.target.wtsd.join('–')}%, ${targetLabel(wtsd, format.target.wtsd)})` : ''))
   console.log(`W$SD: ${wssd.toFixed(1)}%`)
   console.log(`Invalid-action fallbacks: ${stats.actionErrors}`)
+
+  if (process.env.CALIB_TRACE === '1' && stats.decisionTrace) {
+    for (const streetKey of ['preflop', 'flop', 'turn', 'river']) {
+      const byCat = stats.decisionTrace[streetKey]
+      if (!byCat) continue
+      console.log(`\n  Trace ${streetKey}:`)
+      for (const catKey of Object.keys(byCat)) {
+        const acts = byCat[catKey]
+        const total = Object.values(acts).reduce((sum, count) => sum + count, 0)
+        if (total === 0) continue
+        const parts = Object.entries(acts)
+          .map(([a, c]) => `${a} ${(c / total * 100).toFixed(0)}%`)
+          .join(' · ')
+        console.log(`    ${catKey.padEnd(9)} n=${total}  ${parts}`)
+      }
+    }
+  }
 
   if (format.target.cBet) allWithin = allWithin && isWithinTarget(cBet, format.target.cBet!)
   if (format.target.aggressionFactor) allWithin = allWithin && isWithinTarget(af, format.target.aggressionFactor!)

@@ -2,7 +2,7 @@
 import type { Card } from '@cpc/shared'
 import type { Position } from './bot-types'
 import type { VariantEvaluator, HandStrengthCategory, VariantHandAssessment, BoardTexture } from './bot-variant-evaluation'
-import { getPloScores } from './bot-category-scores'
+import { getPloScores, type PloStreet } from './bot-category-scores'
 import { createDeck, evaluateOmahaHand } from '@cpc/poker-engine'
 
 function positionStrengthAdjust(position: Position, tableSize: number): number {
@@ -33,7 +33,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
         variantId: this.variantId,
         handAssessment: preflopAssess(ownCards, facingRaise, raiseCount, position.category, position.tableSize),
         boardTexture: 'neutral' as const,
-        categoryScores: getPloScores(context.archetypeId, false),
+        categoryScores: getPloScores(context.archetypeId, 'preflop'),
       }
     }
 
@@ -52,6 +52,8 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const boardGotWorse = false
     const strength = calculateOmahaStrength(rank, drawQuality, cleanOuts, communityCards.length)
     const category = categorizeOmaha(rank, drawQuality, cleanOuts, communityCards)
+    const street: PloStreet =
+      context.publicState.phase === 'turn' || context.publicState.phase === 'river' ? 'turn-river' : 'flop'
 
     return {
       variantId: this.variantId,
@@ -71,7 +73,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
         strength,
       },
       boardTexture: analyzeOmahaBoardTexture(communityCards),
-      categoryScores: getPloScores(context.archetypeId, true),
+      categoryScores: getPloScores(context.archetypeId, street, position.tableSize),
     }
   },
 }

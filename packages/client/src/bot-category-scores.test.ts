@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getPloPreflopAction } from './bot-category-scores'
+import { getPloPreflopAction, getPloScores } from './bot-category-scores'
 
 describe('getPloPreflopAction', () => {
   it('TAG: raises premium when facing an open', () => {
@@ -60,5 +60,57 @@ describe('getPloPreflopAction', () => {
     expect(getPloPreflopAction(undefined, 'facing-open', 'premium')).toBe('raise')
     expect(getPloPreflopAction(undefined, 'facing-open', 'medium')).toBe('call')
     expect(getPloPreflopAction(undefined, 'facing-open', 'good')).toBe('call')
+  })
+
+  it('six-max: Nit opens by raising good hands (avoids limp cascade) and folds medium/marginal', () => {
+    expect(getPloPreflopAction('nit', 'unopened', 'good', 6)).toBe('raise')
+    expect(getPloPreflopAction('nit', 'unopened', 'medium', 6)).toBe('fold')
+    expect(getPloPreflopAction('nit', 'unopened', 'marginal', 6)).toBe('fold')
+    expect(getPloPreflopAction('nit', 'unopened', 'strong', 6)).toBe('raise')
+    expect(getPloPreflopAction('nit', 'unopened', 'premium', 6)).toBe('raise')
+  })
+
+  it('six-max: Nit reraises strong facing a 3-bet (boosts 3-bet vs full ring)', () => {
+    expect(getPloPreflopAction('nit', 'facing-3bet', 'strong', 6)).toBe('raise')
+    expect(getPloPreflopAction('nit', 'facing-3bet', 'strong', 9)).toBe('call')
+    expect(getPloPreflopAction('nit', 'facing-3bet', 'premium', 6)).toBe('raise')
+  })
+
+  it('six-max: full-ring Nit table unchanged for non-Nit archetypes', () => {
+    expect(getPloPreflopAction('tag', 'unopened', 'good', 6)).toBe('raise')
+    expect(getPloPreflopAction('tag', 'facing-3bet', 'strong', 6)).toBe('call')
+  })
+
+  it('six-max: Calling Station re-raises strong facing an open but keeps unopened/facing-3bet from full ring', () => {
+    expect(getPloPreflopAction('calling-station', 'facing-open', 'strong', 6)).toBe('raise')
+    expect(getPloPreflopAction('calling-station', 'facing-open', 'strong', 9)).toBe('call')
+    expect(getPloPreflopAction('calling-station', 'facing-open', 'premium', 6)).toBe('raise')
+    expect(getPloPreflopAction('calling-station', 'facing-open', 'good', 6)).toBe('call')
+    expect(getPloPreflopAction('calling-station', 'unopened', 'good', 6)).toBe('call')
+    expect(getPloPreflopAction('calling-station', 'facing-3bet', 'premium', 6)).toBe('call')
+  })
+})
+
+describe('getPloScores (six-max postflop)', () => {
+  it('full ring (default and tableSize 9) returns the full-ring table', () => {
+    expect(getPloScores('lag', 'turn-river')).toBe(getPloScores('lag', 'turn-river', 9))
+    expect(getPloScores('tag', 'turn-river', 9)).toBe(getPloScores('tag', 'turn-river'))
+  })
+
+  it('six-max: LAG turn/river folds marginal/medium less and calls marginal more than full ring', () => {
+    const fr = getPloScores('lag', 'turn-river', 9)
+    const six = getPloScores('lag', 'turn-river', 6)
+    expect(six.fold.marginal).toBeLessThan(fr.fold.marginal)
+    expect(six.fold.medium).toBeLessThan(fr.fold.medium)
+    expect(six.call.marginal).toBeGreaterThan(fr.call.marginal)
+  })
+
+  it('six-max: archetypes without overrides fall back to their full-ring table', () => {
+    expect(getPloScores('nit', 'turn-river', 6)).toBe(getPloScores('nit', 'turn-river', 9))
+    expect(getPloScores('tag', 'flop', 6)).toBe(getPloScores('tag', 'flop', 9))
+  })
+
+  it('preflop score resolution ignores tableSize', () => {
+    expect(getPloScores('lag', 'preflop', 6)).toBe(getPloScores('lag', 'preflop', 9))
   })
 })
