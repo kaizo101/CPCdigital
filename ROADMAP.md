@@ -19,6 +19,10 @@ Der erste Schwerpunkt liegt auf einem stabilen, unterhaltsamen Singleplayer-Poke
 - **Erklärbare Entscheidungen** — Bot-Aktionen und Spielerentscheidungen sollen später analysierbar sein
 - **Learning-ready, nicht Learning-first** — Lernoberflächen kommen später, die notwendigen Daten werden von Anfang an erfasst
 - **Casual statt Solver** — Spielspaß und menschlich wirkende Gegner sind wichtiger als GTO-Perfektion
+- **Open Source & faire Weiterverwendung** — transparente Forks und
+  AGPL-konforme kommerzielle Nutzung bleiben erlaubt; unattribuierte,
+  verschleierte oder proprietär vereinnahmte Kopien sollen nachvollziehbar
+  erkennbar sein
 
 ---
 
@@ -481,24 +485,54 @@ Browser-Demo bleibt mobil bewusst auf einen funktionalen Fallback begrenzt.
 
 ---
 
-## 🎯 0.7.8 — PLO-Baseline-Revalidierung
+## ✅ 0.7.8 — PLO 3-Bet-Steuerung & Strategie-Tabelle
 
-**Ziel:** Die nach den fachlichen Draw- und Ranking-Korrekturen dokumentierten
-PLO-Abweichungen separat prüfen, ohne den bereits umfangreichen
-Stabilisierungsrelease 0.7.7 weiter zu vergrößern.
+**Ziel:** TAG- und LAG-3-Bet in FR/6-max in den Zielkorridor bringen, ohne
+globale Aggression zu senken oder VPIP/PFR zu verschieben.
 
-- [ ] TAG- und LAG-C-Bet sowie 3-Bet auf Basis der aktuellen 10k-Baseline mit
-  identischen Seeds gezielt reproduzieren
-- [ ] Abweichungen zwischen Full Ring, 6-max und Heads-up fachlich trennen
-- [ ] Nur statistisch reproduzierbare Verschiebungen korrigieren; physisch
-  korrekte Draw- und Omaha-Regellogik nicht für alte Zielwerte zurückdrehen
+### Implementiert
+
+- **PLO-Preflop-Strategie-Tabelle** (`PLO_PREFLOP_STRATEGY`): Archetyp-,
+  situations- und handkategorieabhängige preferred action für alle 4 Archetypen
+  (TAG/Nit/LAG/CS). Fehlende Einträge geben keine Strategiesteuerung → Bot
+  entscheidet nach Category Scores.
+- **PLO-skalierte Strategie-Matrix** in `preflopStrategyFactors()`: Für PLO
+  werden abgeschwächte Werte verwendet (raise→raise=12, call→call=10,
+  call→raise=0, fold→raise=-20). NLHE-Pfad unverändert.
+- **Bot-Tag-Integration**: `preflopRangeAction` wird für PLO über
+  `getPloPreflopAction()` befüllt (vorher `undefined`).
+- **LAG-Korrektur**: facing-open good→call statt raise, facing-3bet good→fold
+  (reduziert überhöhte 3-Bets ohne VPIP zu drücken).
+- **CS-Korrektur**: unopened medium→call entfernt (CS VPIP von 56% auf 45%
+  gesenkt).
+
+### Ergebnisse (10k PLO)
+
+| Archetyp | Format | 3-Bet | Ziel | VPIP | PFR | AF | WTSD |
+|----------|--------|-------|------|------|-----|-----|------|
+| TAG | FR | **8.62%** ✅ | 5–11% | 32.5% ⚠️ | 16.2% ✅ | 3.26 ✅ | 32.7% ✅ |
+| TAG | 6-max | **8.46%** ✅ | 7–13% | 38.2% ⚠️ | 21.4% ✅ | 4.14 ⚠️ | 33.3% ✅ |
+| LAG | FR | **13.13%** ✅ | 8–16% | 36.5% ✅ | 18.7% ✅ | 2.31 ⚠️ | 27.1% ✅ |
+| LAG | 6-max | **14.66%** ✅ | 9–18% | 45.2% ✅ | 24.8% ✅ | 2.73 ✅ | 25.2% ⚠️ |
+| Nit | FR | **3.05%** ✅ | 3–7% | 24.7% ⚠️ | 13.0% ✅ | 9.47 ❌ | 41.5% ❌ |
+| CS | FR | **1.07%** ✅ | 1–7% | 45.3% ✅ | 5.9% ✅ | 1.27 ✅ | 40.7% ✅ |
+
+### Bekannte Abweichungen
+
+| Metrik | Wert | Target | Grund |
+|--------|------|--------|-------|
+| Nit AF / WTSD | 9.47 / 41.5% FR | 1.5–3.5 / 25–36% | Prä-existierendes Postflop-Score-Problem; Strategie-Tabelle greift nur preflop |
+| TAG VPIP | 32.5% FR, 38.2% 6-max | 22–32% / 28–38% | Leicht über Target, aber nah an v0.7.6-Baseline (26%) mit 3k-Varianz |
+| HU | archetypabhängig | siehe `simulation.ts` | Für 0.8.0 vorgemerkt |
+| NLHE C-Bet | TAG 65.4%, LAG 86.5% FR | 35–55% / 45–70% | Prä-existierend, nicht Teil dieses Fixes |
 
 ### Release-Gate
 
-- [ ] 3k-Entwicklungsläufe ohne Invalid-Action-Fallbacks
-- [ ] 10k-Bestätigungslauf für alle vier PLO-Archetypen und drei Formate
-- [ ] Kalibrierungsbericht mit Seeds, Vorher-/Nachher-Werten und verbleibenden
-  bekannten Abweichungen versionieren
+- [x] 3k-Entwicklungsläufe ohne Invalid-Action-Fallbacks
+- [x] 10k-Bestätigungslauf für alle vier PLO-Archetypen und drei Formate
+- [x] NLHE-Regressionstest (3k, alle Archetypen im Ziel)
+- [x] 178 Unit-Tests grün
+- [ ] Kalibrierungsbericht versionieren (Zwischenstand dokumentiert)
 
 ---
 
@@ -537,6 +571,29 @@ Stabilisierungsrelease 0.7.7 weiter zu vergrößern.
 
 - [ ] Integrationstests: Engine + LocalGameRunner als durchgehende Pipeline (Hand von Blinds bis Showdown)
 - [ ] Randfall-Tests: Empty-State (0 Spieler), Bust-zu-Ende, schnelle Neustarts
+
+### Lizenzklarheit & Herkunftsnachweis
+
+- [ ] Zentrale Bot- und Engine-Dateien mit maschinenlesbaren
+  `SPDX-FileCopyrightText`- und `SPDX-License-Identifier`-Hinweisen versehen
+- [ ] Zukünftige Release-Tags kryptografisch signieren und die lokale
+  Verifikation knapp dokumentieren; den veröffentlichten Tag `v0.7.7` nicht
+  nachträglich umschreiben
+- [ ] Pro Release ein leichtgewichtiges Bot-Provenance-Manifest aus exakten
+  Dateihashes und normalisierten Token-/AST-Fingerprints erzeugen, damit auch
+  umbenannte oder umformatierte Teilkopien lokal vergleichbar bleiben
+- [ ] Veröffentlichte Releases unabhängig bei Software Heritage archivieren
+  und den jeweiligen inhaltsbasierten SWHID dokumentieren
+- [ ] Kurzen Monitoring- und Beweissicherungsleitfaden für charakteristische
+  öffentliche Codefragmente, verdächtige Repositories und
+  AGPL-Compliance-Fälle festhalten
+
+> Diese Maßnahmen richten sich nicht gegen transparente Forks oder
+> AGPL-konforme kommerzielle Nutzung. Es entstehen weder Telemetrie noch
+> Phone-home-Logik, Obfuskation, absichtlicher Dead Code oder ein verstecktes
+> Laufzeit-Wasserzeichen. Ziel ist ein proportionaler Herkunftsnachweis gegen
+> automatisierte, unattribuierte Übernahmen, keine lückenlose Überwachung des
+> Internets.
 
 ---
 
@@ -678,11 +735,27 @@ den HandReplayer übertragen.
 
 ---
 
-## 🎯 0.9.2 — Branding & Controls
+## 🎯 0.9.2 — Naming, Branding & Controls
 
-**Ziel:** CPCdigital-eigenes Erscheinungsbild statt PokerStars-Optik.
+**Ziel:** Endgültige Projektidentität und ein eigenständiges Erscheinungsbild
+statt PokerStars-Optik festlegen, bevor Release Candidate, Packaging und
+breitere Kommunikation beginnen.
 
-- [ ] **Branding-Review**: Action-Buttons von PokerStars-Rot auf CPCdigital-Farbschema
+- [ ] **Naming-Checkpoint**: „CPCdigital“ ausdrücklich als bisherigen
+  Arbeitstitel prüfen und den endgültigen Projekt-/Produktnamen vor dem
+  Release Candidate festlegen
+- [ ] Auffindbarkeit, Verwechslungsrisiken, Repository-/Domain-Namen sowie
+  technische Bezeichner wie Paket- und App-IDs vor einer Umbenennung gemeinsam
+  bewerten
+- [ ] Finalen Namen konsistent in UI, Dokumentation, Paketmetadaten,
+  Repository-Beschreibung und Distributionshinweisen anwenden
+- [ ] Schlanke Marken- und Forkrichtlinie erst für die endgültige Identität
+  formulieren: Herkunftsnennung erlauben, offizielle Zugehörigkeit nicht
+  vortäuschen und AGPL-Rechte nicht einschränken
+- [ ] Unaufdringlichen „Über / Lizenz / Quellcode“-Hinweis mit Copyright,
+  AGPL-Lizenz und offiziellem Repository in die Anwendung integrieren
+- [ ] **Branding-Review**: Action-Buttons von PokerStars-Rot auf das endgültige
+  Projektfarbschema umstellen
 - [ ] 4-Color-Deck-Option (alternative Kartendarstellung)
 - [ ] BB-Anzeige-Modus (Stacks, Bets, Pot in Big Blinds)
 - [ ] Währungswahl um "Keine" erweitern (nur Zahlen, kein €/$)
@@ -784,6 +857,8 @@ Fundament für spätere Lern- und Variantenmodule.
 - [ ] Electron-Sandbox, CSP, Navigation, externe Links und IPC bestehen die
   dokumentierten Sicherheitsprüfungen
 - [ ] Server-Paket ist nachweislich kein Laufzeitbestandteil des Offline-v1-Builds
+- [ ] Endgültiger Projektname und Außenauftritt sind vor Packaging und
+  breiterer Distribution konsistent festgelegt
 - [ ] Offene Blocker aus geführter Alpha, Browser-Beta und öffentlichem
   Release-Candidate sind behoben oder nachvollziehbar außerhalb des
   v1-Umfangs eingeordnet

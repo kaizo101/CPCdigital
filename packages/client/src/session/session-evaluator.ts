@@ -16,6 +16,7 @@ import type { BotArchetypeId } from '../bot-archetypes'
 import { createBotContext } from '../bot-context'
 import { resetHandMemory } from '../bot-memory'
 import { DEFAULT_BOT_ROSTER } from '../bot-identities'
+import { isContinuationBetOpportunity, updatePreflopAggressor } from '../calibration-metrics'
 
 const HANDS_PER_TABLE = 5_000
 const BIG_BLIND = 20
@@ -39,6 +40,7 @@ const COMPOSITIONS: BotArchetypeId[][] = [
 interface TrackedDecision {
   handNumber: number
   archetypeId: BotArchetypeId
+  playerId: string
   botName: string
   phase: string
   action: string
@@ -50,6 +52,7 @@ interface TrackedDecision {
   spr: number
   tilt: number
   isPFA: boolean
+  facingBet: boolean
   inPosition: boolean
   activeOpponents: number
   hasDraw: boolean
@@ -128,6 +131,7 @@ function runSession(): void {
       }
       game.startHand()
 
+      let preflopAggressor: string | null = null
       let state = game.getPublicState()
       while (state.phase !== 'waiting') {
         if (!state.currentPlayerId) break
@@ -142,8 +146,21 @@ function runSession(): void {
         try {
           const botContext = createBotContext(botId, botView, game.getPublicHandHistory(), archetypeId)
           const decision = decideBotDecision(botContext, botState, decisionRandom)
+          const aggressiveAction = decision.action.type === 'raise'
+            || (
+              decision.action.type === 'all-in'
+              && (state.bettingContext?.legalActions.allInAmount ?? 0) > state.currentBet
+            )
+          const isPFA = state.phase !== 'preflop' && botId === preflopAggressor
+          const facingBet = state.currentBet > 0
 
           game.applyAction(botId, decision.action)
+          preflopAggressor = updatePreflopAggressor(
+            preflopAggressor,
+            state.phase,
+            botId,
+            aggressiveAction,
+          )
 
           const handAssess = decision.evaluation.handAssessment
           const sa = decision.decisionResult
@@ -157,6 +174,7 @@ function runSession(): void {
           tracked.push({
             handNumber: handNumber + 1,
             archetypeId,
+            playerId: botId,
             botName,
             phase: state.phase,
             action: decision.action.type,
@@ -167,7 +185,8 @@ function runSession(): void {
             potOdds: state.bettingContext?.potOdds ?? 0,
             spr: state.bettingContext?.spr ?? 0,
             tilt: botState.mentalState.tilt,
-            isPFA: botState.memory.hand.raisedPreflop,
+            isPFA,
+            facingBet,
             inPosition: botContext.position.category === 'late',
             activeOpponents: state.players.filter(p => p.status === 'active').length - 1,
             hasDraw: handAssess.drawTypes.length > 0,
@@ -319,7 +338,12 @@ function analyzePatterns(): void {
 
     // C-Bet patterns
     const flopActions = actions.filter(a => a.phase === 'flop')
-    const pfaFlopActions = flopActions.filter(a => a.isPFA)
+    const pfaFlopActions = flopActions.filter(a => isContinuationBetOpportunity({
+      phase: a.phase,
+      actingPlayerId: a.playerId,
+      preflopAggressorId: a.isPFA ? a.playerId : null,
+      currentBet: a.facingBet ? 1 : 0,
+    }))
 
     for (const d of pfaFlopActions) {
       // Case 1: PFA missed C-Bet — checked flop instead of betting
@@ -457,7 +481,12 @@ function printReport(): void {
 
     const multiStreetCalls = 0
 
-    const cbetOpps = archDecisions.filter(d => d.phase === 'flop' && d.isPFA)
+    const cbetOpps = archDecisions.filter(d => isContinuationBetOpportunity({
+      phase: d.phase,
+      actingPlayerId: d.playerId,
+      preflopAggressorId: d.isPFA ? d.playerId : null,
+      currentBet: d.facingBet ? 1 : 0,
+    }))
     const cbets = cbetOpps.filter(d => d.action === 'raise')
 
     const riverDecisions = archDecisions.filter(d => d.phase === 'river')

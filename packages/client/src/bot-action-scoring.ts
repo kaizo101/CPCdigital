@@ -248,11 +248,10 @@ function preflopStrategyFactors(
     return [factor('strategy', 'Must defend after raising — call', 15)]
   }
 
-  const values: Record<typeof preferred, Record<typeof action, number>> = {
-    fold: { fold: 35, check: 15, call: -45, raise: -60 },
-    call: { fold: -25, check: 5, call: 30, raise: -25 },
-    raise: { fold: -35, check: -20, call: -10, raise: 30 },
-  }
+  const isPlo = context.variantId === 'omaha-high'
+  const values: Record<typeof preferred, Record<typeof action, number>> = isPlo
+    ? { fold: { fold: 12, check: 5, call: -15, raise: -20 }, call: { fold: -10, check: 2, call: 10, raise: 0 }, raise: { fold: -14, check: -8, call: -5, raise: 12 } }
+    : { fold: { fold: 35, check: 15, call: -45, raise: -60 }, call: { fold: -25, check: 5, call: 30, raise: -25 }, raise: { fold: -35, check: -20, call: -10, raise: 30 } }
   return [factor(
     'strategy',
     `Archetype preflop range prefers ${preferred}`,

@@ -1,5 +1,6 @@
 import type { BotArchetypeId } from './bot-archetypes'
-import type { CategoryScoreTable } from './bot-variant-evaluation'
+import type { CategoryScoreTable, HandStrengthCategory } from './bot-variant-evaluation'
+import type { PreflopSituation } from './preflop-ranges'
 
 export const NLHE_CATEGORY_SCORES: CategoryScoreTable = {
   fold: { air: 10, weak: 5, marginal: -5, medium: -30, good: -42, strong: -50, premium: -50 },
@@ -95,6 +96,47 @@ const PLO_ARCHETYPE_POSTFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
 export function getPloScores(archetypeId: BotArchetypeId | undefined, isPostflop: boolean): CategoryScoreTable {
   const table = isPostflop ? PLO_ARCHETYPE_POSTFLOP : PLO_ARCHETYPE_PREFLOP
   return archetypeId ? table[archetypeId] : PLO_TAG_SCORES
+}
+
+/* ------------------------------------------------------------------ */
+/*  PLO preflop strategy tables                                       */
+/*  Maps (archetype, situation, hand-category) → preferred action.    */
+/*  Used by preflopStrategyFactors to guide raise/call/fold decisions */
+/*  — the same mechanism as NLHE's preflop-ranges.ts but for PLO.     */
+/*  Missing entries default to 'fold'.                                */
+/* ------------------------------------------------------------------ */
+
+export type PreflopStrategyAction = 'raise' | 'call' | 'fold'
+
+const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, Record<PreflopSituation, Partial<Record<HandStrengthCategory, PreflopStrategyAction>>>> = {
+  tag: {
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'call' },
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'call', medium: 'call' },
+    'facing-3bet': { premium: 'raise', strong: 'call', good: 'call' },
+  },
+  nit: {
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'call' },
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'call' },
+    'facing-3bet': { premium: 'raise', strong: 'call' },
+  },
+  lag: {
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'raise', weak: 'call' },
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'call', medium: 'call', marginal: 'call' },
+    'facing-3bet': { premium: 'raise', strong: 'raise', good: 'fold' },
+  },
+  'calling-station': {
+    unopened: { premium: 'raise', strong: 'raise', good: 'call' },
+    'facing-open': { premium: 'raise', strong: 'call', good: 'call' },
+    'facing-3bet': { premium: 'call' },
+  },
+}
+
+export function getPloPreflopAction(
+  archetypeId: BotArchetypeId | undefined,
+  situation: PreflopSituation,
+  category: HandStrengthCategory,
+): PreflopStrategyAction {
+  return PLO_PREFLOP_STRATEGY[archetypeId ?? 'tag']?.[situation]?.[category] ?? 'fold'
 }
 
 /* ------------------------------------------------------------------ */

@@ -15,6 +15,7 @@ import type { VariantEvaluation, VariantHandAssessment } from './bot-variant-eva
 import { evaluateBotVariant } from './bot-variant-registry'
 import { calculateChipUnit, roundToCents } from './utils/format'
 import { getPreflopAction, getPreflopSituation } from './preflop-ranges'
+import { getPloPreflopAction } from './bot-category-scores'
 import {
   CALLING_STATION_PERSONALITY,
   LAG_PERSONALITY,
@@ -143,23 +144,29 @@ export function decideBotDecision(
     legalActions,
     preferredRaiseTo,
     categoryScores,
-    preflopRangeAction: state.phase === 'preflop' && holeCards.length === 2
-      ? getPreflopAction(
-          holeCards,
-          position,
-          getPreflopSituation(state, position),
-          botContext.position.tableSize,
-          preflopRangeFactor(
-            botState.personality.preflopLooseness,
-            botContext.position.tableSize,
-            botState.personality.riskTolerance,
-          ),
-          preflopRaiseRangeFactor(
-            botState.personality.preflopLooseness,
-            botState.personality.aggression,
-            botContext.position.tableSize,
-          ),
-        )
+    preflopRangeAction: state.phase === 'preflop'
+      ? (holeCards.length === 2
+          ? getPreflopAction(
+              holeCards,
+              position,
+              getPreflopSituation(state, position),
+              botContext.position.tableSize,
+              preflopRangeFactor(
+                botState.personality.preflopLooseness,
+                botContext.position.tableSize,
+                botState.personality.riskTolerance,
+              ),
+              preflopRaiseRangeFactor(
+                botState.personality.preflopLooseness,
+                botState.personality.aggression,
+                botContext.position.tableSize,
+              ),
+            )
+          : getPloPreflopAction(
+              botContext.archetypeId,
+              getPreflopSituation(state, position),
+              handAssessment.category,
+            ))
       : undefined,
     opponentStats,
     botHabits,

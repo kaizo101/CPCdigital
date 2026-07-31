@@ -6,7 +6,7 @@ import type { Player, PlayerAction, PublicGameState } from '@cpc/shared'
 import {
   CALLING_STATION_PERSONALITY,
   createBotStateFromIdentity,
-  decideBotAction,
+  decideBotDecision,
   LAG_PERSONALITY,
   NIT_PERSONALITY,
   TAG_PERSONALITY,
@@ -16,12 +16,27 @@ import type { BotArchetypeId } from './bot-archetypes'
 import { createBotContext, getPositionCategory } from './bot-context'
 import { resetHandMemory } from './bot-memory'
 import { DEFAULT_BOT_ROSTER } from './bot-identities'
+import {
+  isContinuationBetOpportunity,
+  updatePreflopAggressor,
+} from './calibration-metrics'
+import type { HandStrengthCategory } from './bot-variant-evaluation'
 
 const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
 const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
 const BIG_BLIND = 20
 const SMALL_BLIND = 10
 const STARTING_CHIPS = 2_000
+const PRINT_CALIBRATION_DETAIL = process.env.CALIB_DETAIL === '1'
+const HAND_STRENGTH_CATEGORIES: HandStrengthCategory[] = [
+  'air',
+  'weak',
+  'marginal',
+  'medium',
+  'good',
+  'strong',
+  'premium',
+]
 
 interface FormatConfig {
   name: string
@@ -276,6 +291,10 @@ interface SimulationStats {
   pfrHands: number
   threeBets: number
   threeBetOpportunities: number
+  threeBetByCategory: Record<HandStrengthCategory, {
+    opportunities: number
+    threeBets: number
+  }>
   positions: Record<Position, PositionStats>
   postflop: PostflopStats
   actions: Record<PlayerAction['type'], number>
@@ -305,6 +324,12 @@ function createStats(): SimulationStats {
     pfrHands: 0,
     threeBets: 0,
     threeBetOpportunities: 0,
+    threeBetByCategory: Object.fromEntries(
+      HAND_STRENGTH_CATEGORIES.map(category => [
+        category,
+        { opportunities: 0, threeBets: 0 },
+      ]),
+    ) as SimulationStats['threeBetByCategory'],
     positions: {
       early: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
       middle: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
@@ -394,6 +419,7 @@ function simulateFormat(
     const flopSeenPlayers = new Set<string>()
     let preflopRaiseCount = 0
     let pfa: string | null = null
+    let activeFlopCbettor: string | null = null
     let actionCount = 0
     const maxActions = format.playerCount * 30
 
@@ -410,9 +436,12 @@ function simulateFormat(
       if (!player || !holeCards || !botState) throw new Error(`${format.name}: missing state for ${botId}`)
 
       let action: PlayerAction
+      let handCategory: HandStrengthCategory | null = null
       try {
         const botContext = createBotContext(botId, botView, game.getPublicHandHistory(), profile.archetypeId)
-        action = decideBotAction(botContext, botState, decisionRandom)
+        const decision = decideBotDecision(botContext, botState, decisionRandom)
+        action = decision.action
+        handCategory = decision.evaluation.handAssessment.category
         game.applyAction(botId, action)
       } catch {
         stats.actionErrors++
@@ -427,6 +456,9 @@ function simulateFormat(
         const firstPreflopAction = !preflopActedPlayers.has(botId)
         if (firstPreflopAction && preflopRaiseCount === 1) {
           threeBetOpportunityPlayers.add(botId)
+          if (handCategory) {
+            stats.threeBetByCategory[handCategory].opportunities++
+          }
         }
         preflopActedPlayers.add(botId)
 
@@ -436,28 +468,55 @@ function simulateFormat(
 
         if (isAggressiveAction(state, action)) {
           pfrPlayers.add(botId)
-          if (preflopRaiseCount === 1) threeBetPlayers.add(botId)
+          if (preflopRaiseCount === 1) {
+            threeBetPlayers.add(botId)
+            if (handCategory) stats.threeBetByCategory[handCategory].threeBets++
+          }
           preflopRaiseCount++
-          if (preflopRaiseCount === 1) pfa = botId
         }
+        pfa = updatePreflopAggressor(
+          pfa,
+          state.phase,
+          botId,
+          isAggressiveAction(state, action),
+        )
       }
 
       // Postflop tracking
       if (state.phase !== 'preflop') {
         flopSeenPlayers.add(botId)
 
-        // C-Bet: PFA acts on flop
-        if (state.phase === 'flop' && botId === pfa) {
+        const cBetOpportunity = isContinuationBetOpportunity({
+          phase: state.phase,
+          actingPlayerId: botId,
+          preflopAggressorId: pfa,
+          currentBet: state.currentBet,
+        })
+        if (cBetOpportunity) {
           const pos = positions.get(botId)
           if (pos) stats.positions[pos].cBetOpps++
-          if (isAggressiveAction(state, action) && pos) stats.positions[pos].cBets++
+          if (isAggressiveAction(state, action) && pos) {
+            stats.positions[pos].cBets++
+            activeFlopCbettor = botId
+          }
         }
 
-        // Fold-to-CBet: facing a bet on flop from PFA
-        if (state.phase === 'flop' && botId !== pfa && pfa !== null &&
-          state.currentBet > 0) {
+        // Fold-to-CBet: first response while the PFA remains the flop aggressor.
+        if (
+          state.phase === 'flop'
+          && botId !== pfa
+          && activeFlopCbettor === pfa
+          && state.currentBet > 0
+        ) {
           stats.postflop.foldToCBetOpps++
           if (action.type === 'fold') stats.postflop.foldToCBets++
+        }
+        if (
+          state.phase === 'flop'
+          && isAggressiveAction(state, action)
+          && botId !== pfa
+        ) {
+          activeFlopCbettor = null
         }
 
         // AF: postflop aggression
@@ -486,7 +545,7 @@ function simulateFormat(
       if (position) stats.positions[position].pfrHands++
     }
 
-    // C-Bet opportunities: PFA acted on flop (counted per-action now)
+    // C-Bet opportunities: last preflop aggressor could open flop betting.
 
     // Showdown tracking: hand reached showdown
     const results = game.getLastHandResults()
@@ -548,6 +607,19 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
     + `(target ${format.target.threeBet.join('–')}%, ${targetLabel(threeBet, format.target.threeBet)}; `
     + `${stats.threeBets}/${stats.threeBetOpportunities} opportunities)`,
   )
+  if (PRINT_CALIBRATION_DETAIL) {
+    const categorySummary = HAND_STRENGTH_CATEGORIES
+      .map(category => {
+        const values = stats.threeBetByCategory[category]
+        return values.opportunities > 0
+          ? `${category} ${values.threeBets}/${values.opportunities} `
+            + `(${percentage(values.threeBets, values.opportunities).toFixed(1)}%)`
+          : null
+      })
+      .filter((value): value is string => value !== null)
+      .join(' · ')
+    console.log(`3-bet by category: ${categorySummary}`)
+  }
 
   console.log('Positions:')
   for (const position of ['early', 'middle', 'late', 'blinds'] as const) {

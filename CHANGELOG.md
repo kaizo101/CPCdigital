@@ -6,6 +6,22 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+### Added
+
+- **PLO-Preflop-Strategie-Tabelle**: `PLO_PREFLOP_STRATEGY` in `bot-category-scores.ts` steuert preferred action pro (Archetyp, Situation, Handkategorie) – Lücke zwischen NLHE-Preflop-Ranges und fehlender PLO-Steuerung geschlossen.
+- **PLO-skalierte Strategie-Matrix**: `preflopStrategyFactors()` prüft `variantId === 'omaha-high'` und nutzt abgeschwächte Werte (raise→raise=12, call→call=10, call→raise=0). NLHE-Pfad unverändert.
+
+### Changed
+
+- **TAG PLO 3-Bet**: FR 14.71%→8.62% (Ziel 5-11% ✅), 6-max 14.45%→8.46% (Ziel 7-13% ✅) – Strategie-Tabelle bevorzugt call für good/medium facing-open, skalierte Matrix verhindert Überkorrektur.
+- **LAG PLO 3-Bet**: FR 18.83%→13.13% (Ziel 8-16% ✅), 6-max→14.66% (Ziel 9-18% ✅) – facing-open good→call, facing-3bet good→fold.
+- **CS PLO VPIP**: FR 49%→45% (Ziel 32-48% ✅) – unopened medium→call entfernt.
+- **Bot-Tag-Integration**: `preflopRangeAction` für PLO über `getPloPreflopAction()` befüllt (vorher `undefined`).
+
+### Fixed
+
+- **PLO-3-Bet ohne NLHE-Regression**: NLHE-10k-Lauf bestätigt unveränderte VPIP/PFR/3-Bet.
+
 ## [0.7.7] — 2026-07-30
 
 ### Added

@@ -11,6 +11,8 @@ export interface OpponentLine {
 export interface StreetAnalysis {
   /** botId that made the last raise or all-in preflop */
   preflopAggressor: string | null
+  /** Number of genuine preflop raises; passive all-in calls do not count. */
+  preflopRaiseCount: number
   /** Who has the initiative on each street (last aggressor) */
   streetAggressor: { preflop: string | null; flop: string | null; turn: string | null; river: string | null }
   /** Am I the preflop aggressor? */
@@ -40,6 +42,7 @@ export function analyzeStreetAction(
   const opponentIds = activePlayerIds.filter(id => id !== botId)
 
   let preflopLastAggressor: string | null = null
+  let preflopRaiseCount = 0
   let flopLastAggressor: string | null = null
   let turnLastAggressor: string | null = null
   let riverLastAggressor: string | null = null
@@ -75,13 +78,21 @@ export function analyzeStreetAction(
       }
 
       const action = event.action.type
+      const aggressiveAction = action === 'raise'
+        || (action === 'all-in' && event.totalBet > event.currentBetBefore)
+      const lineAction = action === 'all-in'
+        ? aggressiveAction ? 'raise' : 'call'
+        : action
 
-      if (action === 'raise' || action === 'all-in') {
+      if (aggressiveAction) {
         if (state.checksThisRound.includes(event.playerId)) {
           opponentCheckRaised = true
         }
         switch (eventPhase) {
-          case 'preflop': preflopLastAggressor = event.playerId; break
+          case 'preflop':
+            preflopLastAggressor = event.playerId
+            preflopRaiseCount++
+            break
           case 'flop': flopLastAggressor = event.playerId; break
           case 'turn': turnLastAggressor = event.playerId; break
           case 'river': riverLastAggressor = event.playerId; break
@@ -100,7 +111,7 @@ export function analyzeStreetAction(
         state.lastAction = 'fold'
       }
 
-      if (action === 'raise' || action === 'all-in') {
+      if (aggressiveAction) {
         previousPhaseAggressor = event.playerId
       }
 
@@ -109,24 +120,24 @@ export function analyzeStreetAction(
 
       switch (eventPhase) {
         case 'preflop':
-          if (action === 'raise' || action === 'all-in') {
+          if (aggressiveAction) {
             if (line.preflop === null || line.preflop === 'called') {
               line.preflop = 'raised'
             }
-          } else if (action === 'call') {
+          } else if (lineAction === 'call') {
             if (line.preflop === null) line.preflop = 'called'
-          } else if (action === 'fold') {
+          } else if (lineAction === 'fold') {
             line.preflop = 'folded'
           }
           break
         case 'flop':
-          line.flop = resolveLineAction(action, line.flop)
+          line.flop = resolveLineAction(lineAction, line.flop)
           break
         case 'turn':
-          line.turn = resolveLineAction(action, line.turn)
+          line.turn = resolveLineAction(lineAction, line.turn)
           break
         case 'river':
-          line.river = resolveLineAction(action, line.river)
+          line.river = resolveLineAction(lineAction, line.river)
           break
       }
     }
@@ -139,6 +150,7 @@ export function analyzeStreetAction(
 
   return {
     preflopAggressor: preflopLastAggressor,
+    preflopRaiseCount,
     streetAggressor: { preflop: preflopLastAggressor, flop: flopLastAggressor, turn: turnLastAggressor, river: riverLastAggressor },
     iAmPreflopAggressor: preflopLastAggressor === botId,
     iAmInPosition,
