@@ -26,6 +26,7 @@ Cards (large)/
 calibration/*.backup
 *.calib-backup
 avatar-prompts.json
+pictures/avatars/*.png
 .reference/
 .agents/
 .codex/

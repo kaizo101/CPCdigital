@@ -6,6 +6,19 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+### Added
+
+- **Bot-Porträts**: 36 weitere Roster-Identitäten erhalten aus den neuen
+  Avatarbögen zugeschnittene und optimierte 512×512-WebP-Porträts. Damit sind
+  40 der 44 stabilen Bot-Identitäten bebildert; die übrigen vier verwenden
+  weiterhin den Initialen-Fallback.
+
+### Security
+
+- **Transitive npm-Abhängigkeiten**: `brace-expansion` auf 5.0.9 und
+  `socket.io-parser` auf 4.2.7 aktualisiert; der High-Severity-Audit ist damit
+  wieder ohne Befund.
+
 ## [0.7.8] — 2026-08-03
 
 ### Added

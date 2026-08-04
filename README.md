@@ -29,7 +29,8 @@ Derzeit enthalten sind unter anderem:
 - Trennung öffentlicher und privater Informationen
 - vier unterscheidbare Bot-Archetypen: TAG, Nit, LAG und Calling Station
 - seltene Maniac-Ausprägung als extreme LAG-Variante
-- 44 individuelle Bot-Identitäten mit Namen, Avataren und wiedererkennbaren Gewohnheiten
+- 44 individuelle Bot-Identitäten mit Namen und wiedererkennbaren Gewohnheiten;
+  40 davon besitzen eigene Porträts, die übrigen verwenden Initialen
 - Utility-basierte Botentscheidungen mit Pot Odds, Betgröße, effektivem Stack und SPR
 - getrennte Modelle für Personality, Skill, Mental State, Reads und Memory
 - Street-Analyse mit C-Bet-Erkennung, Range-Schätzung und Multi-Street-Line-Planning
