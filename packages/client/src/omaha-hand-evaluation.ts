@@ -33,7 +33,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
         variantId: this.variantId,
         handAssessment: preflopAssess(ownCards, facingRaise, raiseCount, position.category, position.tableSize),
         boardTexture: 'neutral' as const,
-        categoryScores: getPloScores(context.archetypeId, 'preflop'),
+        categoryScores: getPloScores(context.archetypeId, 'preflop', position.tableSize),
       }
     }
 

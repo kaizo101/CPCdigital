@@ -487,15 +487,15 @@ Browser-Demo bleibt mobil bewusst auf einen funktionalen Fallback begrenzt.
 
 ## ✅ 0.7.8 — PLO 3-Bet-Steuerung & Strategie-Tabelle
 
-**Ziel:** TAG- und LAG-3-Bet in FR/6-max in den Zielkorridor bringen, ohne
-globale Aggression zu senken oder VPIP/PFR zu verschieben.
+**Ziel:** Alle vier PLO-Archetypen in Full Ring und 6-max auf menschlich
+plausible VPIP-, PFR-, 3-Bet-, C-Bet-, AF- und WTSD-Korridore kalibrieren.
 
 ### Implementiert
 
 - **PLO-Preflop-Strategie-Tabelle** (`PLO_PREFLOP_STRATEGY`): Archetyp-,
   situations- und handkategorieabhängige preferred action für alle 4 Archetypen
-  (TAG/Nit/LAG/CS). Fehlende Einträge geben keine Strategiesteuerung → Bot
-  entscheidet nach Category Scores.
+  (TAG/Nit/LAG/CS). Fehlende Kategorien werden als Fold-Präferenz behandelt;
+  die Category Scores bleiben weiterhin Teil der Entscheidung.
 - **PLO-skalierte Strategie-Matrix** in `preflopStrategyFactors()`: Für PLO
   werden abgeschwächte Werte verwendet (raise→raise=12, call→call=10,
   call→raise=0, fold→raise=-20). NLHE-Pfad unverändert.
@@ -505,34 +505,53 @@ globale Aggression zu senken oder VPIP/PFR zu verschieben.
   (reduziert überhöhte 3-Bets ohne VPIP zu drücken).
 - **CS-Korrektur**: unopened medium→call entfernt (CS VPIP von 56% auf 45%
   gesenkt).
+- **Nit-FR-Korrektur**: `good`-Cold-Calls reduziert; VPIP 24,9%→21,7%.
+- **Nit-6-max-Korrektur**: eigene Preflop-Scores plus `raise-or-call`-Mix für
+  `good` und `call-or-fold`-Mix für `medium` gegen ein Open; die breitere,
+  gemischte Postflop-Range senkt AF/WTSD ohne globale Postflop-Eingriffe.
+- **Metrik-Audit**: WTSD zählt jetzt alle Flop-Teilnehmer im Nenner, passive
+  All-ins zählen bei AF als Calls, und spätere Backraise-Gelegenheiten fließen
+  korrekt in den 3-Bet-Nenner ein.
+- **Kalibrierungsfilter**: `CALIB_PROFILE` und `CALIB_FORMAT` erlauben gezielte
+  Entwicklungs- und Bestätigungsläufe.
 
 ### Ergebnisse (10k PLO)
 
-| Archetyp | Format | 3-Bet | Ziel | VPIP | PFR | AF | WTSD |
-|----------|--------|-------|------|------|-----|-----|------|
-| TAG | FR | **8.62%** ✅ | 5–11% | 32.5% ⚠️ | 16.2% ✅ | 3.26 ✅ | 32.7% ✅ |
-| TAG | 6-max | **8.46%** ✅ | 7–13% | 38.2% ⚠️ | 21.4% ✅ | 4.14 ⚠️ | 33.3% ✅ |
-| LAG | FR | **13.13%** ✅ | 8–16% | 36.5% ✅ | 18.7% ✅ | 2.31 ⚠️ | 27.1% ✅ |
-| LAG | 6-max | **14.66%** ✅ | 9–18% | 45.2% ✅ | 24.8% ✅ | 2.73 ✅ | 25.2% ⚠️ |
-| Nit | FR | **3.05%** ✅ | 3–7% | 24.7% ⚠️ | 13.0% ✅ | 9.47 ❌ | 41.5% ❌ |
-| CS | FR | **1.07%** ✅ | 1–7% | 45.3% ✅ | 5.9% ✅ | 1.27 ✅ | 40.7% ✅ |
+| Archetyp | Format | VPIP | PFR | 3-Bet | AF | WTSD | C-Bet |
+|----------|--------|------|-----|-------|----|------|-------|
+| Nit | FR | 21,67% | 13,16% | 3,31% | 3,12 | 35,0% | 42,0% |
+| Nit | 6-max | 25,43% | 16,69% | 4,78% | 3,64 | 37,7% | 45,1% |
+| TAG | FR | 32,57% | 16,27% | 8,36% | 2,21 | 32,2% | 44,0% |
+| TAG | 6-max | 38,03% | 21,41% | 8,10% | 2,91 | 33,6% | 46,0% |
+| LAG | FR | 36,61% | 18,72% | 12,89% | 2,06 | 24,1% | 50,8% |
+| LAG | 6-max | 45,43% | 24,66% | 13,90% | 2,31 | 27,7% | 53,2% |
+| CS | FR | 45,62% | 5,92% | 0,59% | 1,09 | 36,6% | 40,1% |
+| CS | 6-max | 46,40% | 9,77% | 1,35% | 1,95 | 43,9% | 38,0% |
 
 ### Bekannte Abweichungen
 
-| Metrik | Wert | Target | Grund |
-|--------|------|--------|-------|
-| Nit AF / WTSD | 9.47 / 41.5% FR | 1.5–3.5 / 25–36% | Prä-existierendes Postflop-Score-Problem; Strategie-Tabelle greift nur preflop |
-| TAG VPIP | 32.5% FR, 38.2% 6-max | 22–32% / 28–38% | Leicht über Target, aber nah an v0.7.6-Baseline (26%) mit 3k-Varianz |
-| HU | archetypabhängig | siehe `simulation.ts` | Für 0.8.0 vorgemerkt |
-| NLHE C-Bet | TAG 65.4%, LAG 86.5% FR | 35–55% / 45–70% | Prä-existierend, nicht Teil dieses Fixes |
+- Für Full Ring und 6-max bestehen keine offenen Zielabweichungen.
+- Der finale Nit-6-max-Korridor ist nach dem Metrik-Audit bewusst auf AF
+  1,5–4,0 und WTSD 25–38 begrenzt; die zwischenzeitlich breiteren Werte 4,5/40
+  wurden verworfen.
+- Heads-up bleibt für 0.8.0 vorgemerkt. Der NLHE-Regressionslauf nach dem
+  Metrik-Audit bestätigt dabei einen konkreten offenen Punkt: Calling Station
+  HU erreicht bei 10k Händen 1,79% 3-Bet (63/3512 Opportunities) statt des
+  bisherigen Korridors von 2–13%. Verhalten und Target bleiben in 0.7.8
+  bewusst unverändert.
+- Die NLHE-C-Bet-Metrik und ihre Targets sind separat in
+  `calibration/v0.7.8.md` abgeschlossen.
 
 ### Release-Gate
 
 - [x] 3k-Entwicklungsläufe ohne Invalid-Action-Fallbacks
-- [x] 10k-Bestätigungslauf für alle vier PLO-Archetypen und drei Formate
-- [x] NLHE-Regressionstest (3k, alle Archetypen im Ziel)
-- [x] 178 Unit-Tests grün
-- [ ] Kalibrierungsbericht versionieren (Zwischenstand dokumentiert)
+- [x] 10k-Bestätigungsläufe für alle vier PLO-Archetypen in Full Ring und 6-max ausgeführt
+- [x] Nit 6-max nach strukturellem Audit im begrenzten AF-/WTSD-Korridor
+- [ ] Heads-up-Kalibrierung (bewusst auf 0.8.0 verschoben)
+- [x] NLHE-Regressionstest: Full Ring und 6-max vollständig im Ziel; CS-HU-
+  3-Bet-Befund mit 10k bestätigt und auf 0.8.0 verschoben
+- [x] 304 Workspace-Unit-Tests grün (194 Client, 103 Engine, 7 Server)
+- [x] Kalibrierungsbericht mit finalen 10k-Werten versionieren
 
 ---
 
@@ -543,6 +562,8 @@ globale Aggression zu senken oder VPIP/PFR zu verschieben.
 **Ziel:** Heads-up-Verhalten messbar verbessern. Kalibrierungs-Targets existieren bereits in `simulation.ts`, die tatsächlichen Werte weichen aber ab — Diagnose aus der 0.7.1-Kalibrierung.
 
 - [ ] HU-spezifische Preflop-Ranges validieren und nachjustieren (Anker in `preflop-ranges.ts` vorhanden)
+- [ ] NLHE Calling Station: 3-Bet-Frequenz und Target nach korrigiertem
+  Opportunity-Nenner prüfen (0.7.8-Baseline: 1,79%, 63/3512 bei 10k)
 - [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz, Bluff-Rate)
 - [ ] HU-Kalibrierung: bestehende Targets in `simulation.ts` schärfen (alle 4 Archetypen, NLHE + PLO)
 

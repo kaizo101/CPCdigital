@@ -70,6 +70,13 @@ describe('getPloPreflopAction', () => {
     expect(getPloPreflopAction('nit', 'unopened', 'premium', 6)).toBe('raise')
   })
 
+  it('six-max: Nit mixes calls and 3-bets with good hands facing an open', () => {
+    expect(getPloPreflopAction('nit', 'facing-open', 'good', 6)).toBe('raise-or-call')
+    expect(getPloPreflopAction('nit', 'facing-open', 'medium', 6)).toBe('call-or-fold')
+    expect(getPloPreflopAction('nit', 'facing-open', 'good', 9)).toBe('call')
+    expect(getPloPreflopAction('nit', 'facing-open', 'medium', 9)).toBe('fold')
+  })
+
   it('six-max: Nit reraises strong facing a 3-bet (boosts 3-bet vs full ring)', () => {
     expect(getPloPreflopAction('nit', 'facing-3bet', 'strong', 6)).toBe('raise')
     expect(getPloPreflopAction('nit', 'facing-3bet', 'strong', 9)).toBe('call')
@@ -112,5 +119,15 @@ describe('getPloScores (six-max postflop)', () => {
 
   it('preflop score resolution ignores tableSize', () => {
     expect(getPloScores('lag', 'preflop', 6)).toBe(getPloScores('lag', 'preflop', 9))
+  })
+
+  it('six-max: Nit uses separate good-hand call and raise scores preflop', () => {
+    const fullRing = getPloScores('nit', 'preflop', 9)
+    const sixMax = getPloScores('nit', 'preflop', 6)
+
+    expect(fullRing.raise.good).toBe(4)
+    expect(fullRing.call.good).toBe(-12)
+    expect(sixMax.raise.good).toBe(-12)
+    expect(sixMax.call.good).toBe(-8)
   })
 })

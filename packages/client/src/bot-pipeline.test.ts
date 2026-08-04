@@ -89,6 +89,51 @@ describe('bot utility candidates', () => {
       .toEqual(['fold', 'call', 'raise', 'all-in'])
   })
 
+  it('scores the PLO raise-or-call preflop mix as a weighted choice', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.variantId = 'omaha-high'
+    decisionContext.gameView.phase = 'preflop'
+    decisionContext.preflopRangeAction = 'raise-or-call'
+
+    const actions = scoreActions(decisionContext)
+    const strategyValue = (type: PlayerAction['type']) => actions
+      .find(candidate => candidate.action.type === type)!
+      .contributions.find(contribution => contribution.category === 'strategy')!.value
+
+    expect(strategyValue('call')).toBe(3)
+    expect(strategyValue('raise')).toBe(17)
+  })
+
+  it('scores the PLO call-or-fold preflop mix without adding raises', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.variantId = 'omaha-high'
+    decisionContext.gameView.phase = 'preflop'
+    decisionContext.preflopRangeAction = 'call-or-fold'
+
+    const actions = scoreActions(decisionContext)
+    const strategyValue = (type: PlayerAction['type']) => actions
+      .find(candidate => candidate.action.type === type)!
+      .contributions.find(contribution => contribution.category === 'strategy')!.value
+
+    expect(strategyValue('fold')).toBe(2)
+    expect(strategyValue('call')).toBe(8)
+    expect(strategyValue('raise')).toBe(-12)
+  })
+
   it('does not invent actions absent from the engine context', () => {
     const legalActions: LegalActions = {
       fold: false,

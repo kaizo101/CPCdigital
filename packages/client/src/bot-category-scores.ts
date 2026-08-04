@@ -40,9 +40,9 @@ const PLO_ARCHETYPE_PREFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
   tag: PLO_TAG_SCORES,
 
   nit: plo({
-    fold: { marginal: -6, medium: -2, good: -30, strong: -42 },
+    fold: { marginal: -6, medium: -2, good: -24, strong: -42 },
     check: { marginal: 0, medium: -1 },
-    call: { marginal: 4, medium: 4, good: -8, strong: -8, premium: -10 },
+    call: { marginal: 4, medium: 4, good: -12, strong: -8, premium: -10 },
     raise: { marginal: -8, medium: 0, good: 4, strong: 10 },
     allIn: { good: 5, strong: 22 },
   }),
@@ -62,6 +62,16 @@ const PLO_ARCHETYPE_PREFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
     raise: { 'weak-draw': 14, marginal: -12, medium: -2, good: 4, strong: 10, premium: 18 },
     allIn: { 'weak-draw': -16, marginal: -26, medium: -20, good: 6, strong: 18, premium: 34 },
   }),
+}
+
+const PLO_ARCHETYPE_PREFLOP_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  nit: plo(
+    {
+      call: { good: -8 },
+      raise: { good: -12 },
+    },
+    PLO_ARCHETYPE_PREFLOP.nit,
+  ),
 }
 
 const PLO_ARCHETYPE_POSTFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
@@ -173,6 +183,9 @@ export function getPloScores(
     : street === 'turn-river'
       ? PLO_ARCHETYPE_TURN_RIVER
       : PLO_ARCHETYPE_POSTFLOP
+  if (street === 'preflop' && tableSize <= 6) {
+    return PLO_ARCHETYPE_PREFLOP_SIX_MAX[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
+  }
   if (street !== 'preflop' && tableSize <= 6) {
     const sixMax = street === 'turn-river' ? PLO_ARCHETYPE_TURN_RIVER_SIX_MAX : PLO_ARCHETYPE_POSTFLOP_SIX_MAX
     return sixMax[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
@@ -188,7 +201,7 @@ export function getPloScores(
 /*  Missing entries default to 'fold'.                                */
 /* ------------------------------------------------------------------ */
 
-export type PreflopStrategyAction = 'raise' | 'call' | 'fold'
+export type PreflopStrategyAction = 'raise' | 'raise-or-call' | 'call' | 'call-or-fold' | 'fold'
 
 export type PloPreflopStrategyTable = Record<PreflopSituation, Partial<Record<HandStrengthCategory, PreflopStrategyAction>>>
 
@@ -226,7 +239,7 @@ const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, PloPreflopStrategyTable> = {
 const PLO_PREFLOP_STRATEGY_SIX_MAX: Partial<Record<BotArchetypeId, PloPreflopStrategySixMaxTable>> = {
   nit: {
     unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'fold', marginal: 'fold' },
-    'facing-open': { premium: 'raise', strong: 'raise', good: 'call' },
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'raise-or-call', medium: 'call-or-fold' },
     'facing-3bet': { premium: 'raise', strong: 'raise' },
   },
   'calling-station': {

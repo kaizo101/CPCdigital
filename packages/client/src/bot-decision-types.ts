@@ -1,5 +1,6 @@
 import type { Card, LegalActions, PlayerAction } from '@cpc/shared'
 import type { ActiveHabit } from './bot-habits'
+import type { PreflopStrategyAction } from './bot-category-scores'
 import type { DecisionMetrics } from './bot-decision-metrics'
 import type { StreetAnalysis } from './bot-street-analysis'
 import type { BotState, Position } from './bot-types'
@@ -75,7 +76,7 @@ export interface DecisionContext {
   legalActions: LegalActions
   preferredRaiseTo?: number
   categoryScores: CategoryScoreTable
-  preflopRangeAction?: 'raise' | 'call' | 'fold'
+  preflopRangeAction?: PreflopStrategyAction
   opponentStats?: { vpip: number; aggression: number; foldToBet: number; confidence: number }
   botHabits?: ActiveHabit[]
   streetAnalysis?: StreetAnalysis

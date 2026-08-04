@@ -6,21 +6,52 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+## [0.7.8] — 2026-08-03
+
 ### Added
 
-- **PLO-Preflop-Strategie-Tabelle**: `PLO_PREFLOP_STRATEGY` in `bot-category-scores.ts` steuert preferred action pro (Archetyp, Situation, Handkategorie) – Lücke zwischen NLHE-Preflop-Ranges und fehlender PLO-Steuerung geschlossen.
-- **PLO-skalierte Strategie-Matrix**: `preflopStrategyFactors()` prüft `variantId === 'omaha-high'` und nutzt abgeschwächte Werte (raise→raise=12, call→call=10, call→raise=0). NLHE-Pfad unverändert.
+- **PLO-Preflop-Strategie-Tabelle**: Archetyp, Situation, Handkategorie und
+  Tischgröße steuern die bevorzugte Aktion; PLO verwendet dafür eine gegenüber
+  NLHE abgeschwächte Strategiegewichtung.
+- **Gemischte Nit-6-max-Aktionen**: `raise-or-call` für gute Hände und
+  `call-or-fold` für mittlere Hände gegen ein Open verbreitern die Range
+  kontrolliert, ohne globale Postflop-Aggression zu manipulieren.
+- **Kalibrierungsdiagnostik**: Profil- und Formatfilter sowie optionale Traces
+  nach Street, Handkategorie, PFA-Rolle und Bet-Druck ergänzt.
+- **Kalibrierungsberichte**: NLHE-C-Bet-Neudefinition, PLO-Metrik-Audit und die
+  finalen deterministischen 10k-Werte nachvollziehbar dokumentiert.
 
 ### Changed
 
-- **TAG PLO 3-Bet**: FR 14.71%→8.62% (Ziel 5-11% ✅), 6-max 14.45%→8.46% (Ziel 7-13% ✅) – Strategie-Tabelle bevorzugt call für good/medium facing-open, skalierte Matrix verhindert Überkorrektur.
-- **LAG PLO 3-Bet**: FR 18.83%→13.13% (Ziel 8-16% ✅), 6-max→14.66% (Ziel 9-18% ✅) – facing-open good→call, facing-3bet good→fold.
-- **CS PLO VPIP**: FR 49%→45% (Ziel 32-48% ✅) – unopened medium→call entfernt.
-- **Bot-Tag-Integration**: `preflopRangeAction` für PLO über `getPloPreflopAction()` befüllt (vorher `undefined`).
+- **PLO-Kalibrierung abgeschlossen**: TAG, Nit, LAG und Calling Station liegen
+  in Full Ring und 6-max über VPIP, PFR, 3-Bet, C-Bet, AF und WTSD innerhalb
+  ihrer menschlich plausiblen Zielkorridore.
+- **PLO-Archetypen geschärft**: TAG-/LAG-3-Bets, Calling-Station-VPIP und die
+  Nit-Ranges für Full Ring und 6-max situationsabhängig kalibriert.
+- **NLHE-C-Bet**: Die fachlich präzisere Kennzahl zählt den letzten
+  Preflop-Aggressor beim offenen Flop; die Zielkorridore wurden anhand der
+  unveränderten deterministischen Baseline neu gesetzt.
+- **Metrikabhängige PLO-Ziele**: Kleine Korridorkorrekturen berücksichtigen die
+  bereinigten AF-, WTSD- und 3-Bet-Definitionen; die zwischenzeitlich breite
+  Nit-6-max-Erweiterung auf AF 4,5 / WTSD 40 wurde verworfen.
 
 ### Fixed
 
-- **PLO-3-Bet ohne NLHE-Regression**: NLHE-10k-Lauf bestätigt unveränderte VPIP/PFR/3-Bet.
+- **WTSD-Nenner**: Spieler, die den Flop sehen und später folden, bleiben im
+  Nenner; Preflop-All-ins mit automatischem Board-Runout werden korrekt ergänzt.
+- **AF bei All-ins**: Zu kurze passive All-in-Calls zählen als Calls statt als
+  Bets oder Raises.
+- **3-Bet-Opportunities**: Spätere Backraise-Gelegenheiten werden auch nach
+  einer vorherigen Aktion des Spielers im Nenner erfasst.
+- **Kalibrierungs-Typecheck**: Test-Fixture an die verpflichtende
+  `preflopRaiseCount`-Angabe angepasst.
+
+### Known limitations
+
+- **Heads-up-Kalibrierung**: Bleibt vollständig für v0.8.0 vorgesehen. Der
+  korrigierte NLHE-Lauf bestätigt für Calling Station HU 1,79% 3-Bet bei 10k
+  Händen (63/3512 Opportunities) gegenüber dem bisherigen Korridor von 2–13%;
+  Verhalten und Target bleiben in v0.7.8 bewusst unverändert.
 
 ## [0.7.7] — 2026-07-30
 
@@ -371,7 +402,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.7...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.8...HEAD
+[0.7.8]: https://github.com/kaizo101/CPCdigital/compare/v0.7.7...v0.7.8
 [0.7.7]: https://github.com/kaizo101/CPCdigital/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/kaizo101/CPCdigital/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/kaizo101/CPCdigital/compare/v0.7.4...v0.7.5
