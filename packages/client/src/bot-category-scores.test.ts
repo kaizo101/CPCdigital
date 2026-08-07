@@ -106,12 +106,12 @@ describe('getPloScores (six-max postflop)', () => {
     expect(getPloScores('tag', 'turn-river', 9)).toBe(getPloScores('tag', 'turn-river'))
   })
 
-  it('six-max: LAG keeps only a small marginal-defense expansion over full ring', () => {
+  it('six-max: LAG tightens marginal calling over full ring', () => {
     const fr = getPloScores('lag', 'turn-river', 9)
     const six = getPloScores('lag', 'turn-river', 6)
     expect(six.fold.marginal).toBeLessThan(fr.fold.marginal)
     expect(six.fold.medium).toBeLessThan(fr.fold.medium)
-    expect(six.call.marginal).toBeGreaterThan(fr.call.marginal)
+    expect(six.call.marginal).toBeLessThan(fr.call.marginal)
   })
 
   it('LAG applies river-specific bluff pressure instead of inflating turn aggression', () => {

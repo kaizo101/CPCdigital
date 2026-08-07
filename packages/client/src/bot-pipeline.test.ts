@@ -199,7 +199,7 @@ describe('bot utility candidates', () => {
 
     expect(raise.contributions).toContainEqual(expect.objectContaining({
       label: 'PLO vulnerable made hand — deny equity',
-      value: 12,
+      value: 8,
     }))
   })
 
