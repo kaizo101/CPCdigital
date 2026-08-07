@@ -149,7 +149,7 @@ export function formatHandHistory(replay: HandReplay): string {
         lines.push(`*** FLOP *** [${boardStr}]`)
         currentPhase = 'flop'
       } else if (frame.phase === 'turn') {
-        lines.push(`*** TURN *** [${cardsToString(accumulatedBoard.slice(0, 4))}] [${cardToString(accumulatedBoard[3])}]`)
+        lines.push(`*** TURN *** [${cardsToString(accumulatedBoard.slice(0, 3))}] [${cardToString(accumulatedBoard[3])}]`)
         currentPhase = 'turn'
       } else if (frame.phase === 'river') {
         lines.push(`*** RIVER *** [${cardsToString(accumulatedBoard.slice(0, 4))}] [${cardToString(accumulatedBoard[4])}]`)
