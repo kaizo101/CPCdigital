@@ -101,13 +101,15 @@ export function rollRebuyPolicy(archetypeId: BotArchetypeId, maniac: boolean, ra
         leaveOnBust: random() < 0.15,
         rebuyWhenShortBb: random() < 0.7 ? 10 + Math.round(random() * 10) : null,
       }
-    case 'nit':
+    case 'nit': {
+      const wantsRebuy = random() < 0.3
       return {
-        rebuyThresholdBb: random() < 0.3 ? 10 + Math.round(random() * 15) : null,
-        maxRebuys: random() < 0.4 ? 1 : 0,
+        rebuyThresholdBb: wantsRebuy ? 10 + Math.round(random() * 15) : null,
+        maxRebuys: wantsRebuy ? 1 : 0,
         leaveOnBust: random() < 0.6,
         rebuyWhenShortBb: random() < 0.5 ? 5 + Math.round(random() * 10) : null,
       }
+    }
     case 'lag':
       return {
         rebuyThresholdBb: 50 + Math.round(random() * 40),
