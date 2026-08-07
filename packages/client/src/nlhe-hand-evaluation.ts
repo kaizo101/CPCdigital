@@ -402,33 +402,25 @@ function isNutFlush(holeCards: [Card, Card], communityCards: Card[]): boolean {
 
 // Fix #13: Nut straight detection is correct
 function isNutStraight(holeCards: [Card, Card], communityCards: Card[]): boolean {
-  // A straight is the nuts if it's Ace-high (A-K-Q-J-T)
-  // OR if it's the highest possible straight given the board
-  const ranks = [...holeCards, ...communityCards].map(c => rankValue(c.rank)).sort((a, b) => b - a)
-
-  // Check if it's Ace-high straight
-  if (ranks[0] === 14 && ranks[1] === 13 && ranks[2] === 12 && ranks[3] === 11 && ranks[4] === 10) {
-    return true
-  }
-
-  // Check if there's a higher straight possible on the board
-  // (simplified: if Ace-high straight is possible but we don't have it, we don't have nuts)
   const boardRanks = communityCards.map(c => rankValue(c.rank))
-  const hasAce = boardRanks.includes(14)
-  const hasKing = boardRanks.includes(13)
-  const hasQueen = boardRanks.includes(12)
-  const hasJack = boardRanks.includes(11)
-  const hasTen = boardRanks.includes(10)
+  const allRanks = [...boardRanks, ...holeCards.map(c => rankValue(c.rank))]
+  const nutTop = findStraightTop(boardRanks, 3)
+  const myTop = findStraightTop(allRanks, 5)
+  return nutTop > 0 && myTop === nutTop
+}
 
-  // If board can make A-high straight, only A-high straight is nuts
-  if (hasAce && hasKing && hasQueen && hasJack && hasTen) {
-    return ranks[0] === 14
+/** Highest straight top with at least minRequired of the 5 ranks in visibleRanks. */
+function findStraightTop(visibleRanks: number[], minRequired: number): number {
+  const present = new Set(visibleRanks)
+  const STRAIGHT_RUNS = [
+    [14, 13, 12, 11, 10],
+    [14, 5, 4, 3, 2],
+    ...[...Array(8)].map((_, i) => [13 - i, 12 - i, 11 - i, 10 - i, 9 - i]),
+  ]
+  for (const ranks of STRAIGHT_RUNS) {
+    if (ranks.filter(r => present.has(r)).length >= minRequired) return ranks[0]
   }
-
-  // Otherwise, our straight is the nuts if it's the highest possible
-  // (simplified check)
-  const highestBoardRank = Math.max(...boardRanks)
-  return ranks[0] >= highestBoardRank - 3
+  return 0
 }
 
 // Fix #18: Vulnerability doesn't use own draws as danger
@@ -513,9 +505,7 @@ function calculateCleanOuts(holeCards: [Card, Card], communityCards: Card[], eva
         const cardKey = `${i}-${flushSuit}`
         if (!communityCards.some(c => rankValue(c.rank) === i && c.suit === flushSuit)) {
           outCards.add(cardKey)
-}
-
-/** Map category to base numeric strength (0-100), modulated by draw quality. */
+        }
       }
     }
   } else if (draws.includes('flush-draw')) {
@@ -641,6 +631,7 @@ function findStraightDraw(ranks: number[]): 'open-ended' | 'gutshot' | null {
   // Check for 4 consecutive ranks (open-ended)
   for (let i = 0; i < ranks.length - 3; i++) {
     if (ranks[i + 3] - ranks[i] === 3) {
+      if (ranks[i + 3] === 14) return 'gutshot'
       return 'open-ended'
     }
   }
