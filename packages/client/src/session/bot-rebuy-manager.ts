@@ -24,9 +24,11 @@ export function getCashOutPolicy(identity: BotIdentity): CashOutPolicy {
       ? { soft: 240, hard: 500, hands: 20, chance: 0.12 }
       : identity.archetypeId === 'tag'
         ? { soft: 300, hard: 600, hands: 25, chance: 0.09 }
-        : identity.archetypeId === 'calling-station'
-          ? { soft: 360, hard: 700, hands: 30, chance: 0.06 }
-          : { soft: 420, hard: 800, hands: 35, chance: 0.04 }
+        : identity.archetypeId === 'lag'
+          ? { soft: 420, hard: 800, hands: 35, chance: 0.04 }
+          : identity.archetypeId === 'calling-station'
+            ? { soft: 360, hard: 700, hands: 30, chance: 0.06 }
+            : { soft: 420, hard: 800, hands: 35, chance: 0.04 }
   const riskAdjustment = Math.round((identity.traits.riskTolerance - 50) * 1.5)
   const softThresholdBb = Math.max(200, Math.min(650, base.soft + riskAdjustment))
   const hardThresholdBb = Math.max(
