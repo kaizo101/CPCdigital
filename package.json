@@ -27,8 +27,8 @@
     "android:check": "npm run android:sync && npm run android:gradle"
   },
   "devDependencies": {
-    "@capacitor/android": "8.4.2",
-    "@capacitor/cli": "8.4.2",
+    "@capacitor/android": "8.5.0",
+    "@capacitor/cli": "8.5.0",
     "concurrently": "^8.2.0",
     "electron": "41.10.4",
     "typescript": "^5.4.0",
