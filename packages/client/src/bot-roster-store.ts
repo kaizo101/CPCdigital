@@ -1,5 +1,6 @@
 import type { BotIdentity, BotRoster } from './bot-identities'
 import {
+  BOT_IDENTITY_GENERATOR_VERSION,
   BOT_ROSTER_SCHEMA_VERSION,
   DEFAULT_BOT_ROSTER,
   generateBotRoster,
@@ -26,12 +27,17 @@ export function loadPersistentRoster(): PersistentRosterState {
     const storedRoster = localStorage.getItem(STORAGE_KEY_ROSTER)
     const storedLog = localStorage.getItem(STORAGE_KEY_SESSION_LOG)
 
-    const roster: BotRoster = storedRoster
+    let roster: BotRoster = storedRoster
       ? JSON.parse(storedRoster) as BotRoster
       : DEFAULT_BOT_ROSTER
 
-    // Migration: add rebuyPolicy to identities that don't have it (pre-v0.6)
     let needsSave = false
+    if (roster.generatorVersion !== BOT_IDENTITY_GENERATOR_VERSION) {
+      roster = migrateGeneratedBotRoster(roster)
+      needsSave = true
+    }
+
+    // Migration: add rebuyPolicy to identities that don't have it (pre-v0.6)
     for (const identity of roster.identities) {
       if (!identity.rebuyPolicy) {
         identity.rebuyPolicy = rollRebuyPolicy(identity.archetypeId, identity.maniac, () => Math.random())
@@ -53,6 +59,35 @@ export function loadPersistentRoster(): PersistentRosterState {
     const roster = DEFAULT_BOT_ROSTER
     saveRoster(roster)
     return { roster, sessionLog: [] }
+  }
+}
+
+/** Preserve stable identity data while applying deterministic generator migrations. */
+export function migrateGeneratedBotRoster(roster: BotRoster): BotRoster {
+  if (roster.generatorVersion === BOT_IDENTITY_GENERATOR_VERSION) return roster
+
+  const generated = generateBotRoster(
+    roster.identities.map(identity => identity.name),
+    roster.seed,
+  )
+  const generatedById = new Map(generated.identities.map(identity => [identity.id, identity]))
+  const migrateCallingStationSkill = Number(roster.generatorVersion ?? 0) < 3
+
+  return {
+    ...roster,
+    schemaVersion: BOT_ROSTER_SCHEMA_VERSION,
+    generatorVersion: BOT_IDENTITY_GENERATOR_VERSION,
+    identities: roster.identities.map(identity => {
+      const replacement = generatedById.get(identity.id)
+      return {
+        ...identity,
+        generatorVersion: BOT_IDENTITY_GENERATOR_VERSION,
+        skill: migrateCallingStationSkill && identity.archetypeId === 'calling-station'
+          ? (replacement?.skill ?? identity.skill)
+          : identity.skill,
+        rebuyPolicy: identity.rebuyPolicy ?? replacement?.rebuyPolicy,
+      }
+    }),
   }
 }
 

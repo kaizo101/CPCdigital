@@ -149,7 +149,7 @@ export function decideBotDecision(
           ? getPreflopAction(
               holeCards,
               position,
-              getPreflopSituation(state, position),
+              getPreflopSituation(state, position, streetAnalysis?.preflopRaiseCount),
               botContext.position.tableSize,
               preflopRangeFactor(
                 botState.personality.preflopLooseness,
@@ -164,7 +164,7 @@ export function decideBotDecision(
             )
           : getPloPreflopAction(
               botContext.archetypeId,
-              getPreflopSituation(state, position),
+              getPreflopSituation(state, position, streetAnalysis?.preflopRaiseCount),
               handAssessment.category,
               botContext.position.tableSize,
             ))
@@ -180,7 +180,10 @@ export function decideBotDecision(
   // Apply state updates from the decision (separated for purity)
   applyDecisionMemory(botState.memory, result.stateUpdates)
 
-  const legalAction = legalizeBotAction(state, me, action)
+  const aggressiveAllInEligible = result.allActions
+    .find(candidate => candidate.action.type === 'all-in')
+    ?.selectionEligible !== false
+  const legalAction = legalizeBotAction(state, me, action, aggressiveAllInEligible)
   return {
     action: legalAction,
     decisionResult: { ...result, action: legalAction },
@@ -240,10 +243,11 @@ function identityArchetypeId(botState: BotState): 'tag' | 'nit' | 'lag' | 'calli
   return 'tag'
 }
 
-function legalizeBotAction(
+export function legalizeBotAction(
   state: PublicGameState,
   player: PublicGameState['players'][number],
   action: PlayerAction,
+  aggressiveAllInEligible: boolean = true,
 ): PlayerAction {
   const bettingContext = state.bettingContext
   if (!bettingContext || bettingContext.playerId !== player.id) {
@@ -262,13 +266,19 @@ function legalizeBotAction(
   if (action.type === 'all-in') return legal.allInAmount != null ? action : passiveAction
 
   const aggressiveAllIn = legal.allInAmount != null && legal.allInAmount > state.currentBet
-  if (!legal.raise) return aggressiveAllIn ? { type: 'all-in' } : passiveAction
+  if (!legal.raise) {
+    return aggressiveAllIn && aggressiveAllInEligible ? { type: 'all-in' } : passiveAction
+  }
 
   const betStep = calculateChipUnit(state.smallBlind, state.bigBlind)
   const snappedAmount = roundToCents(Math.round(action.amount / betStep) * betStep)
   const raiseAmount = Math.max(legal.raise.minAmount, snappedAmount)
   if (raiseAmount >= legal.raise.maxAmount) {
-    return legal.allInAmount != null ? { type: 'all-in' } : { type: 'raise', amount: legal.raise.maxAmount }
+    if (legal.allInAmount != null && aggressiveAllInEligible) return { type: 'all-in' }
+    const maxNonAllIn = roundToCents(legal.raise.maxAmount - betStep)
+    return maxNonAllIn >= legal.raise.minAmount
+      ? { type: 'raise', amount: maxNonAllIn }
+      : passiveAction
   }
 
   return { type: 'raise', amount: raiseAmount }

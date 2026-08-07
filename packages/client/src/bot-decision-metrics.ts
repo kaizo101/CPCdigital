@@ -25,11 +25,19 @@ export interface DecisionMetrics {
 export interface DecisionHandProfile {
   category: HandStrengthCategory
   hasDraw: boolean
+  boardGotWorse?: boolean
+  boardWorseSensitivity?: number
 }
 
 export interface BettingContextFactor {
   label: string
   value: number
+}
+
+export interface BettingSituation {
+  phase?: string
+  /** Voluntary aggressive actions already made preflop; blinds do not count. */
+  preflopRaiseCount?: number
 }
 
 /** Normalizes the engine's betting values for strategy code and debug output. */
@@ -68,8 +76,9 @@ export function getBettingContextAdjustment(
   metrics: Readonly<DecisionMetrics>,
   hand: Readonly<DecisionHandProfile>,
   phase?: string,
+  preflopRaiseCount?: number,
 ): number {
-  return getBettingContextFactors(action, metrics, hand, phase)
+  return getBettingContextFactors(action, metrics, hand, { phase, preflopRaiseCount })
     .reduce((sum, factor) => sum + factor.value, 0)
 }
 
@@ -77,9 +86,12 @@ export function getBettingContextFactors(
   action: DecisionActionKind,
   metrics: Readonly<DecisionMetrics>,
   hand: Readonly<DecisionHandProfile>,
-  phase?: string,
+  situation: Readonly<BettingSituation> = {},
 ): BettingContextFactor[] {
   if (action === 'check') return []
+
+  const isPreflop = situation.phase === 'preflop'
+  const useSpr = !isPreflop
 
   const priceAdjustment = clamp((0.3 - metrics.potOdds) * params.betting.priceMultiplier, params.betting.priceClampMin, params.betting.priceClampMax)
   const sizingAdjustment = clamp((0.5 - metrics.toCallPotRatio) * params.betting.sizingMultiplier, params.betting.sizingClampMin, params.betting.sizingClampMax)
@@ -105,7 +117,7 @@ export function getBettingContextFactors(
       if (metrics.stackDepth === 'deep') factors.push({ label: `Deep stack ${metrics.effectiveStackBb.toFixed(0)} BB`, value: params.betting.callDeepDrawBonus })
       if (metrics.stackDepth === 'short') factors.push({ label: `Short stack ${metrics.effectiveStackBb.toFixed(0)} BB`, value: params.betting.callShortDrawPenalty })
     }
-    if (metrics.spr <= 2 && (isAtLeast(hand.category, 'strong'))) {
+    if (useSpr && metrics.spr <= 2 && (isAtLeast(hand.category, 'strong'))) {
       factors.push({ label: `Low SPR ${metrics.spr.toFixed(2)}`, value: params.betting.callLowSprBonus })
     }
     if (metrics.callCommitment >= 0.5 && (hand.category === 'air' || hand.category === 'weak')) {
@@ -116,7 +128,7 @@ export function getBettingContextFactors(
   }
 
   const factors: BettingContextFactor[] = []
-  if (metrics.spr <= 3) {
+  if (useSpr && metrics.spr <= 3) {
     factors.push({
       label: `Low SPR ${metrics.spr.toFixed(2)}`,
       value: isAtLeast(hand.category, 'strong') ? params.betting.raiseSprBonus : params.betting.raiseSprPenalty,
@@ -129,9 +141,10 @@ export function getBettingContextFactors(
     factors.push({ label: `Large bet/pot ratio ${metrics.toCallPotRatio.toFixed(2)}`, value: params.betting.raiseLargeBetPenalty })
   }
 
-  const facingBet = metrics.toCallPotRatio > 0
+  const facingBet = isPreflop
+    ? (situation.preflopRaiseCount ?? 0) > 0
+    : metrics.toCallPotRatio > 0
   if (facingBet) {
-    const isPreflop = phase === 'preflop'
     const factor = isPreflop ? 0.5 : 1 // Half penalty preflop (3-bet is fine, 4-bet+ less so)
     if (hand.category === 'medium' || hand.category === 'marginal') {
       factors.push({ label: 'Reraising medium hand into a bet', value: Math.round(params.betting.raiseReraiseMedium * factor) })
@@ -162,6 +175,7 @@ export function calculateContextualRaiseTo(
     opponentCheckRaised?: boolean
   },
   skillLevel?: number,
+  situation: Readonly<BettingSituation> = {},
 ): number {
   let potFraction = hand.category === 'premium'
     ? params.betting.raisePotFraction.premium
@@ -177,9 +191,13 @@ export function calculateContextualRaiseTo(
 
   if (boardTexture === 'wet') potFraction += params.betting.raiseSizingMods.wetBoard
   if (boardTexture === 'dry') potFraction += params.betting.raiseSizingMods.dryBoard
-  if ((hand as any).boardGotWorse && hand.category !== 'air') potFraction += 0.08
+  if (hand.boardGotWorse && hand.category !== 'air') {
+    potFraction += 0.08 * (hand.boardWorseSensitivity ?? 1)
+  }
   if (position === 'late') potFraction += params.betting.raiseSizingMods.latePosition
-  if (metrics.spr <= 3 && (isAtLeast(hand.category, 'strong'))) potFraction += params.betting.raiseSizingMods.lowSprStrong
+  if (situation.phase !== 'preflop' && metrics.spr <= 3 && (isAtLeast(hand.category, 'strong'))) {
+    potFraction += params.betting.raiseSizingMods.lowSprStrong
+  }
 
   if (streetContext) {
     if (streetContext.iAmPreflopAggressor && boardTexture === 'dry') potFraction += params.betting.raiseSizingMods.cbetDry
@@ -195,7 +213,10 @@ export function calculateContextualRaiseTo(
   }
 
   // Reraising into a bet: smaller sizing needed for fold equity
-  if (metrics.toCallPotRatio > 0 && hand.category !== 'premium') {
+  const facingVoluntaryBet = situation.phase === 'preflop'
+    ? (situation.preflopRaiseCount ?? 0) > 0
+    : metrics.toCallPotRatio > 0
+  if (facingVoluntaryBet && hand.category !== 'premium') {
     potFraction *= 0.75
   }
 

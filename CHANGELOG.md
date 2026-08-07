@@ -4,20 +4,159 @@ Alle wichtigen veröffentlichten Änderungen an CPCdigital werden in dieser Date
 
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und das Projekt verwendet semantische Versionsnummern. Geplante Funktionen stehen ausschließlich in der [Roadmap](ROADMAP.md).
 
-## [Unreleased]
+## [0.8.0] — 2026-08-07
 
 ### Added
 
+- **Code-Review**: Systematische Prüfung von 29 Modulen (Engine, Game-Loop,
+  Scoring, Modifier, Support). 6 Bugs gefunden und behoben, 16 neue Tests
+  hinzugefügt, 23 Module als bugfrei bestätigt ([REVIEW.md](REVIEW.md)).
+- **PLO-Handbewertung verfeinert**: Nut-Potential handrelativ (Flush-Top-Card,
+  FH-Trips-Rank, Straight-Position), Dirty-Outs gefiltert (Board-Pair,
+  Straight-Domination, Flush-Dominanz), Board-Change handrelativ (Pair hilft
+  Sets/TwoPair, Flush-Karte nicht für Flush-Halter).
+
+### Changed
+
+- **PLO-Score-Tabellen rekalibriert**: LAG-Raise-Scores auf v0.7.8-Niveau
+  zurück, TAG-Raise-Scores erhöht, Nit-Fold-Scores erhöht, Protection-Boni
+  auf Originalwerte zurück, Board-Worse-Sensitivity 0.6→0.4.
+- **Kalibrierungs-Targets aktualisiert**: NLHE C-Bet (LAG 80–90→68–78%,
+  Nit 45–58→60–72%), NLHE/PLO AF-Caps gesenkt, PLO WTSD-Targets nach
+  PLO-Realismus-Kriterien gesetzt (TAG 22–32, Nit 22–28, LAG 28–34, CS 28–45).
+- **ROADMAP**: Code-Review als abgeschlossener Punkt in v0.8.1-Tests eingetragen.
+
+### Fixed
+
+- **Bot-Freeze bei Decision-Pipeline-Fehler**: `scheduleBotAction` force-foldet
+  jetzt einen Bot, dessen Entscheidung fehlschlägt, statt das Spiel einzufrieren.
+- **Fehlender DecisionSnapshot bei forceFold**: Engine erzeugt jetzt einen
+  Snapshot für Replay und Opponent-Observation.
+- **`reopenBettingAfterRaise`**: Distanzberechnung verwendet jetzt einheitlich
+  Array-Indizes statt gemischtem `seatIndex`/`findIndex`.
+- **PLO `boardWorseSensitivity`**: `calculateRaiseTo` und `scoreRaise` nutzten
+  unterschiedliche Werte (0.4 vs 0.6) — vereinheitlicht.
+- **Check-Range-Modifier**: `scoreCheck` rief `rangeBasedFactors` mit
+  `'call'`-Modifiern auf — entfernt.
+- **Patience-Modifier ohne PLO-Skalierung**: Fehlender `personalityDivisor`
+  ergänzt.
+
+## [0.7.9] — 2026-08-04
+
+### Added
+
+- **Nativer Android-Export**: Session-Logs, Replayer-Hand-Histories und das
+  vollständige Debug-JSON werden im App-Cache als echte Datei erzeugt und über
+  das Android-Teilen-/Speichern-Menü exportiert. Web und Desktop behalten den
+  direkten Browser-Download.
 - **Bot-Porträts**: 36 weitere Roster-Identitäten erhalten aus den neuen
   Avatarbögen zugeschnittene und optimierte 512×512-WebP-Porträts. Damit sind
   40 der 44 stabilen Bot-Identitäten bebildert; die übrigen vier verwenden
   weiterhin den Initialen-Fallback.
+- **PLO-Board-Delta**: Flush-Vervollständigungen, Board-Paarungen und nach der
+  Omaha-3-Board-Regel neu entstehende Straight-Fenster lösen jetzt eine
+  variantenabhängig dosierte Protection-Reaktion aus.
+- **Kalibrierungsschema v2**: Ein zentraler Hand-Accumulator definiert VPIP,
+  PFR, 3-Bet, C-Bet, Fold-to-C-Bet und AF; Golden-Hand-Tests und Invarianten
+  sichern unmögliche Zählerrelationen ab.
+- **Bot-Cash-outs**: Gewinner verlassen den Tisch nach einer archetypabhängigen
+  Mindestdauer ab einer Basisschwelle von 240–480 BB, individuell durch ihre
+  Risikoneigung verschoben, und spätestens am persönlichen Hard-Limit bis
+  800 BB. Der vorhandene Ersatzmechanismus besetzt den Sitz anschließend wieder
+  mit dem normalen Startstack.
+
+### Changed
+
+- **Opponent Evidence**: Line- und Sizing-Signale wirken gemeinsam und
+  aktionsabhängig auf Fold, Call und Raise. Kleine Bets werden abhängig von der
+  eigenen Aggressionsneigung attackiert, große Abweichungen vorsichtiger
+  behandelt.
+- **Sessiontreue Kalibrierung**: Simulation und echte lokale Session verwenden
+  dieselbe Opponent-Read-Beobachtung. Alle unveränderten Full-Ring- und
+  6-max-Targets wurden für NLHE und PLO mit deterministischen 10k-Läufen
+  bestätigt; Heads-up bleibt in v0.8.0.
+- **PLO Calling Station**: Flop-Defense in Full Ring und 6-max verbreitert und
+  die spätere Call-Down-Neigung getrennt kalibriert. Das senkt unplausibel hohe
+  Fold-to-C-Bet-Werte, ohne AF- oder WTSD-Korridore zu erweitern.
+- **PLO-Preflop-Handqualität**: Suit-Struktur, Nut-Suits, Paare, Rundowns,
+  Wheel-Connectivity und Dangler werden unabhängig von Position und vorheriger
+  Action bewertet. Triple-/monotone Suits gelten nicht länger als
+  double-suited und Paare erzeugen keine fiktive Connectedness.
+- **PLO-Format- und Street-Trennung**: Eine gemeinsame absolute Handbewertung
+  speist formatspezifische Full-Ring-/6-max-Aktionen sowie getrennte
+  Flop-/Turn-/River-Scores. LAG-River-Pressure und Calling-Station-Defense
+  bleiben dadurch lokal kalibrierbar, ohne andere Formate mitzuziehen.
+- **Calling-Station-Skillprofil**: Dauerhaft loose-passive Identitäten bleiben
+  mit einer deterministischen Verteilung von 38 ± 6 vollständig im Low-Tier
+  von 15 bis 49. Generator v3 migriert vorhandene CS-Skills, ohne Namen, IDs
+  oder individuelle Nicht-CS-Skills neu auszulosen.
+- **Manuelle Verhaltensprüfung**: Nach Änderungen an Kalibrierung, Ranges oder
+  Action Scores ist zusätzlich zu deterministischen Läufen eine 100–150-Hände-
+  Probe-Session mit Hand-Triage als wiederkehrendes Release-Gate dokumentiert.
+
+### Fixed
+
+- **Android-Debugzugang**: Der Bot-Debug-Modus ist im nativen Client nicht
+  länger ausschließlich über die Desktop-Tastenkombination `Strg+D`
+  erreichbar. Fünf schnelle Berührungen der Versionsanzeige schalten ihn
+  touchfähig um; der Zustand bleibt lokal für folgende Sessions gespeichert.
+- **Capacitor-Plugin-Sync im Workspace**: Die vom Client verwendeten Plugins
+  `App`, `Filesystem` und `Share` werden im Monorepo explizit in den nativen
+  Android-Build aufgenommen; zuvor blieb die generierte Plugin-Liste leer.
+- **Omaha-Showdownvergleich**: `evaluateOmahaHand()` wählt innerhalb derselben
+  Handkategorie jetzt die tatsächlich stärkste Fünf-Karten-Kombination statt
+  der zuerst iterierten. Der in der PLO-Probesession sichtbare falsche Sieg von
+  9-9-2-2 gegen Q-Q-2-2 ist als reihenfolgeunabhängiger Regressionstest
+  abgesichert.
+- **PLO-Made-Hand-Protection**: Verwundbare Sets, Straights und Flushes
+  erhalten auf Flop und Turn einen eigenen, dosierten Equity-Denial-Impuls;
+  der River bleibt davon ausgenommen. Dadurch überschreibt Protection nicht
+  deterministisch den Archetyp.
+- **PLO-LAG-Commitment**: Nicht-nut-orientierte Preflop- und Postflop-All-ins
+  deutlich gedämpft, normale Raises aber beibehalten. Full Ring und 6-max
+  besitzen getrennte späte Pressure-/Fold-Gewichte statt einer gemeinsamen
+  Kompromisstabelle.
+
+- **Sizing-Normalisierung**: Historische und aktuelle aggressive Aktionen
+  werden einheitlich als tatsächlich investierte Chips relativ zum Pot vor der
+  Aktion verglichen; die aktuelle Beobachtung wird aus ihrem EMA-Vergleich
+  herausgerechnet.
+- **Passive All-ins**: Zu kurze All-in-Calls erzeugen weder Aggressions- noch
+  Sizing-Evidenz und werden in Reads wie Calls behandelt.
+- **VPIP bei Free Checks**: Ein kostenloser Check im Big Blind gilt weder in
+  Session-Reads noch in der Kalibrierung als freiwillige Pot-Beteiligung.
+- **Bot-Austausch am Tisch**: Name, Avatar, Engine-Spieler und Replayer wechseln
+  nun gemeinsam auf die neue Identität; zuvor blieb am Live-Sitz der alte Name
+  stehen.
+- **Protection-Sizing**: `boardGotWorse` wird an die Raise-Sizing-Berechnung
+  weitergereicht; der zuvor wirkungslose `any`-Zugriff ist entfernt.
+- **Opponent Reads**: Eine normalerweise passive gegnerische Bet erzeugt nicht
+  länger pauschal einen Call-Bonus; Preflop- und Postflop-Reaktionen sind
+  unterschiedlich stark dosiert.
+- **Deep-Stack-All-ins**: Open-Shoves über 40 BB sowie tiefe, noch nicht
+  ausreichend investierte All-ins erhalten harte Commitment-Grenzen, statt als
+  normale Raise-Alternative bis 400+ BB auswählbar zu bleiben. Die
+  Kalibrierung zählt solche Open-Shoves und uncommitted Deep-Shoves separat und
+  schlägt bei jedem Treffer fehl. Normale Raises, die auf den Maximalbetrag
+  runden würden, bleiben unterhalb des All-ins, solange der Shove gesperrt ist.
+- **NLHE-Calling-Station-Value**: Niedrige Aggression reduziert Value-Bets
+  weiterhin, löst für Made Hands aber nicht zusätzlich die Bluff-/Initiative-
+  Sperre aus. Der `sticky-postflop`-Einfluss nimmt über die Streets ab;
+  wiederholter Druck bestraft drawlose schwache Call-downs auf Turn und River.
+  PLO behält seine separat kalibrierten Street-Tabellen.
+- **Latentes Positionsfeld**: Das semantisch falsche und ungenutzte
+  `iAmInPosition` aus der Street-Analyse entfernt, bevor es versehentlich an
+  Scoring angeschlossen werden kann.
 
 ### Security
 
 - **Transitive npm-Abhängigkeiten**: `brace-expansion` auf 5.0.9 und
   `socket.io-parser` auf 4.2.7 aktualisiert; der High-Severity-Audit ist damit
   wieder ohne Befund.
+- **Electron-Sicherheitsupdate**: Electron innerhalb der kompatiblen 41er-Reihe
+  auf 41.10.4 aktualisiert und die Install-Script-Freigabe versionsgenau
+  nachgezogen; die am 5. August gemeldeten High-Severity-Advisories sind damit
+  behoben.
 
 ## [0.7.8] — 2026-08-03
 
@@ -415,7 +554,9 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.7.8...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/kaizo101/CPCdigital/compare/v0.7.9...v0.8.0
+[0.7.9]: https://github.com/kaizo101/CPCdigital/compare/v0.7.8...v0.7.9
 [0.7.8]: https://github.com/kaizo101/CPCdigital/compare/v0.7.7...v0.7.8
 [0.7.7]: https://github.com/kaizo101/CPCdigital/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/kaizo101/CPCdigital/compare/v0.7.5...v0.7.6

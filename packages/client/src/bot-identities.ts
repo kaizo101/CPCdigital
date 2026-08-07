@@ -11,10 +11,29 @@ import { generateIdentityHabits } from './bot-habits'
 import { rollFromDistribution } from './bot-state'
 
 export const BOT_ROSTER_SCHEMA_VERSION = 1
-export const BOT_IDENTITY_GENERATOR_VERSION = 2
+export const BOT_IDENTITY_GENERATOR_VERSION = 3
 export const DEFAULT_BOT_ROSTER_SEED = 'cpcdigital-global-roster-v1'
 
 const MANIAC_CHANCE = 0.2
+
+interface BotSkillDistribution {
+  mean: number
+  stddev: number
+  min: number
+  max: number
+}
+
+/**
+ * Skill describes decision quality, not playing style. Calling Stations are
+ * nevertheless kept entirely in the low-skill tiers because a persistently
+ * loose-passive leak would otherwise contradict a medium or high rating.
+ */
+export const BOT_SKILL_DISTRIBUTIONS = {
+  tag: { mean: 55, stddev: 18, min: 15, max: 90 },
+  nit: { mean: 55, stddev: 18, min: 15, max: 90 },
+  lag: { mean: 55, stddev: 18, min: 15, max: 90 },
+  'calling-station': { mean: 38, stddev: 6, min: 15, max: 49 },
+} as const satisfies Record<BotArchetypeId, BotSkillDistribution>
 
 const MANIAC_TRAIT_BOOST: Partial<Record<keyof BotIdentityTraits, number>> = {
   preflopLooseness: 15,
@@ -182,7 +201,7 @@ export function generateBotRoster(
       name,
       avatarKey: nameKey,
       archetypeId,
-      skill: clampSkill(rollFromDistribution({ mean: 55, stddev: 18 }, random)),
+      skill: rollIdentitySkill(archetypeId, random),
       traits,
       maniac,
       habitIds: habits.map(h => h.definition.id),
@@ -243,8 +262,10 @@ function shuffle<T>(values: readonly T[], random: () => number): T[] {
   return shuffled
 }
 
-function clampSkill(value: number): number {
-  return Math.max(15, Math.min(90, value))
+function rollIdentitySkill(archetypeId: BotArchetypeId, random: () => number): number {
+  const distribution = BOT_SKILL_DISTRIBUTIONS[archetypeId]
+  const value = rollFromDistribution(distribution, random)
+  return Math.max(distribution.min, Math.min(distribution.max, value))
 }
 
 function clamp(value: number): number {

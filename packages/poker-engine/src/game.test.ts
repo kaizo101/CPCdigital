@@ -604,16 +604,20 @@ describe('regressions', () => {
       makePlayer('p1', 30, 0),
       makePlayer('p2', 40, 1),
       makePlayer('p3', 100, 2),
+      makePlayer('p4', 100, 3),
     ]
     const game = new PokerGame(players, config)
     configureBettingRound(
       game,
       players,
-      { p1: 0, p2: 0, p3: 20 },
+      { p1: 0, p2: 0, p3: 20, p4: 20 },
       20,
       20,
       ['p1', 'p2'],
-      [{ playerId: 'p3', currentBet: 20, minRaise: 20 }],
+      [
+        { playerId: 'p3', currentBet: 20, minRaise: 20 },
+        { playerId: 'p4', currentBet: 20, minRaise: 20 },
+      ],
     )
 
     game.applyAction('p1', { type: 'all-in' })
@@ -743,6 +747,50 @@ describe('regressions', () => {
     expect(game.getPublicState().players.find(player => player.id === playerId)?.status).toBe('all-in')
   })
 
+  it('starts postflop action left of the original dealer after the dealer folds', () => {
+    const players = makePlayers(4)
+    const game = new PokerGame(players, { ...config, initialDealerIndex: 0 })
+    game.startHand()
+
+    // BTN p1 folds; p2 (SB), p3 (BB) and p4 see the flop.
+    game.applyAction('p4', { type: 'call' })
+    game.applyAction('p1', { type: 'fold' })
+    game.applyAction('p2', { type: 'call' })
+    game.applyAction('p3', { type: 'check' })
+
+    expect(game.getPublicState().phase).toBe('flop')
+    expect(game.getPublicState().currentPlayerId).toBe('p2')
+    game.applyAction('p2', { type: 'check' })
+    expect(game.getPublicState().currentPlayerId).toBe('p3')
+    game.applyAction('p3', { type: 'check' })
+    expect(game.getPublicState().currentPlayerId).toBe('p4')
+  })
+
+  it('does not offer a raise when the only opponent is already all-in', () => {
+    const players = [makePlayer('p1', 40, 0), makePlayer('p2', 100, 1)]
+    const game = new PokerGame(players, { ...config, initialDealerIndex: 0 })
+    game.startHand()
+
+    game.applyAction('p1', { type: 'all-in' })
+
+    expect(game.getPublicState().currentPlayerId).toBe('p2')
+    expect(game.getPublicState().bettingContext?.legalActions).toEqual({
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: null,
+      allInAmount: null,
+    })
+    expect(() => game.applyAction('p2', { type: 'raise', amount: 60 })).toThrow(/maximum raise/i)
+    expect(() => game.applyAction('p2', { type: 'all-in' })).toThrow(/not legal/i)
+    expect(() => game.applyAction('p2', { type: 'call' })).not.toThrow()
+    expect(game.getPublicState().phase).toBe('waiting')
+    expect(game.getPublicHandHistory().at(-1)).toMatchObject({
+      type: 'HandEnded',
+      reason: 'showdown',
+    })
+  })
+
   it('does not offer or accept fold when check is available', () => {
     const game = new PokerGame(makePlayers(2), config)
     game.startHand()
@@ -806,5 +854,62 @@ describe('regressions', () => {
     game.applyAction(reopenOrder[1], { type: 'fold' })
     s = game.getPublicState()
     expect(s.currentPlayerId).toBe(reopenOrder[2])
+  })
+
+  it('reopens betting clockwise from raiser position', () => {
+    const players = makePlayers(5)
+    const game = new PokerGame(players, { ...config, initialDealerIndex: 2 })
+    game.startHand()
+    game.applyAction('p1', { type: 'call' })
+    game.applyAction('p2', { type: 'call' })
+    game.applyAction('p3', { type: 'call' })
+    game.applyAction('p4', { type: 'call' })
+    game.applyAction('p5', { type: 'raise', amount: 40 })
+    expect(game.getPublicState().currentPlayerId).toBe('p1')
+    game.applyAction('p1', { type: 'call' })
+    expect(game.getPublicState().currentPlayerId).toBe('p2')
+    game.applyAction('p2', { type: 'call' })
+    expect(game.getPublicState().currentPlayerId).toBe('p3')
+    game.applyAction('p3', { type: 'call' })
+    expect(game.getPublicState().currentPlayerId).toBe('p4')
+  })
+
+  it('captures a decision snapshot on force-fold for replay fidelity', () => {
+    const game = new PokerGame(makePlayers(3), { ...config, initialDealerIndex: 0 })
+    game.startHand()
+    game.applyAction('p1', { type: 'call' })
+    game.applyAction('p2', { type: 'raise', amount: 40 })
+    game.applyAction('p3', { type: 'fold' })
+    game.applyAction('p1', { type: 'call' })
+
+    const snapshotsBefore = game.getPrivateDecisionSnapshots().length
+    expect(snapshotsBefore).toBe(4)
+
+    game.forceFold('p2')
+    const snapshotsAfter = game.getPrivateDecisionSnapshots().length
+
+    expect(snapshotsAfter).toBe(snapshotsBefore + 1)
+  })
+
+  it('dealerIdxInHand returns 0 when dealer index is out of bounds', () => {
+    const game = new PokerGame(makePlayers(3), config)
+    const internal = game as any
+    internal.state.dealerIndex = -1
+    const result = internal.dealerIdxInHand(internal.getInHandPlayers())
+    expect(result).toBe(0)
+  })
+
+  it('dealerIdxInHand returns 0 when dealer is absent from in-hand array', () => {
+    const game = new PokerGame(makePlayers(3), config)
+    const internal = game as any
+    const result = internal.dealerIdxInHand([])
+    expect(result).toBe(0)
+  })
+
+  it('resolveInitialDealerIndex falls back to preferredIndex when no eligible player', () => {
+    const game = new PokerGame(makePlayers(3), config)
+    const internal = game as any
+    const result = internal.resolveInitialDealerIndex([], 1)
+    expect(result).toBe(1)
   })
 })

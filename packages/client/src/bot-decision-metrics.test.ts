@@ -98,4 +98,22 @@ describe('bot decision metrics', () => {
     expect(valueRaise).toBeLessThanOrEqual(metrics.maxRaiseTo)
     expect(bluffRaise).toBeGreaterThanOrEqual(metrics.minRaiseTo)
   })
+
+  it('sizes protection raises larger when the board got worse', () => {
+    const metrics = deriveDecisionMetrics(bettingContext(), 20)
+    const stableBoard = calculateContextualRaiseTo(
+      metrics,
+      { category: 'strong', hasDraw: false, boardGotWorse: false },
+      'neutral',
+      'early',
+    )
+    const worseBoard = calculateContextualRaiseTo(
+      metrics,
+      { category: 'strong', hasDraw: false, boardGotWorse: true },
+      'neutral',
+      'early',
+    )
+
+    expect(worseBoard).toBeGreaterThan(stableBoard)
+  })
 })

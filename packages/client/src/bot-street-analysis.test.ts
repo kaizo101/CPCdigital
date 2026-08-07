@@ -6,7 +6,12 @@ function makeHistory(events: DecisionActionHistoryEvent[]): DecisionActionHistor
   return events
 }
 
-function acted(playerId: string, phase: string, type: string, amount?: number): DecisionActionHistoryEvent {
+function acted(
+  playerId: string,
+  phase: string,
+  type: string,
+  amount?: number,
+): Extract<DecisionActionHistoryEvent, { type: 'PlayerActed' }> {
   return {
     type: 'PlayerActed',
     phase,
@@ -140,5 +145,24 @@ describe('street analysis', () => {
     ])
     const analysis = analyzeStreetAction('hero', history, 'turn', ['hero', 'bot-1'])
     expect(analysis.actionCountThisStreet).toBe(1)
+  })
+
+  it('stores aggressive sizing as committed chips over the pre-action pot', () => {
+    const event = acted('bot-1', 'flop', 'raise', 75)
+    event.potAfter = 175
+    const analysis = analyzeStreetAction('hero', [event], 'flop', ['hero', 'bot-1'])
+
+    expect(analysis.opponentLines.get('bot-1')?.aggressivePotFractions.flop).toBe(0.75)
+  })
+
+  it('does not treat a passive all-in call as aggression or sizing evidence', () => {
+    const event = acted('bot-1', 'flop', 'all-in', 20)
+    event.totalBet = 40
+    event.currentBetBefore = 80
+    event.potAfter = 120
+    const analysis = analyzeStreetAction('hero', [event], 'flop', ['hero', 'bot-1'])
+
+    expect(analysis.streetAggressor.flop).toBeNull()
+    expect(analysis.opponentLines.get('bot-1')?.aggressivePotFractions.flop).toBeNull()
   })
 })

@@ -10,8 +10,19 @@ import { downloadSessionDebugRecord } from './session/session-debug-record'
 import { HandReplayer } from './components/HandReplayer'
 import type { HandReplay } from './session/hand-replay'
 import { applyAndroidSystemUi, isAndroidRuntime } from './native-runtime'
+import { requestTextFileExport } from './utils/file-export'
 
 type Screen = 'setup' | 'table'
+
+const DEBUG_MODE_STORAGE_KEY = 'cpcdigital:debug-mode'
+
+function readStoredDebugMode(): boolean {
+  try {
+    return localStorage.getItem(DEBUG_MODE_STORAGE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 export default function App() {
   const [runner] = useState(() => new LocalGameRunner())
@@ -26,6 +37,14 @@ export default function App() {
   const [currency, setCurrency] = useState<DisplayCurrency>('EUR')
   const [rebuyEnabled, setRebuyEnabled] = useState(true)
   const [variantId, setVariantId] = useState('texas-holdem')
+  const [debugMode, setDebugModeState] = useState(readStoredDebugMode)
+
+  function setDebugMode(enabled: boolean) {
+    setDebugModeState(enabled)
+    try {
+      localStorage.setItem(DEBUG_MODE_STORAGE_KEY, enabled ? '1' : '0')
+    } catch { /* localStorage can be unavailable in hardened browser contexts */ }
+  }
 
   // Replay mode: read from #replay/N hash (set by Electron or browser fallback)
   const [replayMode] = useState<{ replays: HandReplay[]; startIndex: number; debugMode: boolean } | null>(() => {
@@ -176,6 +195,8 @@ export default function App() {
         setRebuyEnabled={setRebuyEnabled}
         variantId={variantId}
         setVariantId={setVariantId}
+        debugMode={debugMode}
+        setDebugMode={setDebugMode}
       />
     )
   }
@@ -207,15 +228,17 @@ export default function App() {
       archivedHandReplays={localState.archivedHandReplays}
       sessionStats={localState.sessionStats}
       playerNames={playerNames}
+      debugMode={debugMode}
+      setDebugMode={setDebugMode}
       onExportSessionLog={() => {
         const log = runner.exportSessionLog()
-        const blob = new Blob([log], { type: 'text/plain' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `CPCdigital-session-${new Date().toISOString().slice(0, 10)}.txt`
-        a.click()
-        URL.revokeObjectURL(url)
+        requestTextFileExport({
+          data: log,
+          filename: `CPCdigital-session-${new Date().toISOString().slice(0, 10)}.txt`,
+          mimeType: 'text/plain',
+          title: 'CPCdigital Session',
+          dialogTitle: 'Session exportieren',
+        })
       }}
     />
   )

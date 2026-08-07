@@ -10,6 +10,7 @@ import type {
   PublicGameState,
   TableOptions,
 } from '@cpc/shared'
+import { requestTextFileExport } from '../utils/file-export'
 import type { BotDebugDecision, BotDebugProfile } from '../bot-debug'
 import type { BotIdentity } from '../bot-identities'
 import type { DecisionComplexity } from '../bot-decision-complexity'
@@ -153,11 +154,11 @@ export function createSessionDebugFilename(exportedAt: string): string {
 }
 
 export function downloadSessionDebugRecord(record: SessionDebugRecord | SessionDebugRecordV2): void {
-  const blob = new Blob([serializeSessionDebugRecord(record)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = createSessionDebugFilename(record.exportedAt)
-  link.click()
-  URL.revokeObjectURL(url)
+  requestTextFileExport({
+    data: serializeSessionDebugRecord(record),
+    filename: createSessionDebugFilename(record.exportedAt),
+    mimeType: 'application/json',
+    title: 'CPCdigital Debug-Session',
+    dialogTitle: 'Debug-Session exportieren',
+  })
 }

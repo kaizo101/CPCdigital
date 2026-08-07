@@ -174,6 +174,12 @@ export class PokerGame {
     this.bettingQueue = this.bettingQueue.filter(id => id !== playerId)
     this.lastActionBet.delete(playerId)
     this.lastActionMinRaise.delete(playerId)
+
+    const snapshot = this.state.bettingContext?.playerId === playerId
+      ? this.createDecisionSnapshot(playerId, { type: 'fold' }, 'forced')
+      : null
+    if (snapshot) this.decisionSnapshots.push(snapshot)
+
     this.handHistory.push({
       type: 'PlayerActed',
       phase,
@@ -489,7 +495,7 @@ export class PokerGame {
     const canBet = new Set(this.getCanBetPlayers().map(p => p.id))
     canBet.delete(raiserId)
     const inQueue = new Set(this.bettingQueue)
-    const raiserSeat = this.state.players.findIndex(p => p.id === raiserId)
+    const raiserIdx = this.state.players.findIndex(p => p.id === raiserId)
     const n = this.state.players.length
     const needToReact = this.getInHandPlayers()
       .filter(p =>
@@ -499,8 +505,10 @@ export class PokerGame {
         (this.roundBets.get(p.id) ?? 0) < this.currentBet
       )
       .sort((a, b) => {
-        const aDist = (a.seatIndex - raiserSeat + n) % n
-        const bDist = (b.seatIndex - raiserSeat + n) % n
+        const aIdx = this.state.players.findIndex(p => p.id === a.id)
+        const bIdx = this.state.players.findIndex(p => p.id === b.id)
+        const aDist = ((aIdx - raiserIdx + n) % n)
+        const bDist = ((bIdx - raiserIdx + n) % n)
         return aDist - bDist
       })
       .map(p => p.id)
@@ -563,18 +571,19 @@ export class PokerGame {
       players: this.state.players.map(p => ({ ...p, roundBet: 0 })),
     }
 
-    const inHand = this.getInHandPlayers()
     const canBet = new Set(this.getCanBetPlayers().map(p => p.id))
-    const dealerIdx = this.dealerIdxInHand(inHand)
-    const n = inHand.length
+    const tableSize = this.state.players.length
 
     if (phase.actionOrder !== 'left-of-dealer') {
       throw new Error(`Betting phase ${phase.id} uses an opening-only action order`)
     }
 
     const queue: PlayerId[] = []
-    for (let i = 1; i <= n; i++) {
-      const p = inHand[(dealerIdx + i) % n]
+    // Keep the physical button as the anchor even when the dealer folded on an
+    // earlier street. Building this from getInHandPlayers() loses that anchor
+    // and can rotate (or reverse heads-up) postflop action order.
+    for (let i = 1; i <= tableSize; i++) {
+      const p = this.state.players[(this.state.dealerIndex + i) % tableSize]
       if (canBet.has(p.id)) queue.push(p.id)
     }
 
@@ -951,7 +960,13 @@ export class PokerGame {
     const maxRaiseTo = this.getMaximumRaiseTo(stackRaiseTo, potRaiseTo, minRaiseTo)
     const capAllowsRaise = this.variant.bettingStructure.type !== 'fixed-limit'
       || this.fullRaisesThisRound < this.variant.bettingStructure.maxRaisesPerRound
-    const hasRaiseRights = this.hasRaiseRights(currentPlayer.id)
+    const hasResponsiveOpponent = this.state.players.some(player =>
+      player.id !== currentPlayer.id
+      && player.status === 'active'
+      && player.chips > 0
+    )
+    const hasRaiseRights = hasResponsiveOpponent
+      && this.hasRaiseRights(currentPlayer.id)
       && capAllowsRaise
       && stackRaiseTo > this.currentBet
     const fullRaise = hasRaiseRights && maxRaiseTo >= minRaiseTo

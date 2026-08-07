@@ -1,22 +1,8 @@
 // Omaha High hand evaluation — must use exactly 2 hole cards + 3 community cards.
 import type { Card } from '@cpc/shared'
-import type { Position } from './bot-types'
-import type { VariantEvaluator, HandStrengthCategory, VariantHandAssessment, BoardTexture } from './bot-variant-evaluation'
+import type { VariantEvaluator, HandStrengthCategory, NutPotential, VariantHandAssessment, BoardTexture } from './bot-variant-evaluation'
 import { getPloScores, type PloStreet } from './bot-category-scores'
 import { createDeck, evaluateOmahaHand } from '@cpc/poker-engine'
-
-function positionStrengthAdjust(position: Position, tableSize: number): number {
-  if (tableSize === 2) {
-    return position === 'late' ? 3 : 0
-  }
-  const map: Record<Position, number> = {
-    early: -8,
-    middle: 0,
-    late: 8,
-    blinds: 3,
-  }
-  return map[position] ?? 0
-}
 
 export const omahaVariantEvaluator: VariantEvaluator = {
   variantId: 'omaha-high',
@@ -25,13 +11,9 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const communityCards = publicState.communityCards
 
     if (communityCards.length === 0) {
-      const raiseCount = context.actionHistory.filter(
-        e => e.type === 'PlayerActed' && e.action.type === 'raise'
-      ).length
-      const facingRaise = context.bettingContext.toCall > context.publicState.bigBlind
       return {
         variantId: this.variantId,
-        handAssessment: preflopAssess(ownCards, facingRaise, raiseCount, position.category, position.tableSize),
+        handAssessment: preflopAssess(ownCards),
         boardTexture: 'neutral' as const,
         categoryScores: getPloScores(context.archetypeId, 'preflop', position.tableSize),
       }
@@ -42,18 +24,21 @@ export const omahaVariantEvaluator: VariantEvaluator = {
 
     const drawAnalysis = analyzeOmahaDraws(ownCards, communityCards)
     const drawQuality = calculateOmahaDrawQuality(drawAnalysis)
-    const cleanOuts = calculateOmahaCleanOuts(drawAnalysis, rank)
-    const nutPotential = assessOmahaNutPotential(rank, cleanOuts, communityCards.length)
+    const cleanOuts = calculateOmahaCleanOuts(drawAnalysis, rank, ownCards, communityCards)
+    const nutPotential = assessOmahaNutPotential(evalResult, communityCards, cleanOuts)
     const vulnerability = calculateOmahaVulnerability(rank, cleanOuts, communityCards.length)
     const showdownValue = calculateOmahaShowdownValue(rank, drawQuality)
     const relativeStrength = calculateOmahaRelativeStrength(rank, cleanOuts)
     const isRiver = communityCards.length === 5
     const drawTypes = isRiver ? [] : identifyOmahaDrawTypes(drawAnalysis)
-    const boardGotWorse = false
+    const boardGotWorse = omahaBoardGotMoreDangerous(communityCards, rank)
     const strength = calculateOmahaStrength(rank, drawQuality, cleanOuts, communityCards.length)
     const category = categorizeOmaha(rank, drawQuality, cleanOuts, communityCards)
-    const street: PloStreet =
-      context.publicState.phase === 'turn' || context.publicState.phase === 'river' ? 'turn-river' : 'flop'
+    const street: PloStreet = context.publicState.phase === 'river'
+      ? 'river'
+      : context.publicState.phase === 'turn'
+        ? 'turn'
+        : 'flop'
 
     return {
       variantId: this.variantId,
@@ -81,53 +66,32 @@ export const omahaVariantEvaluator: VariantEvaluator = {
 const PLO_PREFLOP_THRESHOLDS = [
   { min: 75, category: 'premium' as HandStrengthCategory },
   { min: 55, category: 'strong' as HandStrengthCategory },
-  { min: 25, category: 'good' as HandStrengthCategory },
-  { min: 18, category: 'medium' as HandStrengthCategory },
-  { min: 12, category: 'marginal' as HandStrengthCategory },
+  { min: 36, category: 'good' as HandStrengthCategory },
+  { min: 26, category: 'medium' as HandStrengthCategory },
+  { min: 16, category: 'marginal' as HandStrengthCategory },
 ]
 
-function preflopAssess(ownCards: Card[], facingRaise: boolean, raiseCount: number, position: Position, tableSize: number): VariantHandAssessment {
-  const suitedCount = countSuitedGroups(ownCards)
-  const connectedness = preflopConnectedness(ownCards)
-  const highCardPoints = ownCards.reduce((sum, c) => sum + rankValue(c), 0)
+function preflopAssess(ownCards: Card[]): VariantHandAssessment {
+  const suitProfile = analyzePreflopSuits(ownCards)
+  const rankProfile = analyzePreflopRanks(ownCards)
   const aceCount = ownCards.filter(c => c.rank === 'A').length
-  const hasPair = preflopHasAnyPair(ownCards)
-  const doubleSuited = suitedCount >= 2
-  const hasAce = aceCount > 0
+  const pairScore = calculatePreflopPairScore(rankProfile.rankCounts)
+  const highCardScore = ownCards.reduce(
+    (sum, card) => sum + Math.max(0, rankValue(card) - 8),
+    0,
+  )
 
-  let strength = 7
-  if (aceCount >= 2 && doubleSuited) strength += 30
-  if (aceCount >= 1 && doubleSuited && connectedness >= 2) strength += 22
-  else if (hasPair && highCardPoints >= 28 && doubleSuited) strength += 18
-  else if (doubleSuited && connectedness >= 4 && highCardPoints >= 24) strength += 18
-  else if (doubleSuited && hasAce) strength += 16
-  else if (doubleSuited) strength += 12
-  if (aceCount >= 2) strength += 12
-  else if (hasAce && connectedness >= 3 && suitedCount >= 1) strength += 10
-  else if (hasAce && highCardPoints >= 28) strength += 8
-  else if (hasAce) strength += 4
-  if (hasPair && highCardPoints >= 28) strength += 8
-  if (connectedness >= 5 && highCardPoints >= 24) strength += 8
-  else if (connectedness >= 4 && highCardPoints >= 24) strength += 6
-  if (suitedCount >= 1 && connectedness >= 2 && highCardPoints >= 20) strength += 7
-  else if (suitedCount >= 1 && hasAce && highCardPoints >= 22) strength += 4
-  if (connectedness >= 4 && highCardPoints >= 22) strength += 4
-  else if (connectedness >= 3 && highCardPoints >= 22) strength += 3
-  strength = Math.min(95, strength)
-  strength = Math.max(1, strength)
-
-  if (facingRaise && raiseCount >= 1 && strength < 55) {
-    strength = Math.max(1, strength - 16)
-  }
-  if (facingRaise && raiseCount >= 2 && strength < 55) {
-    strength = Math.max(1, strength - 12)
-  }
-
-  const adjustedStrength = Math.max(1, Math.min(100, strength + positionStrengthAdjust(position, tableSize)))
+  let strength = 5
+  strength += pairScore
+  strength += preflopSuitScore(suitProfile)
+  strength += highCardScore
+  strength += preflopConnectionScore(rankProfile)
+  strength -= rankProfile.danglers * 4
+  strength = Math.max(1, Math.min(95, strength))
 
   let category: HandStrengthCategory = 'weak'
   for (const t of PLO_PREFLOP_THRESHOLDS) {
-    if (adjustedStrength >= t.min) { category = t.category; break }
+    if (strength >= t.min) { category = t.category; break }
   }
 
   return {
@@ -136,9 +100,11 @@ function preflopAssess(ownCards: Card[], facingRaise: boolean, raiseCount: numbe
     made: false,
     relativeStrength: strength,
     showdownValue: 0,
-    nutPotential: doubleSuited || (hasAce && connectedness >= 2) ? 'strong' : 'medium',
+    nutPotential: aceCount >= 2 || suitProfile.nutSuitCount > 0 || rankProfile.maxStraightWindowOverlap === 4
+      ? 'strong'
+      : 'medium',
     vulnerability: 0,
-    drawQuality: suitedCount + Math.min(connectedness, 3),
+    drawQuality: suitProfile.usableSuitCount + Math.min(rankProfile.adjacentConnections, 3),
     cleanOuts: 0,
     blockerValue: aceCount > 0 ? aceCount * 3 : 0,
     drawTypes: [],
@@ -208,12 +174,117 @@ function calculateOmahaVulnerability(rank: number, cleanOuts: number, communityC
   return Math.min(90, rank * 10 + 30 - cleanOuts)
 }
 
-function assessOmahaNutPotential(rank: number, cleanOuts: number, communityCount: number): VariantHandAssessment['nutPotential'] {
+interface PokerSolverCard {
+  rank: number
+  suit: string
+}
+
+function parsePokerSolverCards(cards: string[]): PokerSolverCard[] {
+  const rankMap: Record<string, number> = {
+    '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8,
+    '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14,
+  }
+  return cards.map(c => ({
+    rank: rankMap[c[0]] ?? 0,
+    suit: c[1],
+  }))
+}
+
+function assessOmahaNutPotential(
+  evalResult: { rank: number; cards: string[] },
+  communityCards: Card[],
+  cleanOuts: number,
+): NutPotential {
+  const { rank, cards } = evalResult
   if (rank >= 9) return 'nuts'
-  if (rank >= 8 && cleanOuts < 6) return 'near-nuts'
-  if (rank >= 7 || cleanOuts >= 8) return 'strong'
-  if (rank >= 5 || cleanOuts >= 4) return 'medium'
+  if (rank === 8) return cleanOuts < 6 ? 'near-nuts' : 'strong'
+
+  const handCards = parsePokerSolverCards(cards)
+  const boardRanks = new Set(communityCards.map(rankValue))
+
+  if (rank === 7) {
+    const rankCounts = new Map<number, number>()
+    for (const c of handCards) rankCounts.set(c.rank, (rankCounts.get(c.rank) ?? 0) + 1)
+    let tripsRank = 0, pairRank = 0
+    for (const [r, count] of rankCounts) {
+      if (count >= 3) tripsRank = r
+      else if (count >= 2) pairRank = r
+    }
+    const maxBoardRank = Math.max(0, ...boardRanks)
+    if (tripsRank >= maxBoardRank && pairRank >= 10) return 'near-nuts'
+    if (tripsRank >= 12) return 'strong'
+    if (tripsRank <= 7) return 'weak'
+    return 'medium'
+  }
+
+  if (rank === 6) {
+    const flushSuit = handCards[0].suit
+    const boardFlushCards = communityCards.filter(c => cardSuitChar(c) === flushSuit)
+    const highestBoardRank = boardFlushCards.reduce((max, c) => Math.max(max, rankValue(c)), 0)
+    const handFlushRanks = handCards.filter(c => c.suit === flushSuit).map(c => c.rank)
+    const maxHandRank = Math.max(...handFlushRanks)
+
+    if (maxHandRank === 14) return 'near-nuts'
+    if (highestBoardRank === 14) return maxHandRank >= 13 ? 'strong' : 'medium'
+    if (maxHandRank >= 13) return 'strong'
+    return 'medium'
+  }
+
+  if (rank === 5) {
+    const ranks = handCards.map(c => c.rank).sort((a, b) => b - a)
+    const nutTop = findNutStraightTop([...boardRanks])
+    const myTop = ranks[0]
+    if (myTop >= nutTop) return nutTop >= 13 ? 'strong' : 'medium'
+    if (myTop >= nutTop - 2) return 'medium'
+    return 'weak'
+  }
+
+  if (rank === 4) {
+    const rankCounts = new Map<number, number>()
+    for (const c of handCards) rankCounts.set(c.rank, (rankCounts.get(c.rank) ?? 0) + 1)
+    let setRank = 0
+    for (const [r, count] of rankCounts) if (count >= 3) setRank = r
+    const maxBoardRank = Math.max(0, ...boardRanks)
+    if (setRank >= 13) return 'strong'
+    if (setRank >= maxBoardRank - 1) return 'medium'
+    return 'weak'
+  }
+
+  if (rank === 3) {
+    const rankCounts = new Map<number, number>()
+    for (const c of handCards) rankCounts.set(c.rank, (rankCounts.get(c.rank) ?? 0) + 1)
+    const pairRanks = [...rankCounts.entries()]
+      .filter(([, c]) => c >= 2).map(([r]) => r).sort((a, b) => b - a)
+    if (pairRanks[0] >= 12 && pairRanks[1] >= 10) return 'medium'
+    return 'weak'
+  }
+
+  if (cleanOuts >= 8) return 'strong'
+  if (cleanOuts >= 4) return 'medium'
   return 'weak'
+}
+
+function cardSuitChar(card: Card): string {
+  return card.suit[0]
+}
+
+function findNutStraightTop(boardRanks: number[]): number {
+  const ranks = Array.from({ length: 13 }, (_, i) => i + 2)
+  const available = new Set(ranks)
+  let best = 0
+  for (let i = 13; i >= 4; i--) {
+    if (
+      available.has(i) && available.has(i - 1) && available.has(i - 2)
+      && available.has(i - 3) && available.has(i - 4)
+    ) {
+      best = i
+      break
+    }
+  }
+  if (available.has(14) && available.has(5) && available.has(4) && available.has(3) && available.has(2)) {
+    best = Math.max(best, 5)
+  }
+  return best
 }
 
 function calculateOmahaDrawQuality(draws: OmahaDrawAnalysis): number {
@@ -234,13 +305,84 @@ function calculateOmahaDrawQuality(draws: OmahaDrawAnalysis): number {
   return score
 }
 
-function calculateOmahaCleanOuts(draws: OmahaDrawAnalysis, rank: number): number {
+function calculateOmahaCleanOuts(
+  draws: OmahaDrawAnalysis,
+  rank: number,
+  ownCards: Card[],
+  communityCards: Card[],
+): number {
   if (rank >= 9) return 0
 
+  const knownCards = new Set([...ownCards, ...communityCards].map(cardKey))
+  const unseenCards = createDeck().filter(card => !knownCards.has(cardKey(card)))
+  const boardRanks = communityCards.map(rankValue)
+  const boardHasPair = new Set(boardRanks).size < boardRanks.length
+
+  const filteredFlushOuts = draws.flushOutCards.filter(out => {
+    if (boardRanks.includes(rankValue(out))) return false
+
+    if (!draws.nutFlushDraw) {
+      const suit = out.suit
+      const bestHoleRank = Math.max(0, ...ownCards.filter(c => c.suit === suit).map(rankValue))
+      const bestBoardRank = Math.max(0, ...communityCards.filter(c => c.suit === suit).map(rankValue))
+
+      if (bestBoardRank > bestHoleRank) return false
+
+      const unseenHigher = unseenCards.filter(c => c.suit === suit && rankValue(c) > bestHoleRank).length
+      if (unseenHigher >= 3) return false
+    }
+    return true
+  })
+
+  const filteredStraightOuts = draws.straightOutCards.filter(out => {
+    if (boardHasPair && boardRanks.includes(rankValue(out))) return false
+    return !isDominatedStraightOut(ownCards, communityCards, out)
+  })
+
   const uniqueOuts = new Set(
-    [...draws.flushOutCards, ...draws.straightOutCards].map(cardKey),
+    [...filteredFlushOuts, ...filteredStraightOuts].map(cardKey),
   )
   return Math.min(25, uniqueOuts.size)
+}
+
+function isDominatedStraightOut(
+  ownCards: Card[],
+  communityCards: Card[],
+  out: Card,
+): boolean {
+  const newBoard = [...communityCards, out]
+  if (newBoard.length < 3) return false
+
+  const occupied = new Set([...ownCards.map(cardKey), ...newBoard.map(cardKey)])
+  const full = createDeck().filter(c => !occupied.has(cardKey(c)))
+
+  const myBestTop = bestStraightTopForHoleCards(ownCards, newBoard, true)
+  if (myBestTop <= 0) return false
+
+  for (const unseen of full) {
+    const trialHole = [out, unseen] as Card[]
+    const oppBestTop = bestStraightTopForHoleCards(trialHole, newBoard, false)
+    if (oppBestTop > myBestTop) return true
+  }
+  return false
+}
+
+function bestStraightTopForHoleCards(
+  holeCards: Card[],
+  board: Card[],
+  allowAnyHole: boolean,
+): number {
+  let best = 0
+  for (const pair of combinations(holeCards, 2)) {
+    for (const trio of combinations(board, 3)) {
+      if (!allowAnyHole && pair.some(c => board.some(b => cardKey(c) === cardKey(b)))) continue
+      if (isFiveCardStraight([...pair, ...trio])) {
+        const top = Math.max(...[...pair, ...trio].map(rankValue))
+        if (top > best) best = top
+      }
+    }
+  }
+  return best
 }
 
 function identifyOmahaDrawTypes(draws: OmahaDrawAnalysis): string[] {
@@ -276,6 +418,85 @@ function analyzeOmahaBoardTexture(communityCards: Card[]): BoardTexture {
   if (suits.size === 3 && gaps >= 2) return 'wet'
   if (gaps >= 2) return 'dry'
   return 'neutral'
+}
+
+/**
+ * Detects a material increase in opponent nut-combination density, adjusted
+ * for the bot's actual made-hand rank. A board pair helps sets and two-pair;
+ * a flush-completing card doesn't hurt a made flush; etc.
+ */
+export function omahaBoardGotMoreDangerous(
+  communityCards: Card[],
+  handRank: number,
+): boolean {
+  if (communityCards.length < 4) return false
+
+  const previousBoard = communityCards.slice(0, -1)
+  const newCard = communityCards[communityCards.length - 1]
+
+  if (handRank >= 8) return false
+
+  if (handRank === 7) {
+    if (previousBoard.some(c => c.rank === newCard.rank)) return false
+    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
+  }
+
+  if (handRank === 6) {
+    if (previousBoard.some(c => c.rank === newCard.rank)) return true
+    return false
+  }
+
+  if (handRank === 5) {
+    if (previousBoard.some(c => c.rank === newCard.rank)) return true
+    const prevSuitCounts = new Map<string, number>()
+    for (const c of previousBoard) prevSuitCounts.set(c.suit, (prevSuitCounts.get(c.suit) ?? 0) + 1)
+    if ((prevSuitCounts.get(newCard.suit) ?? 0) >= 2) return true
+    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
+  }
+
+  if (handRank === 4) {
+    if (previousBoard.some(c => c.rank === newCard.rank)) return false
+    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
+  }
+
+  if (handRank === 3) {
+    if (previousBoard.some(c => c.rank === newCard.rank)) return false
+    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
+  }
+
+  return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
+}
+
+function omahaBoardDangerScore(communityCards: Card[]): number {
+  const suitCounts = new Map<Card['suit'], number>()
+  const rankCounts = new Map<Card['rank'], number>()
+  for (const card of communityCards) {
+    suitCounts.set(card.suit, (suitCounts.get(card.suit) ?? 0) + 1)
+    rankCounts.set(card.rank, (rankCounts.get(card.rank) ?? 0) + 1)
+  }
+
+  let score = 0
+  const maxSuitCount = Math.max(0, ...suitCounts.values())
+  if (maxSuitCount >= 3) score += 6 + (maxSuitCount - 3) * 2
+
+  const rankPattern = [...rankCounts.values()].sort((left, right) => right - left)
+  if ((rankPattern[0] ?? 0) >= 3) score += 8
+  else if ((rankPattern[0] ?? 0) === 2) score += 5
+  if (rankPattern.filter(count => count >= 2).length >= 2) score += 4
+
+  score += omahaStraightWindowCount(communityCards) * 2
+  return score
+}
+
+function omahaStraightWindowCount(communityCards: Card[]): number {
+  const ranks = new Set(communityCards.map(rankValue))
+  const windows = [
+    [14, 2, 3, 4, 5],
+    ...Array.from({ length: 9 }, (_, index) =>
+      Array.from({ length: 5 }, (__, offset) => index + offset + 2)),
+  ]
+
+  return windows.filter(window => window.filter(rank => ranks.has(rank)).length >= 3).length
 }
 
 interface OmahaDrawAnalysis {
@@ -391,38 +612,147 @@ function cardKey(card: Card): string {
   return `${card.rank}:${card.suit}`
 }
 
-function countSuitedGroups(cards: Card[]): number {
-  const suitCounts = new Map<string, number>()
-  for (const c of cards) {
-    suitCounts.set(c.suit, (suitCounts.get(c.suit) ?? 0) + 1)
-  }
-  let groups = 0
-  for (const count of suitCounts.values()) {
-    if (count >= 2) groups++
-    if (count >= 3) groups++
-  }
-  return groups
+interface PreflopSuitProfile {
+  shape: 'double-suited' | 'single-suited' | 'triple-suited' | 'monotone' | 'rainbow'
+  usableSuitCount: number
+  nutSuitCount: number
+  kingHighSuitCount: number
 }
 
-function preflopConnectedness(cards: Card[]): number {
-  const values = cards.map(c => rankValue(c)).sort((a, b) => a - b)
-  let connected = 0
-  for (let i = 1; i < values.length; i++) {
-    const gap = values[i] - values[i - 1]
-    if (gap <= 1) connected += 2
-    else if (gap <= 2) connected += 1
+function analyzePreflopSuits(cards: Card[]): PreflopSuitProfile {
+  const cardsBySuit = new Map<Card['suit'], Card[]>()
+  for (const c of cards) {
+    const suitedCards = cardsBySuit.get(c.suit) ?? []
+    suitedCards.push(c)
+    cardsBySuit.set(c.suit, suitedCards)
   }
-  return connected
+
+  const counts = [...cardsBySuit.values()].map(group => group.length).sort((a, b) => b - a)
+  const shape: PreflopSuitProfile['shape'] = counts[0] === 4
+    ? 'monotone'
+    : counts[0] === 3
+      ? 'triple-suited'
+      : counts[0] === 2 && counts[1] === 2
+        ? 'double-suited'
+        : counts[0] === 2
+          ? 'single-suited'
+          : 'rainbow'
+
+  let nutSuitCount = 0
+  let kingHighSuitCount = 0
+  for (const suitedCards of cardsBySuit.values()) {
+    if (suitedCards.length < 2) continue
+    if (suitedCards.some(card => card.rank === 'A')) nutSuitCount++
+    else if (suitedCards.some(card => card.rank === 'K')) kingHighSuitCount++
+  }
+
+  return {
+    shape,
+    usableSuitCount: [...cardsBySuit.values()].filter(group => group.length >= 2).length,
+    nutSuitCount,
+    kingHighSuitCount,
+  }
 }
 
-function preflopHasAnyPair(cards: Card[]): boolean {
-  const seen = new Set<number>()
-  for (const c of cards) {
-    const v = rankValue(c)
-    if (seen.has(v)) return true
-    seen.add(v)
+function preflopSuitScore(profile: PreflopSuitProfile): number {
+  const shapeScore: Record<PreflopSuitProfile['shape'], number> = {
+    'double-suited': 16,
+    'single-suited': 8,
+    'triple-suited': 2,
+    monotone: -2,
+    rainbow: 0,
   }
-  return false
+  return shapeScore[profile.shape] + profile.nutSuitCount * 4 + profile.kingHighSuitCount
+}
+
+interface PreflopRankProfile {
+  rankCounts: Map<number, number>
+  maxStraightWindowOverlap: number
+  adjacentConnections: number
+  danglers: number
+}
+
+const PLO_STRAIGHT_WINDOWS = [
+  [14, 2, 3, 4, 5],
+  ...Array.from({ length: 9 }, (_, index) =>
+    Array.from({ length: 5 }, (__, offset) => index + offset + 2)),
+]
+
+function analyzePreflopRanks(cards: Card[]): PreflopRankProfile {
+  const rankCounts = new Map<number, number>()
+  for (const card of cards) {
+    const rank = rankValue(card)
+    rankCounts.set(rank, (rankCounts.get(rank) ?? 0) + 1)
+  }
+
+  const uniqueRanks = [...rankCounts.keys()]
+  const maxStraightWindowOverlap = Math.max(
+    0,
+    ...PLO_STRAIGHT_WINDOWS.map(window => window.filter(rank => rankCounts.has(rank)).length),
+  )
+
+  let adjacentConnections = 0
+  let danglers = 0
+  for (let left = 0; left < uniqueRanks.length; left++) {
+    let closestGap = Number.POSITIVE_INFINITY
+    for (let right = 0; right < uniqueRanks.length; right++) {
+      if (left === right) continue
+      const gap = preflopRankGap(uniqueRanks[left], uniqueRanks[right])
+      closestGap = Math.min(closestGap, gap)
+      if (right > left && gap === 1) adjacentConnections++
+    }
+    if ((rankCounts.get(uniqueRanks[left]) ?? 0) === 1 && closestGap > 3) danglers++
+  }
+
+  return { rankCounts, maxStraightWindowOverlap, adjacentConnections, danglers }
+}
+
+function preflopRankGap(left: number, right: number): number {
+  const regularGap = Math.abs(left - right)
+  const aceLowGap = left === 14
+    ? Math.abs(1 - right)
+    : right === 14
+      ? Math.abs(left - 1)
+      : Number.POSITIVE_INFINITY
+  return Math.min(regularGap, aceLowGap)
+}
+
+function preflopConnectionScore(profile: PreflopRankProfile): number {
+  const windowScore = profile.maxStraightWindowOverlap >= 4
+    ? 18
+    : profile.maxStraightWindowOverlap === 3
+      ? 9
+      : profile.maxStraightWindowOverlap === 2
+        ? 2
+        : 0
+  const fourCardRundownBonus = profile.maxStraightWindowOverlap === 4 && profile.rankCounts.size === 4 ? 4 : 0
+  return windowScore + Math.min(6, profile.adjacentConnections * 2) + fourCardRundownBonus
+}
+
+function calculatePreflopPairScore(rankCounts: Map<number, number>): number {
+  const pairValues: Record<number, number> = {
+    14: 30,
+    13: 22,
+    12: 16,
+    11: 12,
+    10: 9,
+    9: 7,
+    8: 5,
+    7: 4,
+    6: 3,
+    5: 3,
+    4: 2,
+    3: 2,
+    2: 2,
+  }
+
+  const pairedRanks = [...rankCounts.entries()].filter(([, count]) => count >= 2)
+  let score = pairedRanks.reduce((sum, [rank, count]) => {
+    const duplicatePenalty = count === 3 ? 16 : count >= 4 ? 25 : 0
+    return sum + Math.max(0, (pairValues[rank] ?? 0) - duplicatePenalty)
+  }, 0)
+  if (pairedRanks.length >= 2) score += 8
+  return score
 }
 
 function rankValue(card: Card): number {

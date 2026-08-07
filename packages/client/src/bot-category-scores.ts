@@ -37,12 +37,14 @@ function plo(overrides: Partial<CategoryScoreTable>, base: CategoryScoreTable = 
 }
 
 const PLO_ARCHETYPE_PREFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
-  tag: PLO_TAG_SCORES,
+  tag: plo({
+    raise: { good: 2 },
+  }),
 
   nit: plo({
-    fold: { marginal: -6, medium: -2, good: -24, strong: -42 },
+    fold: { marginal: -8, medium: -4, good: -24, strong: -42 },
     check: { marginal: 0, medium: -1 },
-    call: { marginal: 4, medium: 4, good: -12, strong: -8, premium: -10 },
+    call: { marginal: 6, medium: 12, good: -12, strong: -8, premium: -10 },
     raise: { marginal: -8, medium: 0, good: 4, strong: 10 },
     allIn: { good: 5, strong: 22 },
   }),
@@ -50,94 +52,130 @@ const PLO_ARCHETYPE_PREFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
   lag: plo({
     fold: { marginal: -3, medium: -20, good: -42 },
     check: { marginal: 3, medium: 1 },
-    call: { marginal: -1, medium: 6, good: -3 },
-    raise: { marginal: -3, medium: 3, good: 14, strong: 22, premium: 32 },
-    allIn: { good: 14, strong: 30, premium: 44 },
+    call: { marginal: -1, medium: 4, good: -3 },
+    raise: { marginal: -1, medium: 6, good: 18, strong: 26, premium: 36 },
+    allIn: { good: -4, strong: 12, premium: 28 },
   }),
 
   'calling-station': plo({
     fold: { weak: 10, marginal: 8, medium: 0, good: -32, strong: -44 },
     check: { weak: 6, marginal: 2, medium: 2, good: -16 },
     call: { weak: -4, marginal: -8, medium: -3, good: -10, strong: -10, premium: -12 },
-    raise: { 'weak-draw': 14, marginal: -12, medium: -2, good: 4, strong: 10, premium: 18 },
+    raise: { 'weak-draw': 14, marginal: -12, medium: -2, good: 6, strong: 10, premium: 18 },
     allIn: { 'weak-draw': -16, marginal: -26, medium: -20, good: 6, strong: 18, premium: 34 },
   }),
 }
 
 const PLO_ARCHETYPE_PREFLOP_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  tag: plo(
+    {
+      raise: { good: 6 },
+    },
+    PLO_ARCHETYPE_PREFLOP.tag,
+  ),
   nit: plo(
     {
-      call: { good: -8 },
+      fold: { medium: -4 },
+      call: { medium: 8, good: -8 },
       raise: { good: -12 },
     },
     PLO_ARCHETYPE_PREFLOP.nit,
+  ),
+  'calling-station': plo(
+    {
+      fold: { medium: -8 },
+      call: { medium: 5 },
+    },
+    PLO_ARCHETYPE_PREFLOP['calling-station'],
   ),
 }
 
 const PLO_ARCHETYPE_POSTFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
   tag: plo({
-    call: { marginal: 4, medium: 10, good: -2 },
+    call: { marginal: 4, medium: 10, good: 6 },
+    raise: { marginal: -6, medium: 4, good: 14, strong: 20, premium: 28 },
   }),
 
   nit: plo({
-    fold: { marginal: -10, medium: 4, good: -25, strong: -36 },
-    check: { marginal: -8, medium: -2 },
-    call: { marginal: 50, medium: 36, good: -8, strong: -10 },
-    raise: { marginal: -12, medium: -10, good: -4, strong: 6 },
-    allIn: { good: 2, strong: 18 },
+    fold: { marginal: 5, medium: 22, good: -14, strong: -38 },
+    check: { marginal: 0, medium: 4 },
+    call: { marginal: 20, medium: 8, good: -16, strong: -16 },
+    raise: { marginal: -12, medium: -10, good: -6, strong: 2 },
+    allIn: { good: 0, strong: 14 },
   }),
 
   lag: plo({
-    fold: { marginal: -5, medium: -22, good: -44 },
+    fold: { marginal: 10, medium: -30, good: -55 },
     check: { marginal: 0, medium: -1 },
-    call: { marginal: -7, medium: -1, good: -5 },
-    raise: { marginal: 4, medium: 15, good: 24, strong: 32, premium: 44 },
-    allIn: { good: 24, strong: 40, premium: 54 },
+    call: { marginal: 10, medium: 22, good: 14 },
+    raise: { marginal: 0, medium: 8, good: 14, strong: 22, premium: 36 },
+    allIn: { good: 0, strong: 12, premium: 26 },
   }),
 
   'calling-station': plo({
-    fold: { weak: 14, marginal: 18, medium: 12, good: -25, strong: -38 },
+    fold: { weak: 10, marginal: 14, medium: 10, good: -25, strong: -38 },
     check: { weak: 2, marginal: -6, medium: -8, good: -22 },
-    call: { weak: -8, marginal: -28, medium: -18, good: -20, strong: -20, premium: -22 },
-    raise: { 'weak-draw': 8, marginal: -22, medium: -12, good: -8, strong: -6, premium: 10 },
+    call: { weak: 0, marginal: -12, medium: -8, good: -10, strong: -20, premium: -22 },
+    raise: { 'weak-draw': 10, marginal: -26, medium: -16, good: -10, strong: -4, premium: 10 },
     allIn: { 'weak-draw': -22, marginal: -32, medium: -26, good: 0, strong: 10, premium: 24 },
   }),
 }
 
 /* ------------------------------------------------------------------ */
-/*  PLO turn/river score tables                                        */
-/*  Same delta-over-TAG pattern, but for turn/river only. Used to      */
-/*  separate "call cheap flop" from "fold expensive turn/river" so     */
+/*  PLO turn score tables                                              */
+/*  Same delta-over-TAG pattern, but for the turn. Used to             */
+/*  separate "call cheap flop" from "fold expensive turn" so           */
 /*  AF (needs calls) and WTSD (needs late folds) can be tuned          */
 /*  independently. Entries default to the flop (postflop) table.       */
 /* ------------------------------------------------------------------ */
 
 const PLO_ARCHETYPE_TURN_RIVER: Record<BotArchetypeId, CategoryScoreTable> = {
   tag: plo({
-    call: { medium: 6, good: 0 },
+    call: { medium: 6, good: 4 },
+    raise: { medium: 4, good: 12 },
   }),
   lag: plo({
-    call: { marginal: -10, medium: -3 },
-    raise: { medium: 24, good: 34 },
+    fold: { marginal: 10, medium: -6 },
+    check: { air: -8, weak: -8, marginal: -8 },
+    call: { marginal: -8, medium: 0 },
+    raise: {
+      air: 12, 'weak-draw': 22, 'weak-no-draw': 2, marginal: 18, medium: 24, good: 34,
+    },
+    allIn: { good: -10, strong: 5, premium: 24 },
   }),
   'calling-station': plo({
-    fold: { weak: 14, marginal: 18, medium: 12, good: -25, strong: -38 },
+    fold: { weak: 10, marginal: 14, medium: 10, good: -25, strong: -38 },
     check: { weak: 2, marginal: -6, medium: -8, good: -22 },
-    call: { weak: -8, marginal: -28, medium: -18, good: -20, strong: -20, premium: -22 },
-    raise: { 'weak-draw': 8, marginal: -18, medium: -8, good: -2, strong: 2, premium: 10 },
+    call: { weak: -2, marginal: -16, medium: -10, good: -20, strong: -20, premium: -22 },
+    raise: { 'weak-draw': 10, marginal: -16, medium: -6, good: 0, strong: 4, premium: 10 },
     allIn: { 'weak-draw': -22, marginal: -32, medium: -26, good: 0, strong: 10, premium: 24 },
   }),
 
   nit: plo({
-    fold: { marginal: 10, medium: 22, good: -25, strong: -36 },
-    check: { marginal: 0, medium: -18, good: -28 },
-    call: { marginal: -18, medium: -2, good: 4, strong: -4 },
-    raise: { marginal: -16, medium: -16, good: 12, strong: 4 },
-    allIn: { good: 2, strong: 18 },
+    fold: { marginal: 20, medium: 34, good: -22, strong: -34 },
+    check: { marginal: 0, medium: -16, good: -26 },
+    call: { marginal: -20, medium: -6, good: 4, strong: -6 },
+    raise: { marginal: -14, medium: -14, good: 2, strong: 2 },
+    allIn: { good: 2, strong: 14 },
   }),
 }
 
-export type PloStreet = 'preflop' | 'flop' | 'turn-river'
+const PLO_ARCHETYPE_RIVER: Record<BotArchetypeId, CategoryScoreTable> = {
+  tag: PLO_ARCHETYPE_TURN_RIVER.tag,
+  nit: PLO_ARCHETYPE_TURN_RIVER.nit,
+  'calling-station': PLO_ARCHETYPE_TURN_RIVER['calling-station'],
+  lag: plo(
+    {
+      check: { air: -20, weak: -20, marginal: -20 },
+      raise: {
+        air: 25, 'weak-draw': 30, 'weak-no-draw': 18, marginal: 30, medium: 24, good: 34,
+      },
+    },
+    PLO_ARCHETYPE_TURN_RIVER.lag,
+  ),
+}
+
+export type PloStreet = 'preflop' | 'flop' | 'turn' | 'river' | 'turn-river'
 
 /* ------------------------------------------------------------------ */
 /*  PLO six-max postflop score overrides                               */
@@ -146,29 +184,95 @@ export type PloStreet = 'preflop' | 'flop' | 'turn-river'
 /* ------------------------------------------------------------------ */
 
 const PLO_ARCHETYPE_POSTFLOP_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  tag: plo(
+    {
+      call: { good: 10 },
+    },
+    PLO_ARCHETYPE_POSTFLOP.tag,
+  ),
+  lag: plo(
+    {
+      fold: { marginal: -5, medium: -22 },
+      call: { marginal: -7 },
+      raise: { marginal: 4, medium: 15, good: 24, strong: 32, premium: 44 },
+    },
+    PLO_ARCHETYPE_POSTFLOP.lag,
+  ),
   'calling-station': plo(
     {
-      raise: { marginal: -22, medium: -12, good: -2, strong: 2, premium: 10 },
-      call: { weak: -6, marginal: -12, medium: 2, good: 2 },
+      fold: { weak: 8, marginal: 10, medium: 8 },
+      raise: { marginal: -20, medium: -10, good: -2, strong: 2, premium: 10 },
+      call: { weak: 4, marginal: 4, medium: 6, good: 4 },
     },
     PLO_ARCHETYPE_POSTFLOP['calling-station'],
   ),
 }
 
 const PLO_ARCHETYPE_TURN_RIVER_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  tag: plo(
+    {
+      call: { medium: 8, good: 4 },
+      raise: { good: 8 },
+    },
+    PLO_ARCHETYPE_TURN_RIVER.tag,
+  ),
   lag: plo(
     {
-      fold: { marginal: -12, medium: -28 },
+      fold: { marginal: 0, medium: -16 },
+      check: { air: 10, weak: 10, marginal: 8 },
       call: { marginal: -8, medium: -6 },
+      raise: {
+        air: -15, 'weak-draw': 8, 'weak-no-draw': -18, marginal: 2, medium: 24, good: 34,
+      },
     },
     PLO_ARCHETYPE_TURN_RIVER.lag,
+  ),
+  nit: plo(
+    {
+      fold: { marginal: 12, medium: 24 },
+    },
+    PLO_ARCHETYPE_TURN_RIVER.nit,
   ),
   'calling-station': plo(
     {
       fold: { weak: 20, marginal: 22, medium: 24 },
-      call: { weak: -14, medium: -6, good: -8, strong: -14, premium: -16 },
+      call: { weak: -14, marginal: -28, medium: -6, good: -8, strong: -14, premium: -16 },
     },
     PLO_ARCHETYPE_TURN_RIVER['calling-station'],
+  ),
+}
+
+const PLO_ARCHETYPE_RIVER_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  tag: plo(
+    {
+      call: { medium: 8, good: 4 },
+      raise: { good: 2 },
+    },
+    PLO_ARCHETYPE_RIVER.tag,
+  ),
+  lag: plo(
+    {
+      fold: { marginal: 0, medium: -16 },
+      check: { air: 4, weak: 4, marginal: 0 },
+      call: { marginal: -8, medium: -6 },
+      raise: {
+        air: 0, 'weak-draw': 18, 'weak-no-draw': -10, marginal: 12, medium: 24, good: 34,
+      },
+    },
+    PLO_ARCHETYPE_RIVER.lag,
+  ),
+  nit: plo(
+    {
+      fold: { marginal: 12, medium: 24 },
+    },
+    PLO_ARCHETYPE_RIVER.nit,
+  ),
+  'calling-station': plo(
+    {
+      fold: { weak: 20, marginal: 22, medium: 24 },
+      call: { weak: -14, marginal: -28, medium: -6, good: -8, strong: -14, premium: -16 },
+    },
+    PLO_ARCHETYPE_RIVER['calling-station'],
   ),
 }
 
@@ -180,14 +284,20 @@ export function getPloScores(
   const archetype = archetypeId ?? 'tag'
   const table = street === 'preflop'
     ? PLO_ARCHETYPE_PREFLOP
-    : street === 'turn-river'
+    : street === 'river'
+      ? PLO_ARCHETYPE_RIVER
+      : street === 'turn' || street === 'turn-river'
       ? PLO_ARCHETYPE_TURN_RIVER
       : PLO_ARCHETYPE_POSTFLOP
   if (street === 'preflop' && tableSize <= 6) {
     return PLO_ARCHETYPE_PREFLOP_SIX_MAX[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
   }
   if (street !== 'preflop' && tableSize <= 6) {
-    const sixMax = street === 'turn-river' ? PLO_ARCHETYPE_TURN_RIVER_SIX_MAX : PLO_ARCHETYPE_POSTFLOP_SIX_MAX
+    const sixMax = street === 'river'
+      ? PLO_ARCHETYPE_RIVER_SIX_MAX
+      : street === 'turn' || street === 'turn-river'
+        ? PLO_ARCHETYPE_TURN_RIVER_SIX_MAX
+        : PLO_ARCHETYPE_POSTFLOP_SIX_MAX
     return sixMax[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
   }
   return table[archetype] ?? PLO_TAG_SCORES
@@ -209,7 +319,7 @@ export type PloPreflopStrategySixMaxTable = Partial<PloPreflopStrategyTable>
 
 const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, PloPreflopStrategyTable> = {
   tag: {
-    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'call' },
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'call-or-fold', marginal: 'fold' },
     'facing-open': { premium: 'raise', strong: 'raise', good: 'call', medium: 'call' },
     'facing-3bet': { premium: 'raise', strong: 'call', good: 'call' },
   },
@@ -219,13 +329,13 @@ const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, PloPreflopStrategyTable> = {
     'facing-3bet': { premium: 'raise', strong: 'call' },
   },
   lag: {
-    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'raise', weak: 'call' },
-    'facing-open': { premium: 'raise', strong: 'raise', good: 'call', medium: 'call', marginal: 'call' },
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'call-or-fold', marginal: 'fold' },
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'call', medium: 'fold', marginal: 'fold' },
     'facing-3bet': { premium: 'raise', strong: 'raise', good: 'fold' },
   },
   'calling-station': {
-    unopened: { premium: 'raise', strong: 'raise', good: 'call' },
-    'facing-open': { premium: 'raise', strong: 'call', good: 'call' },
+    unopened: { premium: 'raise', strong: 'raise', good: 'call', medium: 'call', marginal: 'call-or-fold' },
+    'facing-open': { premium: 'raise', strong: 'call', good: 'call', medium: 'call', marginal: 'call-or-fold' },
     'facing-3bet': { premium: 'call' },
   },
 }
@@ -237,13 +347,21 @@ const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, PloPreflopStrategyTable> = {
 /* ------------------------------------------------------------------ */
 
 const PLO_PREFLOP_STRATEGY_SIX_MAX: Partial<Record<BotArchetypeId, PloPreflopStrategySixMaxTable>> = {
+  lag: {
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'fold' },
+    'facing-open': {
+      premium: 'raise', strong: 'raise', good: 'call', medium: 'call-or-fold', marginal: 'fold',
+    },
+  },
   nit: {
-    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'fold', marginal: 'fold' },
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'call', marginal: 'fold' },
     'facing-open': { premium: 'raise', strong: 'raise', good: 'raise-or-call', medium: 'call-or-fold' },
     'facing-3bet': { premium: 'raise', strong: 'raise' },
   },
   'calling-station': {
-    'facing-open': { premium: 'raise', strong: 'raise', good: 'call' },
+    'facing-open': {
+      premium: 'raise', strong: 'raise', good: 'call', medium: 'call', marginal: 'call-or-fold',
+    },
   },
 }
 

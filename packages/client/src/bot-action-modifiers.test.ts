@@ -183,4 +183,26 @@ describe('archetype-specific mental state modifiers', () => {
       expect(raiseContrib[0].value).toBeLessThan(0)
     }
   })
+
+  it('scales patience marginal-aggression modifier with personalityDivisor for PLO', () => {
+    const nLHE = makeContext(createBotState(TAG_PERSONALITY, 100, rng), {
+      handAssessment: { ...makeContext(createBotState(TAG_PERSONALITY, 100, rng)).handAssessment, category: 'medium' },
+    })
+    const pLO = { ...nLHE, variantId: 'omaha-high' as const }
+
+    const raise: ScoredAction = { action: { type: 'raise', amount: 100 }, intent: 'value', utility: 50, contributions: [] }
+
+    const nlheResult = applyPersonalityModifiers([raise], nLHE)
+    const ploResult = applyPersonalityModifiers([raise], pLO)
+
+    const nlhePatience = nlheResult[0].contributions
+      .find(c => c.label === 'Patience reduces marginal aggression')
+    const ploPatience = ploResult[0].contributions
+      .find(c => c.label === 'Patience reduces marginal aggression')
+
+    expect(nlhePatience).toBeDefined()
+    expect(ploPatience).toBeDefined()
+    // PLO modifier should be weaker (divisor * 1.3 = larger denominator → smaller |value|)
+    expect(Math.abs(ploPatience!.value)).toBeLessThan(Math.abs(nlhePatience!.value))
+  })
 })

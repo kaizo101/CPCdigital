@@ -28,8 +28,6 @@ import {
   recordHandResult,
   resetHandMemory,
   updateMentalState,
-  updateOpponentRead,
-  updateOpponentSizing,
 } from '../bot-tag'
 import type { BotState, MentalEvent } from '../bot-tag'
 import { getPlayerActionLabel, type PlayerActionLabel } from '../action-display'
@@ -54,6 +52,7 @@ import type {
 import { habitIdsToActiveHabits } from '../bot-habits'
 import type { ActiveHabit } from '../bot-habits'
 import type { BotArchetypeId } from '../bot-archetypes'
+import { observeOpponentHistory } from '../bot-opponent-observation'
 
 function identityArchetypeId(botState: BotState): BotArchetypeId {
   const name = botState.personality.archetype.name
@@ -519,6 +518,11 @@ export class LocalGameRunner {
       complexity = assessDecisionComplexity(botContext, decision.decisionResult)
     } catch (err) {
       console.error('[LocalGameRunner] bot decision failed:', (err as Error).message)
+      this.game.forceFold(botId)
+      this.syncChips()
+      this.notify()
+      this.scheduleBotAction()
+      this.checkHandEnd()
       return
     }
 
@@ -550,6 +554,11 @@ export class LocalGameRunner {
         this.checkHandEnd()
       } catch (err) {
         console.error('[LocalGameRunner] bot action failed:', (err as Error).message)
+        this.game.forceFold(botId)
+        this.syncChips()
+        this.notify()
+        this.scheduleBotAction()
+        this.checkHandEnd()
       }
     }, timing.remainingDelayMs)
   }
@@ -584,55 +593,15 @@ export class LocalGameRunner {
 
   private updateOpponentReads(botId: string, botState: BotState): void {
     const history = this.game?.getPublicHandHistory() ?? []
-    const observationSkill = botState.skill.observation
     const archetypeId = identityArchetypeId(botState)
-
-    const startIndex = this.observedEventCountByBot.get(botId) ?? 0
-    const newEvents = history.slice(startIndex)
     const observedVpipPlayers = this.observedVpipPlayersByBot.get(botId) ?? new Set<string>()
     this.observedVpipPlayersByBot.set(botId, observedVpipPlayers)
-
-    // Track actions from opponents
-    for (const event of newEvents) {
-      if (event.type === 'PlayerActed') {
-        const actionPlayerId = event.playerId
-        if (actionPlayerId === botId) continue
-
-        const action = event.action
-
-        // VPIP tracking
-        if ((action.type === 'call' || action.type === 'raise' || action.type === 'all-in') && !observedVpipPlayers.has(actionPlayerId)) {
-          updateOpponentRead(botState.reads, actionPlayerId, 'vpip', observationSkill, archetypeId)
-          observedVpipPlayers.add(actionPlayerId)
-        } else if (action.type === 'fold' && event.phase === 'preflop' && !observedVpipPlayers.has(actionPlayerId)) {
-          updateOpponentRead(botState.reads, actionPlayerId, 'no-vpip', observationSkill, archetypeId)
-          observedVpipPlayers.add(actionPlayerId)
-        }
-
-        // Aggression tracking
-        if (action.type === 'raise') {
-          updateOpponentRead(botState.reads, actionPlayerId, 'aggression', observationSkill, archetypeId)
-        } else if (action.type === 'call' || action.type === 'check') {
-          updateOpponentRead(botState.reads, actionPlayerId, 'no-aggression', observationSkill, archetypeId)
-        }
-
-        if (action.type === 'fold') {
-          updateOpponentRead(botState.reads, actionPlayerId, 'foldToBet', observationSkill, archetypeId)
-        } else if (action.type === 'call' || action.type === 'raise') {
-          updateOpponentRead(botState.reads, actionPlayerId, 'no-fold', observationSkill, archetypeId)
-        }
-
-        if ((action.type === 'raise' || action.type === 'all-in') && event.phase !== 'preflop' && event.potAfter > 0) {
-          const potBefore = event.potAfter - event.amount
-          if (potBefore > 0) {
-            const potFraction = event.amount / potBefore
-            updateOpponentSizing(botState.reads, actionPlayerId, potFraction)
-          }
-        }
-      }
+    const cursor = {
+      eventCount: this.observedEventCountByBot.get(botId) ?? 0,
+      vpipPlayers: observedVpipPlayers,
     }
-
-    this.observedEventCountByBot.set(botId, history.length)
+    observeOpponentHistory(botId, botState, history, cursor, archetypeId)
+    this.observedEventCountByBot.set(botId, cursor.eventCount)
   }
 
   private checkHandEnd(): void {
@@ -677,6 +646,7 @@ export class LocalGameRunner {
       this.captureHandReplay(gs)
       if (this.rebuyManager.rebuyEnabled) {
         this.rebuyManager.processAutoRebuys()
+        this.rebuyManager.processCashOuts(this.currentHandNumber)
         this.rebuyManager.processReplacements(this.currentHandNumber)
       }
     } catch (err) {

@@ -9,7 +9,6 @@ function analysis(overrides: Partial<StreetAnalysis> = {}): StreetAnalysis {
     preflopRaiseCount: 0,
     streetAggressor: { preflop: null, flop: null, turn: null, river: null },
     iAmPreflopAggressor: false,
-    iAmInPosition: false,
     opponentLines: new Map(),
     activeOpponents: 1,
     opponentShowedWeakness: false,

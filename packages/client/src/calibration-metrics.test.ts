@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CalibrationHandAccumulator,
+  calibrationInvariantViolations,
   classifyAggressionAction,
   isContinuationBetOpportunity,
   isThreeBetOpportunity,
@@ -78,5 +80,70 @@ describe('calibration metrics', () => {
       handsSeenFlop: 2,
       wentToShowdown: 2,
     })
+  })
+
+  it('reduces a golden raise-call-cbet-fold hand consistently', () => {
+    const accumulator = new CalibrationHandAccumulator()
+
+    accumulator.recordAction({
+      phase: 'preflop', playerId: 'opener', action: { type: 'raise', amount: 60 }, currentBet: 20,
+    })
+    accumulator.recordAction({
+      phase: 'preflop', playerId: 'caller', action: { type: 'call' }, currentBet: 60,
+    })
+    const cBet = accumulator.recordAction({
+      phase: 'flop', playerId: 'opener', action: { type: 'raise', amount: 80 }, currentBet: 0,
+    })
+    const response = accumulator.recordAction({
+      phase: 'flop', playerId: 'caller', action: { type: 'fold' }, currentBet: 80,
+    })
+
+    expect(accumulator.vpipPlayers).toEqual(new Set(['opener', 'caller']))
+    expect(accumulator.pfrPlayers).toEqual(new Set(['opener']))
+    expect(cBet).toMatchObject({ cBetOpportunity: true, cBet: true, aggressionRole: 'pfa' })
+    expect(response).toMatchObject({ foldToCBetOpportunity: true, foldToCBet: true })
+  })
+
+  it('tracks one three-bet opportunity and the resulting three-bet', () => {
+    const accumulator = new CalibrationHandAccumulator()
+    accumulator.recordAction({
+      phase: 'preflop', playerId: 'opener', action: { type: 'raise', amount: 60 }, currentBet: 20,
+    })
+    const threeBet = accumulator.recordAction({
+      phase: 'preflop', playerId: 'three-bettor', action: { type: 'raise', amount: 180 }, currentBet: 60,
+    })
+
+    expect(threeBet).toMatchObject({ threeBetOpportunity: true, threeBet: true })
+    expect(accumulator.threeBetOpportunityPlayers).toEqual(new Set(['three-bettor']))
+    expect(accumulator.threeBetPlayers).toEqual(new Set(['three-bettor']))
+  })
+
+  it('classifies a passive all-in through the accumulator as a call', () => {
+    const accumulator = new CalibrationHandAccumulator()
+    const delta = accumulator.recordAction({
+      phase: 'turn',
+      playerId: 'short-stack',
+      action: { type: 'all-in' },
+      currentBet: 100,
+      allInAmount: 60,
+    })
+
+    expect(delta.aggressionClass).toBe('call')
+  })
+
+  it('rejects impossible aggregate metric relationships', () => {
+    expect(calibrationInvariantViolations({
+      threeBets: 3,
+      threeBetOpportunities: 2,
+      cBets: 4,
+      cBetOpportunities: 3,
+      foldToCBets: 2,
+      foldToCBetOpportunities: 1,
+      handsSeenFlop: 4,
+      handsSeenTurn: 5,
+      handsSeenRiver: 6,
+      wentToShowdown: 5,
+      wonAtShowdown: 6,
+    })).toHaveLength(7)
   })
 })

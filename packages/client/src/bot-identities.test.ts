@@ -4,6 +4,7 @@ import { getBotArchetype } from './bot-archetypes'
 import {
   BOT_IDENTITY_GENERATOR_VERSION,
   BOT_ROSTER_SCHEMA_VERSION,
+  BOT_SKILL_DISTRIBUTIONS,
   generateBotRoster,
   INITIAL_BOT_IDENTITY_NAMES,
   selectSessionBotIdentities,
@@ -78,6 +79,20 @@ describe('generated bot identities', () => {
       level: identity.skill,
       observation: identity.traits.observation,
     })
+  })
+
+  it('keeps Calling Station skill varied and entirely in the low-skill tiers', () => {
+    const callingStations = generateBotRoster().identities.filter(
+      identity => identity.archetypeId === 'calling-station',
+    )
+    const profile = BOT_SKILL_DISTRIBUTIONS['calling-station']
+
+    expect(new Set(callingStations.map(identity => identity.skill.toFixed(2))).size).toBeGreaterThan(5)
+    for (const identity of callingStations) {
+      expect(identity.skill).toBeGreaterThanOrEqual(profile.min)
+      expect(identity.skill).toBeLessThanOrEqual(profile.max)
+      expect(identity.skill).toBeLessThan(50)
+    }
   })
 
   it('creates manic variants only for LAG archetype', () => {

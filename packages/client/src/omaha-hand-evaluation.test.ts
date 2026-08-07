@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { DecisionActionHistoryEvent } from '@cpc/shared'
 import type { BotContext } from './bot-context'
 import { omahaVariantEvaluator } from './omaha-hand-evaluation'
 
@@ -60,7 +61,164 @@ function makeContext(communityCards: BotContext['publicState']['communityCards']
   }
 }
 
+function evaluatePreflop(
+  ownCards: BotContext['ownCards'],
+  overrides: Partial<BotContext> = {},
+) {
+  const context = makeContext([])
+  context.publicState.phase = 'preflop'
+  context.ownCards = ownCards
+  Object.assign(context, overrides)
+  return omahaVariantEvaluator.evaluate(context).handAssessment
+}
+
+function preflopRaise(): Extract<DecisionActionHistoryEvent, { type: 'PlayerActed' }> {
+  return {
+    type: 'PlayerActed',
+    phase: 'preflop',
+    playerId: 'villain',
+    action: { type: 'raise', amount: 0.06 },
+    amount: 0.06,
+    totalBet: 0.06,
+    toCall: 0,
+    currentBetBefore: 0.02,
+    potAfter: 0.09,
+    source: 'player',
+  }
+}
+
+describe('omaha preflop structure', () => {
+  it('recognizes premium double-pair aces and connected double-suited rundowns', () => {
+    const acesAndKings = evaluatePreflop([
+      { rank: 'A', suit: 'hearts' },
+      { rank: 'A', suit: 'diamonds' },
+      { rank: 'K', suit: 'diamonds' },
+      { rank: 'K', suit: 'spades' },
+    ])
+    const wheelRundown = evaluatePreflop([
+      { rank: 'A', suit: 'hearts' },
+      { rank: '2', suit: 'hearts' },
+      { rank: '3', suit: 'diamonds' },
+      { rank: '4', suit: 'diamonds' },
+    ])
+
+    expect(acesAndKings.category).toBe('premium')
+    expect(wheelRundown.category).toBe('strong')
+  })
+
+  it('does not mistake triple- or monotone suits for double-suited hands', () => {
+    const doubleSuited = evaluatePreflop([
+      { rank: 'K', suit: 'clubs' },
+      { rank: 'Q', suit: 'clubs' },
+      { rank: 'J', suit: 'hearts' },
+      { rank: 'T', suit: 'hearts' },
+    ])
+    const tripleSuited = evaluatePreflop([
+      { rank: 'K', suit: 'clubs' },
+      { rank: 'Q', suit: 'clubs' },
+      { rank: 'J', suit: 'clubs' },
+      { rank: 'T', suit: 'hearts' },
+    ])
+    const monotoneDangler = evaluatePreflop([
+      { rank: 'K', suit: 'diamonds' },
+      { rank: '8', suit: 'diamonds' },
+      { rank: '3', suit: 'diamonds' },
+      { rank: '2', suit: 'diamonds' },
+    ])
+
+    expect(doubleSuited.category).toBe('strong')
+    expect(doubleSuited.strength).toBeGreaterThan(tripleSuited.strength)
+    expect(monotoneDangler.category).toBe('weak')
+  })
+
+  it('does not count duplicate ranks as connectivity', () => {
+    const fourAces = evaluatePreflop([
+      { rank: 'A', suit: 'clubs' },
+      { rank: 'A', suit: 'diamonds' },
+      { rank: 'A', suit: 'hearts' },
+      { rank: 'A', suit: 'spades' },
+    ])
+    const disconnectedSingleSuit = evaluatePreflop([
+      { rank: 'J', suit: 'hearts' },
+      { rank: '7', suit: 'spades' },
+      { rank: '3', suit: 'clubs' },
+      { rank: '2', suit: 'hearts' },
+    ])
+
+    expect(['weak', 'marginal', 'medium']).toContain(fourAces.category)
+    expect(disconnectedSingleSuit.category).toBe('weak')
+  })
+
+  it('keeps absolute hand quality independent of position and prior action', () => {
+    const cards: BotContext['ownCards'] = [
+      { rank: 'Q', suit: 'clubs' },
+      { rank: 'J', suit: 'clubs' },
+      { rank: '9', suit: 'hearts' },
+      { rank: '8', suit: 'hearts' },
+    ]
+    const unopened = evaluatePreflop(cards)
+    const facingRaiseContext = makeContext([])
+    facingRaiseContext.publicState.phase = 'preflop'
+    facingRaiseContext.ownCards = cards
+    facingRaiseContext.bettingContext.toCall = 0.06
+    facingRaiseContext.actionHistory = [preflopRaise()]
+    facingRaiseContext.position = { ...facingRaiseContext.position, category: 'early' }
+    const facingRaise = omahaVariantEvaluator.evaluate(facingRaiseContext).handAssessment
+
+    expect(facingRaise.category).toBe(unopened.category)
+    expect(facingRaise.strength).toBe(unopened.strength)
+  })
+})
+
 describe('omaha draw detection', () => {
+  it('does not mark a third suited board card as deterioration for a made flush', () => {
+    const ctx = makeContext([
+      { rank: 'A', suit: 'hearts' },
+      { rank: '7', suit: 'hearts' },
+      { rank: '2', suit: 'clubs' },
+      { rank: '4', suit: 'hearts' },
+    ])
+
+    expect(omahaVariantEvaluator.evaluate(ctx).handAssessment.boardGotWorse).toBe(false)
+  })
+
+  it('marks pairing and newly connected Omaha boards as deterioration', () => {
+    const paired = makeContext([
+      { rank: 'A', suit: 'clubs' },
+      { rank: '8', suit: 'diamonds' },
+      { rank: '2', suit: 'clubs' },
+      { rank: '8', suit: 'spades' },
+    ])
+    const connected = makeContext([
+      { rank: 'T', suit: 'clubs' },
+      { rank: '6', suit: 'diamonds' },
+      { rank: '2', suit: 'clubs' },
+      { rank: '8', suit: 'spades' },
+    ])
+
+    expect(omahaVariantEvaluator.evaluate(paired).handAssessment.boardGotWorse).toBe(true)
+    expect(omahaVariantEvaluator.evaluate(connected).handAssessment.boardGotWorse).toBe(true)
+  })
+
+  it('does not mark a blank turn or unchanged river danger as deterioration', () => {
+    const blankTurn = makeContext([
+      { rank: 'A', suit: 'clubs' },
+      { rank: '8', suit: 'diamonds' },
+      { rank: '2', suit: 'clubs' },
+      { rank: 'Q', suit: 'spades' },
+    ])
+    const blankRiver = makeContext([
+      { rank: 'A', suit: 'clubs' },
+      { rank: '8', suit: 'clubs' },
+      { rank: '2', suit: 'diamonds' },
+      { rank: '4', suit: 'clubs' },
+      { rank: 'Q', suit: 'spades' },
+    ])
+
+    expect(omahaVariantEvaluator.evaluate(blankTurn).handAssessment.boardGotWorse).toBe(false)
+    expect(omahaVariantEvaluator.evaluate(blankRiver).handAssessment.boardGotWorse).toBe(false)
+  })
+
   it('clears draw types on river (flush draw impossible with no cards remaining)', () => {
     // User's exact hand: K♥9♥7♦5♥, board J♠J♦A♠4♥5♣ (river)
     const ctx = makeContext([

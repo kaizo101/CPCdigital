@@ -1,5 +1,6 @@
 import type { BotArchetypeId } from './bot-archetypes'
 import type { BotReadsState, BotSkillState, MentalState, OpponentRead } from './bot-types'
+import { params } from './bot-params'
 
 const PRIOR_VPIP = { successes: 2.5, failures: 7.5 }
 const PRIOR_AGGRESSION = { successes: 3, failures: 7 }
@@ -113,7 +114,7 @@ export function updateOpponentSizing(
     reads.opponents.set(opponentId, read)
   }
 
-  const alpha = 0.25
+  const alpha = params.sizingTell.alpha
   read.sizing.count++
   read.sizing.average = read.sizing.average * (1 - alpha) + potFraction * alpha
 }
@@ -121,17 +122,27 @@ export function updateOpponentSizing(
 export function getSizingTell(
   read: OpponentRead,
   currentPotFraction: number,
-): { deviation: number; label: string } | null {
-  if (read.sizing.count < 3) return null
+  currentObservationIncluded = false,
+): { deviation: number; kind: 'massive-overbet' | 'overbet' | 'small-bet'; label: string } | null {
+  const sampleCount = read.sizing.count - (currentObservationIncluded ? 1 : 0)
+  if (sampleCount < params.sizingTell.minSamples) return null
 
-  const avg = read.sizing.average
+  const avg = currentObservationIncluded
+    ? (read.sizing.average - currentPotFraction * params.sizingTell.alpha) / (1 - params.sizingTell.alpha)
+    : read.sizing.average
   if (avg <= 0) return null
 
   const deviation = currentPotFraction / avg
 
-  if (deviation > 2.0) return { deviation, label: 'Massive overbet vs typical sizing' }
-  if (deviation > 1.5) return { deviation, label: 'Overbet vs typical sizing' }
-  if (deviation < 0.4) return { deviation, label: 'Unusually small bet vs typical sizing' }
+  if (deviation > params.sizingTell.massiveOverbet) {
+    return { deviation, kind: 'massive-overbet', label: 'Massive overbet vs typical sizing' }
+  }
+  if (deviation > params.sizingTell.overbet) {
+    return { deviation, kind: 'overbet', label: 'Overbet vs typical sizing' }
+  }
+  if (deviation < params.sizingTell.smallBet) {
+    return { deviation, kind: 'small-bet', label: 'Unusually small bet vs typical sizing' }
+  }
 
   return null
 }

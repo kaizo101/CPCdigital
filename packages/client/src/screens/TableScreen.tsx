@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect } from 'react'
 import type { Card, HandResult, Player, PlayerAction, PublicGameState, TableOptions } from '@cpc/shared'
 import { createRoot } from 'react-dom/client'
 import { SessionStats } from '../components/SessionStats'
@@ -87,6 +87,8 @@ export function TableScreen({
   archivedHandReplays,
   sessionStats,
   playerNames,
+  debugMode,
+  setDebugMode,
   onExportSessionLog,
 }: {
   gameState: Readonly<PublicGameState> | null
@@ -110,9 +112,11 @@ export function TableScreen({
   archivedHandReplays: readonly HandReplay[]
   sessionStats: any
   playerNames: Map<string, string>
+  debugMode: boolean
+  setDebugMode: (enabled: boolean) => void
   onExportSessionLog: () => void
 }) {
-  const [showDebug, setShowDebug] = useState(false)
+  const showDebug = debugMode
   const layout = useResponsiveLayout()
   const runtime = getAppRuntime()
 
@@ -120,12 +124,12 @@ export function TableScreen({
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === 'd') {
         e.preventDefault()
-        setShowDebug(d => !d)
+        setDebugMode(!showDebug)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [])
+  }, [setDebugMode, showDebug])
 
   const players = gameState?.players ?? []
   const heroId = 'hero'
@@ -738,7 +742,6 @@ export function TableScreen({
             onExport={onExportSessionLog}
             showDebug={showDebug}
             compact
-            allowExport={runtime !== 'android'}
           />
           <button
             type="button"
@@ -801,7 +804,6 @@ export function TableScreen({
             heroId="hero"
             onExport={onExportSessionLog}
             showDebug={showDebug}
-            allowExport={runtime !== 'android'}
           />
           {(() => {
             const hasReplay = handReplays.length > 0

@@ -247,11 +247,14 @@ function createHabitModifier(
       }
       case 'sticky-postflop': {
         if ((phase === 'flop' || phase === 'turn' || phase === 'river') && hand.category !== 'air') {
+          const streetDecay = context.variantId === 'texas-holdem'
+          const callValue = !streetDecay || phase === 'flop' ? 10 : phase === 'turn' ? 6 : 3
+          const foldValue = !streetDecay || phase === 'flop' ? -8 : phase === 'turn' ? -5 : -3
           if (action.action.type === 'call') {
-            return [{ category: 'personality', label: 'Habit: sticky postflop', value: ai(10) }]
+            return [{ category: 'personality', label: 'Habit: sticky postflop', value: ai(callValue) }]
           }
           if (action.action.type === 'fold') {
-            return [{ category: 'personality', label: 'Habit: sticky postflop', value: ai(-8) }]
+            return [{ category: 'personality', label: 'Habit: sticky postflop', value: ai(foldValue) }]
           }
         }
         return []

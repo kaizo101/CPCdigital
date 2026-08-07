@@ -10,11 +10,44 @@ import type { BotState } from '../bot-tag'
 
 export type RebuyRequestStatus = 'applied' | 'queued' | 'not-needed' | 'unavailable'
 
+export interface CashOutPolicy {
+  softThresholdBb: number
+  hardThresholdBb: number
+  minimumHands: number
+  chancePerHand: number
+}
+
+export function getCashOutPolicy(identity: BotIdentity): CashOutPolicy {
+  const base = identity.maniac
+    ? { soft: 480, hard: 800, hands: 40, chance: 0.025 }
+    : identity.archetypeId === 'nit'
+      ? { soft: 240, hard: 500, hands: 20, chance: 0.12 }
+      : identity.archetypeId === 'tag'
+        ? { soft: 300, hard: 600, hands: 25, chance: 0.09 }
+        : identity.archetypeId === 'calling-station'
+          ? { soft: 360, hard: 700, hands: 30, chance: 0.06 }
+          : { soft: 420, hard: 800, hands: 35, chance: 0.04 }
+  const riskAdjustment = Math.round((identity.traits.riskTolerance - 50) * 1.5)
+  const softThresholdBb = Math.max(200, Math.min(650, base.soft + riskAdjustment))
+  const hardThresholdBb = Math.max(
+    softThresholdBb + 100,
+    Math.min(800, base.hard + Math.round(riskAdjustment / 2)),
+  )
+
+  return {
+    softThresholdBb,
+    hardThresholdBb: Math.min(800, hardThresholdBb),
+    minimumHands: base.hands,
+    chancePerHand: base.chance,
+  }
+}
+
 export class BotRebuyManager {
   pendingRebuyPlayerIds = new Set<string>()
   rebuysUsed = new Map<string, number>()
   leftTableBots = new Set<string>()
   replacementQueue: { botId: string; availableAfterHand: number }[] = []
+  joinedAtHandByBot = new Map<string, number>()
 
   private _rebuyEnabled = true
   private _startingChips = 0
@@ -164,6 +197,44 @@ export class BotRebuyManager {
     }
   }
 
+  processCashOuts(currentHandNumber: number): string | null {
+    if (!this.game || this.game.getPublicState().phase !== 'waiting') return null
+
+    const bb = this.game.getPublicState().bigBlind
+    if (bb <= 0) return null
+
+    for (const botId of this.botIds) {
+      if (this.leftTableBots.has(botId)) continue
+      const identity = this.botIdentities.get(botId)
+      const player = this.players.find(candidate => candidate.id === botId)
+      if (!identity || !player || player.chips <= 0 || player.isSittingOut) continue
+
+      const policy = getCashOutPolicy(identity)
+      const stackBb = player.chips / bb
+      if (stackBb < policy.softThresholdBb) continue
+
+      const joinedAt = this.joinedAtHandByBot.get(botId) ?? 0
+      const handsAtTable = currentHandNumber - joinedAt
+      const hardCashOut = stackBb >= policy.hardThresholdBb
+      if (!hardCashOut && handsAtTable < policy.minimumHands) continue
+
+      const thresholdProgress = Math.max(0, Math.min(1, (
+        stackBb - policy.softThresholdBb
+      ) / Math.max(1, policy.hardThresholdBb - policy.softThresholdBb)))
+      const cashOutChance = policy.chancePerHand + thresholdProgress * 0.25
+      if (!hardCashOut && this.random() >= cashOutChance) continue
+
+      this.leftTableBots.add(botId)
+      player.chips = 0
+      player.isSittingOut = true
+      this.game.setPlayerChips(botId, 0)
+      this.game.setPlayerSittingOut(botId, true)
+      return botId
+    }
+
+    return null
+  }
+
   processReplacements(currentHandNumber: number): void {
     for (const botId of this.leftTableBots) {
       if (this.replacementQueue.some(r => r.botId === botId)) continue
@@ -194,13 +265,13 @@ export class BotRebuyManager {
         continue
       }
       if (urgent || currentHandNumber >= entry.availableAfterHand) {
-        this.spawnReplacement(entry.botId)
+        this.spawnReplacement(entry.botId, currentHandNumber)
         this.replacementQueue.splice(i, 1)
       }
     }
   }
 
-  private spawnReplacement(botId: string): void {
+  private spawnReplacement(botId: string, currentHandNumber: number): void {
     const oldIdentity = this.botIdentities.get(botId)
     if (!oldIdentity) return
 
@@ -221,14 +292,16 @@ export class BotRebuyManager {
     this.observedEventCountByBot.set(botId, 0)
     this.observedVpipPlayersByBot.set(botId, new Set())
     this.rebuysUsed.set(botId, 0)
+    this.joinedAtHandByBot.set(botId, currentHandNumber)
     this.leftTableBots.delete(botId)
     this.playerNames.set(botId, freshIdentity.name)
 
     const player = this.players.find(p => p.id === botId)
     if (player) {
+      player.name = freshIdentity.name
       player.chips = this._startingChips
-      this.game?.setPlayerChips(botId, this._startingChips)
-      this.game?.setPlayerSittingOut(botId, false)
+      player.isSittingOut = false
+      this.game?.upsertPlayer(player)
     }
   }
 
@@ -237,6 +310,7 @@ export class BotRebuyManager {
     this.rebuysUsed.clear()
     this.leftTableBots.clear()
     this.replacementQueue = []
+    this.joinedAtHandByBot.clear()
     this._rebuyEnabled = true
     this._startingChips = 0
   }

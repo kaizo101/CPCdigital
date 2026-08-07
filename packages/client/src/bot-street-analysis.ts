@@ -1,4 +1,7 @@
 import type { DecisionActionHistoryEvent } from '@cpc/shared'
+import { aggressiveActionPotFraction, isAggressiveHistoryEvent } from './bot-sizing'
+
+type BettingStreet = 'preflop' | 'flop' | 'turn' | 'river'
 
 export interface OpponentLine {
   playerId: string
@@ -6,6 +9,8 @@ export interface OpponentLine {
   flop: 'bet' | 'check-call' | 'check-fold' | 'check-raise' | 'bet-call' | 'bet-fold' | null
   turn: 'bet' | 'check-call' | 'check-fold' | 'check-raise' | 'bet-call' | 'bet-fold' | null
   river: 'bet' | 'check-call' | 'check-fold' | 'check-raise' | 'bet-call' | 'bet-fold' | null
+  /** Last aggressive action size per street, normalized against the pre-action pot. */
+  aggressivePotFractions: Record<BettingStreet, number | null>
 }
 
 export interface StreetAnalysis {
@@ -17,8 +22,6 @@ export interface StreetAnalysis {
   streetAggressor: { preflop: string | null; flop: string | null; turn: string | null; river: string | null }
   /** Am I the preflop aggressor? */
   iAmPreflopAggressor: boolean
-  /** Am I in position against the last aggressor? */
-  iAmInPosition: boolean
   /** Per-opponent action lines for the current hand */
   opponentLines: Map<string, OpponentLine>
   /** Number of active opponents remaining */
@@ -49,12 +52,18 @@ export function analyzeStreetAction(
 
   const opponentLines = new Map<string, OpponentLine>()
   for (const id of opponentIds) {
-    opponentLines.set(id, { playerId: id, preflop: null, flop: null, turn: null, river: null })
+    opponentLines.set(id, {
+      playerId: id,
+      preflop: null,
+      flop: null,
+      turn: null,
+      river: null,
+      aggressivePotFractions: { preflop: null, flop: null, turn: null, river: null },
+    })
   }
 
   const currentPhase = phase === 'waiting' ? 'preflop' : phase as StreetAnalysis['street']
 
-  let iAmInPosition = false
   let opponentShowedWeakness = false
   let opponentCheckRaised = false
   let actionCountThisStreet = 0
@@ -78,8 +87,7 @@ export function analyzeStreetAction(
       }
 
       const action = event.action.type
-      const aggressiveAction = action === 'raise'
-        || (action === 'all-in' && event.totalBet > event.currentBetBefore)
+      const aggressiveAction = isAggressiveHistoryEvent(event)
       const lineAction = action === 'all-in'
         ? aggressiveAction ? 'raise' : 'call'
         : action
@@ -118,6 +126,10 @@ export function analyzeStreetAction(
       const line = opponentLines.get(event.playerId)
       if (!line) continue
 
+      if (aggressiveAction) {
+        line.aggressivePotFractions[eventPhase] = aggressiveActionPotFraction(event)
+      }
+
       switch (eventPhase) {
         case 'preflop':
           if (aggressiveAction) {
@@ -143,17 +155,11 @@ export function analyzeStreetAction(
     }
   }
 
-  const lastAggressor = flopLastAggressor ?? turnLastAggressor ?? riverLastAggressor ?? preflopLastAggressor
-  if (lastAggressor && lastAggressor !== botId && opponentIds.includes(lastAggressor)) {
-    iAmInPosition = true
-  }
-
   return {
     preflopAggressor: preflopLastAggressor,
     preflopRaiseCount,
     streetAggressor: { preflop: preflopLastAggressor, flop: flopLastAggressor, turn: turnLastAggressor, river: riverLastAggressor },
     iAmPreflopAggressor: preflopLastAggressor === botId,
-    iAmInPosition,
     opponentLines,
     activeOpponents: opponentIds.length,
     opponentShowedWeakness,

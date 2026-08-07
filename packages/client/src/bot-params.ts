@@ -72,6 +72,15 @@ export interface ScoringParams {
     deepStack: number
     exceedsEffectiveStack: number
     blockerValue: number
+    deepOpenShove: number
+    uncommittedStrong: number
+    uncommittedDeep: number
+    uncommittedPostflop: number
+  }
+  callDownMods: {
+    weakTurnPressure: number
+    weakRiverPressure: number
+    riverNoMadeHand: number
   }
   utilityBaseline: number
   skillTiers: { threshold: number; factor: number }[]
@@ -288,6 +297,15 @@ export const DEFAULT_PARAMS: BotParams = {
       deepStack: -10,
       exceedsEffectiveStack: -35,
       blockerValue: 5,
+      deepOpenShove: -120,
+      uncommittedStrong: -60,
+      uncommittedDeep: -90,
+      uncommittedPostflop: -80,
+    },
+    callDownMods: {
+      weakTurnPressure: -10,
+      weakRiverPressure: -18,
+      riverNoMadeHand: -8,
     },
     utilityBaseline: 50,
     skillTiers: [
@@ -424,6 +442,7 @@ export let params: BotParams = structuredClone(DEFAULT_PARAMS)
 
 export function resetParams(): void {
   params = structuredClone(DEFAULT_PARAMS)
+  params.scoring.skillTiers.sort((a, b) => b.threshold - a.threshold)
 }
 
 export function loadOverrides(overrides: Record<string, number>): void {

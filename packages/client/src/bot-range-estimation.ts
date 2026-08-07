@@ -8,7 +8,6 @@ export interface PerceivedOpponentRange {
 
 export function estimateOpponentRanges(
   analysis: StreetAnalysis,
-  botId: string,
 ): PerceivedOpponentRange[] {
   const ranges: PerceivedOpponentRange[] = []
 

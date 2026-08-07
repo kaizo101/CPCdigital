@@ -8,7 +8,7 @@ import { PlayerSeat } from './PlayerSeat'
 import { formatChips, type DisplayCurrency } from '../utils/format'
 import { rotatePlayersForTable } from '../utils/positions'
 import type { TableButtonLabel } from '../utils/positions'
-import { isAndroidRuntime } from '../native-runtime'
+import { requestTextFileExport } from '../utils/file-export'
 
 interface Props {
   replays: HandReplay[]
@@ -29,7 +29,6 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   const [showAllCards, setShowAllCards] = useState(false)
   const [minPotBb, setMinPotBb] = useState(0)
   const exportBtnRef = useRef<HTMLButtonElement>(null)
-  const allowExport = !isAndroidRuntime()
   const replay = replays[Math.max(0, Math.min(handIdx, replays.length - 1))]
   if (!replay) return null
 
@@ -170,11 +169,13 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   const [showExportMenu, setShowExportMenu] = useState(false)
 
   function exportText(text: string, filename: string): void {
-    const blob = new Blob([text], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = filename; a.click()
-    URL.revokeObjectURL(url)
+    requestTextFileExport({
+      data: text,
+      filename,
+      mimeType: 'text/plain',
+      title: 'CPCdigital Hand-History',
+      dialogTitle: 'Hand-History exportieren',
+    })
   }
 
   function exportCurrentHand(withDecisions: boolean): void {
@@ -283,12 +284,10 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
             {minPotBb > 0 && <span style={{ fontSize: 10, color: '#6b7280' }}>({filteredReplays.length} Hände)</span>}
           </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          {allowExport && (
-            <div style={{ position: 'relative' }}>
-              <button ref={exportBtnRef} onClick={() => setShowExportMenu(m => !m)} style={smallBtnStyle}>Export ▾</button>
-            </div>
-          )}
-          {allowExport && showExportMenu && exportBtnRef.current && createPortal(
+          <div style={{ position: 'relative' }}>
+            <button ref={exportBtnRef} onClick={() => setShowExportMenu(m => !m)} style={smallBtnStyle}>Export ▾</button>
+          </div>
+          {showExportMenu && exportBtnRef.current && createPortal(
             <div style={{
               position: 'fixed',
               top: exportBtnRef.current.getBoundingClientRect().bottom + 4,

@@ -21,9 +21,10 @@ describe('getPloPreflopAction', () => {
     expect(getPloPreflopAction('tag', 'facing-3bet', 'medium')).toBe('fold')
   })
 
-  it('LAG: calls medium when facing an open (good+ call, no 3-bet)', () => {
-    expect(getPloPreflopAction('lag', 'facing-open', 'medium')).toBe('call')
-    expect(getPloPreflopAction('lag', 'facing-open', 'marginal')).toBe('call')
+  it('LAG: defends medium hands more often six-max but discards structurally marginal hands', () => {
+    expect(getPloPreflopAction('lag', 'facing-open', 'medium', 9)).toBe('fold')
+    expect(getPloPreflopAction('lag', 'facing-open', 'medium', 6)).toBe('call-or-fold')
+    expect(getPloPreflopAction('lag', 'facing-open', 'marginal')).toBe('fold')
   })
 
   it('LAG: reraises only strong+ facing a 3-bet', () => {
@@ -38,11 +39,12 @@ describe('getPloPreflopAction', () => {
     expect(getPloPreflopAction('nit', 'facing-open', 'medium')).toBe('fold')
   })
 
-  it('Calling Station: opens with premium/strong (good calls), never raises facing a 3-bet', () => {
+  it('Calling Station: raises premium/strong and limps progressively weaker hands', () => {
     expect(getPloPreflopAction('calling-station', 'unopened', 'premium')).toBe('raise')
     expect(getPloPreflopAction('calling-station', 'unopened', 'strong')).toBe('raise')
     expect(getPloPreflopAction('calling-station', 'unopened', 'good')).toBe('call')
-    expect(getPloPreflopAction('calling-station', 'unopened', 'medium')).toBe('fold')
+    expect(getPloPreflopAction('calling-station', 'unopened', 'medium')).toBe('call')
+    expect(getPloPreflopAction('calling-station', 'unopened', 'marginal')).toBe('call-or-fold')
   })
 
   it('Calling Station: never raises facing a 3-bet, only calls premium', () => {
@@ -62,9 +64,9 @@ describe('getPloPreflopAction', () => {
     expect(getPloPreflopAction(undefined, 'facing-open', 'good')).toBe('call')
   })
 
-  it('six-max: Nit opens by raising good hands (avoids limp cascade) and folds medium/marginal', () => {
+  it('six-max: Nit raises good hands, limps medium hands and folds marginal hands', () => {
     expect(getPloPreflopAction('nit', 'unopened', 'good', 6)).toBe('raise')
-    expect(getPloPreflopAction('nit', 'unopened', 'medium', 6)).toBe('fold')
+    expect(getPloPreflopAction('nit', 'unopened', 'medium', 6)).toBe('call')
     expect(getPloPreflopAction('nit', 'unopened', 'marginal', 6)).toBe('fold')
     expect(getPloPreflopAction('nit', 'unopened', 'strong', 6)).toBe('raise')
     expect(getPloPreflopAction('nit', 'unopened', 'premium', 6)).toBe('raise')
@@ -104,7 +106,7 @@ describe('getPloScores (six-max postflop)', () => {
     expect(getPloScores('tag', 'turn-river', 9)).toBe(getPloScores('tag', 'turn-river'))
   })
 
-  it('six-max: LAG turn/river folds marginal/medium less and calls marginal more than full ring', () => {
+  it('six-max: LAG keeps only a small marginal-defense expansion over full ring', () => {
     const fr = getPloScores('lag', 'turn-river', 9)
     const six = getPloScores('lag', 'turn-river', 6)
     expect(six.fold.marginal).toBeLessThan(fr.fold.marginal)
@@ -112,13 +114,29 @@ describe('getPloScores (six-max postflop)', () => {
     expect(six.call.marginal).toBeGreaterThan(fr.call.marginal)
   })
 
-  it('six-max: archetypes without overrides fall back to their full-ring table', () => {
-    expect(getPloScores('nit', 'turn-river', 6)).toBe(getPloScores('nit', 'turn-river', 9))
-    expect(getPloScores('tag', 'flop', 6)).toBe(getPloScores('tag', 'flop', 9))
+  it('LAG applies river-specific bluff pressure instead of inflating turn aggression', () => {
+    const turn = getPloScores('lag', 'turn', 9)
+    const river = getPloScores('lag', 'river', 9)
+
+    expect(river.raise.air).toBeGreaterThan(turn.raise.air)
+    expect(river.raise.marginal).toBeGreaterThan(turn.raise.marginal)
+    expect(river.check.marginal).toBeLessThan(turn.check.marginal)
   })
 
-  it('preflop score resolution ignores tableSize', () => {
-    expect(getPloScores('lag', 'preflop', 6)).toBe(getPloScores('lag', 'preflop', 9))
+  it('six-max: Nit keeps its calibrated late-street defense but shares the flop table', () => {
+    expect(getPloScores('nit', 'turn', 6).fold.marginal).toBeLessThan(
+      getPloScores('nit', 'turn', 9).fold.marginal,
+    )
+    expect(getPloScores('nit', 'flop', 6)).toBe(getPloScores('nit', 'flop', 9))
+  })
+
+  it('preflop keeps hand categories common but resolves format-specific score weights', () => {
+    expect(getPloScores('tag', 'preflop', 6).raise.good).toBeGreaterThan(
+      getPloScores('tag', 'preflop', 9).raise.good,
+    )
+    expect(getPloScores('calling-station', 'preflop', 6).call.medium).toBeGreaterThan(
+      getPloScores('calling-station', 'preflop', 9).call.medium,
+    )
   })
 
   it('six-max: Nit uses separate good-hand call and raise scores preflop', () => {
@@ -129,5 +147,24 @@ describe('getPloScores (six-max postflop)', () => {
     expect(fullRing.call.good).toBe(-12)
     expect(sixMax.raise.good).toBe(-12)
     expect(sixMax.call.good).toBe(-8)
+  })
+
+  it('six-max: Calling Station defends the flop wider but keeps late-street discipline', () => {
+    const flop = getPloScores('calling-station', 'flop', 6)
+    const turnRiver = getPloScores('calling-station', 'turn-river', 6)
+
+    expect(flop.call.weak).toBeGreaterThan(turnRiver.call.weak)
+    expect(flop.call.marginal).toBeGreaterThan(turnRiver.call.marginal)
+    expect(flop.call.medium).toBeGreaterThan(turnRiver.call.medium)
+    expect(flop.fold.medium).toBeLessThan(turnRiver.fold.medium)
+  })
+
+  it('full ring: Calling Station calls the flop wider than later streets', () => {
+    const flop = getPloScores('calling-station', 'flop', 9)
+    const turnRiver = getPloScores('calling-station', 'turn-river', 9)
+
+    expect(flop.call.weak).toBeGreaterThan(turnRiver.call.weak)
+    expect(flop.call.marginal).toBeGreaterThan(turnRiver.call.marginal)
+    expect(flop.call.medium).toBeGreaterThan(turnRiver.call.medium)
   })
 })

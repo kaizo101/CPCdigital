@@ -10,6 +10,11 @@ const config: CapacitorConfig = {
     path: 'android',
     backgroundColor: '#090b0e',
     zoomEnabled: false,
+    includePlugins: [
+      '@capacitor/app',
+      '@capacitor/filesystem',
+      '@capacitor/share',
+    ],
   },
   plugins: {
     App: {

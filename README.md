@@ -2,7 +2,7 @@
 
 Eine primär für den Desktop entwickelte Offline-Poker-App: Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder Internetverbindung. Ein nativer Android-Debug-Prototyp ergänzt die Desktop-App als frühes mobiles Entwicklungsziel.
 
-Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.7.8** und bietet No-Limit Texas Hold'em und Pot-Limit Omaha High mit glaubwürdigen Bots, variant-spezifischer Handbewertung, kalibrierten Archetypen, Auto-Rebuys und Hand-Replays. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
+Das Projekt befindet sich in früher Entwicklung. Der aktuelle Release ist **v0.7.9** und bietet No-Limit Texas Hold'em und Pot-Limit Omaha High mit glaubwürdigen Bots, variant-spezifischer Handbewertung, kalibrierten Archetypen, Auto-Rebuys und Hand-Replays. Weitere Varianten und die spätere Lernplattform sind in der [Roadmap](ROADMAP.md) beschrieben.
 
 ## Leitgedanken
 
@@ -42,12 +42,14 @@ Derzeit enthalten sind unter anderem:
 - einfache Rebuys zwischen Händen sowie verschiedene Bedienungs- und Anzeigeverbesserungen
 - kompakter JSON-Debug-Export (v2) für KI-gestützte Analyse
 - Mixed-Table-Kalibrierung und Balance-Simulation über alle Archetypen
-- Auto-Rebuys mit persönlichkeitsabhängigen Policies und Ersatz-Bots
+- Auto-Rebuys sowie archetypabhängige Cash-outs mit Ersatz-Bots; sehr große
+  Gewinnerstacks verlassen den Tisch spätestens am persönlichen Limit bis
+  800 BB
 - grafisches Hand-Replay mit Step-Through, Autoplay, Session-Navigation und lokalem Archiv der letzten 200 Hände
 - PokerStars-kompatible Hand-History (Export pro Hand oder alle geladenen Hände)
 - 7-stufige Handbewertung mit Board-Kontext (Premium bis Air)
-- Board-Verschlechterungserkennung und Protection-Betting
-- ReadTyp: Gegner-Bet-Sizing-Analyse mit Abweichungserkennung
+- variantenabhängige Board-Verschlechterungserkennung und Protection-Betting für NLHE und PLO
+- ReadTyp: Gegner-Bet-Sizing-Analyse mit kanonischer Pot-Fraktion und aktionsabhängiger Abweichungsreaktion
 - Stack- und positionsabhängiges Raise-Sizing
 - nativer Android-Debug-Prototyp mit Capacitor, Landscape-Vollbild und kompakter Touch-Actionbar
 

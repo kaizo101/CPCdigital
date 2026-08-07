@@ -13,10 +13,11 @@ export function weightedChoice(
   actions: ScoredAction[],
   rng: RandomSource = defaultRandom,
 ): PlayerAction {
-  const candidates = actions.filter(action => action.utility > 0)
+  const eligibleActions = actions.filter(action => action.selectionEligible !== false)
+  const candidates = eligibleActions.filter(action => action.utility > 0)
   if (candidates.length === 0) {
-    if (actions.length > 0) {
-      const best = actions.reduce((a, b) => a.utility > b.utility ? a : b)
+    if (eligibleActions.length > 0) {
+      const best = eligibleActions.reduce((a, b) => a.utility > b.utility ? a : b)
       return best.action
     }
     return { type: 'fold' }

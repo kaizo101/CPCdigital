@@ -17,6 +17,25 @@ const BLIND_PRESETS = [
   { smallBlind: 10, bigBlind: 20 },
 ] as const
 
+const DEBUG_TAP_LIMIT = 5
+const DEBUG_TAP_WINDOW_MS = 2500
+
+export interface DebugTapState {
+  count: number
+  lastTapAt: number
+}
+
+export function advanceDebugTap(state: DebugTapState, now: number): {
+  state: DebugTapState
+  toggle: boolean
+} {
+  const count = now - state.lastTapAt <= DEBUG_TAP_WINDOW_MS ? state.count + 1 : 1
+  if (count >= DEBUG_TAP_LIMIT) {
+    return { state: { count: 0, lastTapAt: 0 }, toggle: true }
+  }
+  return { state: { count, lastTapAt: now }, toggle: false }
+}
+
 function blindPresetKey(smallBlind: number, bigBlind: number): string {
   return `${smallBlind}/${bigBlind}`
 }
@@ -42,6 +61,8 @@ export function SetupScreen({
   setRebuyEnabled,
   variantId,
   setVariantId,
+  debugMode = false,
+  setDebugMode = () => {},
   runtime = getAppRuntime(),
 }: {
   options: TableOptions
@@ -55,11 +76,16 @@ export function SetupScreen({
   setRebuyEnabled: (enabled: boolean) => void
   variantId: string
   setVariantId: (id: string) => void
+  debugMode?: boolean
+  setDebugMode?: (enabled: boolean) => void
   runtime?: AppRuntime
 }) {
   const maxBots = 8
   const [blindMenuOpen, setBlindMenuOpen] = useState(false)
+  const [debugTapNotice, setDebugTapNotice] = useState<string | null>(null)
   const blindPickerRef = useRef<HTMLDivElement>(null)
+  const debugTapRef = useRef({ count: 0, lastTapAt: 0 })
+  const debugNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const selectedBlindPreset = BLIND_PRESETS.find(preset =>
     preset.smallBlind === options.smallBlind && preset.bigBlind === options.bigBlind
   )
@@ -93,6 +119,25 @@ export function SetupScreen({
       document.removeEventListener('keydown', closeOnEscape)
     }
   }, [blindMenuOpen])
+
+  useEffect(() => () => {
+    if (debugNoticeTimerRef.current) clearTimeout(debugNoticeTimerRef.current)
+  }, [])
+
+  const handleVersionTap = () => {
+    if (runtime !== 'android') return
+
+    const now = Date.now()
+    const next = advanceDebugTap(debugTapRef.current, now)
+    debugTapRef.current = next.state
+    if (!next.toggle) return
+
+    const enabled = !debugMode
+    setDebugMode(enabled)
+    setDebugTapNotice(enabled ? 'Bot-Debug aktiviert' : 'Bot-Debug deaktiviert')
+    if (debugNoticeTimerRef.current) clearTimeout(debugNoticeTimerRef.current)
+    debugNoticeTimerRef.current = setTimeout(() => setDebugTapNotice(null), 2400)
+  }
 
   const validationError = (() => {
     if (!Number.isFinite(options.smallBlind) || options.smallBlind <= 0) return 'Small Blind muss größer als 0 sein.'
@@ -316,18 +361,33 @@ export function SetupScreen({
         <header className="setup-header" style={{ marginBottom: 24 }}>
           <div className="setup-title-row" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <h1 className="setup-title" style={{ fontSize: 30, fontWeight: 700, margin: 0 }}>CPCdigital</h1>
-            <span style={{
-              padding: '3px 7px',
-              borderRadius: 999,
-              border: '1px solid rgba(125,211,252,0.3)',
-              background: 'rgba(14,116,144,0.14)',
-              color: '#a5dff5',
-              fontSize: 10,
-              fontWeight: 800,
-              letterSpacing: 0.5,
-            }}>
-              v{APP_VERSION}
-            </span>
+            <button
+              type="button"
+              onClick={handleVersionTap}
+              aria-label={runtime === 'android'
+                ? 'Versionsanzeige; fünfmal tippen, um Bot-Debug umzuschalten'
+                : 'Versionsanzeige'}
+              style={{
+                padding: '3px 7px',
+                borderRadius: 999,
+                border: debugMode
+                  ? '1px solid rgba(74,222,128,0.55)'
+                  : '1px solid rgba(125,211,252,0.3)',
+                background: debugMode ? 'rgba(22,101,52,0.28)' : 'rgba(14,116,144,0.14)',
+                color: debugMode ? '#86efac' : '#a5dff5',
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: 0.5,
+                fontFamily: 'inherit',
+                cursor: runtime === 'android' ? 'pointer' : 'default',
+              }}>
+              v{APP_VERSION}{debugMode ? ' · DEBUG' : ''}
+            </button>
+            {debugTapNotice && (
+              <span role="status" style={{ color: '#86efac', fontSize: 10, fontWeight: 800 }}>
+                {debugTapNotice}
+              </span>
+            )}
           </div>
           <p className="setup-subtitle" style={{ color: '#8f98a4', margin: 0 }}>Texas Hold'em gegen Bots</p>
           <div className="setup-license" style={{ color: '#6f7884', fontSize: 10, marginTop: 7 }}>

@@ -6,6 +6,7 @@ import { decideAction, scoreActions, type DecisionContext } from './bot-pipeline
 import { applySkillPerception } from './bot-skill-perception'
 import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
 import { NLHE_CATEGORY_SCORES } from './bot-category-scores'
+import type { OpponentLine, StreetAnalysis } from './bot-street-analysis'
 
 const cards: [Card, Card] = [
   { rank: 'A', suit: 'spades' },
@@ -75,6 +76,41 @@ function context(
   }
 }
 
+function withSizingRead(decisionContext: DecisionContext, potFraction: number): DecisionContext {
+  const opponentLine: OpponentLine = {
+    playerId: 'villain',
+    preflop: 'called',
+    flop: 'bet',
+    turn: null,
+    river: null,
+    aggressivePotFractions: { preflop: null, flop: potFraction, turn: null, river: null },
+  }
+  const streetAnalysis: StreetAnalysis = {
+    preflopAggressor: 'villain',
+    preflopRaiseCount: 1,
+    streetAggressor: { preflop: 'villain', flop: 'villain', turn: null, river: null },
+    iAmPreflopAggressor: false,
+    opponentLines: new Map([['villain', opponentLine]]),
+    activeOpponents: 1,
+    opponentShowedWeakness: false,
+    opponentCheckRaised: false,
+    street: 'flop',
+    actionCountThisStreet: 1,
+  }
+  decisionContext.streetAnalysis = streetAnalysis
+  decisionContext.botState.skill.level = 100
+  decisionContext.botState.reads.opponents.set('villain', {
+    playerId: 'villain',
+    vpipEstimate: { successes: 3, failures: 7 },
+    aggressionEstimate: { successes: 3, failures: 7 },
+    foldToBetEstimate: { successes: 5, failures: 5 },
+    handsSampled: 5,
+    effectiveObservations: 5,
+    sizing: { average: 0.5, count: 4 },
+  })
+  return decisionContext
+}
+
 describe('bot utility candidates', () => {
   it('scores exactly every action exposed by the engine', () => {
     const legalActions: LegalActions = {
@@ -134,6 +170,39 @@ describe('bot utility candidates', () => {
     expect(strategyValue('raise')).toBe(-12)
   })
 
+  it('adds targeted PLO protection for vulnerable made hands before the river', () => {
+    const legalActions: LegalActions = {
+      fold: false,
+      check: true,
+      callAmount: null,
+      raise: { minAmount: 40, maxAmount: 300 },
+      allInAmount: 1000,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.variantId = 'omaha-high'
+    decisionContext.gameView.board = [
+      { rank: 'A', suit: 'spades' },
+      { rank: 'Q', suit: 'hearts' },
+      { rank: 'J', suit: 'diamonds' },
+    ]
+    decisionContext.boardTexture = 'wet'
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'good',
+      rank: 4,
+      made: true,
+      vulnerability: 75,
+    }
+
+    const raise = scoreActions(decisionContext)
+      .find(candidate => candidate.action.type === 'raise')!
+
+    expect(raise.contributions).toContainEqual(expect.objectContaining({
+      label: 'PLO vulnerable made hand — deny equity',
+      value: 12,
+    }))
+  })
+
   it('does not invent actions absent from the engine context', () => {
     const legalActions: LegalActions = {
       fold: false,
@@ -161,6 +230,84 @@ describe('bot utility candidates', () => {
       .find(candidate => candidate.action.type === 'all-in')!.utility
 
     expect(utility(lowSpr)).toBeGreaterThan(utility(deep))
+  })
+
+  it('makes a deep-stack open shove ineligible without hiding the legal action', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 2000 },
+      allInAmount: 2000,
+    }
+    const decisionContext = context(legalActions, {
+      effectiveStack: 2000,
+      playerStack: 2000,
+      spr: 50,
+    })
+    decisionContext.gameView.phase = 'preflop'
+    decisionContext.handAssessment.category = 'premium'
+    decisionContext.preflopRangeAction = 'raise'
+
+    const shove = scoreActions(decisionContext)
+      .find(candidate => candidate.action.type === 'all-in')!
+
+    expect(shove.utility).toBe(0)
+    expect(shove.selectionEligible).toBe(false)
+    expect(shove.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: expect.stringContaining('Deep-stack open shove') }),
+    ]))
+  })
+
+  it('still permits a premium preflop shove once the stack is meaningfully committed', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 400,
+      raise: { minAmount: 800, maxAmount: 2000 },
+      allInAmount: 2000,
+    }
+    const decisionContext = context(legalActions, {
+      effectiveStack: 2000,
+      playerStack: 2000,
+      spr: 4,
+    })
+    decisionContext.gameView.phase = 'preflop'
+    decisionContext.handAssessment.category = 'premium'
+    decisionContext.preflopRangeAction = 'raise'
+
+    const shove = scoreActions(decisionContext)
+      .find(candidate => candidate.action.type === 'all-in')!
+
+    expect(shove.utility).toBeGreaterThan(0)
+    expect(shove.selectionEligible).not.toBe(false)
+    expect(shove.contributions.some(contribution => contribution.label.includes('not committed'))).toBe(false)
+  })
+
+  it('does not let LAG personality revive an uncommitted 60 BB shove', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 40,
+      raise: { minAmount: 120, maxAmount: 1200 },
+      allInAmount: 1200,
+    }
+    const decisionContext = context(legalActions, {
+      effectiveStack: 1200,
+      playerStack: 1200,
+      spr: 12,
+    })
+    decisionContext.gameView.phase = 'preflop'
+    decisionContext.botState = createBotState(LAG_PERSONALITY, 100, () => 0.25)
+    decisionContext.handAssessment.category = 'strong'
+    decisionContext.preflopRangeAction = 'raise'
+
+    const result = decideAction(decisionContext, { random: () => 0.99 })
+    const shove = result.allActions.find(candidate => candidate.action.type === 'all-in')!
+
+    expect(shove.selectionEligible).toBe(false)
+    expect(shove.utility).toBe(0)
+    expect(result.action.type).not.toBe('all-in')
   })
 
   it('records an aggressive all-in as a bet and a short all-in as a call', () => {
@@ -222,6 +369,90 @@ describe('bot utility candidates', () => {
       ))
       expect(candidate.utility).toBeCloseTo(explainedUtility)
     }
+  })
+
+  it('applies a large sizing tell consistently to fold, call and raise', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const actions = scoreActions(withSizingRead(context(legalActions), 1.5))
+    const sizingValue = (type: PlayerAction['type']) => actions
+      .find(candidate => candidate.action.type === type)!
+      .contributions.find(contribution => contribution.label.includes('Massive overbet'))!.value
+
+    expect(sizingValue('fold')).toBeGreaterThan(0)
+    expect(sizingValue('call')).toBeLessThan(0)
+    expect(sizingValue('raise')).toBeLessThan(0)
+  })
+
+  it('treats an unusually small sizing as attackable instead of strong', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const actions = scoreActions(withSizingRead(context(legalActions), 0.1))
+    const sizingValue = (type: PlayerAction['type']) => actions
+      .find(candidate => candidate.action.type === type)!
+      .contributions.find(contribution => contribution.label.includes('Unusually small'))!.value
+
+    expect(sizingValue('fold')).toBeLessThan(0)
+    expect(sizingValue('call')).toBeGreaterThan(0)
+    expect(sizingValue('raise')).toBeGreaterThan(0)
+  })
+
+  it('lets naturally aggressive bots attack small bets more strongly', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const passive = withSizingRead(context(legalActions), 0.1)
+    passive.botState.personality.aggression = 20
+    const aggressive = withSizingRead(context(legalActions), 0.1)
+    aggressive.botState.personality.aggression = 80
+    const raiseTell = (candidateContext: DecisionContext) => scoreActions(candidateContext)
+      .find(candidate => candidate.action.type === 'raise')!
+      .contributions.find(contribution => contribution.label.includes('Unusually small'))!.value
+
+    expect(raiseTell(passive)).toBeLessThan(raiseTell(aggressive))
+  })
+
+  it('respects aggression from an otherwise passive opponent', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'medium',
+      strength: 50,
+    }
+    decisionContext.opponentStats = {
+      vpip: 25,
+      aggression: 25,
+      foldToBet: 50,
+      confidence: 0.8,
+    }
+    const actions = scoreActions(decisionContext)
+    const readValue = (type: PlayerAction['type']) => actions
+      .find(candidate => candidate.action.type === type)!
+      .contributions.find(contribution => contribution.label.includes('passive opponent'))!.value
+
+    expect(readValue('fold')).toBeGreaterThan(0)
+    expect(readValue('call')).toBeLessThan(0)
   })
 
   it('keeps personality and skill perception as separate score reasons', () => {
@@ -322,6 +553,104 @@ describe('bot utility candidates', () => {
           value: expect.any(Number),
         }),
       ]))
+  })
+
+  it('does not double-penalize Calling Station value bets with made hands', () => {
+    const legalActions: LegalActions = {
+      fold: false,
+      check: true,
+      callAmount: null,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.botState = createBotState(CALLING_STATION_PERSONALITY, 100, () => 0.25)
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'medium',
+      made: true,
+      drawTypes: [],
+    }
+
+    const raise = decideAction(decisionContext, { random: () => 0.5 }).allActions
+      .find(candidate => candidate.action.type === 'raise')!
+
+    expect(raise.intent).toBe('value')
+    expect(raise.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ category: 'personality', label: 'Aggression' }),
+    ]))
+    expect(raise.contributions.some(contribution => contribution.label === 'Passive style avoids initiative')).toBe(false)
+  })
+
+  it('keeps the separate PLO Calling Station initiative model unchanged', () => {
+    const legalActions: LegalActions = {
+      fold: false,
+      check: true,
+      callAmount: null,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.variantId = 'omaha-high'
+    decisionContext.botState = createBotState(CALLING_STATION_PERSONALITY, 100, () => 0.25)
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'medium',
+      made: true,
+      drawTypes: [],
+    }
+
+    const raise = decideAction(decisionContext, { random: () => 0.5 }).allActions
+      .find(candidate => candidate.action.type === 'raise')!
+
+    expect(raise.contributions.some(contribution => contribution.label === 'Passive style avoids initiative')).toBe(true)
+  })
+
+  it('penalizes weak drawless calls under repeated turn and river pressure', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 25,
+      raise: null,
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions)
+    decisionContext.gameView.phase = 'river'
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'weak',
+      made: false,
+      drawTypes: [],
+    }
+    decisionContext.streetAnalysis = {
+      preflopAggressor: 'villain',
+      preflopRaiseCount: 1,
+      streetAggressor: { preflop: 'villain', flop: 'villain', turn: 'villain', river: 'villain' },
+      iAmPreflopAggressor: false,
+      opponentLines: new Map([['villain', {
+        playerId: 'villain',
+        preflop: 'raised',
+        flop: 'bet',
+        turn: 'bet',
+        river: 'bet',
+        aggressivePotFractions: { preflop: 3, flop: 0.6, turn: 0.6, river: 0.25 },
+      }]]),
+      activeOpponents: 1,
+      opponentShowedWeakness: false,
+      opponentCheckRaised: false,
+      street: 'river',
+      actionCountThisStreet: 1,
+    }
+
+    const call = scoreActions(decisionContext).find(candidate => candidate.action.type === 'call')!
+    expect(call.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: '3-street pressure against weak showdown value', value: -18 }),
+      expect.objectContaining({ label: 'No made hand at showdown', value: -8 }),
+    ]))
+
+    decisionContext.variantId = 'omaha-high'
+    const ploCall = scoreActions(decisionContext).find(candidate => candidate.action.type === 'call')!
+    expect(ploCall.contributions.some(contribution => contribution.label.includes('street pressure'))).toBe(false)
   })
 
   it('gives a perfect-skill bot exact perception without consuming fair data', () => {

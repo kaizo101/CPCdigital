@@ -40,6 +40,8 @@ export interface ScoredAction {
   intent: ActionIntent
   utility: number
   contributions: ScoreContribution[]
+  /** False keeps a legal engine action visible for diagnostics but out of bot selection. */
+  selectionEligible?: boolean
 }
 
 export interface BotGameView {

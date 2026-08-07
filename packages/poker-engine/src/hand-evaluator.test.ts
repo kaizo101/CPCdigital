@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { describeWinningHand, evaluateHand, findWinnerIndices } from './hand-evaluator'
+import { describeWinningHand, evaluateHand, evaluateOmahaHand, findWinnerIndices } from './hand-evaluator'
 import type { Card } from '@cpc/shared'
 
 const c = (rank: string, suit: string): Card =>
@@ -85,5 +85,39 @@ describe('findWinnerIndices', () => {
       { holeCards: [c('4', 'hearts'), c('5', 'diamonds')], communityCards: tiedCommunity },
     ])
     expect(idxs).toHaveLength(2)
+  })
+
+  it('compares the strongest Omaha combination within the same category', () => {
+    const omahaCommunity = [
+      c('J', 'clubs'), c('2', 'clubs'), c('Q', 'clubs'), c('2', 'hearts'), c('7', 'clubs'),
+    ]
+    const queensAndTwos = [
+      c('A', 'diamonds'), c('Q', 'diamonds'), c('6', 'hearts'), c('6', 'diamonds'),
+    ]
+    const ninesAndTwos = [
+      c('J', 'hearts'), c('9', 'clubs'), c('9', 'diamonds'), c('8', 'diamonds'),
+    ]
+
+    expect(evaluateOmahaHand(queensAndTwos, omahaCommunity).name).toMatch(/Q's & 2's/i)
+    expect(findWinnerIndices([
+      { holeCards: queensAndTwos, communityCards: omahaCommunity },
+      { holeCards: ninesAndTwos, communityCards: omahaCommunity },
+    ])).toEqual([0])
+  })
+
+  it('evaluates Omaha independently of hole-card and board order', () => {
+    const board = [
+      c('J', 'clubs'), c('2', 'clubs'), c('Q', 'clubs'), c('2', 'hearts'), c('7', 'clubs'),
+    ]
+    const hand = [
+      c('6', 'diamonds'), c('A', 'diamonds'), c('6', 'hearts'), c('Q', 'diamonds'),
+    ]
+
+    const original = evaluateOmahaHand(hand, board)
+    const reordered = evaluateOmahaHand([...hand].reverse(), [...board].reverse())
+
+    expect(original.name).toBe("Two Pair, Q's & 2's")
+    expect(reordered.name).toBe(original.name)
+    expect(reordered.rank).toBe(original.rank)
   })
 })

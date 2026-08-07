@@ -3,7 +3,15 @@ import { estimateRangeFromLine, rangeStrengthModifier } from './bot-range-estima
 import type { OpponentLine } from './bot-street-analysis'
 
 function line(overrides: Partial<OpponentLine> = {}): OpponentLine {
-  return { playerId: 'test', preflop: null, flop: null, turn: null, river: null, ...overrides }
+  return {
+    playerId: 'test',
+    preflop: null,
+    flop: null,
+    turn: null,
+    river: null,
+    aggressivePotFractions: { preflop: null, flop: null, turn: null, river: null },
+    ...overrides,
+  }
 }
 
 describe('range estimation', () => {

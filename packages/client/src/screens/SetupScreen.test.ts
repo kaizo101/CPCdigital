@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { SetupScreen } from './SetupScreen'
+import { advanceDebugTap, SetupScreen } from './SetupScreen'
 
 describe('SetupScreen', () => {
   const props = {
@@ -45,5 +45,32 @@ describe('SetupScreen', () => {
     expect(markup).toContain('class="setup-blind-picker"')
     expect(markup).toContain('aria-haspopup="listbox"')
     expect(markup).not.toContain('<select')
+  })
+
+  it('exposes a touch-friendly Android debug activation on the version badge', () => {
+    const markup = renderToStaticMarkup(createElement(SetupScreen, {
+      ...props,
+      runtime: 'android',
+      debugMode: true,
+    }))
+
+    expect(markup).toContain('fünfmal tippen, um Bot-Debug umzuschalten')
+    expect(markup).toContain('· DEBUG')
+  })
+
+  it('requires five quick version taps and resets after a pause', () => {
+    let state = { count: 0, lastTapAt: 0 }
+    for (const now of [1_000, 1_200, 1_400, 1_600]) {
+      const result = advanceDebugTap(state, now)
+      state = result.state
+      expect(result.toggle).toBe(false)
+    }
+
+    const fifth = advanceDebugTap(state, 1_800)
+    expect(fifth.toggle).toBe(true)
+    expect(fifth.state).toEqual({ count: 0, lastTapAt: 0 })
+
+    const expired = advanceDebugTap({ count: 4, lastTapAt: 1_000 }, 4_000)
+    expect(expired).toEqual({ state: { count: 1, lastTapAt: 4_000 }, toggle: false })
   })
 })

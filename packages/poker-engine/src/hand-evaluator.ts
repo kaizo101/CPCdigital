@@ -32,6 +32,7 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ha
   const hole = holeCards.map(toPokersolverCard)
 
   let best: { rank: number; name: string; cards: string[] } | null = null
+  let bestSolved: ReturnType<typeof Hand.solve> | null = null
 
   // Try all combinations: 2 of 4 hole cards + 3 of 5 community cards
   for (let h1 = 0; h1 < hole.length - 1; h1++) {
@@ -41,8 +42,13 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ha
           for (let c3 = c2 + 1; c3 < boardCards.length; c3++) {
             const cards = [hole[h1], hole[h2], boardCards[c1], boardCards[c2], boardCards[c3]]
             const hand = Hand.solve(cards)
-            if (!best || hand.rank > best.rank) {
+            const currentWinners: ReturnType<typeof Hand.winners> = bestSolved
+              ? Hand.winners([bestSolved, hand])
+              : [hand]
+            const currentIsStrictlyBetter = currentWinners.length === 1 && currentWinners[0] === hand
+            if (!bestSolved || currentIsStrictlyBetter) {
               best = { rank: hand.rank, name: hand.descr, cards }
+              bestSolved = hand
             }
           }
         }

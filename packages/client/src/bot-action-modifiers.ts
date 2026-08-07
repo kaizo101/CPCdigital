@@ -20,6 +20,9 @@ export function applyPersonalityModifiers(
     const contributions: ScoreContribution[] = []
     const aggressiveAction = scored.action.type === 'raise'
       || (scored.action.type === 'all-in' && ['value', 'protection', 'semi-bluff', 'bluff'].includes(scored.intent))
+    const callingStationValue = context.variantId === 'texas-holdem'
+      && botState.personality.archetype.name === 'Calling Station'
+      && scored.intent === 'value'
 
     if (aggressiveAction) {
       contributions.push({
@@ -27,7 +30,7 @@ export function applyPersonalityModifiers(
         label: 'Aggression',
         value: (aggression - 50) / personalityDivisor(3.5, context),
       })
-      if (aggression < 30) {
+      if (aggression < 30 && !callingStationValue) {
         contributions.push({
           category: 'personality',
           label: 'Passive style avoids initiative',
@@ -86,7 +89,7 @@ export function applyPersonalityModifiers(
       contributions.push({
         category: 'personality',
         label: 'Patience reduces marginal aggression',
-        value: -(patience - 50) / 12,
+        value: -(patience - 50) / personalityDivisor(12, context),
       })
     }
 
@@ -142,7 +145,22 @@ export function applyPersonalityModifiers(
       contributions.push(...lineCommitmentModifiers(commitment, context.gameView.phase, scored))
     }
 
-    return addContributions(scored, contributions)
+    const modified = addContributions(scored, contributions)
+    if (modified.selectionEligible === false && modified.utility > 0) {
+      return {
+        ...modified,
+        utility: 0,
+        contributions: [
+          ...modified.contributions,
+          {
+            category: 'betting-context',
+            label: 'All-in outside strategic eligibility',
+            value: -modified.utility,
+          },
+        ],
+      }
+    }
+    return modified
   })
 }
 

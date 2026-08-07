@@ -292,7 +292,14 @@ function scoreRanks(high: number, low: number, suited: boolean): number {
 export function getPreflopSituation(
   state: Pick<PublicGameState, 'currentBet' | 'bigBlind'>,
   position: Position,
+  preflopRaiseCount?: number,
 ): PreflopSituation {
+  if (preflopRaiseCount != null) {
+    if (preflopRaiseCount <= 0) return 'unopened'
+    if (preflopRaiseCount === 1) return 'facing-open'
+    return 'facing-3bet'
+  }
+
   const currentBet = state.currentBet
   const bigBlind = state.bigBlind
 
