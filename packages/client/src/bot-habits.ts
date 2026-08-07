@@ -200,7 +200,7 @@ function createHabitModifier(
         return []
       }
       case 'limp-reraise-premium': {
-        if (phase === 'preflop' && hand.category === 'strong') {
+        if (phase === 'preflop' && hand.category === 'premium') {
           if (action.action.type === 'call') {
             return [{ category: 'personality', label: 'Habit: limp with premium', value: ai(8) }]
           }
@@ -228,7 +228,9 @@ function createHabitModifier(
       }
       case 'three-barrel-bluff': {
         if (phase === 'river' && hand.category === 'air') {
-          if (action.action.type === 'raise') {
+          const wasFlopAggressor = context.streetAnalysis?.streetAggressor.flop === context.botId
+          const wasTurnAggressor = context.streetAnalysis?.streetAggressor.turn === context.botId
+          if (action.action.type === 'raise' && wasFlopAggressor && wasTurnAggressor) {
             return [{ category: 'personality', label: 'Habit: three-barrel bluff', value: ai(10) }]
           }
         }
