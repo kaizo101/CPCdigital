@@ -25,7 +25,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const drawAnalysis = analyzeOmahaDraws(ownCards, communityCards)
     const drawQuality = calculateOmahaDrawQuality(drawAnalysis)
     const cleanOuts = calculateOmahaCleanOuts(drawAnalysis, rank, ownCards, communityCards)
-    const nutPotential = assessOmahaNutPotential(evalResult, communityCards, cleanOuts)
+    const nutPotential = assessOmahaNutPotential(evalResult, communityCards, ownCards, cleanOuts)
     const vulnerability = calculateOmahaVulnerability(rank, cleanOuts, communityCards.length)
     const showdownValue = calculateOmahaShowdownValue(rank, drawQuality)
     const relativeStrength = calculateOmahaRelativeStrength(rank, cleanOuts)
@@ -149,9 +149,9 @@ function findBoardPairRank(communityCards: Card[]): number {
 function calculateOmahaStrength(rank: number, drawQuality: number, cleanOuts: number, communityCount: number): number {
   let base = rank * 7
   if (rank >= 8) base = 78 + (rank - 8) * 10
-  if (rank >= 7) base = 60 + (rank - 7) * 15
-  if (rank >= 6) base = 42 + (rank - 6) * 12
-  if (rank >= 4) base = 32 + (rank - 4) * 8
+  else if (rank >= 7) base = 60 + (rank - 7) * 15
+  else if (rank >= 6) base = 42 + (rank - 6) * 12
+  else if (rank >= 4) base = 32 + (rank - 4) * 8
 
   const drawBonus = Math.min(20, drawQuality * 4 + cleanOuts * 1.5)
   return Math.min(100, Math.max(5, base + drawBonus))
@@ -193,14 +193,56 @@ function parsePokerSolverCards(cards: string[]): PokerSolverCard[] {
 function assessOmahaNutPotential(
   evalResult: { rank: number; cards: string[] },
   communityCards: Card[],
+  ownCards: Card[],
   cleanOuts: number,
 ): NutPotential {
   const { rank, cards } = evalResult
-  if (rank >= 9) return 'nuts'
-  if (rank === 8) return cleanOuts < 6 ? 'near-nuts' : 'strong'
-
   const handCards = parsePokerSolverCards(cards)
-  const boardRanks = new Set(communityCards.map(rankValue))
+  const boardRankCounts = new Map<number, number>()
+  for (const c of communityCards) {
+    const r = rankValue(c)
+    boardRankCounts.set(r, (boardRankCounts.get(r) ?? 0) + 1)
+  }
+  const ourRankCounts = new Map<number, number>()
+  for (const c of ownCards) {
+    const r = rankValue(c)
+    ourRankCounts.set(r, (ourRankCounts.get(r) ?? 0) + 1)
+  }
+
+  if (rank >= 9) {
+    const sfSuit = handCards[0].suit
+    const boardSfRanks = communityCards
+      .filter(c => cardSuitChar(c) === sfSuit)
+      .map(rankValue)
+    const nutTop = findStraightTop(boardSfRanks, 3)
+    const myTop = findStraightTop(handCards.map(c => c.rank), 5)
+    if (myTop >= nutTop) return 'nuts'
+    if (nutTop - myTop === 1) return 'second-nuts'
+    return 'near-nuts'
+  }
+  if (rank === 8) {
+    let myQuadRank = 0
+    const handRankCounts = new Map<number, number>()
+    for (const c of handCards) handRankCounts.set(c.rank, (handRankCounts.get(c.rank) ?? 0) + 1)
+    for (const [r, c] of handRankCounts) if (c >= 4) myQuadRank = r
+    let higherQuadCount = 0
+    for (let r = 14; r > myQuadRank; r--) {
+      if ((ourRankCounts.get(r) ?? 0) === 0) higherQuadCount++
+    }
+    if (higherQuadCount === 0) return 'nuts'
+    if (higherQuadCount === 1) return 'second-nuts'
+    return 'near-nuts'
+  }
+
+  const opponentCanHaveTrips = (r: number) =>
+    (boardRankCounts.get(r) ?? 0) + Math.min(2, 4 - (boardRankCounts.get(r) ?? 0) - (ourRankCounts.get(r) ?? 0)) >= 3
+
+  const findHighestOpponentTripsRank = () => {
+    for (let r = 14; r >= 2; r--) {
+      if (opponentCanHaveTrips(r)) return r
+    }
+    return 0
+  }
 
   if (rank === 7) {
     const rankCounts = new Map<number, number>()
@@ -210,32 +252,41 @@ function assessOmahaNutPotential(
       if (count >= 3) tripsRank = r
       else if (count >= 2) pairRank = r
     }
-    const maxBoardRank = Math.max(0, ...boardRanks)
-    if (tripsRank >= maxBoardRank && pairRank >= 10) return 'near-nuts'
-    if (tripsRank >= 12) return 'strong'
-    if (tripsRank <= 7) return 'weak'
-    return 'medium'
+    const bestOppTrip = findHighestOpponentTripsRank()
+    if (tripsRank >= bestOppTrip) return 'near-nuts'
+    const gap = bestOppTrip - tripsRank
+    if (gap === 1) return 'second-nuts'
+    if (gap === 2) return 'strong'
+    if (gap <= 4) return 'medium'
+    return 'weak'
   }
 
   if (rank === 6) {
     const flushSuit = handCards[0].suit
-    const boardFlushCards = communityCards.filter(c => cardSuitChar(c) === flushSuit)
-    const highestBoardRank = boardFlushCards.reduce((max, c) => Math.max(max, rankValue(c)), 0)
-    const handFlushRanks = handCards.filter(c => c.suit === flushSuit).map(c => c.rank)
-    const maxHandRank = Math.max(...handFlushRanks)
+    const boardFlushRanks = new Set(
+      communityCards.filter(c => cardSuitChar(c) === flushSuit).map(rankValue),
+    )
+    let topUnseenRank = 14
+    while (boardFlushRanks.has(topUnseenRank)) topUnseenRank--
+    const ourFlushRanks = ownCards
+      .filter(c => c.suit[0] === flushSuit)
+      .map(c => rankValue(c))
 
-    if (maxHandRank === 14) return 'near-nuts'
-    if (highestBoardRank === 14) return maxHandRank >= 13 ? 'strong' : 'medium'
-    if (maxHandRank >= 13) return 'strong'
+    if (ourFlushRanks.includes(topUnseenRank)) return 'near-nuts'
+    if (ourFlushRanks.includes(topUnseenRank - 1)) return 'second-nuts'
+    if (topUnseenRank === 14) return ourFlushRanks.some(r => r >= 13) ? 'strong' : 'medium'
+    if (ourFlushRanks.some(r => r >= topUnseenRank - 1)) return 'strong'
     return 'medium'
   }
 
   if (rank === 5) {
-    const ranks = handCards.map(c => c.rank).sort((a, b) => b - a)
-    const nutTop = findNutStraightTop([...boardRanks])
-    const myTop = ranks[0]
-    if (myTop >= nutTop) return nutTop >= 13 ? 'strong' : 'medium'
-    if (myTop >= nutTop - 2) return 'medium'
+    const boardRanks = [...boardRankCounts.keys()]
+    const nutTop = findStraightTop(boardRanks, 3)
+    const myTop = findStraightTop(handCards.map(c => c.rank), 5)
+    const gap = nutTop - myTop
+    if (gap <= 0) return 'near-nuts'
+    if (gap === 1) return 'second-nuts'
+    if (gap === 2) return 'medium'
     return 'weak'
   }
 
@@ -244,9 +295,9 @@ function assessOmahaNutPotential(
     for (const c of handCards) rankCounts.set(c.rank, (rankCounts.get(c.rank) ?? 0) + 1)
     let setRank = 0
     for (const [r, count] of rankCounts) if (count >= 3) setRank = r
-    const maxBoardRank = Math.max(0, ...boardRanks)
-    if (setRank >= 13) return 'strong'
-    if (setRank >= maxBoardRank - 1) return 'medium'
+    const bestOppTrip = findHighestOpponentTripsRank()
+    if (setRank >= bestOppTrip) return 'strong'
+    if (setRank >= bestOppTrip - 2) return 'medium'
     return 'weak'
   }
 
@@ -255,36 +306,40 @@ function assessOmahaNutPotential(
     for (const c of handCards) rankCounts.set(c.rank, (rankCounts.get(c.rank) ?? 0) + 1)
     const pairRanks = [...rankCounts.entries()]
       .filter(([, c]) => c >= 2).map(([r]) => r).sort((a, b) => b - a)
-    if (pairRanks[0] >= 12 && pairRanks[1] >= 10) return 'medium'
+    const bestOppTrip = findHighestOpponentTripsRank()
+    if (bestOppTrip > 0) return pairRanks[0] >= bestOppTrip - 1 ? 'medium' : 'weak'
+    if ((pairRanks[0] ?? 0) >= 12 && (pairRanks[1] ?? 0) >= 10) return 'medium'
     return 'weak'
   }
 
-  if (cleanOuts >= 8) return 'strong'
-  if (cleanOuts >= 4) return 'medium'
-  return 'weak'
-}
+  if (rank === 2) {
+    const bestOppTrip = findHighestOpponentTripsRank()
+    if (bestOppTrip > 0) return 'weak'
+    const handRankCounts = new Map<number, number>()
+    for (const c of handCards) handRankCounts.set(c.rank, (handRankCounts.get(c.rank) ?? 0) + 1)
+    let ourPairRank = 0
+    for (const [r, c] of handRankCounts) if (c >= 2) ourPairRank = r
+    if (ourPairRank >= 13) return 'medium'
+    return 'weak'
+  }
+  return 'weak' // all ranks covered, fallback for type-narrowing
+}  // end of assessOmahaNutPotential
 
 function cardSuitChar(card: Card): string {
   return card.suit[0]
 }
 
-function findNutStraightTop(boardRanks: number[]): number {
-  const ranks = Array.from({ length: 13 }, (_, i) => i + 2)
-  const available = new Set(ranks)
-  let best = 0
-  for (let i = 13; i >= 4; i--) {
-    if (
-      available.has(i) && available.has(i - 1) && available.has(i - 2)
-      && available.has(i - 3) && available.has(i - 4)
-    ) {
-      best = i
-      break
-    }
+function findStraightTop(visibleRanks: number[], minRequired: number): number {
+  const present = new Set(visibleRanks)
+  const STRAIGHT_RUNS = [
+    [14, 13, 12, 11, 10],
+    [14, 5, 4, 3, 2],
+    ...[...Array(8)].map((_, i) => [13 - i, 12 - i, 11 - i, 10 - i, 9 - i]),
+  ]
+  for (const ranks of STRAIGHT_RUNS) {
+    if (ranks.filter(r => present.has(r)).length >= minRequired) return ranks[0]
   }
-  if (available.has(14) && available.has(5) && available.has(4) && available.has(3) && available.has(2)) {
-    best = Math.max(best, 5)
-  }
-  return best
+  return 0
 }
 
 function calculateOmahaDrawQuality(draws: OmahaDrawAnalysis): number {
@@ -359,10 +414,12 @@ function isDominatedStraightOut(
   const myBestTop = bestStraightTopForHoleCards(ownCards, newBoard, true)
   if (myBestTop <= 0) return false
 
-  for (const unseen of full) {
-    const trialHole = [out, unseen] as Card[]
-    const oppBestTop = bestStraightTopForHoleCards(trialHole, newBoard, false)
-    if (oppBestTop > myBestTop) return true
+  for (let i = 0; i < full.length; i++) {
+    for (let j = i + 1; j < full.length; j++) {
+      const trialHole = [full[i], full[j]] as Card[]
+      const oppBestTop = bestStraightTopForHoleCards(trialHole, newBoard, true)
+      if (oppBestTop > myBestTop) return true
+    }
   }
   return false
 }
