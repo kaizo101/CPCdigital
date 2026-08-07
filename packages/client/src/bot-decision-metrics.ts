@@ -149,7 +149,7 @@ export function getBettingContextFactors(
     if (hand.category === 'medium' || hand.category === 'marginal') {
       factors.push({ label: 'Reraising medium hand into a bet', value: Math.round(params.betting.raiseReraiseMedium * factor) })
     }
-    if (hand.category === 'weak' || hand.category === 'air' || hand.category === 'marginal') {
+    if (hand.category === 'weak' || hand.category === 'air') {
       factors.push({ label: 'Reraising without a hand into a bet', value: Math.round(params.betting.raiseReraiseWeak * factor) })
     }
     if (metrics.toCallPotRatio >= 0.5 && hand.category !== 'premium') {
