@@ -407,21 +407,14 @@ function isDominatedStraightOut(
 ): boolean {
   const newBoard = [...communityCards, out]
   if (newBoard.length < 3) return false
-
-  const occupied = new Set([...ownCards.map(cardKey), ...newBoard.map(cardKey)])
-  const full = createDeck().filter(c => !occupied.has(cardKey(c)))
+  if (newBoard.length >= 5) return false
 
   const myBestTop = bestStraightTopForHoleCards(ownCards, newBoard, true)
   if (myBestTop <= 0) return false
 
-  for (let i = 0; i < full.length; i++) {
-    for (let j = i + 1; j < full.length; j++) {
-      const trialHole = [full[i], full[j]] as Card[]
-      const oppBestTop = bestStraightTopForHoleCards(trialHole, newBoard, true)
-      if (oppBestTop > myBestTop) return true
-    }
-  }
-  return false
+  const boardRanks = newBoard.map(rankValue)
+  const nutTop = findStraightTop(boardRanks, 3)
+  return nutTop > myBestTop
 }
 
 function bestStraightTopForHoleCards(
