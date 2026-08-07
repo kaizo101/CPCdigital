@@ -6,7 +6,7 @@ export function isAtLeast(c: HandStrengthCategory, min: HandStrengthCategory): b
   const order: HandStrengthCategory[] = ['premium', 'strong', 'good', 'medium', 'marginal', 'weak', 'air']
   return order.indexOf(c) <= order.indexOf(min)
 }
-export type NutPotential = 'nuts' | 'near-nuts' | 'strong' | 'medium' | 'weak'
+export type NutPotential = 'nuts' | 'near-nuts' | 'second-nuts' | 'strong' | 'medium' | 'weak'
 export type BoardTexture = 'dry' | 'neutral' | 'wet'
 
 export interface CategoryScoreTable {

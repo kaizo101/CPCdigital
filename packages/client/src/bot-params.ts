@@ -60,6 +60,7 @@ export interface ScoringParams {
     lowRelStrength: number
     nutPotential: number
     nearNutPotential: number
+    secondNutPotential: number
     vulnerability: number
     drawQuality: number
     cleanOuts: number
@@ -285,6 +286,7 @@ export const DEFAULT_PARAMS: BotParams = {
       lowRelStrength: -10,
       nutPotential: 15,
       nearNutPotential: 8,
+      secondNutPotential: 4,
       vulnerability: 5,
       drawQuality: 8,
       cleanOuts: 10,
