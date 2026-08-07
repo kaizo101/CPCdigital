@@ -676,6 +676,13 @@ darauf aufbauen.
 - [x] PLO-Score-Tabellen rekalibriert: LAG-Raise zurück auf v0.7.8, TAG-Raise erhöht, Nit-Fold erhöht, Protection-Boni auf Original
 - [x] NLHE/PLO-Targets nach Realismus-Kriterien aktualisiert (C-Bet, AF-Caps, WTSD für PLO)
 - [x] Neue Kalibrierungsmetriken: Fold-to-CBet und Turn C-Bet mit Target-Korridoren
+- [x] **PLO-Nut-Erkennung `'second-nuts'`**: Zwischenstufe zwischen `'near-nuts'`
+  und `'strong'` (Quads-K-vs-A, FH-KKKAA-vs-AAA, K-high-Flush-vs-A-high).
+  `secondNutPotential:4` dämpft Aggression bei zweitbesten Händen.
+- [x] **`findStraightTop`**: O(10)-Enumeration aller 10 Straight-Runs für NLHE
+  und PLO — ersetzt defekte Heuristiken, korrekte Nut-Straight-Erkennung.
+- [x] **Code-Review**: 30 Module, 22 Bugs gefixt, 19 bugfrei; 368 Tests
+  ([REVIEW.md](REVIEW.md))
 
 ### Test-Infrastruktur
 
@@ -689,14 +696,18 @@ darauf aufbauen.
 
 ### Strukturelle Score-Lücken
 
-- [ ] **Pot-Commitment-Logik**: Ab einem bestimmten investierten Stack-Anteil (callCommitment ≥ 0.4)
-  werden Fold-Scores überschrieben, sodass der Bot committed ist statt wegzufolden.
-  Behebt LAG FR WTSD 11.8% vs Target 28–34%
-- [ ] **Dynamische Fold-Thresholds**: Fold-Scores werden nicht als statische Werte, sondern
-  als Funktion von Street, SPR und Gegner-Aggression berechnet. Behebt Nit AF-Explosion
-  bei WTSD-Senkung (AF 6.6 statt Target 3.5)
-- [ ] **TAG 6m AF-Tuning**: AF stabil bei 3.65 (Target 1.5–3.5) — Postflop-Raise-Scores
-  für 6-max-TAG gezielt reduzieren
+#### 🔴 Priority 1 — Direkter Kalibrierungs-Impact
+
+- [ ] **Pot-Commitment-Logik**: Ab callCommitment ≥ 0.4 Fold-Scores überschreiben.
+  Behebt LAG FR WTSD 11.8% vs Target 28–34%. Höchster Einzeleffekt auf Kalibrierung.
+- [ ] **Dynamische Fold-Thresholds**: Fold-Scores als Funktion von Street, SPR und
+  Gegner-Aggression. Behebt Nit AF-Explosion (AF 6.6 statt 3.5) und universell
+  zu hohes Fold-to-CBet (78-84% vs. 30-68%).
+- [ ] **Multiway-Dynamik**: `activeOpponents` graduell statt binär ≥3. Multiway-Penalty
+  für C-Bet, 3-Bet, Value-Raises. Senkt PLO-C-Bet-Überaggression und verbessert
+  Fold-to-CBet in Multiway-Pots. Preflop-Ranges nach Gegnerzahl skalieren.
+- [ ] **TAG 6m AF-Tuning**: AF stabil bei 3.65 (Target 1.5–3.5). Nur Parameter — kein
+  Algorithmus-Aufwand.
 
 ### HU-Kalibrierung
 
@@ -713,7 +724,7 @@ HU ist spielbar, aber die Targets in `simulation.ts` sind noch nicht validiert
 
 ### Release-Gate
 
-- [x] Code-Review abgeschlossen: 29 Module, 6 Bugs gefixt, 16 neue Tests ([REVIEW.md](REVIEW.md))
+- [x] Code-Review abgeschlossen: 30 Module, 22 Bugs gefixt, 19 bugfrei ([REVIEW.md](REVIEW.md))
 - [ ] Alle 16 FR/6-max-Kombinationen (NLHE + PLO) innerhalb der aktualisierten Targets
   (VPIP, PFR, 3-Bet, C-Bet, AF, WTSD, Fold-to-CBet, Turn C-Bet)
 - [ ] HU-Kalibrierung: 8 Kombinationen (NLHE + PLO) innerhalb der geschärften Targets
@@ -723,7 +734,60 @@ HU ist spielbar, aber die Targets in `simulation.ts` sind noch nicht validiert
 
 ---
 
-## 🎯 0.8.1 — Dynamische Gegner & Anti-Exploit
+## 🎯 0.8.1 — PLO-Strategie & NLHE-Verfeinerung
+
+**Ziel:** PLO-spezifische Score-Lücken schließen und NLHE-Entscheidungstiefe verbessern.
+
+### PLO-Strategie
+
+- [ ] **SPR-Zonen (PLO)**: Graduelle SPR-Skalierung statt binär ≤3. SPR 1-3 →
+  Nut-or-Fold, SPR 4-8 → Protection-heavy, SPR 8-15 → Draw-heavy. Fundamentale
+  PLO-Strategie-Variable, aktuell nur +12/−8 bei SPR≤3.
+- [ ] **PLO-Board-Dynamics**: `boardGotWorse` boolean → Equity-Collapse-Multiplikator.
+  Gepaarter River bricht Flush/Straight-Value drastisch, Monotone-Board kollabiert
+  Non-Flush-Hände. Jede Turn-/River-Karte in PLO verändert die Equity-Landschaft.
+- [ ] **PLO-River-Disziplin**: PLO-spezifische Call-Down-Verstärkung. Kein Bluff-Catch
+  ohne Blocker am River, Board-Pair oder 3rd-Flush → drastischer Fold-Malus.
+  PLO-River-Calling-Range muss enger sein als NLHE.
+- [ ] **PLO-Positionshebel**: IP-Checkbonus, OOP-Fold-Malus, Freerolling-Modell.
+  In PLO realisiert IP dünne Redraws kostenlos, OOP wird auf Completern ausgeblufft.
+- [ ] **PLO-Wrap-Kombinatorik**: Bottom-Wrap vs. Nut-Wrap unterscheiden. `wrap-8+`/`wrap-13+`
+  erkannt, aber kein Unterschied zwischen Nut-Outs und 2nd/3rd-Outs. Bottom-Wrap-Player
+  wird von jedem höheren Wrap gefreerollt.
+
+### NLHE-Verfeinerung & Infrastruktur
+
+- [ ] **Skill-Gating**: Neue Analyse-Tiefe als Feature-Flags mit `skillGate`-Schwellen.
+  Skill-20-Nit: nur Outs-Zahl. Skill-90-TAG: Nut-Wrap vs. Bottom-Wrap. Bestehendes
+  Muster: `sizingTell.skillGate: 30`.
+- [ ] **Blocker-Logik**: `blockerValue` postflop für Flush-Nut, Straight-Nut und
+  Value-Bets nutzen. PLO postflop aktuell immer 0 — 4 Hole Cards = massives
+  Blocker-Potenzial.
+- [ ] **Implied Odds**: Dynamisch statt statisch +7. Kopplung an Gegner-Stack,
+  Draw-Nut-Potential und Anzahl aktiver Gegner.
+- [ ] **Check-Raise-Respekt**: Call/Fold-Malus bei Gegner-Check-Raise. Intentionales
+  Check-Raise-Line-Planning für beide Varianten.
+- [ ] **NLHE Turn-Double-Barrel**: Neues Habit. Bot soll nach Flop-C-Bet auf Blank-Turns
+  weiter feuern können — nicht nur am River (`three-barrel-bluff`).
+- [ ] **NLHE Float-Defense**: Gegnerische Float-Pattern erkennen. Gegner callt Flop-C-Bet,
+  bettet Turn → Pattern-Detection + Defensiv-Scoring.
+- [ ] **Preflop 4-Bet/5-Bet**: `facing-3bet` abgedeckt, darüber nur generischer Reraise-
+  Penalty. 4-Bet/5-Bet-Modell mit Stack-Commitment, Range-Polarisierung, Fold-to-5-Bet.
+- [ ] **NLHE Bet-Fold-Lines**: Street-übergreifende Entscheidungsplanung. "Bette River
+  für Value, folde auf Raise" statt isolierter Street-Entscheidungen.
+
+### Release-Gate
+
+- [ ] 3k-Entwicklungsläufe + 10k-Release-Läufe für alle vier Archetypen in NLHE und PLO,
+  Full Ring und 6-max — die 0.8.0-Kalibrierung ist nach 13 Score-Änderungen neu zu validieren
+- [ ] HU-Kalibrierung: 8 Kombinationen (NLHE + PLO) innerhalb der geschärften Targets
+- [ ] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves
+- [ ] Skill-Gating-Smoke: Low-Skill-Bot (20) und High-Skill-Bot (90) zeigen messbar
+  unterschiedliches Entscheidungsverhalten in denselben Szenarien
+
+---
+
+## 🎯 0.8.2 — Dynamische Gegner & Anti-Exploit
 
 **Ziel:** Bots lernen aus Gegnerverhalten, passen sich dynamisch an und zeigen
 glaubwürdige emotionale Reaktionen — ohne in Solver-Bots oder berechenbare
@@ -770,7 +834,7 @@ Muster zu verfallen.
 
 ---
 
-## 🎯 0.8.2 — Refactoring & Code-Qualität
+## 🎯 0.8.3 — Refactoring & Code-Qualität
 
 **Ziel:** Code-Basis konsolidieren, aufräumen und Lizenz-Formalia vor dem
 großen UI-Release abschließen.
@@ -820,7 +884,7 @@ großen UI-Release abschließen.
 
 ---
 
-## 🎯 0.8.3 — Session-Flexibilität
+## 🎯 0.8.4 — Session-Flexibilität
 
 **Ziel:** Mehr Kontrolle über die Session.
 
@@ -861,7 +925,7 @@ großen UI-Release abschließen.
 
 ---
 
-## 🎯 0.8.4 — Persistenz & Recovery
+## 🎯 0.8.5 — Persistenz & Recovery
 
 **Ziel:** Lokale Nutzerdaten vor v1 kontrolliert laden, migrieren und bei
 Fehlern wiederherstellbar behandeln, statt beschädigte Einträge still zu
@@ -882,7 +946,7 @@ verwerfen oder ungefragt durch Defaults zu ersetzen.
 
 ---
 
-## 🎯 0.8.5 — UI-Fundament
+## 🎯 0.8.6 — UI-Fundament
 
 **Ziel:** Komponenten, Styles und Tests für den großen Tischumbau vorbereiten,
 ohne vor 0.9.0 eine zweite sichtbare Geometrie einzuführen.

@@ -8,13 +8,20 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Added
 
-- **Code-Review**: Systematische Prüfung von 29 Modulen (Engine, Game-Loop,
-  Scoring, Modifier, Support). 6 Bugs gefunden und behoben, 16 neue Tests
-  hinzugefügt, 23 Module als bugfrei bestätigt ([REVIEW.md](REVIEW.md)).
-- **PLO-Handbewertung verfeinert**: Nut-Potential handrelativ (Flush-Top-Card,
-  FH-Trips-Rank, Straight-Position), Dirty-Outs gefiltert (Board-Pair,
-  Straight-Domination, Flush-Dominanz), Board-Change handrelativ (Pair hilft
-  Sets/TwoPair, Flush-Karte nicht für Flush-Halter).
+- **Code-Review**: Systematische Prüfung von 30 Modulen (Engine, Game-Loop,
+  Scoring, Modifier, Support, Habits, Identities, Replay, Rebuy, NLHE/PLO-Handbewertung).
+  22 Bugs gefunden und behoben, 19 Module als bugfrei bestätigt ([REVIEW.md](REVIEW.md)).
+- **PLO-Nut-Erkennung verfeinert**: `'second-nuts'`-Stufe zwischen `'near-nuts'`
+  und `'strong'` für granulare PLO-Bewertung (Quads-K-vs-A, FH-KKKAA-vs-AAA,
+  K-high-Flush-vs-A-high, Straight-Gap). Eigener Scoring-Parameter
+  `secondNutPotential: 4` dämpft Aggression bei zweitbesten Händen.
+- **PLO-Straight-Flush- & Quads-Nut**: SF prüft höchsten möglichen Straight-Flush
+  via Board-Suit-Ranks; Quads erkennen blockierte höhere Ränge via `ourCount`.
+- **`findStraightTop`-Algorithmus**: O(10)-Enumeration über alle 10 Straight-Runs
+  für NLHE und PLO — ersetzt defekte Heuristiken in `isNutStraight` (NLHE) und
+  `findNutStraightTop` (PLO).
+- **PLO-Flush-Nut**: Korrekte Hole-vs-Board-Trennung statt Hand-Cards-Minus-Board-Hack;
+  höchste nicht-auf-Board-Rang der Flush-Farbe bestimmt Nut-Status.
 
 ### Changed
 
@@ -24,22 +31,24 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Kalibrierungs-Targets aktualisiert**: NLHE C-Bet (LAG 80–90→68–78%,
   Nit 45–58→60–72%), NLHE/PLO AF-Caps gesenkt, PLO WTSD-Targets nach
   PLO-Realismus-Kriterien gesetzt (TAG 22–32, Nit 22–28, LAG 28–34, CS 28–45).
-- **ROADMAP**: Code-Review als abgeschlossener Punkt in v0.8.1-Tests eingetragen.
+- **ROADMAP**: PLO-Nut-Erkennung, `findStraightTop` und Code-Review als abgeschlossene Punkte in v0.8.0 eingetragen.
 
 ### Fixed
 
-- **Bot-Freeze bei Decision-Pipeline-Fehler**: `scheduleBotAction` force-foldet
-  jetzt einen Bot, dessen Entscheidung fehlschlägt, statt das Spiel einzufrieren.
-- **Fehlender DecisionSnapshot bei forceFold**: Engine erzeugt jetzt einen
-  Snapshot für Replay und Opponent-Observation.
-- **`reopenBettingAfterRaise`**: Distanzberechnung verwendet jetzt einheitlich
-  Array-Indizes statt gemischtem `seatIndex`/`findIndex`.
-- **PLO `boardWorseSensitivity`**: `calculateRaiseTo` und `scoreRaise` nutzten
-  unterschiedliche Werte (0.4 vs 0.6) — vereinheitlicht.
-- **Check-Range-Modifier**: `scoreCheck` rief `rangeBasedFactors` mit
-  `'call'`-Modifiern auf — entfernt.
-- **Patience-Modifier ohne PLO-Skalierung**: Fehlender `personalityDivisor`
-  ergänzt.
+- **`calculateOmahaStrength`**: if-Chain ohne `else` — alle Rangstufen ≥4 kollabierten in dieselbe Formel (rank 9=72 statt 88).
+- **`isDominatedStraightOut`**: Gegner-Trial immer leer — `out` gleichzeitig auf Board und im Hole, Gegner-Prüfung nie ausgeführt.
+- **`findNutStraightTop` (PLO)**: `boardRanks`-Parameter nie genutzt, gab immer 14 zurück — falsch-positive Nut-Erkennung bei Straights.
+- **PLO-Flush-Nut**: Board-Ass wurde zu unseren Hole-Card-Rängen gezählt — jeder Board-Ass-Flush als `near-nuts`.
+- **PLO Full House/Trips/Two Pair**: Nut-Heuristik ohne Gegner-Trips-Berechnung (`boardCount+min(2,4-bc-ourCount)≥3`).
+- **`limp-reraise-premium`**: Checkte `'strong'` statt `'premium'` — AA/KK lösten den Habit nicht aus.
+- **`three-barrel-bluff`**: Feuerte bei jedem River-Bluff ohne Prüfung auf Flop-/Turn-Aggression.
+- **Nit-Rebuy-Policy**: `rebuyThresholdBb` und `maxRebuys` unabhängig gewürfelt — 28% der Nits mit `null`-Threshold bei `maxRebuys:1`.
+- **`getCashOutPolicy`**: LAG nicht im Ternary-Chain — fiel durch auf Default-Fallback.
+- **Turn-Karte doppelt**: PokerStars-History zeigte Turn-Karte in Board-Segment UND als Einzelkarte.
+- **`marginal`-Doppelstrafe**: Reraise-Penalties trafen `marginal` doppelt (−30) vs. `weak` (−18).
+- **`findStraightDraw` (NLHE)**: A-high-Wrap (J,Q,K,A) als OESD (8 Outs) statt Gutshot (4 Outs) klassifiziert.
+- **`calculateCleanOuts`**: JSDoc-Kommentar fehlplatziert im Funktionskörper, Klammern-Einrückung gebrochen.
+- Alle weiteren Bugs aus dem Code-Review (REVIEW.md).
 
 ## [0.7.9] — 2026-08-04
 
