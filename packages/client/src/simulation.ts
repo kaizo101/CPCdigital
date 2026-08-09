@@ -28,6 +28,11 @@ import type { HandStrengthCategory } from './bot-variant-evaluation'
 import { observeOpponentHistory, type OpponentObservationCursor } from './bot-opponent-observation'
 import type { DecisionMetrics } from './bot-decision-metrics'
 import { resolveTableFormat } from './bot-table-format'
+import {
+  CALIBRATION_SNAPSHOT_MARKER,
+  type CalibrationRegressionEntry,
+  type CalibrationRegressionSnapshot,
+} from './calibration-regression'
 
 const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
 const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
@@ -35,6 +40,7 @@ const BIG_BLIND = 20
 const SMALL_BLIND = 10
 const STARTING_CHIPS = 2_000
 const PRINT_CALIBRATION_DETAIL = process.env.CALIB_DETAIL === '1'
+const PRINT_CALIBRATION_SNAPSHOT = process.env.CALIB_JSON === '1'
 const HAND_STRENGTH_CATEGORIES: HandStrengthCategory[] = [
   'air',
   'weak',
@@ -702,10 +708,63 @@ function targetLabel(value: number, target: [number, number]): string {
   return 'in range'
 }
 
-function printStats(format: FormatConfig, stats: SimulationStats): boolean {
-  const vpip = calibrationPercentage(stats.vpipHands, stats.playerHands)
-  const pfr = calibrationPercentage(stats.pfrHands, stats.playerHands)
-  const threeBet = calibrationPercentage(stats.threeBets, stats.threeBetOpportunities)
+function createRegressionEntry(
+  profile: CalibrationProfile,
+  format: FormatConfig,
+  stats: SimulationStats,
+): CalibrationRegressionEntry {
+  let cBetOpportunities = 0
+  let cBets = 0
+  for (const position of ['early', 'middle', 'late', 'blinds'] as const) {
+    cBetOpportunities += stats.positions[position].cBetOpps
+    cBets += stats.positions[position].cBets
+  }
+
+  const postflop = stats.postflop
+  return {
+    variant: CALIB_VARIANT === 'omaha-high' ? 'omaha-high' : 'texas-holdem',
+    archetype: profile.archetypeId,
+    format: resolveTableFormat(format.playerCount),
+    hands: stats.handsPlayed,
+    metrics: {
+      vpip: calibrationPercentage(stats.vpipHands, stats.playerHands),
+      pfr: calibrationPercentage(stats.pfrHands, stats.playerHands),
+      threeBet: calibrationPercentage(stats.threeBets, stats.threeBetOpportunities),
+      cBet: calibrationPercentage(cBets, cBetOpportunities),
+      foldToCBet: calibrationPercentage(postflop.foldToCBets, postflop.foldToCBetOpps),
+      turnCBet: calibrationPercentage(postflop.turnCBets, postflop.turnCBetOpps),
+      wtsd: calibrationPercentage(postflop.wentToShowdown, postflop.handsSeenFlop),
+      aggressionFactor: postflop.calls > 0
+        ? postflop.betsAndRaises / postflop.calls
+        : 0,
+    },
+    invariants: {
+      invalidActions: stats.actionErrors,
+      deepOpenShoves: stats.deepOpenShoves,
+      uncommittedDeepShoves: stats.uncommittedDeepShoves,
+      metricViolations: calibrationInvariantViolations({
+        threeBets: stats.threeBets,
+        threeBetOpportunities: stats.threeBetOpportunities,
+        cBets,
+        cBetOpportunities,
+        foldToCBets: postflop.foldToCBets,
+        foldToCBetOpportunities: postflop.foldToCBetOpps,
+        handsSeenFlop: postflop.handsSeenFlop,
+        handsSeenTurn: postflop.handsSeenTurn,
+        handsSeenRiver: postflop.handsSeenRiver,
+        wentToShowdown: postflop.wentToShowdown,
+        wonAtShowdown: postflop.wonAtShowdown,
+      }),
+    },
+  }
+}
+
+function printStats(
+  format: FormatConfig,
+  stats: SimulationStats,
+  regressionEntry: CalibrationRegressionEntry,
+): boolean {
+  const { vpip, pfr, threeBet } = regressionEntry.metrics
 
   console.log(`\n=== ${format.name} ===`)
   console.log(`Hands: ${stats.handsPlayed.toLocaleString('en-US')} · Player-hands: ${stats.playerHands.toLocaleString('en-US')} · ${stats.durationMs}ms`)
@@ -764,25 +823,15 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
     totalCBetOpps += stats.positions[pos].cBetOpps
     totalCBets += stats.positions[pos].cBets
   }
-  const cBet = calibrationPercentage(totalCBets, totalCBetOpps)
-  const foldToCBet = calibrationPercentage(pf.foldToCBets, pf.foldToCBetOpps)
-  const turnCBet = calibrationPercentage(pf.turnCBets, pf.turnCBetOpps)
-  const af = pf.calls > 0 ? (pf.betsAndRaises / pf.calls) : 0
-  const wtsd = calibrationPercentage(pf.wentToShowdown, pf.handsSeenFlop)
+  const {
+    cBet,
+    foldToCBet,
+    turnCBet,
+    aggressionFactor: af,
+    wtsd,
+  } = regressionEntry.metrics
   const wssd = calibrationPercentage(pf.wonAtShowdown, pf.wentToShowdown)
-  const invariantViolations = calibrationInvariantViolations({
-    threeBets: stats.threeBets,
-    threeBetOpportunities: stats.threeBetOpportunities,
-    cBets: totalCBets,
-    cBetOpportunities: totalCBetOpps,
-    foldToCBets: pf.foldToCBets,
-    foldToCBetOpportunities: pf.foldToCBetOpps,
-    handsSeenFlop: pf.handsSeenFlop,
-    handsSeenTurn: pf.handsSeenTurn,
-    handsSeenRiver: pf.handsSeenRiver,
-    wentToShowdown: pf.wentToShowdown,
-    wonAtShowdown: pf.wonAtShowdown,
-  })
+  const invariantViolations = regressionEntry.invariants.metricViolations
 
   let allWithin = true
   console.log(
@@ -866,6 +915,7 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
 }
 
 let calibrationFailed = false
+const regressionEntries: CalibrationRegressionEntry[] = []
 console.log(`\n=== CPCdigital Calibration — ${CALIB_VARIANT === 'omaha-high' ? 'Omaha High (PLO)' : 'Texas Hold\'em (NLHE)'} · metric schema v${CALIBRATION_METRIC_SCHEMA_VERSION} ===`)
 for (const profile of CALIBRATION_PROFILES.filter(
   profile => !CALIB_PROFILE || profile.archetypeId === CALIB_PROFILE || profile.name.toLowerCase().includes(CALIB_PROFILE),
@@ -874,8 +924,20 @@ for (const profile of CALIBRATION_PROFILES.filter(
   for (const format of profile.formats.filter(
     format => !CALIB_FORMAT || format.name.toLowerCase().includes(CALIB_FORMAT),
   )) {
-    if (!printStats(format, simulateFormat(profile, format))) calibrationFailed = true
+    const stats = simulateFormat(profile, format)
+    const regressionEntry = createRegressionEntry(profile, format, stats)
+    regressionEntries.push(regressionEntry)
+    if (!printStats(format, stats, regressionEntry)) calibrationFailed = true
   }
+}
+
+if (PRINT_CALIBRATION_SNAPSHOT) {
+  const snapshot: CalibrationRegressionSnapshot = {
+    metricSchemaVersion: CALIBRATION_METRIC_SCHEMA_VERSION,
+    handsPerFormat: HANDS_PER_FORMAT,
+    entries: regressionEntries,
+  }
+  console.log(`${CALIBRATION_SNAPSHOT_MARKER}${JSON.stringify(snapshot)}`)
 }
 
 if (calibrationFailed && EXIT_ON_FAIL) throw new Error('Bot calibration missed at least one target range')

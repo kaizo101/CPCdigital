@@ -186,6 +186,14 @@ Die Ergebnisse werden in `calibration/` versioniert abgelegt. Die
 formatisolierte Ausgangsbasis ist im [v0.8.0-Bericht](calibration/v0.8.0.md)
 dokumentiert.
 
+`npm run test:calibration` führt den deterministischen Layer-2-Smoke für alle
+24 Varianten-/Archetyp-/Formatkombinationen aus. Er vergleicht 300 Hände pro
+Kombination mit dem versionierten v0.8.1-Snapshot und läuft auch in der CI.
+Raten warnen bei mehr als 2 Prozentpunkten Drift und schlagen oberhalb von 5
+Prozentpunkten fehl; AF verwendet absolute Grenzen von 0,2 und 0,5.
+`npm run calibrate:baseline` aktualisiert die Referenz nur nach einer bewusst
+freigegebenen Verhaltensänderung.
+
 ### Stichprobengrößen
 
 | Stufe | Hände/Format | Total | Einsatz |
@@ -243,12 +251,15 @@ Jeder Bot durchläuft pro Entscheidung ~15 Modifier-Funktionen, die additive Bei
 ## Tests
 
 - `npm test` führt alle Workspace-Tests mit Vitest aus
+- `npm run test:calibration` prüft die deterministische 300-Hand-Baseline aller
+  24 Botkombinationen; dieser kurze Kalibrierungs-Smoke läuft in der CI
 - Testdateien liegen neben den Source-Dateien (`*.test.ts`)
 - Client-, Engine- und Server-Konfigurationstests laufen in getrennten Workspaces
 - `npm run test:responsive` startet den gebauten Client in Chrome/Chromium und
   prüft 1440×1000, 1024×768, 844×390 und 390×844 auf abgeschnittene Karten,
   Sitze, Actionbar-Überlagerungen und den Portrait-Guard
-- Kalibrierung ist NICHT Teil der Test-Suite (Laufzeit), sondern separates Skript
+- Entwicklungs- und Release-Kalibrierungen mit 3k/10k Händen bleiben wegen
+  ihrer Laufzeit separate Skripte
 
 Der Responsive-Smoke setzt einen vorherigen Client-Build voraus und verwendet
 `CHROME_PATH`, falls Chrome/Chromium nicht an einem üblichen Systempfad liegt.

@@ -694,9 +694,9 @@ darauf aufbauen.
 - [x] **Layer 1 — Invariant-Based Smoke Suite** ([Details](#layer-1--invariant-based-smoke-suite-ci-jeder-commit)):
   Chip-Konservierung, Dealer-Rotation, kein negativer Stack, Pot-Konsistenz, Queue-Integrität —
   19 randomisierte NLHE-/PLO-Szenarien mit je 1.000 Händen
-- [ ] **0.8.1 / Layer 2 — Kalibrierungs-Regression**: 300-Hand-Smoke mit
+- [x] **0.8.1 / Layer 2 — Kalibrierungs-Regression**: 300-Hand-Smoke mit
   Baseline-Vergleich, Abweichung > 2 %p → Warnung, > 5 %p → Build-Fehler
-- [ ] **0.8.1 / Layer 3 — Parameter-Validierung**: Score-Tabellen-Konsistenz,
+- [x] **0.8.1 / Layer 3 — Parameter-Validierung**: Score-Tabellen-Konsistenz,
   Clamp-Gültigkeit, Skill-Tier-Sortierung, All-in-Strafen negativ
 
 ### Strukturelle Score-Lücken
@@ -773,9 +773,9 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 
 ### NLHE-Verfeinerung & Infrastruktur
 
-- [ ] **Layer 2 — Kalibrierungs-Regression**: deterministischer 300-Hand-Smoke,
+- [x] **Layer 2 — Kalibrierungs-Regression**: deterministischer 300-Hand-Smoke,
   Abweichung > 2 %p als Warnung und > 5 %p als Fehler
-- [ ] **Layer 3 — Parameter-Validierung**: Score-Tabellen, Clamps,
+- [x] **Layer 3 — Parameter-Validierung**: Score-Tabellen, Clamps,
   Skill-Tier-Reihenfolge und All-in-Strafen prüfen
 
 - [ ] **Skill-Gating**: Neue Analyse-Tiefe als Feature-Flags mit `skillGate`-Schwellen.

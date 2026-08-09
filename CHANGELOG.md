@@ -6,6 +6,17 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+### Added
+
+- **Kalibrierungs-Regression (Layer 2)**: Ein deterministischer 300-Hand-Smoke
+  vergleicht alle 24 Varianten-/Archetyp-/Formatkombinationen mit einem
+  versionierten Snapshot. Raten warnen oberhalb von 2 Prozentpunkten und
+  schlagen oberhalb von 5 Prozentpunkten fehl; AF verwendet eigene absolute
+  Grenzen von 0,2 und 0,5. Strukturelle Verstöße bleiben harte Fehler.
+- **Parameter-Validierung (Layer 3)**: Tests prüfen alle aufgelösten NLHE- und
+  PLO-Scoretabellen, Clamp-Grenzen, Skill-Tier-Sortierung und negative
+  All-in-Mali. Die Kalibrierungsregression läuft zusätzlich in der CI.
+
 ### Fixed
 
 - **Android-HandReplayer**: Header, Tischbereich und Replay-Steuerung belegen

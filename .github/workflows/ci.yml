@@ -34,6 +34,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run calibration regression
+        run: npm run test:calibration
+
       - name: Build all workspaces
         run: npm run build
 
