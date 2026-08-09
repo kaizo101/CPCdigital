@@ -172,15 +172,19 @@ Setup → startHand() → postBlinds() → scheduleBotAction()
 
 ## Kalibrierung
 
-Die Bot-Kalibrierung (VPIP, PFR, 3-Bet, C-Bet, AF und WTSD) wird mit
-`npm run calibrate:bots` gemessen. Ohne `CALIB_HANDS` läuft die Release-Stufe mit
-10.000 Händen pro Format × 3 Formate × 4 Archetypen.
+Die Bot-Kalibrierung (VPIP, PFR, 3-Bet, C-Bet, Fold-to-CBet, Turn C-Bet, AF
+und WTSD) wird mit `npm run calibrate:bots` gemessen. Ohne `CALIB_HANDS` läuft
+die Release-Stufe mit 10.000 Händen pro Format × 3 Formate × 4 Archetypen.
 
 Für PLO wird `CALIB_VARIANT=omaha-high` gesetzt. Seeds und Handzahl müssen bei
-A/B-Vergleichen identisch bleiben. `CALIB_NO_EXIT=1` ist für Diagnoseberichte
+A/B-Vergleichen identisch bleiben. `CALIB_DETAIL=1` ergänzt Rohnenner und die
+AF-Aufschlüsselung. `CALIB_PROFILE` und `CALIB_FORMAT` begrenzen gezielte
+Entwicklungsläufe. `CALIB_NO_EXIT=1` ist für vollständige Diagnoseberichte
 geeignet; ein Release-Gate darf Fehlschläge nicht damit ausblenden.
 
-Die Ergebnisse werden in `calibration/` versioniert abgelegt.
+Die Ergebnisse werden in `calibration/` versioniert abgelegt. Die
+formatisolierte Ausgangsbasis ist im [v0.8.0-Bericht](calibration/v0.8.0.md)
+dokumentiert.
 
 ### Stichprobengrößen
 
@@ -315,8 +319,9 @@ Der öffentliche Cutover vom 29.07.2026 umfasste:
 8. Browserprüfung der Weiterleitung vom früheren Demo-Repository
 
 Für weitere Releases bleiben Tests, Build, Audit, CodeQL und die
-variant-spezifischen Kalibrierungsgates verpflichtend. Ein `v0.7.7`-Tag wird erst
-nach Abschluss der weiterhin offenen Roadmap-Punkte erstellt.
+variant-spezifischen Kalibrierungsgates verpflichtend. Release-Tags werden erst
+nach erfolgreichem Gate auf dem geprüften Release-Commit erstellt und gemeinsam
+mit dem zugehörigen Branch veröffentlicht.
 
 Der aktuelle technische Befund ist im
 [Public-Readiness-Audit vom 29.07.2026](security/audits/2026-07-29-public-readiness.md)
