@@ -1,5 +1,5 @@
 import type { Card } from '@cpc/shared'
-import { evaluateHand, type EvalResult } from '@cpc/poker-engine'
+import { evaluateHand, holdemHandImprovesBoard, type EvalResult } from '@cpc/poker-engine'
 import type {
   BoardTexture,
   VariantEvaluator,
@@ -124,17 +124,24 @@ export function assessHand(
   const evalResult = evaluateHand(holeCards, communityCards)
   const rank = getHandRank(evalResult)
   const isRiver = communityCards.length === 5
-  const category = categorizeHand(rank, holeCards, communityCards, evalResult)
+  const boardOnlyTwoPair = isBoardOnlyTwoPair(rank, holeCards, communityCards)
+  const category = boardOnlyTwoPair
+    ? 'weak'
+    : categorizeHand(rank, holeCards, communityCards, evalResult)
   const drawQuality = isRiver ? 0 : calculateDrawQuality(holeCards, communityCards)
 
   // Build assessment
   const assessment: NlheHandAssessment = {
     category,
     rank,
-    made: rank >= 2,
-    relativeStrength: calculateRelativeStrength(evalResult, communityCards, holeCards),
-    showdownValue: calculateShowdownValue(rank),
-    nutPotential: calculateNutPotential(evalResult, communityCards, holeCards),
+    made: rank >= 2 && !boardOnlyTwoPair,
+    relativeStrength: boardOnlyTwoPair
+      ? 20
+      : calculateRelativeStrength(evalResult, communityCards, holeCards),
+    showdownValue: boardOnlyTwoPair ? 25 : calculateShowdownValue(rank),
+    nutPotential: boardOnlyTwoPair
+      ? 'weak'
+      : calculateNutPotential(evalResult, communityCards, holeCards),
     vulnerability: calculateVulnerability(evalResult, communityCards, holeCards),
     drawQuality,
     cleanOuts: isRiver ? 0 : calculateCleanOuts(holeCards, communityCards, evalResult),
@@ -145,11 +152,27 @@ export function assessHand(
   }
 
   // Add pair type if applicable
-  if (rank === 2 || rank === 3) {
+  if ((rank === 2 || rank === 3) && !boardOnlyTwoPair) {
     assessment.pairType = determinePairType(holeCards, communityCards)
   }
 
   return assessment
+}
+
+/** A river two-pair hand whose hole cards do not beat the shared board hand. */
+function isBoardOnlyTwoPair(
+  rank: number,
+  holeCards: [Card, Card],
+  communityCards: Card[],
+): boolean {
+  if (rank !== 3 || communityCards.length !== 5) return false
+
+  const boardRankCounts = new Map<Card['rank'], number>()
+  for (const card of communityCards) {
+    boardRankCounts.set(card.rank, (boardRankCounts.get(card.rank) ?? 0) + 1)
+  }
+  const boardPairCount = [...boardRankCounts.values()].filter(count => count === 2).length
+  return boardPairCount >= 2 && !holdemHandImprovesBoard(holeCards, communityCards)
 }
 
 // Get hand rank (0-9)

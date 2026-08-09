@@ -26,6 +26,16 @@ export function evaluateHand(holeCards: Card[], communityCards: Card[]): HandRes
   return { rank: hand.rank, name: hand.descr, cards: hand.cards.map((c: { value: string; suit: string }) => c.value + c.suit) }
 }
 
+/** Whether the NLHE hole cards make a strictly stronger five-card hand than the board alone. */
+export function holdemHandImprovesBoard(holeCards: Card[], communityCards: Card[]): boolean {
+  if (communityCards.length < 5) return true
+
+  const playerHand = Hand.solve([...holeCards, ...communityCards].map(toPokersolverCard))
+  const boardHand = Hand.solve(communityCards.map(toPokersolverCard))
+  const winners: ReturnType<typeof Hand.winners> = Hand.winners([playerHand, boardHand])
+  return winners.length === 1 && winners[0] === playerHand
+}
+
 /** Omaha evaluation: must use exactly 2 hole + 3 community cards. */
 export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): HandResult {
   const boardCards = communityCards.map(toPokersolverCard)

@@ -1,6 +1,12 @@
 export { createDeck, shuffleDeck, dealCards } from './deck'
 export { createSeededRandom, secureRandom } from './random'
-export { evaluateHand, evaluateOmahaHand, findWinnerIndices, describeWinningHand } from './hand-evaluator'
+export {
+  evaluateHand,
+  evaluateOmahaHand,
+  findWinnerIndices,
+  describeWinningHand,
+  holdemHandImprovesBoard,
+} from './hand-evaluator'
 export { calculateSidePots } from './side-pot'
 export { PokerGame } from './game'
 export { replayHand } from './hand-replay'

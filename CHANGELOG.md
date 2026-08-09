@@ -13,6 +13,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   tatsächlich verfügbaren Mittelbereich statt aus einer pauschal um 260 px
   reduzierten Viewport-Höhe; ein Responsive-Smoke-Test deckt Heads-up, 6-max
   und 9-max PLO bei 844×390 ab.
+- **NLHE auf doppelt gepaarten Boards**: Hole Cards, die eine gemeinsame
+  Two-Pair-Boardhand nicht verbessern, gelten nicht länger als eigene
+  `marginal` Made Hand. Board-Plays wie `5-2` auf `A-A-T-T-5` erhalten die
+  schwache River-Bewertung, während echte Kicker und Full Houses getrennt
+  bleiben.
 
 ## [0.8.0] — 2026-08-09
 

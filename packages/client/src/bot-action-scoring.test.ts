@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import type { Card } from '@cpc/shared'
 import { scoreActions } from './bot-action-scoring'
 import { params } from './bot-params'
 import type { DecisionContext } from './bot-decision-types'
+import { assessHand } from './nlhe-hand-evaluation'
 
 function makeCtx(overrides: Partial<DecisionContext> = {}): DecisionContext {
   return {
@@ -96,6 +98,105 @@ describe('skillLevelFactor tier ordering', () => {
         `Tier ${i} threshold ${tiers[i].threshold} should be < tier ${i - 1} threshold ${tiers[i - 1].threshold}`
       ).toBeLessThan(tiers[i - 1].threshold)
     }
+  })
+})
+
+describe('river board-play discipline', () => {
+  const board: Card[] = [
+    { rank: 'A', suit: 'clubs' },
+    { rank: 'A', suit: 'diamonds' },
+    { rank: 'T', suit: 'hearts' },
+    { rank: 'T', suit: 'spades' },
+    { rank: '5', suit: 'clubs' },
+  ]
+
+  function riverActions(holeCards: [Card, Card], callAmount: number) {
+    const handAssessment = assessHand(holeCards, board)
+    return scoreActions(makeCtx({
+      gameView: {
+        ...makeCtx().gameView,
+        myCards: holeCards,
+        board,
+        pot: 100,
+        currentBet: callAmount,
+        phase: 'river',
+      },
+      handAssessment,
+      metrics: {
+        ...makeCtx().metrics,
+        totalPot: 100,
+        callAmount,
+        potOdds: callAmount / (100 + callAmount),
+        toCallPotRatio: callAmount / 100,
+        spr: 10,
+        callCommitment: callAmount / 1000,
+      },
+      legalActions: {
+        fold: true,
+        check: false,
+        callAmount,
+        raise: null,
+        allInAmount: null,
+      },
+      streetAnalysis: {
+        preflopAggressor: 'opp',
+        preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'opp', flop: 'opp', turn: 'opp', river: 'opp' },
+        iAmPreflopAggressor: false,
+        opponentLines: new Map([['opp', {
+          playerId: 'opp',
+          preflop: 'raised',
+          flop: 'bet',
+          turn: 'bet',
+          river: 'bet',
+          aggressivePotFractions: { preflop: null, flop: 0.5, turn: 0.6, river: callAmount / 100 },
+        }]]),
+        activeOpponents: 1,
+        opponentShowedWeakness: false,
+        opponentCheckRaised: false,
+        street: 'river',
+        actionCountThisStreet: 1,
+      },
+    }))
+  }
+
+  function callOverFold(holeCards: [Card, Card], callAmount: number): number {
+    const actions = riverActions(holeCards, callAmount)
+    const fold = actions.find(candidate => candidate.action.type === 'fold')!
+    const call = actions.find(candidate => candidate.action.type === 'call')!
+    return call.utility - fold.utility
+  }
+
+  it('applies the weak showdown penalty when a paired hole card does not improve two pair on board', () => {
+    const actions = riverActions(
+      [{ rank: '5', suit: 'hearts' }, { rank: '2', suit: 'clubs' }],
+      75,
+    )
+    const fold = actions.find(candidate => candidate.action.type === 'fold')!
+    const call = actions.find(candidate => candidate.action.type === 'call')!
+
+    expect(call.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'No made hand at showdown' }),
+      expect.objectContaining({ label: '3-street pressure against weak showdown value' }),
+    ]))
+    expect(fold.utility).toBeGreaterThan(call.utility)
+  })
+
+  it('reduces call preference with bet size and increases it only for real hand improvements', () => {
+    const boardPlay: [Card, Card] = [
+      { rank: '5', suit: 'hearts' }, { rank: '2', suit: 'clubs' },
+    ]
+    const kingKicker: [Card, Card] = [
+      { rank: 'K', suit: 'hearts' }, { rank: '2', suit: 'clubs' },
+    ]
+    const fullHouse: [Card, Card] = [
+      { rank: 'A', suit: 'hearts' }, { rank: '2', suit: 'clubs' },
+    ]
+
+    expect(callOverFold(boardPlay, 10)).toBeGreaterThan(callOverFold(boardPlay, 50))
+    expect(callOverFold(boardPlay, 50)).toBeGreaterThan(callOverFold(boardPlay, 75))
+    expect(callOverFold(boardPlay, 75)).toBeLessThan(callOverFold(kingKicker, 75))
+    expect(callOverFold(kingKicker, 75)).toBeLessThan(callOverFold(fullHouse, 75))
   })
 })
 

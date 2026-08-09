@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { describeWinningHand, evaluateHand, evaluateOmahaHand, findWinnerIndices } from './hand-evaluator'
+import {
+  describeWinningHand,
+  evaluateHand,
+  evaluateOmahaHand,
+  findWinnerIndices,
+  holdemHandImprovesBoard,
+} from './hand-evaluator'
 import type { Card } from '@cpc/shared'
 
 const c = (rank: string, suit: string): Card =>
@@ -59,6 +65,63 @@ describe('evaluateHand', () => {
       community,
       [[c('Q', 'diamonds'), c('Q', 'spades')]],
     )).not.toMatch(/kicker/i)
+  })
+
+  it('detects whether hole cards improve a double-paired board', () => {
+    const community = [
+      c('A', 'clubs'), c('A', 'diamonds'), c('T', 'hearts'), c('T', 'spades'), c('5', 'clubs'),
+    ]
+
+    expect(holdemHandImprovesBoard(
+      [c('5', 'hearts'), c('2', 'clubs')],
+      community,
+    )).toBe(false)
+    expect(holdemHandImprovesBoard(
+      [c('4', 'hearts'), c('2', 'clubs')],
+      community,
+    )).toBe(false)
+    expect(holdemHandImprovesBoard(
+      [c('3', 'hearts'), c('3', 'clubs')],
+      community,
+    )).toBe(false)
+    expect(holdemHandImprovesBoard(
+      [c('6', 'hearts'), c('2', 'clubs')],
+      community,
+    )).toBe(true)
+    expect(holdemHandImprovesBoard(
+      [c('K', 'hearts'), c('2', 'clubs')],
+      community,
+    )).toBe(true)
+    expect(holdemHandImprovesBoard(
+      [c('A', 'hearts'), c('2', 'clubs')],
+      community,
+    )).toBe(true)
+  })
+
+  it('handles other double-paired boards independently of card order', () => {
+    const scenarios = [
+      {
+        community: [
+          c('K', 'clubs'), c('K', 'diamonds'), c('7', 'hearts'), c('7', 'spades'), c('3', 'clubs'),
+        ],
+        boardPlay: [c('3', 'hearts'), c('2', 'clubs')],
+        improvement: [c('4', 'hearts'), c('2', 'clubs')],
+      },
+      {
+        community: [
+          c('Q', 'clubs'), c('Q', 'diamonds'), c('8', 'hearts'), c('8', 'spades'), c('4', 'clubs'),
+        ],
+        boardPlay: [c('3', 'hearts'), c('2', 'clubs')],
+        improvement: [c('5', 'hearts'), c('3', 'clubs')],
+      },
+    ]
+
+    for (const { community, boardPlay, improvement } of scenarios) {
+      expect(holdemHandImprovesBoard(boardPlay, community)).toBe(false)
+      expect(holdemHandImprovesBoard([...boardPlay].reverse(), [...community].reverse())).toBe(false)
+      expect(holdemHandImprovesBoard(improvement, community)).toBe(true)
+      expect(holdemHandImprovesBoard([...improvement].reverse(), [...community].reverse())).toBe(true)
+    }
   })
 })
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Card, GameState, Player } from '@cpc/shared'
 import { assessHand } from './nlhe-hand-evaluation'
-import { createBotState, decideTagAction, TAG_PERSONALITY } from './bot-tag'
+import { createBotState, decideTagAction, decideTagDecision, TAG_PERSONALITY } from './bot-tag'
 import { createBotContext } from './bot-context'
 
 const card = (rank: Card['rank'], suit: Card['suit']): Card => ({ rank, suit })
@@ -35,6 +35,28 @@ function preflopState(canRaise: boolean, botChips = 30): GameState {
     currentBet: 20,
     minRaise: 20,
     canRaise,
+    bettingContext: null,
+    turnDeadline: null,
+  })
+}
+
+function riverBoardPlayState(): GameState {
+  return withBotBettingContext({
+    variantId: 'texas-holdem',
+    phase: 'river',
+    players: [player('bot', 1000), player('villain', 925, 75)],
+    communityCards: [
+      card('A', 'clubs'), card('A', 'diamonds'), card('T', 'hearts'), card('T', 'spades'), card('5', 'clubs'),
+    ],
+    pot: 100,
+    sidePots: [],
+    currentPlayerId: 'bot',
+    dealerIndex: 1,
+    bigBlind: 20,
+    smallBlind: 10,
+    currentBet: 75,
+    minRaise: 75,
+    canRaise: false,
     bettingContext: null,
     turnDeadline: null,
   })
@@ -91,6 +113,124 @@ describe('NLHE bot hand assessment', () => {
     expect(assessment.rank).toBe(7)
     expect(assessment.category).toBe('strong')
     expect(assessment.made).toBe(true)
+  })
+
+  it('does not overvalue a hole card that merely duplicates a double-paired board kicker', () => {
+    const community = [
+      card('A', 'clubs'), card('A', 'diamonds'), card('T', 'hearts'), card('T', 'spades'), card('5', 'clubs'),
+    ]
+    const pairedFive = assessHand(
+      [card('5', 'hearts'), card('2', 'clubs')],
+      community,
+    )
+    const boardPlays = assessHand(
+      [card('4', 'hearts'), card('2', 'clubs')],
+      community,
+    )
+
+    expect(pairedFive).toMatchObject({
+      rank: 3,
+      category: 'weak',
+      made: false,
+      relativeStrength: 20,
+      showdownValue: 25,
+      nutPotential: 'weak',
+    })
+    expect(boardPlays).toMatchObject({
+      rank: 3,
+      category: 'weak',
+      made: false,
+      relativeStrength: 20,
+      showdownValue: 25,
+      nutPotential: 'weak',
+    })
+    expect(pairedFive.pairType).toBeUndefined()
+    expect(boardPlays.pairType).toBeUndefined()
+  })
+
+  it('keeps real kicker improvements and full houses distinct on double-paired boards', () => {
+    const community = [
+      card('A', 'clubs'), card('A', 'diamonds'), card('T', 'hearts'), card('T', 'spades'), card('5', 'clubs'),
+    ]
+    const kingKicker = assessHand(
+      [card('K', 'hearts'), card('2', 'clubs')],
+      community,
+    )
+    const sixKicker = assessHand(
+      [card('6', 'hearts'), card('2', 'clubs')],
+      community,
+    )
+    const aceFull = assessHand(
+      [card('A', 'hearts'), card('2', 'clubs')],
+      community,
+    )
+    const tensFull = assessHand(
+      [card('T', 'clubs'), card('2', 'clubs')],
+      community,
+    )
+    const fivesFull = assessHand(
+      [card('5', 'hearts'), card('5', 'diamonds')],
+      community,
+    )
+
+    expect(sixKicker).toMatchObject({ rank: 3, category: 'marginal', made: true })
+    expect(kingKicker).toMatchObject({ rank: 3, category: 'marginal', made: true })
+    expect(aceFull).toMatchObject({ rank: 7, category: 'strong', made: true })
+    expect(tensFull).toMatchObject({ rank: 7, category: 'strong', made: true })
+    expect(fivesFull).toMatchObject({ rank: 7, category: 'strong', made: true })
+  })
+
+  it('classifies board plays consistently on other double-paired rivers', () => {
+    const scenarios: Array<{ community: Card[]; boardPlay: [Card, Card]; improvement: [Card, Card] }> = [
+      {
+        community: [
+          card('K', 'clubs'), card('K', 'diamonds'), card('7', 'hearts'), card('7', 'spades'), card('3', 'clubs'),
+        ],
+        boardPlay: [card('3', 'hearts'), card('2', 'clubs')],
+        improvement: [card('4', 'hearts'), card('2', 'clubs')],
+      },
+      {
+        community: [
+          card('Q', 'clubs'), card('Q', 'diamonds'), card('8', 'hearts'), card('8', 'spades'), card('4', 'clubs'),
+        ],
+        boardPlay: [card('3', 'hearts'), card('2', 'clubs')],
+        improvement: [card('5', 'hearts'), card('3', 'clubs')],
+      },
+    ]
+
+    for (const { community, boardPlay, improvement } of scenarios) {
+      expect(assessHand(boardPlay, community)).toMatchObject({
+        rank: 3,
+        category: 'weak',
+        made: false,
+      })
+      expect(assessHand(improvement, community)).toMatchObject({
+        rank: 3,
+        category: 'marginal',
+        made: true,
+      })
+    }
+  })
+
+  it('carries the board-play downgrade through game state, bot context and action selection', () => {
+    const decision = decideTagDecision(
+      contextFor(
+        riverBoardPlayState(),
+        [card('5', 'hearts'), card('2', 'clubs')],
+      ),
+      createBotState(TAG_PERSONALITY, 100, () => 0.5),
+      () => 0.5,
+    )
+    const fold = decision.decisionResult.allActions.find(candidate => candidate.action.type === 'fold')!
+    const call = decision.decisionResult.allActions.find(candidate => candidate.action.type === 'call')!
+
+    expect(decision.evaluation.handAssessment).toMatchObject({
+      rank: 3,
+      category: 'weak',
+      made: false,
+    })
+    expect(fold.utility).toBeGreaterThan(call.utility)
+    expect(decision.action).toEqual({ type: 'fold' })
   })
 
   it('turns a raise into an all-in when a full raise is unaffordable', () => {
