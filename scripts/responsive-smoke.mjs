@@ -1,12 +1,12 @@
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..')
-const BASE_URL = 'http://127.0.0.1:4173/'
-const DEBUG_PORT = 9229
+const PROCESS_OUTPUT_LIMIT = 16_000
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 1000, portrait: false },
   { name: 'tablet', width: 1024, height: 768, portrait: false },
@@ -30,16 +30,54 @@ function findBrowser() {
 }
 
 function startProcess(command, args) {
-  return spawn(command, args, {
+  const child = spawn(command, args, {
     cwd: ROOT_DIR,
     env: process.env,
-    stdio: 'ignore',
+    detached: process.platform !== 'win32',
+    stdio: ['ignore', 'pipe', 'pipe'],
   })
+  child.capturedOutput = ''
+  child.spawnError = null
+  const capture = chunk => {
+    child.capturedOutput = `${child.capturedOutput}${chunk}`.slice(-PROCESS_OUTPUT_LIMIT)
+  }
+  child.stdout.on('data', capture)
+  child.stderr.on('data', capture)
+  child.once('error', error => {
+    child.spawnError = error
+  })
+  return child
 }
 
-async function waitForHttp(url, attempts = 100) {
+function processError(child, label, detail) {
+  const status = child?.spawnError?.message
+    ?? (child?.exitCode != null ? `exit code ${child.exitCode}` : `signal ${child?.signalCode}`)
+  const output = child?.capturedOutput?.trim()
+  return new Error(`${label} ${detail} (${status})${output ? `\n${output}` : ''}`)
+}
+
+function assertProcessRunning(child, label, detail = 'exited before becoming ready') {
+  if (child?.spawnError || child?.exitCode != null || child?.signalCode != null) {
+    throw processError(child, label, detail)
+  }
+}
+
+async function findAvailablePort() {
+  const server = createServer()
+  await new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolve)
+  })
+  const address = server.address()
+  await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  assert(typeof address === 'object' && address, 'Could not allocate a local preview port')
+  return address.port
+}
+
+async function waitForHttp(url, child, label, attempts = 300) {
   let lastError
   for (let attempt = 0; attempt < attempts; attempt += 1) {
+    assertProcessRunning(child, label)
     try {
       const response = await fetch(url)
       if (response.ok) return response
@@ -48,17 +86,52 @@ async function waitForHttp(url, attempts = 100) {
     }
     await new Promise(resolve => setTimeout(resolve, 100))
   }
-  throw lastError ?? new Error(`Timed out waiting for ${url}`)
+  const output = child?.capturedOutput?.trim()
+  throw new Error(
+    `Timed out waiting for ${label} at ${url}: ${lastError?.message ?? 'no successful response'}`
+    + (output ? `\n${output}` : ''),
+  )
+}
+
+async function waitForDevToolsPort(userDataDir, browser, attempts = 300) {
+  const activePortFile = path.join(userDataDir, 'DevToolsActivePort')
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    assertProcessRunning(browser, 'Chromium')
+    try {
+      const [portLine] = (await readFile(activePortFile, 'utf8')).trim().split('\n')
+      const port = Number(portLine)
+      if (Number.isInteger(port) && port > 0) return port
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+    }
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+  const output = browser.capturedOutput.trim()
+  throw new Error(
+    `Timed out waiting for Chromium DevToolsActivePort in ${userDataDir}`
+    + (output ? `\n${output}` : ''),
+  )
 }
 
 async function stopProcess(child) {
   if (!child || child.exitCode != null || child.signalCode != null) return
-  child.kill('SIGTERM')
+  const signal = value => {
+    if (process.platform !== 'win32' && child.pid) {
+      try {
+        process.kill(-child.pid, value)
+        return
+      } catch {
+        // Fall back to signalling the direct child.
+      }
+    }
+    child.kill(value)
+  }
+  signal('SIGTERM')
   await Promise.race([
     new Promise(resolve => child.once('exit', resolve)),
     new Promise(resolve => setTimeout(resolve, 2_000)),
   ])
-  if (child.exitCode == null && child.signalCode == null) child.kill('SIGKILL')
+  if (child.exitCode == null && child.signalCode == null) signal('SIGKILL')
 }
 
 class DevToolsSession {
@@ -244,6 +317,8 @@ async function main() {
 
   const browserPath = findBrowser()
   const userDataDir = await mkdtemp(path.join(tmpdir(), 'cpc-responsive-'))
+  const previewPort = await findAvailablePort()
+  const baseUrl = `http://127.0.0.1:${previewPort}/`
   let preview
   let browser
   let session
@@ -258,20 +333,28 @@ async function main() {
       '--host',
       '127.0.0.1',
       '--port',
-      '4173',
+      String(previewPort),
       '--strictPort',
     ])
-    await waitForHttp(BASE_URL)
+    await waitForHttp(baseUrl, preview, 'Vite preview')
 
     browser = startProcess(browserPath, [
       '--headless=new',
       '--no-sandbox',
       '--disable-gpu',
-      `--remote-debugging-port=${DEBUG_PORT}`,
+      '--disable-dev-shm-usage',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--remote-debugging-port=0',
       `--user-data-dir=${userDataDir}`,
-      BASE_URL,
+      baseUrl,
     ])
-    const pages = await waitForHttp(`http://127.0.0.1:${DEBUG_PORT}/json`).then(response => response.json())
+    const debugPort = await waitForDevToolsPort(userDataDir, browser)
+    const pages = await waitForHttp(
+      `http://127.0.0.1:${debugPort}/json`,
+      browser,
+      'Chromium DevTools',
+    ).then(response => response.json())
     const page = pages.find(candidate => candidate.type === 'page')
     assert(page, 'Chromium did not expose a page target')
 
