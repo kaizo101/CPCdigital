@@ -208,37 +208,190 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   }
 
   return (
-    <div style={{
+    <div className="hand-replayer-root" style={{
       position: 'fixed', inset: 0, zIndex: 100,
       display: 'flex', flexDirection: 'column',
       fontFamily: 'monospace', color: '#e5e7eb',
       background: 'radial-gradient(circle at 50% 0%, #2a2d34 0%, #17191d 35%, #0a0b0d 100%)',
     }}>
       <style>{`
+        .hand-replayer-root {
+          min-width: 0;
+          min-height: 0;
+          overflow: hidden;
+          box-sizing: border-box;
+        }
+        .replay-header,
+        .replay-footer {
+          flex: 0 0 auto;
+          min-width: 0;
+        }
         .replay-table-main {
-          position: absolute;
-          inset: 0;
+          position: relative;
+          flex: 1 1 auto;
+          min-width: 0;
+          min-height: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 50px 20px 110px;
+          padding: 54px 88px 42px;
           box-sizing: border-box;
         }
         .replay-table-stage {
           position: relative;
           width: 100%;
           height: 100%;
+          min-width: 0;
+          min-height: 0;
           display: flex;
           align-items: center;
           justify-content: center;
+          container-type: size;
         }
         .replay-table-shell {
-          width: min(100%, calc((100vh - 260px) * 2.38));
+          width: min(100%, calc((100dvh - 204px) * 2.38));
+          max-height: 100%;
+          aspect-ratio: 2.38 / 1;
+          box-sizing: border-box;
+        }
+        @supports (width: 1cqh) {
+          .replay-table-shell {
+            width: min(100%, calc(100cqh * 2.38));
+          }
+        }
+        .replay-table-shell .poker-table {
+          width: 100% !important;
+          height: 100% !important;
+          aspect-ratio: auto !important;
+        }
+        @media (orientation: landscape) and (max-height: 500px) and (max-width: 1000px) {
+          .replay-header {
+            padding: 4px 8px !important;
+          }
+          .replay-header > div {
+            min-width: 0;
+          }
+          .replay-header button {
+            min-height: 28px;
+            padding: 3px 8px !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+          }
+          .replay-table-main {
+            padding: 42px 54px 24px;
+          }
+          .replay-footer {
+            gap: 6px !important;
+            padding: 4px 8px !important;
+          }
+          .replay-footer button {
+            min-width: 34px !important;
+            min-height: 30px;
+            padding: 4px 8px !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+          }
+          .replay-footer-action {
+            max-width: 220px !important;
+            font-size: 10px !important;
+          }
+          .hand-replayer-root .player-seat {
+            width: 92px !important;
+          }
+          .hand-replayer-root .player-seat--dense {
+            width: 78px !important;
+          }
+          .hand-replayer-root .player-seat-panel {
+            min-width: 74px !important;
+            min-height: 36px !important;
+            padding: 3px 6px !important;
+          }
+          .hand-replayer-root .player-seat--dense .player-seat-panel {
+            min-width: 64px !important;
+            min-height: 32px !important;
+          }
+          .hand-replayer-root .player-seat-name,
+          .hand-replayer-root .player-seat-chips {
+            font-size: 9px !important;
+            line-height: 1.05;
+          }
+          .hand-replayer-root .player-seat--dense .player-seat-name,
+          .hand-replayer-root .player-seat--dense .player-seat-chips {
+            font-size: 8px !important;
+          }
+          .hand-replayer-root .player-seat-status {
+            margin-top: 0 !important;
+            font-size: 6px !important;
+            line-height: 1;
+          }
+          .hand-replayer-root .player-seat-turn {
+            display: none !important;
+          }
+          .hand-replayer-root .player-seat-cards {
+            bottom: 28px !important;
+            gap: 1px !important;
+          }
+          .hand-replayer-root .playing-card,
+          .hand-replayer-root .playing-card-back {
+            width: 18px !important;
+            height: 26px !important;
+            padding: 1px !important;
+            border-radius: 2px !important;
+          }
+          .hand-replayer-root .playing-card--large {
+            width: 26px !important;
+            height: 37px !important;
+          }
+          .hand-replayer-root .player-seat--hero .playing-card {
+            width: 26px !important;
+            height: 37px !important;
+          }
+          .hand-replayer-root .playing-card-rank {
+            font-size: 6px !important;
+            line-height: 1 !important;
+          }
+          .hand-replayer-root .playing-card-suit {
+            font-size: 9px !important;
+          }
+          .hand-replayer-root .playing-card--large .playing-card-rank,
+          .hand-replayer-root .player-seat--hero .playing-card-rank {
+            font-size: 8px !important;
+          }
+          .hand-replayer-root .playing-card--large .playing-card-suit,
+          .hand-replayer-root .player-seat--hero .playing-card-suit {
+            font-size: 12px !important;
+          }
+          .hand-replayer-root .playing-card-corner--bottom {
+            right: 1px !important;
+            bottom: 1px !important;
+          }
+          .hand-replayer-root .player-seat-cards[data-card-count="4"] > .player-seat-card {
+            margin-left: -7px !important;
+          }
+          .hand-replayer-root .player-seat-cards[data-card-count="4"] > .player-seat-card:first-child {
+            margin-left: 0 !important;
+          }
+          .hand-replayer-root .community-cards {
+            min-height: 38px !important;
+            gap: 3px !important;
+            padding: 3px 5px !important;
+            border-radius: 8px !important;
+          }
+          .hand-replayer-root .table-pot {
+            transform: translate(-50%, -50%) scale(0.82) !important;
+          }
+          .hand-replayer-root .bet-stack,
+          .hand-replayer-root .table-position-buttons {
+            transform: translate(-50%, -50%) scale(0.72) !important;
+          }
+          .hand-replayer-root .player-seat--upper-edge {
+            transform: translate(-50%, -50%) translateY(16px) !important;
+          }
         }
       `}</style>
 
       {/* Header */}
-      <div style={{
+      <div className="replay-header" style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)',
         background: 'rgba(0,0,0,0.4)', zIndex: 10,
@@ -379,7 +532,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
       )}
 
       {/* Footer: Step controls */}
-      <div style={{
+      <div className="replay-footer" style={{
         padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'center', gap: 10,
         background: 'rgba(0,0,0,0.5)', zIndex: 10,
@@ -403,7 +556,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
           {autoPlay ? '⏸' : '▶▶'}
         </button>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 12, color: '#6b7280', maxWidth: 360, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span className="replay-footer-action" style={{ fontSize: 12, color: '#6b7280', maxWidth: 360, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {currentFrame ? actionLabel(currentFrame) : ''}
         </span>
       </div>

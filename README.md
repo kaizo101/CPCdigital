@@ -48,8 +48,10 @@ Ausprobieren; Desktop bleibt die primäre Entwicklungsplattform.
   signierten Release-Pakete.
 - Bot-Balance und insbesondere komplexe PLO-/Heads-up-Postflop-Situationen
   werden weiter kalibriert.
-- Android ist ein unsignierter Landscape-Debug-Prototyp. Der Hand-Replayer ist
-  auf kleinen Displays noch nicht vollständig optimiert.
+- Android ist ein unsignierter Landscape-Debug-Prototyp. Ein begrenzter
+  Zwischenfix hält den Hand-Replayer im kompakten Landscape lesbar; das
+  vollständige responsive Replay- und Touch-Redesign folgt weiterhin mit der
+  gemeinsamen Tischgeometrie.
 - Die mobile Browseransicht ist nur ein funktionaler Fallback; eine PWA und
   vollständige mobile Feature-Parität sind nicht vorgesehen.
 - Persistente Sessionstatistiken, Tutorials, weitergehende Analysen und

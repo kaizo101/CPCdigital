@@ -4,6 +4,16 @@ Alle wichtigen veröffentlichten Änderungen an CPCdigital werden in dieser Date
 
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und das Projekt verwendet semantische Versionsnummern. Geplante Funktionen stehen ausschließlich in der [Roadmap](ROADMAP.md).
 
+## [Unreleased]
+
+### Fixed
+
+- **Android-HandReplayer**: Header, Tischbereich und Replay-Steuerung belegen
+  jetzt eigene Layoutzeilen. Der Tisch skaliert im kompakten Landscape aus dem
+  tatsächlich verfügbaren Mittelbereich statt aus einer pauschal um 260 px
+  reduzierten Viewport-Höhe; ein Responsive-Smoke-Test deckt Heads-up, 6-max
+  und 9-max PLO bei 844×390 ab.
+
 ## [0.8.0] — 2026-08-09
 
 ### Added

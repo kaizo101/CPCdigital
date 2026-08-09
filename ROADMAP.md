@@ -480,6 +480,10 @@ Browser-Demo bleibt mobil bewusst auf einen funktionalen Fallback begrenzt.
 - [x] Android-HandReplayer reproduzieren: Funktion bestätigt, gequetschte
   mobile Geometrie nach 0.9.1 verschoben; Hand- und Sessionexport inzwischen
   über das native Android-Teilen-/Speichern-Menü verfügbar
+- [x] begrenzten HandReplayer-Zwischenfix für APK-Diagnosen ergänzen: echte
+  Header-/Tisch-/Control-Zeilen, verfügbarkeitsbasierte Tischskalierung und
+  844×390-Smoke-Coverage für Heads-up, 6-max und 9-max PLO; vollständige
+  TableGeometry-/Touch-Migration bleibt in 0.9.1
 - [x] Session-Log und vollständiges Debug-JSON auf Android als Cache-Datei mit
   Content-URI exportieren; nativen Chooser auf echter Hardware verifizieren
 - [x] verkürzten Kontrolllauf über NLHE/PLO sowie Heads-up/6-max/Full Ring,
@@ -487,8 +491,9 @@ Browser-Demo bleibt mobil bewusst auf einen funktionalen Fallback begrenzt.
 
 > Gerätelauf und Kontrollmatrix sind im
 > [APK-Gerätebericht vom 30.07.2026](testing/apk/2026-07-30-device-inventory.md)
-> festgehalten. Der Replayer ist funktional, seine mobile Tischgeometrie bleibt
-> jedoch bewusst Bestandteil von 0.9.1.
+> festgehalten. Der Replayer besitzt inzwischen einen begrenzten
+> Landscape-Zwischenfix; seine gemeinsame mobile Tischgeometrie und das
+> vollständige Touch-Redesign bleiben bewusst Bestandteil von 0.9.1.
 
 ### Release-Gate
 
@@ -928,6 +933,19 @@ großen UI-Release abschließen.
   automatisch Chips
 - [ ] Clock bei Hintergrund, Gerätesperre und kontrollierter App-Pause
   anhalten; Warnungen, Timebank und Timeout-Quelle replayfähig erfassen
+- [ ] **All-in-Equityanzeige**: Sobald alle verbleibenden Spieler all-in sind
+  und keine weitere Aktion aussteht, Gewinn- und Split-Wahrscheinlichkeiten
+  vor dem Board-Runout anzeigen; NLHE- und PLO-Regeln korrekt behandeln und
+  die Berechnung mit deterministischen Referenzhänden absichern
+- [ ] **Glatte Bot-Rebuys**: Den aus der persönlichen BB-Policy abgeleiteten
+  Zielstack auf eine sinnvolle, zur Chip-Unit passende Geldstufe aufrunden,
+  ohne den eigentlichen Rebuy-Trigger abzusenken; Beträge wie `$1,14`
+  vermeiden und Rundung in Replay sowie Sessionstatistik konsistent erfassen
+- [ ] **Bot-Stack-Lifecycle vereinheitlichen**: Die bereits vorhandene
+  `rebuyWhenShortBb`-Policy für Short-Stack-Rebuys gemeinsam mit dem
+  Deep-Stack-Cash-out zwischen Händen modellieren, im Debugexport sichtbar
+  machen und mit deterministischen Schwellen-, Rebuy-Limit- und
+  Ersatzspieler-Sequenztests absichern
 - [ ] Integrationstests für Session-Flow (Setup → mehrere Hände → Rebuy)
 - [ ] Sequenztests für Pre-Selection nach Check, Bet und Reraise sowie für
   Clock-/Resume-Randfälle auf Desktop und Android

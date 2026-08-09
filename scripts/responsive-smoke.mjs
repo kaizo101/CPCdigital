@@ -13,6 +13,60 @@ const VIEWPORTS = [
   { name: 'phone-landscape', width: 844, height: 390, portrait: false },
   { name: 'phone-portrait', width: 390, height: 844, portrait: true },
 ]
+const REPLAY_VIEWPORT = { name: 'replay-phone-landscape', width: 844, height: 390 }
+
+function createReplayFixture(seatCount, holeCardCount) {
+  const ranks = ['A', 'K', 'Q', 'J']
+  const suits = ['spades', 'hearts', 'diamonds', 'clubs']
+  const players = Array.from({ length: seatCount }, (_, seat) => ({
+    id: seat === 0 ? 'hero' : `bot-${seat}`,
+    name: seat === 0 ? 'You' : `Bot ${seat}`,
+    seat,
+    chips: 2_000 - (seat * 25),
+  }))
+  const holeCards = Object.fromEntries(players.map((player, playerIndex) => [
+    player.id,
+    Array.from({ length: holeCardCount }, (_, cardIndex) => ({
+      rank: ranks[cardIndex],
+      suit: suits[(playerIndex + cardIndex) % suits.length],
+    })),
+  ]))
+  const playerStacks = Object.fromEntries(players.map(player => [player.id, player.chips]))
+  const playerStatuses = Object.fromEntries(players.map(player => [player.id, 'active']))
+  const playerBets = Object.fromEntries(players.map((player, index) => [player.id, index < 3 ? (index + 1) * 20 : 0]))
+
+  return {
+    handNumber: 9_001,
+    date: '2026-08-09T12:00:00.000Z',
+    variant: holeCardCount === 4 ? 'omaha-high' : 'texas-holdem',
+    blinds: { small: 10, big: 20 },
+    players,
+    dealerId: players.at(-1).id,
+    holeCards,
+    frames: [{
+      type: 'action',
+      phase: 'preflop',
+      actorId: 'hero',
+      actorName: 'You',
+      actorCards: holeCards.hero,
+      action: 'call',
+      amount: 20,
+      betAmount: 20,
+      communityCards: [],
+      pot: 120,
+      playerStacks,
+      playerStatuses,
+      playerBets,
+      isRevealed: false,
+      index: 0,
+      total: 1,
+    }],
+    results: [],
+    totalPot: 120,
+    pots: [{ potIndex: 0, potType: 'main', amount: 120 }],
+    botDecisions: [],
+  }
+}
 
 function findBrowser() {
   const candidates = [
@@ -223,6 +277,88 @@ function validatePortrait(viewport, result) {
   assert(result.body.height <= viewport.height, `${label}: vertical page overflow (${result.body.height}px)`)
 }
 
+function validateReplay(viewport, result, seatCount) {
+  const label = `${viewport.name} (${viewport.width}×${viewport.height}, ${seatCount}-max)`
+  assert(result.root, `${label}: replayer root is missing`)
+  assert(result.table, `${label}: replay table is missing`)
+  assert(result.header, `${label}: replay header is missing`)
+  assert(result.footer, `${label}: replay footer is missing`)
+  assert(result.table.width >= 500, `${label}: replay table is still squeezed (${result.table.width}px)`)
+  assert(result.seats.length === seatCount, `${label}: expected ${seatCount} visible seats, got ${result.seats.length}`)
+  assert(result.cards.length >= seatCount * 2, `${label}: expected visible hole cards`)
+  assert(result.body.width <= viewport.width, `${label}: horizontal page overflow (${result.body.width}px)`)
+  assert(result.body.height <= viewport.height, `${label}: vertical page overflow (${result.body.height}px)`)
+  assert(result.header.left >= 0 && result.header.right <= viewport.width, `${label}: header is clipped horizontally`)
+  assert(result.header.top >= 0, `${label}: header is clipped at the top`)
+  assert(result.footer.left >= 0 && result.footer.right <= viewport.width, `${label}: footer is clipped horizontally`)
+  assert(result.footer.bottom <= viewport.height, `${label}: footer is clipped at the bottom`)
+
+  for (const [index, seat] of result.seats.entries()) {
+    assert(seat.left >= 0, `${label}: seat ${index} leaves viewport on the left`)
+    assert(seat.right <= viewport.width, `${label}: seat ${index} leaves viewport on the right`)
+    assert(seat.top >= result.header.bottom, `${label}: seat ${index} overlaps the header`)
+    assert(seat.bottom <= result.footer.top, `${label}: seat ${index} overlaps the footer`)
+  }
+
+  for (const [index, card] of result.cards.entries()) {
+    assert(card.left >= 0 && card.right <= viewport.width, `${label}: card ${index} is clipped horizontally`)
+    assert(card.top >= result.header.bottom, `${label}: card ${index} overlaps the header`)
+    assert(card.bottom <= result.footer.top, `${label}: card ${index} overlaps the footer`)
+  }
+}
+
+async function measureReplay(session, viewport, screenshotDir, seatCount) {
+  await session.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: true,
+  })
+  await new Promise(resolve => setTimeout(resolve, 200))
+
+  const result = await session.evaluate(`(() => {
+    const rect = element => {
+      if (!element) return null
+      const value = element.getBoundingClientRect()
+      return {
+        left: Math.round(value.left),
+        top: Math.round(value.top),
+        right: Math.round(value.right),
+        bottom: Math.round(value.bottom),
+        width: Math.round(value.width),
+        height: Math.round(value.height),
+      }
+    }
+    const visible = element => (
+      !!element
+      && getComputedStyle(element).display !== 'none'
+      && element.getBoundingClientRect().width > 0
+    )
+    return {
+      body: { width: document.body.scrollWidth, height: document.body.scrollHeight },
+      root: rect(document.querySelector('.hand-replayer-root')),
+      header: rect(document.querySelector('.replay-header')),
+      footer: rect(document.querySelector('.replay-footer')),
+      table: rect(document.querySelector('.replay-table-shell')),
+      seats: [...document.querySelectorAll('.player-seat')].filter(visible).map(rect),
+      cards: [...document.querySelectorAll('.playing-card, .playing-card-back')].filter(visible).map(rect),
+    }
+  })()`)
+
+  if (screenshotDir) {
+    const screenshot = await session.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    })
+    await writeFile(
+      path.join(screenshotDir, `${viewport.name}-${seatCount}max.png`),
+      Buffer.from(screenshot.result.data, 'base64'),
+    )
+  }
+
+  return result
+}
+
 async function measureViewport(session, viewport, screenshotDir) {
   await session.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
@@ -395,6 +531,28 @@ async function main() {
       if (viewport.portrait) validatePortrait(viewport, result)
       else validateLandscape(viewport, result)
       console.log(`✓ ${viewport.name} ${viewport.width}×${viewport.height}`)
+    }
+
+    for (const [seatCount, holeCardCount] of [[2, 2], [6, 2], [9, 4]]) {
+      const replay = createReplayFixture(seatCount, holeCardCount)
+      await session.evaluate(`(() => {
+        localStorage.setItem('replay-session', ${JSON.stringify(JSON.stringify([replay]))})
+        localStorage.setItem('replay-start-index', '0')
+        localStorage.setItem('replay-debug', '1')
+        location.hash = '#replay/9001'
+        location.reload()
+      })()`)
+
+      let replayReady = false
+      for (let attempt = 0; attempt < 100 && !replayReady; attempt += 1) {
+        replayReady = await session.evaluate(`!!document.querySelector('.hand-replayer-root')`)
+        if (!replayReady) await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      assert(replayReady, `Timed out waiting for the ${seatCount}-max replay`)
+
+      const result = await measureReplay(session, REPLAY_VIEWPORT, screenshotDir, seatCount)
+      validateReplay(REPLAY_VIEWPORT, result, seatCount)
+      console.log(`✓ ${REPLAY_VIEWPORT.name} ${REPLAY_VIEWPORT.width}×${REPLAY_VIEWPORT.height} ${seatCount}-max`)
     }
   } finally {
     session?.close()
