@@ -937,6 +937,12 @@ großen UI-Release abschließen.
   und keine weitere Aktion aussteht, Gewinn- und Split-Wahrscheinlichkeiten
   vor dem Board-Runout anzeigen; NLHE- und PLO-Regeln korrekt behandeln und
   die Berechnung mit deterministischen Referenzhänden absichern
+- [ ] **Aktuelle Made Hand anzeigen**: Optional die momentan beste Hand des
+  Heros am Tisch und im Replayer benennen, etwa `Top Pair`, `Two Pair` oder
+  `King-high Flush`; bei NLHE die beste Fünf-Karten-Kombination und bei PLO
+  zwingend exakt zwei Hole Cards plus drei Board Cards auswerten. Die Anzeige
+  bleibt rein beschreibend und enthält weder Draw-/Equitywerte noch eine
+  Handlungsempfehlung
 - [ ] **Glatte Bot-Rebuys**: Den aus der persönlichen BB-Policy abgeleiteten
   Zielstack auf eine sinnvolle, zur Chip-Unit passende Geldstufe aufrunden,
   ohne den eigentlichen Rebuy-Trigger abzusenken; Beträge wie `$1,14`
