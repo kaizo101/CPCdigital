@@ -63,7 +63,9 @@ export function decideBotDecision(
 
   const { totalPot: livePot, legalActions } = bettingContext
   const position = botContext.position.category
-  const playerCount = state.players.filter(p => p.status !== 'folded' && p.status !== 'waiting').length
+  const activePlayerCount = state.players.filter(
+    p => p.status !== 'folded' && p.status !== 'waiting',
+  ).length
   const evaluation = evaluateBotVariant(botContext)
   const { handAssessment, boardTexture, preferredRaiseTo, categoryScores } = evaluation
   const metrics = deriveDecisionMetrics(bettingContext, state.bigBlind)
@@ -137,7 +139,8 @@ export function decideBotDecision(
     botId,
     botState,
     position,
-    playerCount,
+    tableSize: botContext.position.tableSize,
+    activePlayerCount,
     boardTexture,
     handAssessment,
     metrics,

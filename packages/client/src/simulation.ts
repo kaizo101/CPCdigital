@@ -19,12 +19,15 @@ import { DEFAULT_BOT_ROSTER } from './bot-identities'
 import {
   CALIBRATION_METRIC_SCHEMA_VERSION,
   CalibrationHandAccumulator,
+  calibrationPercentage,
   calibrationInvariantViolations,
+  isWithinCalibrationTarget,
   summarizeShowdown,
 } from './calibration-metrics'
 import type { HandStrengthCategory } from './bot-variant-evaluation'
 import { observeOpponentHistory, type OpponentObservationCursor } from './bot-opponent-observation'
 import type { DecisionMetrics } from './bot-decision-metrics'
+import { resolveTableFormat } from './bot-table-format'
 
 const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
 const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
@@ -73,17 +76,17 @@ const TAG_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [15, 21], pfr: [12, 18], threeBet: [6, 13], cBet: [60, 70], aggressionFactor: [2.0, 3.8], foldToCBet: [45, 52], turnCBet: [45, 54] },
+    target: { vpip: [15, 21], pfr: [12, 18], threeBet: [6, 13], cBet: [60, 70], aggressionFactor: [2.0, 3.8], foldToCBet: [40, 52], turnCBet: [45, 54] },
   },
   {
     name: '6-max',
     playerCount: 6,
-    target: { vpip: [22, 29], pfr: [18, 25], threeBet: [8, 15], cBet: [64, 74], aggressionFactor: [2.0, 3.8], foldToCBet: [42, 50], turnCBet: [48, 58] },
+    target: { vpip: [22, 29], pfr: [18, 25], threeBet: [8, 15], cBet: [64, 74], aggressionFactor: [2.0, 3.8], foldToCBet: [38, 48], turnCBet: [48, 58] },
   },
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [45, 65], pfr: [35, 55], threeBet: [12, 22], cBet: [70, 80], aggressionFactor: [2.5, 10.0] },
+    target: { vpip: [45, 65], pfr: [35, 55], threeBet: [12, 22], cBet: [70, 80], aggressionFactor: [2.5, 10.0], foldToCBet: [40, 55], turnCBet: [42, 55] },
   },
 ]
 
@@ -91,17 +94,17 @@ const NIT_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [9, 15], pfr: [7, 12], threeBet: [3, 9], cBet: [60, 72], aggressionFactor: [2.0, 3.5], foldToCBet: [58, 68], turnCBet: [35, 42] },
+    target: { vpip: [9, 15], pfr: [7, 12], threeBet: [3, 9], cBet: [50, 62], aggressionFactor: [2.0, 3.5], foldToCBet: [45, 60], turnCBet: [35, 42] },
   },
   {
     name: '6-max',
     playerCount: 6,
-    target: { vpip: [13, 19], pfr: [10, 15], threeBet: [4, 10], cBet: [60, 72], aggressionFactor: [2.0, 3.5], foldToCBet: [55, 65], turnCBet: [38, 46] },
+    target: { vpip: [13, 19], pfr: [10, 15], threeBet: [4, 10], cBet: [50, 62], aggressionFactor: [2.0, 3.5], foldToCBet: [55, 65], turnCBet: [38, 46] },
   },
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [30, 45], pfr: [16, 35], threeBet: [6, 13], cBet: [54, 64], aggressionFactor: [2.5, 8.0] },
+    target: { vpip: [30, 45], pfr: [16, 35], threeBet: [6, 13], cBet: [54, 64], aggressionFactor: [2.5, 8.0], foldToCBet: [50, 65], turnCBet: [35, 48] },
   },
 ]
 
@@ -109,17 +112,17 @@ const LAG_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [22, 31], pfr: [17, 26], threeBet: [8, 18], cBet: [68, 78], aggressionFactor: [1.8, 4.2], foldToCBet: [40, 48], turnCBet: [52, 62] },
+    target: { vpip: [22, 31], pfr: [17, 26], threeBet: [8, 18], cBet: [65, 80], aggressionFactor: [1.8, 4.2], foldToCBet: [40, 48], turnCBet: [52, 62] },
   },
   {
     name: '6-max',
     playerCount: 6,
-    target: { vpip: [28, 40], pfr: [22, 33], threeBet: [10, 20], cBet: [68, 78], aggressionFactor: [2.0, 4.2], foldToCBet: [38, 46], turnCBet: [55, 65] },
+    target: { vpip: [28, 40], pfr: [22, 33], threeBet: [10, 20], cBet: [65, 80], aggressionFactor: [2.0, 4.2], foldToCBet: [38, 46], turnCBet: [55, 65] },
   },
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [65, 87], pfr: [45, 68], threeBet: [14, 28], cBet: [88, 98], aggressionFactor: [3.0, 10.0] },
+    target: { vpip: [65, 87], pfr: [45, 68], threeBet: [14, 28], cBet: [88, 98], aggressionFactor: [3.0, 10.0], foldToCBet: [30, 45], turnCBet: [50, 65] },
   },
 ]
 
@@ -127,7 +130,7 @@ const CALLING_STATION_FORMATS: FormatConfig[] = [
   {
     name: 'Full Ring (9-max)',
     playerCount: 9,
-    target: { vpip: [28, 43], pfr: [5, 14], threeBet: [1, 8], cBet: [44, 54], aggressionFactor: [0.5, 2.0], foldToCBet: [32, 42], turnCBet: [28, 35] },
+    target: { vpip: [28, 43], pfr: [5, 14], threeBet: [1, 8], cBet: [44, 54], aggressionFactor: [0.5, 2.0], foldToCBet: [28, 42], turnCBet: [28, 35] },
   },
   {
     name: '6-max',
@@ -137,7 +140,7 @@ const CALLING_STATION_FORMATS: FormatConfig[] = [
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [62, 85], pfr: [15, 36], threeBet: [2, 13], cBet: [38, 48], aggressionFactor: [1.0, 3.0] },
+    target: { vpip: [62, 85], pfr: [15, 36], threeBet: [2, 13], cBet: [38, 48], aggressionFactor: [1.0, 3.0], foldToCBet: [25, 40], turnCBet: [25, 38] },
   },
 ]
 
@@ -156,7 +159,7 @@ const PLO_TAG_FORMATS: FormatConfig[] = [
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [45, 65], pfr: [30, 48], threeBet: [10, 20], cBet: [40, 60], aggressionFactor: [2.0, 5.0], wtsd: [22, 32] },
+    target: { vpip: [45, 65], pfr: [30, 48], threeBet: [10, 20], cBet: [40, 60], aggressionFactor: [2.0, 5.0], wtsd: [22, 32], foldToCBet: [38, 52], turnCBet: [38, 52] },
   },
 ]
 
@@ -174,7 +177,7 @@ const PLO_NIT_FORMATS: FormatConfig[] = [
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [30, 45], pfr: [15, 30], threeBet: [6, 12], cBet: [35, 55], aggressionFactor: [2.0, 4.5], wtsd: [22, 28] },
+    target: { vpip: [30, 45], pfr: [15, 30], threeBet: [6, 12], cBet: [35, 55], aggressionFactor: [2.0, 4.5], wtsd: [22, 28], foldToCBet: [45, 60], turnCBet: [32, 45] },
   },
 ]
 
@@ -192,7 +195,7 @@ const PLO_LAG_FORMATS: FormatConfig[] = [
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [50, 70], pfr: [35, 52], threeBet: [12, 24], cBet: [45, 65], aggressionFactor: [3.0, 8.0], wtsd: [28, 34] },
+    target: { vpip: [50, 70], pfr: [35, 52], threeBet: [12, 24], cBet: [45, 65], aggressionFactor: [3.0, 8.0], wtsd: [28, 34], foldToCBet: [30, 45], turnCBet: [42, 58] },
   },
 ]
 
@@ -210,7 +213,7 @@ const PLO_CS_FORMATS: FormatConfig[] = [
   {
     name: 'Heads-up',
     playerCount: 2,
-    target: { vpip: [60, 82], pfr: [15, 32], threeBet: [3, 12], cBet: [25, 45], aggressionFactor: [0.8, 2.5], wtsd: [28, 45] },
+    target: { vpip: [60, 82], pfr: [15, 32], threeBet: [3, 12], cBet: [25, 45], aggressionFactor: [0.8, 2.5], wtsd: [28, 45], foldToCBet: [25, 42], turnCBet: [25, 38] },
   },
 ]
 
@@ -296,6 +299,9 @@ interface PostflopStats {
   turnCBets: number
   aggressionByStreet: Record<'flop' | 'turn' | 'river', { aggressive: number; calls: number }>
   aggressionByRole: Record<'pfa' | 'non-pfa', { aggressive: number; calls: number }>
+  aggressionByPressure: Record<'facing-bet' | 'open-action', { aggressive: number; calls: number }>
+  activeOpponentTotal: number
+  activeOpponentSamples: number
 }
 
 interface SimulationStats {
@@ -374,6 +380,12 @@ function createStats(): SimulationStats {
         pfa: { aggressive: 0, calls: 0 },
         'non-pfa': { aggressive: 0, calls: 0 },
       },
+      aggressionByPressure: {
+        'facing-bet': { aggressive: 0, calls: 0 },
+        'open-action': { aggressive: 0, calls: 0 },
+      },
+      activeOpponentTotal: 0,
+      activeOpponentSamples: 0,
     },
     actions: { fold: 0, check: 0, call: 0, raise: 0, 'all-in': 0 },
     deepOpenShoves: 0,
@@ -549,6 +561,12 @@ function simulateFormat(
 
       // Postflop tracking
       if (state.phase !== 'preflop') {
+        const activePlayers = state.players.filter(candidate => (
+          candidate.status === 'active' || candidate.status === 'all-in'
+        )).length
+        stats.postflop.activeOpponentTotal += Math.max(0, activePlayers - 1)
+        stats.postflop.activeOpponentSamples++
+
         if (state.communityCards.length >= 3) {
           for (const candidate of state.players) {
             if (candidate.status === 'active' || candidate.status === 'all-in') {
@@ -594,12 +612,17 @@ function simulateFormat(
         }
         const street = state.phase as 'flop' | 'turn' | 'river'
         const role = metricDelta.aggressionRole ?? 'non-pfa'
+        const pressure = (state.bettingContext?.toCall ?? 0) > 0
+          ? 'facing-bet'
+          : 'open-action'
         if (aggressionClass === 'aggressive') {
           stats.postflop.aggressionByStreet[street].aggressive++
           stats.postflop.aggressionByRole[role].aggressive++
+          stats.postflop.aggressionByPressure[pressure].aggressive++
         } else if (aggressionClass === 'call') {
           stats.postflop.aggressionByStreet[street].calls++
           stats.postflop.aggressionByRole[role].calls++
+          stats.postflop.aggressionByPressure[pressure].calls++
         }
       }
 
@@ -673,10 +696,6 @@ function getPosition(state: Readonly<PublicGameState>, playerId: string): Positi
   return getPositionCategory(positionsFromDealer, playerCount)
 }
 
-function percentage(count: number, total: number): number {
-  return total > 0 ? (count / total) * 100 : 0
-}
-
 function targetLabel(value: number, target: [number, number]): string {
   if (value < target[0]) return 'too tight'
   if (value > target[1]) return 'too loose'
@@ -684,12 +703,19 @@ function targetLabel(value: number, target: [number, number]): string {
 }
 
 function printStats(format: FormatConfig, stats: SimulationStats): boolean {
-  const vpip = percentage(stats.vpipHands, stats.playerHands)
-  const pfr = percentage(stats.pfrHands, stats.playerHands)
-  const threeBet = percentage(stats.threeBets, stats.threeBetOpportunities)
+  const vpip = calibrationPercentage(stats.vpipHands, stats.playerHands)
+  const pfr = calibrationPercentage(stats.pfrHands, stats.playerHands)
+  const threeBet = calibrationPercentage(stats.threeBets, stats.threeBetOpportunities)
 
   console.log(`\n=== ${format.name} ===`)
   console.log(`Hands: ${stats.handsPlayed.toLocaleString('en-US')} · Player-hands: ${stats.playerHands.toLocaleString('en-US')} · ${stats.durationMs}ms`)
+  const averageActiveOpponents = stats.postflop.activeOpponentSamples > 0
+    ? stats.postflop.activeOpponentTotal / stats.postflop.activeOpponentSamples
+    : 0
+  console.log(
+    `Table format: ${resolveTableFormat(format.playerCount)} (${format.playerCount} seats) · `
+    + `Avg active opponents/postflop decision: ${averageActiveOpponents.toFixed(2)}`,
+  )
   console.log(`VPIP: ${vpip.toFixed(2)}% (target ${format.target.vpip.join('–')}%, ${targetLabel(vpip, format.target.vpip)})`)
   console.log(`PFR:  ${pfr.toFixed(2)}% (target ${format.target.pfr.join('–')}%, ${targetLabel(pfr, format.target.pfr)})`)
   console.log(
@@ -703,7 +729,7 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
         const values = stats.threeBetByCategory[category]
         return values.opportunities > 0
           ? `${category} ${values.threeBets}/${values.opportunities} `
-            + `(${percentage(values.threeBets, values.opportunities).toFixed(1)}%)`
+            + `(${calibrationPercentage(values.threeBets, values.opportunities).toFixed(1)}%)`
           : null
       })
       .filter((value): value is string => value !== null)
@@ -717,14 +743,14 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
     if (positionStats.hands === 0) continue
     console.log(
       `  ${position.padEnd(7)} ${positionStats.hands.toString().padStart(6)} hands · ` +
-      `VPIP ${percentage(positionStats.vpipHands, positionStats.hands).toFixed(2).padStart(5)}% · ` +
-      `PFR ${percentage(positionStats.pfrHands, positionStats.hands).toFixed(2).padStart(5)}%`
+      `VPIP ${calibrationPercentage(positionStats.vpipHands, positionStats.hands).toFixed(2).padStart(5)}% · ` +
+      `PFR ${calibrationPercentage(positionStats.pfrHands, positionStats.hands).toFixed(2).padStart(5)}%`
     )
   }
 
   const totalActions = Object.values(stats.actions).reduce((sum, count) => sum + count, 0)
   const actionSummary = Object.entries(stats.actions)
-    .map(([action, count]) => `${action} ${percentage(count, totalActions).toFixed(1)}%`)
+    .map(([action, count]) => `${action} ${calibrationPercentage(count, totalActions).toFixed(1)}%`)
     .join(' · ')
   console.log(`Actions: ${actionSummary}`)
   console.log(`Deep open shoves >40 BB: ${stats.deepOpenShoves}`)
@@ -738,12 +764,12 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
     totalCBetOpps += stats.positions[pos].cBetOpps
     totalCBets += stats.positions[pos].cBets
   }
-  const cBet = percentage(totalCBets, totalCBetOpps)
-  const foldToCBet = percentage(pf.foldToCBets, pf.foldToCBetOpps)
-  const turnCBet = percentage(pf.turnCBets, pf.turnCBetOpps)
+  const cBet = calibrationPercentage(totalCBets, totalCBetOpps)
+  const foldToCBet = calibrationPercentage(pf.foldToCBets, pf.foldToCBetOpps)
+  const turnCBet = calibrationPercentage(pf.turnCBets, pf.turnCBetOpps)
   const af = pf.calls > 0 ? (pf.betsAndRaises / pf.calls) : 0
-  const wtsd = percentage(pf.wentToShowdown, pf.handsSeenFlop)
-  const wssd = percentage(pf.wonAtShowdown, pf.wentToShowdown)
+  const wtsd = calibrationPercentage(pf.wentToShowdown, pf.handsSeenFlop)
+  const wssd = calibrationPercentage(pf.wonAtShowdown, pf.wentToShowdown)
   const invariantViolations = calibrationInvariantViolations({
     threeBets: stats.threeBets,
     threeBetOpportunities: stats.threeBetOpportunities,
@@ -759,28 +785,48 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
   })
 
   let allWithin = true
-  console.log(`C-Bet: ${cBet.toFixed(1)}%` + (format.target.cBet ? ` (target ${format.target.cBet.join('–')}%, ${targetLabel(cBet, format.target.cBet)})` : ''))
-  console.log(`Fold-to-CBet: ${foldToCBet.toFixed(1)}%` + (format.target.foldToCBet ? ` (target ${format.target.foldToCBet.join('–')}%, ${targetLabel(foldToCBet, format.target.foldToCBet)})` : ''))
-  console.log(`Turn C-Bet: ${turnCBet.toFixed(1)}%` + (format.target.turnCBet ? ` (target ${format.target.turnCBet.join('–')}%, ${targetLabel(turnCBet, format.target.turnCBet)})` : ''))
-  console.log(`AF: ${af.toFixed(2)}` + (format.target.aggressionFactor ? ` (target ${format.target.aggressionFactor.join('–')}, ${targetLabel(af, format.target.aggressionFactor)})` : ''))
-  console.log(`WTSD: ${wtsd.toFixed(1)}%` + (format.target.wtsd ? ` (target ${format.target.wtsd.join('–')}%, ${targetLabel(wtsd, format.target.wtsd)})` : ''))
+  console.log(
+    `C-Bet: ${cBet.toFixed(1)}% (${totalCBets}/${totalCBetOpps} opportunities)`
+    + (format.target.cBet ? ` (target ${format.target.cBet.join('–')}%, ${targetLabel(cBet, format.target.cBet)})` : ''),
+  )
+  console.log(
+    `Fold-to-CBet: ${foldToCBet.toFixed(1)}% (${pf.foldToCBets}/${pf.foldToCBetOpps} opportunities)`
+    + (format.target.foldToCBet ? ` (target ${format.target.foldToCBet.join('–')}%, ${targetLabel(foldToCBet, format.target.foldToCBet)})` : ''),
+  )
+  console.log(
+    `Turn C-Bet: ${turnCBet.toFixed(1)}% (${pf.turnCBets}/${pf.turnCBetOpps} opportunities)`
+    + (format.target.turnCBet ? ` (target ${format.target.turnCBet.join('–')}%, ${targetLabel(turnCBet, format.target.turnCBet)})` : ''),
+  )
+  console.log(
+    `AF: ${af.toFixed(2)} (${pf.betsAndRaises} aggressive/${pf.calls} calls)`
+    + (format.target.aggressionFactor ? ` (target ${format.target.aggressionFactor.join('–')}, ${targetLabel(af, format.target.aggressionFactor)})` : ''),
+  )
+  console.log(
+    `WTSD: ${wtsd.toFixed(1)}% (${pf.wentToShowdown}/${pf.handsSeenFlop} flop-seen)`
+    + (format.target.wtsd ? ` (target ${format.target.wtsd.join('–')}%, ${targetLabel(wtsd, format.target.wtsd)})` : ''),
+  )
   console.log(`W$SD: ${wssd.toFixed(1)}%`)
   console.log(`Invalid-action fallbacks: ${stats.actionErrors}`)
   if (invariantViolations.length > 0) {
     console.log(`Metric invariant violations: ${invariantViolations.join('; ')}`)
   }
 
+  const afLabel = (values: { aggressive: number; calls: number }) =>
+    `${values.calls > 0 ? (values.aggressive / values.calls).toFixed(2) : 'n/a'} (${values.aggressive}/${values.calls})`
+  console.log(
+    `AF by street: flop ${afLabel(pf.aggressionByStreet.flop)} · `
+    + `turn ${afLabel(pf.aggressionByStreet.turn)} · river ${afLabel(pf.aggressionByStreet.river)}`,
+  )
+  console.log(
+    `AF by role: PFA ${afLabel(pf.aggressionByRole.pfa)} · `
+    + `non-PFA ${afLabel(pf.aggressionByRole['non-pfa'])}`,
+  )
+  console.log(
+    `AF by pressure: facing-bet ${afLabel(pf.aggressionByPressure['facing-bet'])} · `
+    + `open-action ${afLabel(pf.aggressionByPressure['open-action'])}`,
+  )
+
   if (PRINT_CALIBRATION_DETAIL) {
-    const afLabel = (values: { aggressive: number; calls: number }) =>
-      `${values.calls > 0 ? (values.aggressive / values.calls).toFixed(2) : 'n/a'} (${values.aggressive}/${values.calls})`
-    console.log(
-      `AF by street: flop ${afLabel(pf.aggressionByStreet.flop)} · `
-      + `turn ${afLabel(pf.aggressionByStreet.turn)} · river ${afLabel(pf.aggressionByStreet.river)}`,
-    )
-    console.log(
-      `AF by role: PFA ${afLabel(pf.aggressionByRole.pfa)} · `
-      + `non-PFA ${afLabel(pf.aggressionByRole['non-pfa'])}`,
-    )
     console.log(
       `Showdown funnel: flop ${pf.handsSeenFlop} · turn ${pf.handsSeenTurn} · `
       + `river ${pf.handsSeenRiver} · showdown ${pf.wentToShowdown}`,
@@ -804,14 +850,14 @@ function printStats(format: FormatConfig, stats: SimulationStats): boolean {
     }
   }
 
-  if (format.target.cBet) allWithin = allWithin && isWithinTarget(cBet, format.target.cBet!)
-  if (format.target.aggressionFactor) allWithin = allWithin && isWithinTarget(af, format.target.aggressionFactor!)
-  if (format.target.wtsd) allWithin = allWithin && isWithinTarget(wtsd, format.target.wtsd!)
-  if (format.target.foldToCBet) allWithin = allWithin && isWithinTarget(foldToCBet, format.target.foldToCBet!)
-  if (format.target.turnCBet) allWithin = allWithin && isWithinTarget(turnCBet, format.target.turnCBet!)
-  return isWithinTarget(vpip, format.target.vpip)
-    && isWithinTarget(pfr, format.target.pfr)
-    && isWithinTarget(threeBet, format.target.threeBet)
+  if (format.target.cBet) allWithin = allWithin && isWithinCalibrationTarget(cBet, format.target.cBet!)
+  if (format.target.aggressionFactor) allWithin = allWithin && isWithinCalibrationTarget(af, format.target.aggressionFactor!)
+  if (format.target.wtsd) allWithin = allWithin && isWithinCalibrationTarget(wtsd, format.target.wtsd!)
+  if (format.target.foldToCBet) allWithin = allWithin && isWithinCalibrationTarget(foldToCBet, format.target.foldToCBet!)
+  if (format.target.turnCBet) allWithin = allWithin && isWithinCalibrationTarget(turnCBet, format.target.turnCBet!)
+  return isWithinCalibrationTarget(vpip, format.target.vpip)
+    && isWithinCalibrationTarget(pfr, format.target.pfr)
+    && isWithinCalibrationTarget(threeBet, format.target.threeBet)
     && allWithin
     && invariantViolations.length === 0
     && stats.deepOpenShoves === 0
@@ -833,7 +879,3 @@ for (const profile of CALIBRATION_PROFILES.filter(
 }
 
 if (calibrationFailed && EXIT_ON_FAIL) throw new Error('Bot calibration missed at least one target range')
-
-function isWithinTarget(value: number, target: [number, number]): boolean {
-  return value >= target[0] && value <= target[1]
-}

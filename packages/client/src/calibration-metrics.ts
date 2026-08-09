@@ -2,6 +2,17 @@ import type { PlayerAction } from '@cpc/shared'
 
 export const CALIBRATION_METRIC_SCHEMA_VERSION = 2
 
+export function calibrationPercentage(count: number, total: number): number {
+  return total > 0 ? (count / total) * 100 : 0
+}
+
+export function isWithinCalibrationTarget(
+  value: number,
+  target: readonly [number, number],
+): boolean {
+  return Number.isFinite(value) && value >= target[0] && value <= target[1]
+}
+
 export interface ContinuationBetSpot {
   phase: string
   actingPlayerId: string

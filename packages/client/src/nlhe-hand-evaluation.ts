@@ -7,7 +7,7 @@ import type {
   HandStrengthCategory,
   VariantEvaluation,
 } from './bot-variant-evaluation'
-import { NLHE_CATEGORY_SCORES } from './bot-category-scores'
+import { getNlheScores } from './bot-category-scores'
 import { cardsToHandPattern, getStartingHandPercentile, getPreflopSituation } from './preflop-ranges'
 
 export interface NlheHandAssessment extends VariantHandAssessment {
@@ -27,7 +27,7 @@ export const nlheVariantEvaluator: VariantEvaluator = {
       variantId: this.variantId,
       handAssessment: assessHand(context.ownCards as [Card, Card], context.publicState.communityCards),
       boardTexture: analyzeBoardTexture(context.publicState.communityCards),
-      categoryScores: NLHE_CATEGORY_SCORES,
+      categoryScores: getNlheScores(context.archetypeId),
     }
   },
 }
@@ -67,7 +67,7 @@ function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
       strength: preflopStrength(category),
     } satisfies NlheHandAssessment,
     boardTexture: 'neutral' as const,
-    categoryScores: NLHE_CATEGORY_SCORES,
+    categoryScores: getNlheScores(context.archetypeId),
     preferredRaiseTo: calculatePreflopRaiseTo(context, situation, bettingContext.legalActions.check),
   }
 }

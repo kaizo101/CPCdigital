@@ -4,9 +4,20 @@ Alle wichtigen veröffentlichten Änderungen an CPCdigital werden in dieser Date
 
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und das Projekt verwendet semantische Versionsnummern. Geplante Funktionen stehen ausschließlich in der [Roadmap](ROADMAP.md).
 
-## [0.8.0] — 2026-08-07
+## [0.8.0] — 2026-08-09
 
 ### Added
+
+- **Tabellenformat-Isolation**: Eine zentrale Auflösung unterscheidet Full Ring,
+  6-max und Heads-up anhand der festen Sitzanzahl. Die Zahl aktiver Spieler im
+  Pot beeinflusst weiterhin Multiway-Entscheidungen, kann das Tischformat aber
+  nicht mehr nachträglich umklassifizieren.
+- **Explizite PLO-HU-Strategie**: Heads-up besitzt eigene Preflop-, Flop-, Turn-
+  und River-Score-Tabellen und erbt nicht länger implizit 6-max-Overrides.
+- **Kalibrierungsdiagnostik**: Rohnenner für C-Bet, Fold-to-CBet, Turn C-Bet,
+  AF und WTSD sowie AF nach Street, PFA-Rolle und Drucksituation.
+- **Engine-Invariantensuite**: 19 randomisierte NLHE-/PLO-Tests über je 1.000
+  Hände prüfen Chip-, Pot-, Stack-, Queue-, Blind- und Kartenintegrität.
 
 - **Code-Review**: Systematische Prüfung von 30 Modulen (Engine, Game-Loop,
   Scoring, Modifier, Support, Habits, Identities, Replay, Rebuy, NLHE/PLO-Handbewertung).
@@ -24,6 +35,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   höchste nicht-auf-Board-Rang der Flush-Farbe bestimmt Nut-Status.
 
 ### Changed
+
+- **Kalibrierungs-Gate**: v0.8.0 friert eine formatisolierte statische Baseline
+  ein. Exaktes Postflop-Tuning folgt nach den Strategieänderungen von v0.8.1;
+  adaptive Preflop-/HU-Validierung folgt nach v0.8.2. Die Zielranges wurden
+  dafür nicht aufgeweicht.
 
 - **PLO-Score-Tabellen rekalibriert**: LAG-Raise-Scores auf v0.7.8-Niveau
   zurück, TAG-Raise-Scores erhöht, Nit-Fold-Scores erhöht, Protection-Boni

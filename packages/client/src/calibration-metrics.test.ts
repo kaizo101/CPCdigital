@@ -1,15 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import {
   CalibrationHandAccumulator,
+  calibrationPercentage,
   calibrationInvariantViolations,
   classifyAggressionAction,
   isContinuationBetOpportunity,
+  isWithinCalibrationTarget,
   isThreeBetOpportunity,
   summarizeShowdown,
   updatePreflopAggressor,
 } from './calibration-metrics'
 
 describe('calibration metrics', () => {
+  it('keeps empty-denominator percentages finite', () => {
+    expect(calibrationPercentage(0, 0)).toBe(0)
+    expect(Number.isFinite(calibrationPercentage(0, 0))).toBe(true)
+  })
+
+  it('treats both target boundaries as inclusive and rejects non-finite values', () => {
+    expect(isWithinCalibrationTarget(30, [30, 40])).toBe(true)
+    expect(isWithinCalibrationTarget(40, [30, 40])).toBe(true)
+    expect(isWithinCalibrationTarget(29.99, [30, 40])).toBe(false)
+    expect(isWithinCalibrationTarget(Number.NaN, [30, 40])).toBe(false)
+  })
+
   it('tracks the last preflop aggressor through reraises', () => {
     let aggressor: string | null = null
 

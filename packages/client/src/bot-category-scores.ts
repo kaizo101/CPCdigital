@@ -1,6 +1,7 @@
 import type { BotArchetypeId } from './bot-archetypes'
 import type { CategoryScoreTable, HandStrengthCategory } from './bot-variant-evaluation'
 import type { PreflopSituation } from './preflop-ranges'
+import { resolveTableFormat } from './bot-table-format'
 
 export const NLHE_CATEGORY_SCORES: CategoryScoreTable = {
   fold: { air: 10, weak: 5, marginal: -5, medium: -30, good: -42, strong: -50, premium: -50 },
@@ -8,6 +9,46 @@ export const NLHE_CATEGORY_SCORES: CategoryScoreTable = {
   call: { air: -25, weak: -5, marginal: 5, medium: 20, good: -5, strong: -10, premium: -10 },
   raise: { air: -25, 'weak-draw': 15, 'weak-no-draw': -25, weak: -20, marginal: -10, medium: 5, good: 20, strong: 30, premium: 40 },
   allIn: { air: -42, 'weak-draw': -18, 'weak-no-draw': -42, weak: -35, marginal: -25, medium: -15, good: 10, strong: 28, premium: 42 },
+}
+
+/* ------------------------------------------------------------------ */
+/*  NLHE archetype-specific score tables (delta-over-TAG pattern)      */
+/*  Same pattern as PLO — only values differing from TAG are listed.   */
+/* ------------------------------------------------------------------ */
+
+function nlhe(overrides: Partial<CategoryScoreTable>): CategoryScoreTable {
+  return {
+    fold: { ...NLHE_CATEGORY_SCORES.fold, ...overrides.fold },
+    check: { ...NLHE_CATEGORY_SCORES.check, ...overrides.check },
+    call: { ...NLHE_CATEGORY_SCORES.call, ...overrides.call },
+    raise: { ...NLHE_CATEGORY_SCORES.raise, ...overrides.raise },
+    allIn: { ...NLHE_CATEGORY_SCORES.allIn, ...overrides.allIn },
+  }
+}
+
+const NLHE_ARCHETYPE_SCORES: Record<BotArchetypeId, CategoryScoreTable> = {
+  tag: NLHE_CATEGORY_SCORES,
+
+  nit: nlhe({
+    raise: { marginal: 2, medium: 24, good: 36 },
+    call: { medium: 10 },
+    fold: { marginal: -14 },
+  }),
+
+  lag: nlhe({
+    raise: { marginal: -18, medium: -12, good: 8, strong: 24 },
+    call: { air: -18, marginal: 15, medium: 28, good: 5 },
+  }),
+
+  'calling-station': nlhe({
+    fold: { weak: -5, marginal: -15, medium: -42 },
+    call: { weak: 0, medium: 24 },
+    raise: { medium: 2 },
+  }),
+}
+
+export function getNlheScores(archetypeId?: BotArchetypeId): CategoryScoreTable {
+  return NLHE_ARCHETYPE_SCORES[archetypeId ?? 'tag'] ?? NLHE_CATEGORY_SCORES
 }
 
 /* ------------------------------------------------------------------ */
@@ -179,7 +220,7 @@ export type PloStreet = 'preflop' | 'flop' | 'turn' | 'river' | 'turn-river'
 
 /* ------------------------------------------------------------------ */
 /*  PLO six-max postflop score overrides                               */
-/*  Tables for short-handed play (tableSize ≤ 6). Entries merge over   */
+/*  Tables for the resolved six-max format (3-6 seats, excluding HU).  */
 /*  the archetype's full-ring table; missing archetypes fall back.     */
 /* ------------------------------------------------------------------ */
 
@@ -276,12 +317,96 @@ const PLO_ARCHETYPE_RIVER_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScoreT
   ),
 }
 
+/* ------------------------------------------------------------------ */
+/*  PLO heads-up score tables                                          */
+/*  These intentionally start with the values HU previously inherited */
+/*  through `tableSize <= 6`, but are independent six-max snapshots.   */
+/* ------------------------------------------------------------------ */
+
+const PLO_ARCHETYPE_PREFLOP_HEADS_UP: Record<BotArchetypeId, CategoryScoreTable> = {
+  tag: plo({
+    raise: { good: 6 },
+  }, PLO_ARCHETYPE_PREFLOP.tag),
+  nit: plo({
+    fold: { medium: -4 },
+    call: { medium: 8, good: -8 },
+    raise: { good: -12 },
+  }, PLO_ARCHETYPE_PREFLOP.nit),
+  lag: plo({}, PLO_ARCHETYPE_PREFLOP.lag),
+  'calling-station': plo({
+    fold: { medium: -8 },
+    call: { medium: 5 },
+  }, PLO_ARCHETYPE_PREFLOP['calling-station']),
+}
+
+const PLO_ARCHETYPE_POSTFLOP_HEADS_UP: Record<BotArchetypeId, CategoryScoreTable> = {
+  tag: plo({
+    call: { good: 10 },
+  }, PLO_ARCHETYPE_POSTFLOP.tag),
+  nit: plo({}, PLO_ARCHETYPE_POSTFLOP.nit),
+  lag: plo({
+    fold: { marginal: -5, medium: -22 },
+    call: { marginal: -7 },
+    raise: { marginal: 4, medium: 15, good: 24, strong: 32, premium: 44 },
+  }, PLO_ARCHETYPE_POSTFLOP.lag),
+  'calling-station': plo({
+    fold: { weak: 8, marginal: 10, medium: 8 },
+    raise: { marginal: -20, medium: -10, good: -2, strong: 2, premium: 10 },
+    call: { weak: 4, marginal: 4, medium: 6, good: 4 },
+  }, PLO_ARCHETYPE_POSTFLOP['calling-station']),
+}
+
+const PLO_ARCHETYPE_TURN_RIVER_HEADS_UP: Record<BotArchetypeId, CategoryScoreTable> = {
+  tag: plo({
+    call: { medium: 8, good: 4 },
+    raise: { good: 8 },
+  }, PLO_ARCHETYPE_TURN_RIVER.tag),
+  nit: plo({
+    fold: { marginal: 12, medium: 24 },
+  }, PLO_ARCHETYPE_TURN_RIVER.nit),
+  lag: plo({
+    fold: { marginal: 0, medium: -16 },
+    check: { air: 10, weak: 10, marginal: 8 },
+    call: { marginal: -8, medium: -6 },
+    raise: {
+      air: -15, 'weak-draw': 8, 'weak-no-draw': -18, marginal: 2, medium: 24, good: 34,
+    },
+  }, PLO_ARCHETYPE_TURN_RIVER.lag),
+  'calling-station': plo({
+    fold: { weak: 20, marginal: 22, medium: 24 },
+    call: { weak: -14, marginal: -28, medium: -6, good: -8, strong: -14, premium: -16 },
+  }, PLO_ARCHETYPE_TURN_RIVER['calling-station']),
+}
+
+const PLO_ARCHETYPE_RIVER_HEADS_UP: Record<BotArchetypeId, CategoryScoreTable> = {
+  tag: plo({
+    call: { medium: 8, good: 4 },
+    raise: { good: 2 },
+  }, PLO_ARCHETYPE_RIVER.tag),
+  nit: plo({
+    fold: { marginal: 12, medium: 24 },
+  }, PLO_ARCHETYPE_RIVER.nit),
+  lag: plo({
+    fold: { marginal: 0, medium: -16 },
+    check: { air: 4, weak: 4, marginal: 0 },
+    call: { marginal: -8, medium: -6 },
+    raise: {
+      air: 0, 'weak-draw': 18, 'weak-no-draw': -10, marginal: 12, medium: 24, good: 34,
+    },
+  }, PLO_ARCHETYPE_RIVER.lag),
+  'calling-station': plo({
+    fold: { weak: 20, marginal: 22, medium: 24 },
+    call: { weak: -14, marginal: -28, medium: -6, good: -8, strong: -14, premium: -16 },
+  }, PLO_ARCHETYPE_RIVER['calling-station']),
+}
+
 export function getPloScores(
   archetypeId: BotArchetypeId | undefined,
   street: PloStreet,
   tableSize: number = 9,
 ): CategoryScoreTable {
   const archetype = archetypeId ?? 'tag'
+  const format = resolveTableFormat(tableSize)
   const table = street === 'preflop'
     ? PLO_ARCHETYPE_PREFLOP
     : street === 'river'
@@ -289,10 +414,21 @@ export function getPloScores(
       : street === 'turn' || street === 'turn-river'
       ? PLO_ARCHETYPE_TURN_RIVER
       : PLO_ARCHETYPE_POSTFLOP
-  if (street === 'preflop' && tableSize <= 6) {
+  if (street === 'preflop' && format === 'heads-up') {
+    return PLO_ARCHETYPE_PREFLOP_HEADS_UP[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
+  }
+  if (street === 'preflop' && format === 'six-max') {
     return PLO_ARCHETYPE_PREFLOP_SIX_MAX[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
   }
-  if (street !== 'preflop' && tableSize <= 6) {
+  if (street !== 'preflop' && format === 'heads-up') {
+    const headsUp = street === 'river'
+      ? PLO_ARCHETYPE_RIVER_HEADS_UP
+      : street === 'turn' || street === 'turn-river'
+        ? PLO_ARCHETYPE_TURN_RIVER_HEADS_UP
+        : PLO_ARCHETYPE_POSTFLOP_HEADS_UP
+    return headsUp[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
+  }
+  if (street !== 'preflop' && format === 'six-max') {
     const sixMax = street === 'river'
       ? PLO_ARCHETYPE_RIVER_SIX_MAX
       : street === 'turn' || street === 'turn-river'
@@ -342,11 +478,30 @@ const PLO_PREFLOP_STRATEGY: Record<BotArchetypeId, PloPreflopStrategyTable> = {
 
 /* ------------------------------------------------------------------ */
 /*  PLO six-max preflop strategy overrides                             */
-/*  Tables for short-handed play (tableSize ≤ 6). Missing archetypes   */
+/*  Tables for the resolved six-max format (3-6 seats, excluding HU).  */
 /*  and entries fall back to the full-ring strategy table above.       */
 /* ------------------------------------------------------------------ */
 
 const PLO_PREFLOP_STRATEGY_SIX_MAX: Partial<Record<BotArchetypeId, PloPreflopStrategySixMaxTable>> = {
+  lag: {
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'fold' },
+    'facing-open': {
+      premium: 'raise', strong: 'raise', good: 'call', medium: 'call-or-fold', marginal: 'fold',
+    },
+  },
+  nit: {
+    unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'call', marginal: 'fold' },
+    'facing-open': { premium: 'raise', strong: 'raise', good: 'raise-or-call', medium: 'call-or-fold' },
+    'facing-3bet': { premium: 'raise', strong: 'raise' },
+  },
+  'calling-station': {
+    'facing-open': {
+      premium: 'raise', strong: 'raise', good: 'call', medium: 'call', marginal: 'call-or-fold',
+    },
+  },
+}
+
+const PLO_PREFLOP_STRATEGY_HEADS_UP: Partial<Record<BotArchetypeId, PloPreflopStrategySixMaxTable>> = {
   lag: {
     unopened: { premium: 'raise', strong: 'raise', good: 'raise', medium: 'raise', marginal: 'fold' },
     'facing-open': {
@@ -373,8 +528,32 @@ export function getPloPreflopAction(
 ): PreflopStrategyAction {
   const archetype = archetypeId ?? 'tag'
   const table = PLO_PREFLOP_STRATEGY[archetype]
-  const sixMax = tableSize <= 6 ? PLO_PREFLOP_STRATEGY_SIX_MAX[archetype] : undefined
-  return (sixMax?.[situation] ?? table?.[situation])?.[category] ?? 'fold'
+  const format = resolveTableFormat(tableSize)
+  const formatTable = format === 'heads-up'
+    ? PLO_PREFLOP_STRATEGY_HEADS_UP[archetype]
+    : format === 'six-max'
+      ? PLO_PREFLOP_STRATEGY_SIX_MAX[archetype]
+      : undefined
+  const action = (formatTable?.[situation] ?? table?.[situation])?.[category]
+  if (action) {
+    // HU widening for specific archetype/category combos
+    if (format === 'heads-up' && archetype === 'calling-station') {
+      if (situation === 'unopened' && category === 'marginal') return 'call'
+      if (situation === 'facing-open' && category === 'strong') return 'raise'
+    }
+    if (format === 'heads-up' && archetype === 'lag') {
+      if (situation === 'facing-open' && category === 'strong') return 'raise'
+    }
+    return action
+  }
+
+  // HU defaults: wider ranges for unlisted categories
+  if (format === 'heads-up' && category !== 'air') {
+    if (archetype === 'calling-station') return 'call'
+    if (archetype === 'lag' && situation !== 'facing-3bet') return 'call'
+  }
+
+  return 'fold'
 }
 
 /* ------------------------------------------------------------------ */

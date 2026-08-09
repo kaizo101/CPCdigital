@@ -1,0 +1,330 @@
+
+> cpcdigital@0.8.0 calibrate:bots
+> tsx packages/client/src/simulation.ts
+
+
+=== CPCdigital Calibration — Texas Hold'em (NLHE) · metric schema v2 ===
+
+TAG simulation · 10,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 10,000 · Player-hands: 90,000 · 6861ms
+Table format: full-ring (9 seats) · Avg active opponents/postflop decision: 1.26
+VPIP: 19.30% (target 15–21%, in range)
+PFR:  13.63% (target 12–18%, in range)
+3-bet: 7.92% (target 6–13%, in range; 3138/39615 opportunities)
+3-bet by category: air 0/14321 (0.0%) · weak 0/9327 (0.0%) · medium 0/9225 (0.0%) · strong 2545/6145 (41.4%) · premium 593/597 (99.3%)
+Positions:
+  early    20000 hands · VPIP 18.62% · PFR 16.35%
+  middle   20000 hands · VPIP 19.05% · PFR 13.73%
+  late     30000 hands · VPIP 20.72% · PFR 15.98%
+  blinds   20000 hands · VPIP 18.11% · PFR  7.30%
+Actions: fold 69.9% · check 7.7% · call 6.9% · raise 14.6% · all-in 1.0%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 68.2% (1773/2601 opportunities) (target 60–70%, in range)
+Fold-to-CBet: 69.5% (1618/2327 opportunities) (target 40–52%, too loose)
+Turn C-Bet: 34.6% (400/1156 opportunities) (target 45–54%, too tight)
+AF: 2.65 (4198 aggressive/1586 calls) (target 2–3.8, in range)
+WTSD: 38.7% (3218/8323 flop-seen)
+W$SD: 51.6%
+Invalid-action fallbacks: 0
+AF by street: flop 3.41 (2831/831) · turn 1.94 (985/509) · river 1.55 (382/246)
+AF by role: PFA 5.29 (2426/459) · non-PFA 1.57 (1772/1127)
+AF by pressure: facing-bet 0.32 (511/1586) · open-action n/a (3687/0)
+Showdown funnel: flop 8323 · turn 4370 · river 3498 · showdown 3218
+
+=== 6-max ===
+Hands: 10,000 · Player-hands: 60,000 · 4203ms
+Table format: six-max (6 seats) · Avg active opponents/postflop decision: 1.21
+VPIP: 25.88% (target 22–29%, in range)
+PFR:  18.07% (target 18–25%, in range)
+3-bet: 9.79% (target 8–15%, in range; 2386/24370 opportunities)
+3-bet by category: air 0/8633 (0.0%) · weak 0/5749 (0.0%) · medium 0/6039 (0.0%) · strong 2006/3569 (56.2%) · premium 380/380 (100.0%)
+Positions:
+  early    10000 hands · VPIP 22.98% · PFR 18.66%
+  middle   10000 hands · VPIP 25.36% · PFR 19.66%
+  late     20000 hands · VPIP 30.34% · PFR 23.54%
+  blinds   20000 hands · VPIP 23.14% · PFR 11.53%
+Actions: fold 61.3% · check 11.0% · call 8.5% · raise 18.3% · all-in 1.0%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 70.0% (1602/2288 opportunities) (target 64–74%, in range)
+Fold-to-CBet: 68.5% (1426/2082 opportunities) (target 38–48%, too loose)
+Turn C-Bet: 37.2% (385/1034 opportunities) (target 48–58%, too tight)
+AF: 2.84 (3729 aggressive/1315 calls) (target 2–3.8, in range)
+WTSD: 37.5% (2797/7452 flop-seen)
+W$SD: 50.9%
+Invalid-action fallbacks: 0
+AF by street: flop 3.35 (2518/752) · turn 2.26 (875/388) · river 1.92 (336/175)
+AF by role: PFA 7.03 (2213/315) · non-PFA 1.52 (1516/1000)
+AF by pressure: facing-bet 0.32 (427/1315) · open-action n/a (3302/0)
+Showdown funnel: flop 7452 · turn 3979 · river 3061 · showdown 2797
+
+=== Heads-up ===
+Hands: 10,000 · Player-hands: 20,000 · 2260ms
+Table format: heads-up (2 seats) · Avg active opponents/postflop decision: 1.00
+VPIP: 59.38% (target 45–65%, in range)
+PFR:  40.55% (target 35–55%, in range)
+3-bet: 15.05% (target 12–22%, in range; 1061/7050 opportunities)
+3-bet by category: air 0/2807 (0.0%) · weak 0/1638 (0.0%) · medium 0/1408 (0.0%) · strong 962/1098 (87.6%) · premium 99/99 (100.0%)
+Positions:
+  late     10000 hands · VPIP 78.52% · PFR 67.01%
+  blinds   10000 hands · VPIP 40.24% · PFR 14.10%
+Actions: fold 24.2% · check 27.9% · call 14.0% · raise 33.1% · all-in 0.9%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 74.8% (1993/2664 opportunities) (target 70–80%, in range)
+Fold-to-CBet: 73.8% (1615/2189 opportunities) (target 40–55%, too loose)
+Turn C-Bet: 32.6% (335/1028 opportunities) (target 42–55%, too tight)
+AF: 4.34 (4002 aggressive/922 calls) (target 2.5–10, in range)
+WTSD: 31.8% (2474/7788 flop-seen)
+W$SD: 54.2%
+Invalid-action fallbacks: 0
+AF by street: flop 4.91 (2811/572) · turn 3.69 (783/212) · river 2.96 (408/138)
+AF by role: PFA 15.38 (2599/169) · non-PFA 1.86 (1403/753)
+AF by pressure: facing-bet 0.46 (423/922) · open-action n/a (3579/0)
+Showdown funnel: flop 7788 · turn 3744 · river 2844 · showdown 2474
+
+Nit simulation · 10,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 10,000 · Player-hands: 90,000 · 5047ms
+Table format: full-ring (9 seats) · Avg active opponents/postflop decision: 1.08
+VPIP: 13.10% (target 9–15%, in range)
+PFR:  10.83% (target 7–12%, in range)
+3-bet: 4.48% (target 3–9%, in range; 1648/36820 opportunities)
+3-bet by category: air 0/13788 (0.0%) · weak 0/8641 (0.0%) · medium 1/8004 (0.0%) · strong 1156/5867 (19.7%) · premium 491/520 (94.4%)
+Positions:
+  early    20000 hands · VPIP 13.81% · PFR 12.80%
+  middle   20000 hands · VPIP 12.71% · PFR 11.00%
+  late     30000 hands · VPIP 14.35% · PFR 12.93%
+  blinds   20000 hands · VPIP 10.90% · PFR  5.53%
+Actions: fold 80.4% · check 4.2% · call 3.0% · raise 11.8% · all-in 0.6%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 60.3% (700/1161 opportunities) (target 50–62%, in range)
+Fold-to-CBet: 66.9% (583/871 opportunities) (target 45–60%, too loose)
+Turn C-Bet: 27.1% (149/549 opportunities) (target 35–42%, too tight)
+AF: 3.36 (2038 aggressive/606 calls) (target 2–3.5, in range)
+WTSD: 41.9% (1483/3541 flop-seen)
+W$SD: 54.6%
+Invalid-action fallbacks: 0
+AF by street: flop 4.44 (1408/317) · turn 2.30 (423/184) · river 1.97 (207/105)
+AF by role: PFA 5.49 (1087/198) · non-PFA 2.33 (951/408)
+AF by pressure: facing-bet 0.77 (467/606) · open-action n/a (1571/0)
+Showdown funnel: flop 3541 · turn 1952 · river 1614 · showdown 1483
+
+=== 6-max ===
+Hands: 10,000 · Player-hands: 60,000 · 3386ms
+Table format: six-max (6 seats) · Avg active opponents/postflop decision: 1.05
+VPIP: 16.84% (target 13–19%, in range)
+PFR:  14.04% (target 10–15%, in range)
+3-bet: 6.04% (target 4–10%, in range; 1277/21132 opportunities)
+3-bet by category: air 0/7763 (0.0%) · weak 0/5107 (0.0%) · medium 1/4695 (0.0%) · strong 971/3261 (29.8%) · premium 305/306 (99.7%)
+Positions:
+  early    10000 hands · VPIP 16.49% · PFR 15.81%
+  middle   10000 hands · VPIP 15.93% · PFR 14.38%
+  late     20000 hands · VPIP 20.97% · PFR 19.28%
+  blinds   20000 hands · VPIP 13.35% · PFR  7.74%
+Actions: fold 74.5% · check 6.2% · call 3.6% · raise 15.2% · all-in 0.6%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 60.8% (611/1005 opportunities) (target 50–62%, in range)
+Fold-to-CBet: 55.6% (429/771 opportunities) (target 55–65%, in range)
+Turn C-Bet: 31.8% (173/544 opportunities) (target 38–46%, too tight)
+AF: 3.49 (1760 aggressive/504 calls) (target 2–3.5, in range)
+WTSD: 40.4% (1245/3085 flop-seen)
+W$SD: 54.1%
+Invalid-action fallbacks: 0
+AF by street: flop 3.71 (1224/330) · turn 3.67 (400/109) · river 2.09 (136/65)
+AF by role: PFA 7.04 (951/135) · non-PFA 2.19 (809/369)
+AF by pressure: facing-bet 0.74 (372/504) · open-action n/a (1388/0)
+Showdown funnel: flop 3085 · turn 1814 · river 1354 · showdown 1245
+
+=== Heads-up ===
+Hands: 10,000 · Player-hands: 20,000 · 1279ms
+Table format: heads-up (2 seats) · Avg active opponents/postflop decision: 1.00
+VPIP: 32.56% (target 30–45%, in range)
+PFR:  24.29% (target 16–35%, in range)
+3-bet: 8.97% (target 6–13%, in range; 400/4458 opportunities)
+3-bet by category: air 0/1585 (0.0%) · weak 0/1266 (0.0%) · medium 64/891 (7.2%) · strong 268/648 (41.4%) · premium 68/68 (100.0%)
+Positions:
+  late     10000 hands · VPIP 50.65% · PFR 42.58%
+  blinds   10000 hands · VPIP 14.47% · PFR  6.00%
+Actions: fold 39.9% · check 22.9% · call 8.8% · raise 27.5% · all-in 0.8%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 58.1% (458/788 opportunities) (target 54–64%, in range)
+Fold-to-CBet: 60.3% (407/675 opportunities) (target 50–65%, in range)
+Turn C-Bet: 25.7% (109/424 opportunities) (target 35–48%, too tight)
+AF: 4.81 (1651 aggressive/343 calls) (target 2.5–8, in range)
+WTSD: 44.1% (1392/3158 flop-seen)
+W$SD: 54.3%
+Invalid-action fallbacks: 0
+AF by street: flop 5.14 (1039/202) · turn 4.91 (422/86) · river 3.45 (190/55)
+AF by role: PFA 10.38 (706/68) · non-PFA 3.44 (945/275)
+AF by pressure: facing-bet 1.24 (425/343) · open-action n/a (1226/0)
+Showdown funnel: flop 3158 · turn 2014 · river 1568 · showdown 1392
+
+LAG simulation · 10,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 10,000 · Player-hands: 90,000 · 8756ms
+Table format: full-ring (9 seats) · Avg active opponents/postflop decision: 1.74
+VPIP: 28.09% (target 22–31%, in range)
+PFR:  16.05% (target 17–26%, too tight)
+3-bet: 10.20% (target 8–18%, in range; 4393/43061 opportunities)
+3-bet by category: air 0/14870 (0.0%) · weak 0/10362 (0.0%) · medium 0/10590 (0.0%) · strong 3689/6535 (56.4%) · premium 704/704 (100.0%)
+Positions:
+  early    20000 hands · VPIP 26.02% · PFR 19.41%
+  middle   20000 hands · VPIP 27.47% · PFR 17.16%
+  late     30000 hands · VPIP 28.12% · PFR 17.36%
+  blinds   20000 hands · VPIP 30.75% · PFR  9.62%
+Actions: fold 54.2% · check 12.8% · call 15.0% · raise 16.0% · all-in 2.1%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 74.1% (3877/5229 opportunities) (target 65–80%, in range)
+Fold-to-CBet: 56.8% (3591/6325 opportunities) (target 40–48%, too loose)
+Turn C-Bet: 44.4% (1246/2807 opportunities) (target 52–62%, too tight)
+AF: 1.32 (8739 aggressive/6612 calls) (target 1.8–4.2, too tight)
+WTSD: 45.3% (8090/17842 flop-seen)
+W$SD: 44.6%
+Invalid-action fallbacks: 0
+AF by street: flop 1.46 (5351/3669) · turn 1.21 (2449/2022) · river 1.02 (939/921)
+AF by role: PFA 4.02 (5622/1398) · non-PFA 0.60 (3117/5214)
+AF by pressure: facing-bet 0.10 (645/6612) · open-action n/a (8094/0)
+Showdown funnel: flop 17842 · turn 10665 · river 8592 · showdown 8090
+
+=== 6-max ===
+Hands: 10,000 · Player-hands: 60,000 · 6117ms
+Table format: six-max (6 seats) · Avg active opponents/postflop decision: 1.46
+VPIP: 36.47% (target 28–40%, in range)
+PFR:  23.01% (target 22–33%, in range)
+3-bet: 14.35% (target 10–20%, in range; 4058/28282 opportunities)
+3-bet by category: air 0/9972 (0.0%) · weak 0/7011 (0.0%) · medium 40/6559 (0.6%) · strong 3588/4310 (83.2%) · premium 430/430 (100.0%)
+Positions:
+  early    10000 hands · VPIP 33.00% · PFR 27.19%
+  middle   10000 hands · VPIP 34.91% · PFR 26.65%
+  late     20000 hands · VPIP 39.81% · PFR 26.84%
+  blinds   20000 hands · VPIP 35.64% · PFR 15.27%
+Actions: fold 46.5% · check 16.0% · call 15.0% · raise 20.6% · all-in 1.8%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 70.9% (3410/4809 opportunities) (target 65–80%, in range)
+Fold-to-CBet: 54.4% (2617/4813 opportunities) (target 38–46%, too loose)
+Turn C-Bet: 42.2% (1134/2685 opportunities) (target 55–65%, too tight)
+AF: 1.58 (7358 aggressive/4664 calls) (target 2–4.2, too tight)
+WTSD: 44.6% (6333/14206 flop-seen)
+W$SD: 47.7%
+Invalid-action fallbacks: 0
+AF by street: flop 1.67 (4444/2659) · turn 1.53 (2120/1389) · river 1.29 (794/616)
+AF by role: PFA 5.10 (4967/974) · non-PFA 0.65 (2391/3690)
+AF by pressure: facing-bet 0.11 (491/4664) · open-action n/a (6867/0)
+Showdown funnel: flop 14206 · turn 8790 · river 6843 · showdown 6333
+
+=== Heads-up ===
+Hands: 10,000 · Player-hands: 20,000 · 3373ms
+Table format: heads-up (2 seats) · Avg active opponents/postflop decision: 1.00
+VPIP: 86.18% (target 65–87%, in range)
+PFR:  54.02% (target 45–68%, in range)
+3-bet: 19.04% (target 14–28%, in range; 1728/9075 opportunities)
+3-bet by category: air 0/3689 (0.0%) · weak 0/2017 (0.0%) · medium 287/1928 (14.9%) · strong 1302/1302 (100.0%) · premium 139/139 (100.0%)
+Positions:
+  late     10000 hands · VPIP 99.13% · PFR 85.27%
+  blinds   10000 hands · VPIP 73.23% · PFR 22.76%
+Actions: fold 15.7% · check 28.4% · call 19.0% · raise 35.9% · all-in 1.0%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 91.3% (5009/5485 opportunities) (target 88–98%, in range)
+Fold-to-CBet: 69.0% (3544/5133 opportunities) (target 30–45%, too loose)
+Turn C-Bet: 42.6% (746/1752 opportunities) (target 50–65%, too tight)
+AF: 3.10 (7776 aggressive/2510 calls) (target 3–10, in range)
+WTSD: 28.2% (3862/13684 flop-seen)
+W$SD: 53.8%
+Invalid-action fallbacks: 0
+AF by street: flop 3.45 (5745/1666) · turn 2.73 (1443/529) · river 1.87 (588/315)
+AF by role: PFA 17.39 (6085/350) · non-PFA 0.78 (1691/2160)
+AF by pressure: facing-bet 0.14 (355/2510) · open-action n/a (7421/0)
+Showdown funnel: flop 13684 · turn 5756 · river 4292 · showdown 3862
+
+Calling Station simulation · 10,000 hands per format
+
+=== Full Ring (9-max) ===
+Hands: 10,000 · Player-hands: 90,000 · 13663ms
+Table format: full-ring (9 seats) · Avg active opponents/postflop decision: 2.63
+VPIP: 35.22% (target 28–43%, in range)
+PFR:  8.04% (target 5–14%, in range)
+3-bet: 1.36% (target 1–8%, in range; 470/34567 opportunities)
+3-bet by category: air 0/10358 (0.0%) · weak 0/7653 (0.0%) · medium 0/10097 (0.0%) · strong 257/6077 (4.2%) · premium 213/382 (55.8%)
+Positions:
+  early    20000 hands · VPIP 28.71% · PFR  8.18%
+  middle   20000 hands · VPIP 33.93% · PFR  7.51%
+  late     30000 hands · VPIP 40.02% · PFR  9.05%
+  blinds   20000 hands · VPIP 35.80% · PFR  6.90%
+Actions: fold 34.6% · check 27.1% · call 26.9% · raise 9.8% · all-in 1.6%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 46.9% (2360/5032 opportunities) (target 44–54%, in range)
+Fold-to-CBet: 43.9% (4523/10298 opportunities) (target 28–42%, too loose)
+Turn C-Bet: 29.6% (1206/4072 opportunities) (target 28–35%, in range)
+AF: 0.63 (13429 aggressive/21446 calls) (target 0.5–2, in range)
+WTSD: 64.5% (20832/32294 flop-seen)
+W$SD: 35.6%
+Invalid-action fallbacks: 0
+AF by street: flop 0.65 (5434/8386) · turn 0.60 (4480/7410) · river 0.62 (3515/5650)
+AF by role: PFA 1.28 (4443/3467) · non-PFA 0.50 (8986/17979)
+AF by pressure: facing-bet 0.03 (537/21446) · open-action n/a (12892/0)
+Showdown funnel: flop 32294 · turn 25411 · river 22542 · showdown 20832
+
+=== 6-max ===
+Hands: 10,000 · Player-hands: 60,000 · 10352ms
+Table format: six-max (6 seats) · Avg active opponents/postflop decision: 2.13
+VPIP: 44.30% (target 38–56%, in range)
+PFR:  10.63% (target 7–17%, in range)
+3-bet: 2.11% (target 2–9%, in range; 430/20334 opportunities)
+3-bet by category: air 0/5737 (0.0%) · weak 0/5048 (0.0%) · medium 0/6304 (0.0%) · strong 288/3051 (9.4%) · premium 142/194 (73.2%)
+Positions:
+  early    10000 hands · VPIP 33.98% · PFR  8.86%
+  middle   10000 hands · VPIP 40.47% · PFR  9.81%
+  late     20000 hands · VPIP 54.52% · PFR 13.35%
+  blinds   20000 hands · VPIP 41.14% · PFR  9.21%
+Actions: fold 27.5% · check 33.8% · call 26.0% · raise 11.6% · all-in 1.2%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 45.4% (2028/4468 opportunities) (target 44–54%, in range)
+Fold-to-CBet: 51.1% (3911/7658 opportunities) (target 30–40%, too loose)
+Turn C-Bet: 29.1% (1032/3552 opportunities) (target 30–38%, too tight)
+AF: 0.86 (11361 aggressive/13265 calls) (target 0.5–2, in range)
+WTSD: 61.3% (16922/27621 flop-seen)
+W$SD: 39.9%
+Invalid-action fallbacks: 0
+AF by street: flop 0.89 (4595/5170) · turn 0.85 (3694/4371) · river 0.82 (3072/3724)
+AF by role: PFA 1.53 (3759/2463) · non-PFA 0.70 (7602/10802)
+AF by pressure: facing-bet 0.04 (465/13265) · open-action n/a (10896/0)
+Showdown funnel: flop 27621 · turn 21731 · river 18778 · showdown 16922
+
+=== Heads-up ===
+Hands: 10,000 · Player-hands: 20,000 · 5066ms
+Table format: heads-up (2 seats) · Avg active opponents/postflop decision: 1.00
+VPIP: 63.98% (target 62–85%, in range)
+PFR:  17.95% (target 15–36%, in range)
+3-bet: 1.64% (target 2–13%, too tight; 58/3533 opportunities)
+3-bet by category: air 0/1456 (0.0%) · weak 0/962 (0.0%) · medium 0/790 (0.0%) · strong 40/297 (13.5%) · premium 18/28 (64.3%)
+Positions:
+  late     10000 hands · VPIP 98.17% · PFR 21.39%
+  blinds   10000 hands · VPIP 29.78% · PFR 14.52%
+Actions: fold 6.3% · check 61.9% · call 18.3% · raise 13.4% · all-in 0.2%
+Deep open shoves >40 BB: 0
+Uncommitted deep shoves: 0
+C-Bet: 39.1% (873/2232 opportunities) (target 38–48%, in range)
+Fold-to-CBet: 67.9% (1428/2103 opportunities) (target 25–40%, too loose)
+Turn C-Bet: 18.7% (308/1644 opportunities) (target 25–38%, too tight)
+AF: 2.31 (5690 aggressive/2460 calls) (target 1–3, in range)
+WTSD: 65.5% (11368/17368 flop-seen)
+W$SD: 53.4%
+Invalid-action fallbacks: 0
+AF by street: flop 2.74 (2339/855) · turn 2.19 (1569/716) · river 2.00 (1782/889)
+AF by role: PFA 2.68 (1445/540) · non-PFA 2.21 (4245/1920)
+AF by pressure: facing-bet 0.09 (230/2460) · open-action n/a (5460/0)
+Showdown funnel: flop 17368 · turn 14420 · river 12798 · showdown 11368

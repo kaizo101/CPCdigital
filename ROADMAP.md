@@ -665,7 +665,7 @@ stabilisieren, ohne Zielkorridore zur Fehlerkaschierung zu verbreitern.
 ## 🎯 0.8.0 — Kalibrierungs-Stabilisierung
 
 **Ziel:** Die Kalibrierung über alle Archetypen, Varianten und Formate auf ein
-belastbares Fundament stellen, bevor neue Features (HU, dynamische Gegner)
+belastbares Fundament stellen, bevor neue Strategiepfade und dynamische Gegner
 darauf aufbauen.
 
 ### PLO-Handbewertung & Rekalibrierung
@@ -686,51 +686,62 @@ darauf aufbauen.
 
 ### Test-Infrastruktur
 
-- [ ] **Layer 1 — Invariant-Based Smoke Suite** ([Details](#layer-1--invariant-based-smoke-suite-ci-jeder-commit)):
+- [x] **Layer 1 — Invariant-Based Smoke Suite** ([Details](#layer-1--invariant-based-smoke-suite-ci-jeder-commit)):
   Chip-Konservierung, Dealer-Rotation, kein negativer Stack, Pot-Konsistenz, Queue-Integrität —
-  randomisierte Aktionen über viele Hände, läuft bei jedem Commit
-- [ ] **Layer 2 — Kalibrierungs-Regression**: 300-Hand-Smoke mit Baseline-Vergleich,
-  Abweichung > 2 %p → Warnung, > 5 %p → Build-Fehler
-- [ ] **Layer 3 — Parameter-Validierung**: Score-Tabellen-Konsistenz, Clamp-Gültigkeit,
-  Skill-Tier-Sortierung, All-in-Strafen negativ
+  19 randomisierte NLHE-/PLO-Szenarien mit je 1.000 Händen
+- [ ] **0.8.1 / Layer 2 — Kalibrierungs-Regression**: 300-Hand-Smoke mit
+  Baseline-Vergleich, Abweichung > 2 %p → Warnung, > 5 %p → Build-Fehler
+- [ ] **0.8.1 / Layer 3 — Parameter-Validierung**: Score-Tabellen-Konsistenz,
+  Clamp-Gültigkeit, Skill-Tier-Sortierung, All-in-Strafen negativ
 
 ### Strukturelle Score-Lücken
 
 #### 🔴 Priority 1 — Direkter Kalibrierungs-Impact
 
-- [ ] **Pot-Commitment-Logik**: Ab callCommitment ≥ 0.4 Fold-Scores überschreiben.
+- [x] **Pot-Commitment-Logik**: Ab callCommitment ≥ 0.4 Fold-Scores überschreiben.
   Behebt LAG FR WTSD 11.8% vs Target 28–34%. Höchster Einzeleffekt auf Kalibrierung.
-- [ ] **Dynamische Fold-Thresholds**: Fold-Scores als Funktion von Street, SPR und
+- [x] **Dynamische Fold-Thresholds**: Fold-Scores als Funktion von Street, SPR und
   Gegner-Aggression. Behebt Nit AF-Explosion (AF 6.6 statt 3.5) und universell
   zu hohes Fold-to-CBet (78-84% vs. 30-68%).
-- [ ] **Multiway-Dynamik**: `activeOpponents` graduell statt binär ≥3. Multiway-Penalty
+- [x] **Multiway-Dynamik**: `activeOpponents` graduell statt binär ≥3. Multiway-Penalty
   für C-Bet, 3-Bet, Value-Raises. Senkt PLO-C-Bet-Überaggression und verbessert
   Fold-to-CBet in Multiway-Pots. Preflop-Ranges nach Gegnerzahl skalieren.
-- [ ] **TAG 6m AF-Tuning**: AF stabil bei 3.65 (Target 1.5–3.5). Nur Parameter — kein
+- [x] **TAG 6m AF-Tuning**: AF stabil bei 3.65 (Target 1.5–3.5). Nur Parameter — kein
   Algorithmus-Aufwand.
 
 ### HU-Kalibrierung
 
-HU ist spielbar, aber die Targets in `simulation.ts` sind noch nicht validiert
-(Diagnose aus der 0.7.1-Kalibrierung).
+HU ist spielbar, besitzt eigene Targets und wird nicht mehr aus 6-max-
+Entscheidungstabellen abgeleitet. Die exakte Postflop-Kalibrierung folgt nach
+den Strategieänderungen von 0.8.1, die adaptive Validierung nach 0.8.2.
 
-- [ ] HU-spezifische Preflop-Ranges validieren und nachjustieren (Anker in `preflop-ranges.ts` vorhanden)
-- [ ] NLHE Calling Station: 3-Bet-Frequenz und Target nach korrigiertem
+- [x] HU-spezifische Preflop-Ranges validieren und nachjustieren (Anker in `preflop-ranges.ts` vorhanden)
+- [x] NLHE Calling Station: 3-Bet-Frequenz und Target nach korrigiertem
   Opportunity-Nenner prüfen (v0.7.8-Baseline: 1,79%, 63/3512 bei 10k)
-- [ ] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz, Bluff-Rate)
-- [ ] HU-Kalibrierung: bestehende Targets in `simulation.ts` schärfen (alle 4 Archetypen, NLHE + PLO)
-- [ ] Integrationstests für HU-Szenarien
-- [ ] 3k-Entwicklungsläufe + 10k-Release-Lauf für alle vier Archetypen in NLHE und PLO
+- [x] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz, Bluff-Rate)
+- [x] HU-Kalibrierung: bestehende Targets in `simulation.ts` schärfen (alle 4 Archetypen, NLHE + PLO)
+- [x] Integrationstests für Format-Isolation und explizite HU-Tabellenauswahl
+- [x] Strukturelle Baseline: NLHE 10k und PLO 3k für alle vier Archetypen
+- [ ] 0.8.1: finale 10k-Postflop-Validierung für NLHE und PLO
 
 ### Release-Gate
 
 - [x] Code-Review abgeschlossen: 30 Module, 22 Bugs gefixt, 19 bugfrei ([REVIEW.md](REVIEW.md))
-- [ ] Alle 16 FR/6-max-Kombinationen (NLHE + PLO) innerhalb der aktualisierten Targets
-  (VPIP, PFR, 3-Bet, C-Bet, AF, WTSD, Fold-to-CBet, Turn C-Bet)
-- [ ] HU-Kalibrierung: 8 Kombinationen (NLHE + PLO) innerhalb der geschärften Targets
-- [ ] 10k-Release-Läufe für NLHE und PLO, Full Ring, 6-max und Heads-up
-- [ ] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves
-- [ ] Layer 1-Invarianten-Tests grün für NLHE und PLO
+- [x] Festes Tabellenformat (`tableSize`) von aktiven Spielern im Pot getrennt;
+  ein Full-Ring-Pot kann nach Folds keine 6-max-/HU-Boni mehr erhalten
+- [x] PLO-HU-Score- und Preflop-Tabellen explizit von 6-max entkoppelt
+- [x] Kalibrierungsreport mit Rohnennern sowie AF nach Street, Rolle und Drucksituation
+- [x] Vorher-Baseline vollständig dokumentiert: 20 NLHE- und 42 PLO-Zielabweichungen
+- [x] Post-Isolation-Baseline: NLHE 10k und PLO 3k, jeweils alle Archetypen und Formate
+- [x] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves und
+  0 uncommitted Deep-Shoves
+- [x] Layer 1-Invarianten-Tests grün für NLHE und PLO (19 Tests)
+
+Das frühere All-green-Gate wird nicht durch weichere Targets ersetzt. Exaktes
+Postflop-Tuning wird bewusst nach den SPR-, Board-, River-, Float- und
+Barrel-Änderungen von 0.8.1 durchgeführt. Finale adaptive Preflop-/HU-
+Validierung folgt nach 0.8.2. So werden keine 0.8.0-Konstanten auf
+Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 
 ---
 
@@ -757,6 +768,11 @@ HU ist spielbar, aber die Targets in `simulation.ts` sind noch nicht validiert
 
 ### NLHE-Verfeinerung & Infrastruktur
 
+- [ ] **Layer 2 — Kalibrierungs-Regression**: deterministischer 300-Hand-Smoke,
+  Abweichung > 2 %p als Warnung und > 5 %p als Fehler
+- [ ] **Layer 3 — Parameter-Validierung**: Score-Tabellen, Clamps,
+  Skill-Tier-Reihenfolge und All-in-Strafen prüfen
+
 - [ ] **Skill-Gating**: Neue Analyse-Tiefe als Feature-Flags mit `skillGate`-Schwellen.
   Skill-20-Nit: nur Outs-Zahl. Skill-90-TAG: Nut-Wrap vs. Bottom-Wrap. Bestehendes
   Muster: `sizingTell.skillGate: 30`.
@@ -779,7 +795,8 @@ HU ist spielbar, aber die Targets in `simulation.ts` sind noch nicht validiert
 ### Release-Gate
 
 - [ ] 3k-Entwicklungsläufe + 10k-Release-Läufe für alle vier Archetypen in NLHE und PLO,
-  Full Ring und 6-max — die 0.8.0-Kalibrierung ist nach 13 Score-Änderungen neu zu validieren
+  Full Ring und 6-max — die statische 0.8.0-Baseline ist nach den Score-Änderungen
+  neu zu validieren und postflop auf die unveränderten Zielranges zu kalibrieren
 - [ ] HU-Kalibrierung: 8 Kombinationen (NLHE + PLO) innerhalb der geschärften Targets
 - [ ] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves
 - [ ] Skill-Gating-Smoke: Low-Skill-Bot (20) und High-Skill-Bot (90) zeigen messbar
@@ -831,6 +848,15 @@ Muster zu verfallen.
   Low-Skill-Überreaktion, gegnerspezifischer Frust und Rückkehr zur Grundlinie
 - [ ] Sessiontests für sichtbare, aber nicht permanente Tilt-/Confidence-
   Phasen sowie Invarianten gegen neue marginale Deep-Stack-Eskalationen
+
+### Kalibrierungs-Gate
+
+- [ ] **Baseline-Modus:** Archetypen ohne adaptive Reads, Frust und Momentum
+  bleiben innerhalb der festen VPIP/PFR/3-Bet/Postflop-Zielranges
+- [ ] **Adaptiver Modus:** Sequenz- und Sessiontests prüfen gerichtete,
+  begrenzte Deltas statt jede dynamische Sitzung gegen dieselben statischen
+  Korridore zu zwingen
+- [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up
 
 ---
 

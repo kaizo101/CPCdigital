@@ -3,6 +3,7 @@ import type { Card } from '@cpc/shared'
 import type { VariantEvaluator, HandStrengthCategory, NutPotential, VariantHandAssessment, BoardTexture } from './bot-variant-evaluation'
 import { getPloScores, type PloStreet } from './bot-category-scores'
 import { createDeck, evaluateOmahaHand } from '@cpc/poker-engine'
+import { resolveTableFormat } from './bot-table-format'
 
 export const omahaVariantEvaluator: VariantEvaluator = {
   variantId: 'omaha-high',
@@ -13,7 +14,7 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     if (communityCards.length === 0) {
       return {
         variantId: this.variantId,
-        handAssessment: preflopAssess(ownCards),
+        handAssessment: preflopAssess(ownCards, position.tableSize, context.archetypeId),
         boardTexture: 'neutral' as const,
         categoryScores: getPloScores(context.archetypeId, 'preflop', position.tableSize),
       }
@@ -71,7 +72,23 @@ const PLO_PREFLOP_THRESHOLDS = [
   { min: 16, category: 'marginal' as HandStrengthCategory },
 ]
 
-function preflopAssess(ownCards: Card[]): VariantHandAssessment {
+function getHuThresholds(archetypeId?: string): typeof PLO_PREFLOP_THRESHOLDS {
+  const base = (premium: number, strong: number, good: number, medium: number, marginal: number) => [
+    { min: premium, category: 'premium' as HandStrengthCategory },
+    { min: strong, category: 'strong' as HandStrengthCategory },
+    { min: good, category: 'good' as HandStrengthCategory },
+    { min: medium, category: 'medium' as HandStrengthCategory },
+    { min: marginal, category: 'marginal' as HandStrengthCategory },
+  ]
+  switch (archetypeId) {
+    case 'nit':     return base(72, 52, 36, 26, 16)
+    case 'lag':     return base(72, 52, 36, 26, 16)
+    case 'calling-station': return base(56, 40, 24, 16, 8)
+    default:        return base(68, 48, 30, 20, 12) // TAG
+  }
+}
+
+function preflopAssess(ownCards: Card[], tableSize: number = 9, archetypeId?: string): VariantHandAssessment {
   const suitProfile = analyzePreflopSuits(ownCards)
   const rankProfile = analyzePreflopRanks(ownCards)
   const aceCount = ownCards.filter(c => c.rank === 'A').length
@@ -89,8 +106,12 @@ function preflopAssess(ownCards: Card[]): VariantHandAssessment {
   strength -= rankProfile.danglers * 4
   strength = Math.max(1, Math.min(95, strength))
 
+  const thresholds = resolveTableFormat(tableSize) === 'heads-up'
+    ? getHuThresholds(archetypeId)
+    : PLO_PREFLOP_THRESHOLDS
+
   let category: HandStrengthCategory = 'weak'
-  for (const t of PLO_PREFLOP_THRESHOLDS) {
+  for (const t of thresholds) {
     if (strength >= t.min) { category = t.category; break }
   }
 

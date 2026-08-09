@@ -5,7 +5,7 @@ import { deriveDecisionMetrics } from './bot-decision-metrics'
 import { decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
 import { applySkillPerception } from './bot-skill-perception'
 import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
-import { NLHE_CATEGORY_SCORES } from './bot-category-scores'
+import { getNlheScores, NLHE_CATEGORY_SCORES } from './bot-category-scores'
 import type { OpponentLine, StreetAnalysis } from './bot-street-analysis'
 
 const cards: [Card, Card] = [
@@ -53,7 +53,8 @@ function context(
     botState: createBotState(TAG_PERSONALITY, 50, () => 0.5),
     variantId: 'texas-holdem',
     position: 'late',
-    playerCount: 2,
+    tableSize: 2,
+    activePlayerCount: 2,
     boardTexture: 'neutral',
     handAssessment: {
       category: 'strong',
@@ -500,14 +501,14 @@ describe('bot utility candidates', () => {
     const lagContext: DecisionContext = {
       ...tagContext,
       botState: createBotState(LAG_PERSONALITY, 100, () => 0.25),
+      categoryScores: getNlheScores('lag'),
     }
     const tag = decideAction(tagContext, { random: () => 0.5 }).allActions
     const lag = decideAction(lagContext, { random: () => 0.5 }).allActions
     const utility = (actions: typeof tag, action: PlayerAction['type']) =>
       actions.find(candidate => candidate.action.type === action)!.utility
 
-    expect(utility(lag, 'raise')).toBeGreaterThan(utility(tag, 'raise'))
-    expect(utility(lag, 'fold')).toBeLessThan(utility(tag, 'fold'))
+    expect(utility(lag, 'call')).toBeGreaterThan(utility(tag, 'call'))
     expect(lag.find(candidate => candidate.action.type === 'raise')!.contributions)
       .toEqual(expect.arrayContaining([
         expect.objectContaining({ category: 'personality', label: 'Aggression' }),
@@ -536,6 +537,7 @@ describe('bot utility candidates', () => {
     const stationContext: DecisionContext = {
       ...tagContext,
       botState: createBotState(CALLING_STATION_PERSONALITY, 100, () => 0.25),
+      categoryScores: getNlheScores('calling-station'),
     }
     const tag = decideAction(tagContext, { random: () => 0.5 }).allActions
     const station = decideAction(stationContext, { random: () => 0.5 }).allActions

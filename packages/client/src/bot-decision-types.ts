@@ -71,7 +71,10 @@ export interface DecisionContext {
   botId: string
   botState: BotState
   position: Position
-  playerCount: number
+  /** Fixed seated table size (for example 9, 6, or 2). */
+  tableSize: number
+  /** Players still contesting the current pot, including the acting bot. */
+  activePlayerCount: number
   boardTexture: BoardTexture
   handAssessment: VariantHandAssessment
   metrics: DecisionMetrics

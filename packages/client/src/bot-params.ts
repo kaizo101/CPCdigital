@@ -212,11 +212,11 @@ export const DEFAULT_PARAMS: BotParams = {
       emotionality: { mean: 50, stddev: 10 },
     },
     nit: {
-      preflopLooseness: { mean: 12, stddev: 4 },
-      aggression: { mean: 38, stddev: 7 },
+      preflopLooseness: { mean: 14, stddev: 4 },
+      aggression: { mean: 52, stddev: 7 },
       bluffFrequency: { mean: 8, stddev: 4 },
-      riskTolerance: { mean: 25, stddev: 7 },
-      patience: { mean: 88, stddev: 6 },
+      riskTolerance: { mean: 28, stddev: 7 },
+      patience: { mean: 76, stddev: 6 },
       observationSkill: { mean: 62, stddev: 12 },
       tiltSensitivity: { mean: 24, stddev: 8 },
       tiltRecovery: { mean: 72, stddev: 10 },
@@ -224,7 +224,7 @@ export const DEFAULT_PARAMS: BotParams = {
     },
     lag: {
       preflopLooseness: { mean: 76, stddev: 7 },
-      aggression: { mean: 80, stddev: 8 },
+      aggression: { mean: 72, stddev: 8 },
       bluffFrequency: { mean: 48, stddev: 10 },
       riskTolerance: { mean: 68, stddev: 10 },
       patience: { mean: 45, stddev: 10 },
@@ -261,7 +261,7 @@ export const DEFAULT_PARAMS: BotParams = {
       allInNeutral: 52,
     },
     streetInitiative: {
-      cbetOpportunity: 18,
+      cbetOpportunity: 16,
       delayedCbet: 8,
       weaknessSteal: 10,
       weaknessTrap: -5,

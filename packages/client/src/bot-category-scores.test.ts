@@ -98,6 +98,13 @@ describe('getPloPreflopAction', () => {
     expect(getPloPreflopAction('calling-station', 'unopened', 'good', 6)).toBe('call')
     expect(getPloPreflopAction('calling-station', 'facing-3bet', 'premium', 6)).toBe('call')
   })
+
+  it('heads-up preserves its former effective ranges without consulting six-max at runtime', () => {
+    expect(getPloPreflopAction('nit', 'facing-open', 'good', 2)).toBe('raise-or-call')
+    expect(getPloPreflopAction('lag', 'facing-open', 'medium', 2)).toBe('call-or-fold')
+    expect(getPloPreflopAction('calling-station', 'unopened', 'marginal', 2)).toBe('call')
+    expect(getPloPreflopAction('calling-station', 'facing-open', 'strong', 2)).toBe('raise')
+  })
 })
 
 describe('getPloScores (six-max postflop)', () => {
@@ -165,5 +172,13 @@ describe('getPloScores (six-max postflop)', () => {
     expect(flop.call.weak).toBeGreaterThan(turnRiver.call.weak)
     expect(flop.call.marginal).toBeGreaterThan(turnRiver.call.marginal)
     expect(flop.call.medium).toBeGreaterThan(turnRiver.call.medium)
+  })
+
+  it('heads-up uses an independent snapshot of the previously inherited six-max scores', () => {
+    const sixMax = getPloScores('lag', 'turn', 6)
+    const headsUp = getPloScores('lag', 'turn', 2)
+
+    expect(headsUp).not.toBe(sixMax)
+    expect(headsUp).toEqual(sixMax)
   })
 })

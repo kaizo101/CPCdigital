@@ -34,7 +34,8 @@ function makeContext(
     botState,
     variantId: 'texas-holdem',
     position: 'middle',
-    playerCount: 6,
+    tableSize: 6,
+    activePlayerCount: 6,
     boardTexture: 'dry',
     handAssessment: {
       category: 'strong' as const,

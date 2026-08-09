@@ -35,7 +35,8 @@ function makeCtx(overrides: Partial<DecisionContext> = {}): DecisionContext {
       memory: { handsPlayed: 1, handsWon: 0, hand: { raisedPreflop: false, lastAction: null, lastStreet: null } },
     } as any,
     position: 'middle',
-    playerCount: 2,
+    tableSize: 2,
+    activePlayerCount: 2,
     boardTexture: 'neutral',
     handAssessment: {
       category: 'medium', rank: 2, made: true, relativeStrength: 50, showdownValue: 30,
@@ -95,6 +96,50 @@ describe('skillLevelFactor tier ordering', () => {
         `Tier ${i} threshold ${tiers[i].threshold} should be < tier ${i - 1} threshold ${tiers[i - 1].threshold}`
       ).toBeLessThan(tiers[i - 1].threshold)
     }
+  })
+})
+
+describe('fixed table format versus active players', () => {
+  it('does not grant a full-ring pot the heads-up double-barrel boost after folds', () => {
+    const base = makeCtx({
+      gameView: {
+        ...makeCtx().gameView,
+        phase: 'turn',
+        board: [
+          { rank: '2', suit: 'hearts' },
+          { rank: '7', suit: 'clubs' },
+          { rank: 'K', suit: 'diamonds' },
+          { rank: '3', suit: 'spades' },
+        ],
+      },
+      tableSize: 9,
+      activePlayerCount: 2,
+      legalActions: {
+        fold: false,
+        check: true,
+        callAmount: null,
+        raise: { minAmount: 20, maxAmount: 1000 },
+        allInAmount: null,
+      },
+      streetAnalysis: {
+        preflopAggressor: 'bot',
+        preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'bot', flop: 'bot', turn: null, river: null },
+        iAmPreflopAggressor: true,
+        opponentLines: new Map(),
+        activeOpponents: 1,
+        opponentShowedWeakness: false,
+        opponentCheckRaised: false,
+        street: 'turn',
+        actionCountThisStreet: 0,
+      },
+    })
+    const contribution = (ctx: DecisionContext) => scoreActions(ctx)
+      .find(action => action.action.type === 'raise')!
+      .contributions.find(item => item.label.startsWith('Double-barrel'))!
+      .value
+
+    expect(contribution(base)).toBeLessThan(contribution({ ...base, tableSize: 2 }))
   })
 })
 
