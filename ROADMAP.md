@@ -756,7 +756,7 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 
 ### PLO-Strategie
 
-- [ ] **SPR-Zonen (PLO)**: Graduelle SPR-Skalierung statt binär ≤3. SPR 1-3 →
+- [x] **SPR-Zonen (PLO)**: Graduelle SPR-Skalierung statt binär ≤3. SPR 1-3 →
   Nut-or-Fold, SPR 4-8 → Protection-heavy, SPR 8-15 → Draw-heavy. Fundamentale
   PLO-Strategie-Variable, aktuell nur +12/−8 bei SPR≤3.
 - [ ] **PLO-Board-Dynamics**: `boardGotWorse` boolean → Equity-Collapse-Multiplikator.
@@ -943,6 +943,13 @@ großen UI-Release abschließen.
   zwingend exakt zwei Hole Cards plus drei Board Cards auswerten. Die Anzeige
   bleibt rein beschreibend und enthält weder Draw-/Equitywerte noch eine
   Handlungsempfehlung
+- [ ] **Diagnosefähige Hand-ID**: Jede Hand erhält zusätzlich zur
+  sessionlokalen Nummer eine sessionsübergreifend eindeutige, seed-neutrale
+  ID, die am Tisch, im Replayer und in Exporten sichtbar und kopierbar ist.
+  Nach Handabschluss verknüpft der Debugexport sie mit Variante,
+  Tischkonfiguration, Bot-Identitäten, Startzuständen und einem geschützten
+  Reproduktionsschlüssel beziehungsweise kanonischen Snapshot; die sichtbare
+  ID darf keine noch unbekannte Kartenfolge ableitbar machen
 - [ ] **Glatte Bot-Rebuys**: Den aus der persönlichen BB-Policy abgeleiteten
   Zielstack auf eine sinnvolle, zur Chip-Unit passende Geldstufe aufrunden,
   ohne den eigentlichen Rebuy-Trigger abzusenken; Beträge wie `$1,14`

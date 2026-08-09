@@ -16,6 +16,7 @@ import { getSizingTell } from './bot-reads'
 import { roundToCents } from './utils/format'
 import { params } from './bot-params'
 import { resolveTableFormat } from './bot-table-format'
+import { getPloSprAdjustments, type PloSprAction } from './plo-spr-strategy'
 
 export function scoreActions(context: DecisionContext): ScoredAction[] {
   const actions: ScoredAction[] = []
@@ -46,6 +47,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
   contributions.push(...multiwayFactors('fold', context))
   contributions.push(...potCommitmentFactors('fold', context))
   contributions.push(...dynamicFoldFactors(context))
+  contributions.push(...ploSprFactors('fold', context))
   contributions.push(...opponentProfileFactors('fold', context))
 
   contributions.push(...rangeBasedFactors('fold', context))
@@ -83,6 +85,7 @@ function scoreCheck(context: DecisionContext): ScoredAction {
       contributions.push(factor('position', 'Check as PFA on flop — c-bet preferred', -30))
     }
   }
+  contributions.push(...ploSprFactors('check', context))
 
   return buildAction({ type: 'check' }, intent, contributions)
 }
@@ -118,6 +121,7 @@ function scoreCall(context: DecisionContext): ScoredAction {
 
   contributions.push(...rangeBasedFactors('call', context))
   contributions.push(...weakCallDownFactors(context))
+  contributions.push(...ploSprFactors('call', context))
 
   return buildAction({ type: 'call' }, intent, contributions)
 }
@@ -171,6 +175,7 @@ function scoreRaise(context: DecisionContext): ScoredAction {
   }
 
   contributions.push(...rangeBasedFactors('raise', context))
+  contributions.push(...ploSprFactors('raise', context))
 
   const scored = buildAction(
     { type: 'raise', amount: calculateRaiseTo(context) },
@@ -219,6 +224,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
   if (hand.blockerValue >= 30 && hand.category === 'air') {
     contributions.push(factor('hand-strength', 'Relevant blocker', params.scoring.allInMods.blockerValue))
   }
+  contributions.push(...ploSprFactors('all-in', context))
 
   const scored = buildAction({ type: 'all-in' }, aggressiveIntent(context), contributions)
   return riskFactors.length > 0
@@ -337,6 +343,14 @@ function bettingFactors(
     phase: context.gameView.phase,
     preflopRaiseCount: context.streetAnalysis?.preflopRaiseCount,
   }).map(({ label, value }) => factor('betting-context', label, value))
+}
+
+function ploSprFactors(
+  action: PloSprAction,
+  context: DecisionContext,
+): ScoreContribution[] {
+  return getPloSprAdjustments(action, context)
+    .map(({ label, value }) => factor('betting-context', label, value))
 }
 
 function preflopRaiseDepthFactors(context: DecisionContext): ScoreContribution[] {
@@ -876,9 +890,9 @@ function dynamicFoldFactors(context: DecisionContext): ScoreContribution[] {
     result.push(factor('betting-context', 'Turn defense — continue with medium+ hands', Math.round(-6 * riskFactor)))
   }
 
-  if (metrics.spr <= 3 && isAtLeast(hand.category, 'medium')) {
+  if (!isPLO && metrics.spr <= 3 && isAtLeast(hand.category, 'medium')) {
     result.push(factor('betting-context', `Low SPR ${metrics.spr.toFixed(2)} — pot committed, defend`, Math.round(-14 * riskFactor)))
-  } else if (metrics.spr <= 5 && isAtLeast(hand.category, 'marginal')) {
+  } else if (!isPLO && metrics.spr <= 5 && isAtLeast(hand.category, 'marginal')) {
     result.push(factor('betting-context', `Moderate SPR ${metrics.spr.toFixed(2)} — defend more often`, Math.round(-6 * riskFactor)))
   }
 

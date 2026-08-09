@@ -59,4 +59,21 @@ describe('validateBotParameters', () => {
       'params.scoring.handStrength.raise.premium must match NLHE TAG score table',
     )
   })
+
+  it('detects invalid PLO SPR boundaries and factor directions', () => {
+    const candidate = cloneParams()
+    candidate.scoring.ploSprZones.commitmentEnd = 1
+    candidate.scoring.ploSprZones.protectionPeak = 11
+    candidate.scoring.ploSprZones.drawCallStrong = -2
+    candidate.scoring.ploSprZones.commitmentContinueNonStrong = 2
+    candidate.scoring.ploSprZones.commitmentRiskReduction = 1.2
+
+    expect(validateBotParameters(candidate)).toEqual(expect.arrayContaining([
+      'scoring.ploSprZones commitment boundaries must be ascending',
+      'scoring.ploSprZones protection boundaries must be strictly ascending',
+      'scoring.ploSprZones.drawCallStrong must be positive',
+      'scoring.ploSprZones.commitmentContinueNonStrong must be negative',
+      'scoring.ploSprZones.commitmentRiskReduction must stay within 0..1',
+    ]))
+  })
 })

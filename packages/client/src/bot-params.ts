@@ -83,6 +83,34 @@ export interface ScoringParams {
     weakRiverPressure: number
     riverNoMadeHand: number
   }
+  ploSprZones: {
+    commitmentStart: number
+    commitmentEnd: number
+    protectionStart: number
+    protectionPeak: number
+    protectionEnd: number
+    drawStart: number
+    drawFull: number
+    drawFade: number
+    drawEnd: number
+    commitmentFoldNonStrong: number
+    commitmentContinueNonStrong: number
+    commitmentRiskReduction: number
+    commitmentRiskRaise: number
+    commitmentFoldStrong: number
+    commitmentCallStrong: number
+    commitmentRaiseStrong: number
+    commitmentAllInStrong: number
+    protectionFoldVulnerable: number
+    protectionFoldEquity: number
+    protectionPassiveVulnerable: number
+    protectionRaiseVulnerable: number
+    protectionAllInVulnerable: number
+    drawFoldStrong: number
+    drawCheckStrong: number
+    drawCallStrong: number
+    drawRaiseStrong: number
+  }
   utilityBaseline: number
   skillTiers: { threshold: number; factor: number }[]
 }
@@ -308,6 +336,34 @@ export const DEFAULT_PARAMS: BotParams = {
       weakTurnPressure: -10,
       weakRiverPressure: -18,
       riverNoMadeHand: -8,
+    },
+    ploSprZones: {
+      commitmentStart: 1,
+      commitmentEnd: 4,
+      protectionStart: 3,
+      protectionPeak: 5.5,
+      protectionEnd: 10,
+      drawStart: 3,
+      drawFull: 8,
+      drawFade: 15,
+      drawEnd: 18,
+      commitmentFoldNonStrong: 6,
+      commitmentContinueNonStrong: -8,
+      commitmentRiskReduction: 0.65,
+      commitmentRiskRaise: 10,
+      commitmentFoldStrong: -12,
+      commitmentCallStrong: 6,
+      commitmentRaiseStrong: 10,
+      commitmentAllInStrong: 12,
+      protectionFoldVulnerable: -6,
+      protectionFoldEquity: -10,
+      protectionPassiveVulnerable: -6,
+      protectionRaiseVulnerable: 12,
+      protectionAllInVulnerable: 4,
+      drawFoldStrong: -10,
+      drawCheckStrong: 4,
+      drawCallStrong: 10,
+      drawRaiseStrong: 6,
     },
     utilityBaseline: 50,
     skillTiers: [

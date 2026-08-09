@@ -194,6 +194,13 @@ Prozentpunkten fehl; AF verwendet absolute Grenzen von 0,2 und 0,5.
 `npm run calibrate:baseline` aktualisiert die Referenz nur nach einer bewusst
 freigegebenen Verhaltensänderung.
 
+Für faire A/B-Vergleiche besitzen einzelne Kalibrierungshände eigene Deck- und
+Entscheidungs-Seeds sowie einen explizit aus der Handnummer rotierten Dealer.
+Damit bleiben spätere Deals identisch, auch wenn eine Strategieänderung einen
+früheren Runout verkürzt. Bot-Sessionzustände werden dagegen absichtlich nicht
+zurückgesetzt, sodass reale Folgeeffekte auf Reads und Verhalten messbar
+bleiben.
+
 ### Stichprobengrößen
 
 | Stufe | Hände/Format | Total | Einsatz |

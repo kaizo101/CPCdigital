@@ -33,6 +33,7 @@ import {
   type CalibrationRegressionEntry,
   type CalibrationRegressionSnapshot,
 } from './calibration-regression'
+import { calibrationDealerIndex, calibrationHandSeeds } from './calibration-seeding'
 
 const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
 const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
@@ -413,7 +414,6 @@ function simulateFormat(
 ): SimulationStats {
   const players = createPlayers(format.playerCount)
   const seedNamespace = `${profile.seed}:${format.name}`
-  const decisionRandom = createSeededRandom(`${seedNamespace}:decisions`)
   const identities = DEFAULT_BOT_ROSTER.identities
     .filter(identity => identity.archetypeId === profile.archetypeId && !identity.maniac)
   const botStates = new Map<string, BotState>(
@@ -428,22 +428,22 @@ function simulateFormat(
       ]
     })
   )
-  const game = new PokerGame(players, {
-    bigBlind: BIG_BLIND,
-    smallBlind: SMALL_BLIND,
-    seed: `${seedNamespace}:deck`,
-    ...(CALIB_VARIANT === 'omaha-high' ? { variant: OMAHA_HIGH } : {}),
-  })
   const stats = createStats()
   const startedAt = Date.now()
   const observationCursors = new Map<string, OpponentObservationCursor>()
 
   for (let handNumber = 0; handNumber < numHands; handNumber++) {
-    for (const player of players) {
-      game.setPlayerChips(player.id, STARTING_CHIPS)
-      game.setPlayerSittingOut(player.id, false)
-      resetBotForHand(botStates.get(player.id)!)
-    }
+    for (const player of players) resetBotForHand(botStates.get(player.id)!)
+
+    const handSeeds = calibrationHandSeeds(seedNamespace, handNumber)
+    const decisionRandom = createSeededRandom(handSeeds.decisions)
+    const game = new PokerGame(players, {
+      bigBlind: BIG_BLIND,
+      smallBlind: SMALL_BLIND,
+      seed: handSeeds.deck,
+      initialDealerIndex: calibrationDealerIndex(handNumber, format.playerCount),
+      ...(CALIB_VARIANT === 'omaha-high' ? { variant: OMAHA_HIGH } : {}),
+    })
 
     game.startHand()
     stats.handsPlayed++

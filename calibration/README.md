@@ -25,6 +25,13 @@ bewusst freigegebenen strategischen Änderung kann er mit
 `npm run calibrate:baseline` neu erzeugt und anschließend im Diff geprüft
 werden.
 
+Deck- und Entscheidungs-Seeds werden für jede Hand separat aus Profil, Format
+und Handnummer abgeleitet; der Dealer rotiert dabei explizit. Eine Änderung,
+die einen Runout früher oder später beendet, verändert deshalb nicht mehr die
+Karten oder den Zufallsstrom aller nachfolgenden Hände. Sessionzustände bleiben
+bewusst erhalten, damit echte strategische Folgewirkungen weiterhin sichtbar
+sind.
+
 Zielkorridore bleiben grundsätzlich stabil. Ändert sich eine fachliche
 Metrikdefinition, wird eine notwendige Korridorkorrektur im jeweiligen Bericht
 explizit begründet, statt still an einzelne Laufergebnisse angepasst zu werden.

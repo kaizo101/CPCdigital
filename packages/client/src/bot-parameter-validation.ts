@@ -172,5 +172,63 @@ export function validateBotParameters(candidate: BotParams = params): string[] {
     }
   }
 
+  const spr = candidate.scoring.ploSprZones
+  for (const [name, value] of Object.entries(spr)) {
+    if (!Number.isFinite(value)) violations.push(`scoring.ploSprZones.${name} must be finite`)
+  }
+  const sprBoundaries = [
+    spr.commitmentStart,
+    spr.commitmentEnd,
+    spr.protectionStart,
+    spr.protectionPeak,
+    spr.protectionEnd,
+    spr.drawStart,
+    spr.drawFull,
+    spr.drawFade,
+    spr.drawEnd,
+  ]
+  if (sprBoundaries.some(value => !Number.isFinite(value) || value < 0)) {
+    violations.push('scoring.ploSprZones boundaries must be finite and non-negative')
+  }
+  if (spr.commitmentStart >= spr.commitmentEnd) {
+    violations.push('scoring.ploSprZones commitment boundaries must be ascending')
+  }
+  if (!(spr.protectionStart < spr.protectionPeak && spr.protectionPeak < spr.protectionEnd)) {
+    violations.push('scoring.ploSprZones protection boundaries must be strictly ascending')
+  }
+  if (!(spr.drawStart < spr.drawFull && spr.drawFull <= spr.drawFade && spr.drawFade < spr.drawEnd)) {
+    violations.push('scoring.ploSprZones draw boundaries must be ascending with a valid plateau')
+  }
+  if (spr.commitmentRiskReduction < 0 || spr.commitmentRiskReduction > 1) {
+    violations.push('scoring.ploSprZones.commitmentRiskReduction must stay within 0..1')
+  }
+
+  const negativeSprFactors: (keyof typeof spr)[] = [
+    'commitmentContinueNonStrong',
+    'commitmentFoldStrong',
+    'protectionFoldVulnerable',
+    'protectionFoldEquity',
+    'protectionPassiveVulnerable',
+    'drawFoldStrong',
+  ]
+  const positiveSprFactors: (keyof typeof spr)[] = [
+    'commitmentFoldNonStrong',
+    'commitmentCallStrong',
+    'commitmentRaiseStrong',
+    'commitmentAllInStrong',
+    'commitmentRiskRaise',
+    'protectionRaiseVulnerable',
+    'protectionAllInVulnerable',
+    'drawCheckStrong',
+    'drawCallStrong',
+    'drawRaiseStrong',
+  ]
+  for (const key of negativeSprFactors) {
+    if (spr[key] >= 0) violations.push(`scoring.ploSprZones.${key} must be negative`)
+  }
+  for (const key of positiveSprFactors) {
+    if (spr[key] <= 0) violations.push(`scoring.ploSprZones.${key} must be positive`)
+  }
+
   return violations
 }

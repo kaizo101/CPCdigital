@@ -7,6 +7,7 @@ import { applySkillPerception } from './bot-skill-perception'
 import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
 import { getNlheScores, NLHE_CATEGORY_SCORES } from './bot-category-scores'
 import type { OpponentLine, StreetAnalysis } from './bot-street-analysis'
+import { params } from './bot-params'
 
 const cards: [Card, Card] = [
   { rank: 'A', suit: 'spades' },
@@ -231,6 +232,72 @@ describe('bot utility candidates', () => {
       .find(candidate => candidate.action.type === 'all-in')!.utility
 
     expect(utility(lowSpr)).toBeGreaterThan(utility(deep))
+  })
+
+  it('uses PLO nut-or-fold evidence instead of the generic low-SPR defense rule', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const decisionContext = context(legalActions, { spr: 1 })
+    decisionContext.variantId = 'omaha-high'
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'medium',
+      rank: 3,
+      made: true,
+      vulnerability: 30,
+    }
+
+    const actions = scoreActions(decisionContext)
+    const fold = actions.find(candidate => candidate.action.type === 'fold')!
+    const call = actions.find(candidate => candidate.action.type === 'call')!
+    const disciplineWeight = 1 - (
+      decisionContext.botState.personality.riskTolerance / 100
+      * params.scoring.ploSprZones.commitmentRiskReduction
+    )
+
+    expect(fold.contributions).toContainEqual(expect.objectContaining({
+      label: expect.stringContaining('PLO commitment zone'),
+      value: Math.round(6 * disciplineWeight),
+    }))
+    expect(call.contributions).toContainEqual(expect.objectContaining({
+      label: expect.stringContaining('PLO commitment zone'),
+      value: Math.round(-8 * disciplineWeight),
+    }))
+    expect(fold.contributions.some(contribution => contribution.label.includes('pot committed, defend'))).toBe(false)
+  })
+
+  it('adds protection-zone pressure only to PLO vulnerable made hands', () => {
+    const legalActions: LegalActions = {
+      fold: false,
+      check: true,
+      callAmount: null,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    const plo = context(legalActions, { spr: 5.5 })
+    plo.variantId = 'omaha-high'
+    plo.handAssessment = {
+      ...plo.handAssessment,
+      category: 'good',
+      rank: 4,
+      made: true,
+      vulnerability: 75,
+    }
+    const nlhe = structuredClone(plo)
+    nlhe.variantId = 'texas-holdem'
+
+    const ploRaise = scoreActions(plo).find(candidate => candidate.action.type === 'raise')!
+    const nlheRaise = scoreActions(nlhe).find(candidate => candidate.action.type === 'raise')!
+    expect(ploRaise.contributions).toContainEqual(expect.objectContaining({
+      label: expect.stringContaining('PLO protection zone'),
+      value: 12,
+    }))
+    expect(nlheRaise.contributions.some(contribution => contribution.label.includes('PLO protection zone'))).toBe(false)
   })
 
   it('makes a deep-stack open shove ineligible without hiding the legal action', () => {

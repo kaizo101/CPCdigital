@@ -16,8 +16,19 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Parameter-Validierung (Layer 3)**: Tests prüfen alle aufgelösten NLHE- und
   PLO-Scoretabellen, Clamp-Grenzen, Skill-Tier-Sortierung und negative
   All-in-Mali. Die Kalibrierungsregression läuft zusätzlich in der CI.
+- **PLO-SPR-Zonen**: Postflop-Entscheidungen überblenden nun graduell zwischen
+  Commitment, Protection und Draw-Realisation. Niedrige SPR unterscheiden
+  starke Made Hands und Premium-Draws von Non-Nut-Equity, mittlere SPR
+  bevorzugen Protection mit verwundbaren Made Hands und hohe SPR realisieren
+  starke saubere Draws; Risikotoleranz und Aggression erhalten dabei den
+  Archetypenunterschied.
 
 ### Fixed
+
+- **Handisolierte Kalibrierungs-Seeds**: Deck- und Entscheidungs-RNG werden pro
+  Hand separat abgeleitet und der Dealer explizit rotiert. Unterschiedlich
+  lange Postflop-Runouts können dadurch nicht länger alle folgenden Deals und
+  Entscheidungen eines A/B-Laufs verschieben.
 
 - **Android-HandReplayer**: Header, Tischbereich und Replay-Steuerung belegen
   jetzt eigene Layoutzeilen. Der Tisch skaliert im kompakten Landscape aus dem
