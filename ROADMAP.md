@@ -1080,6 +1080,8 @@ breitere Kommunikation beginnen.
 - [ ] **Naming-Checkpoint**: „CPCdigital“ ausdrücklich als bisherigen
   Arbeitstitel prüfen und den endgültigen Projekt-/Produktnamen vor dem
   Release Candidate festlegen
+- [ ] Kandidat **CheckBack** anhand der dokumentierten Stärken, Kollisionen und
+  Verfügbarkeitsprüfungen bewerten ([Naming-Notizen](docs/product-naming.md))
 - [ ] Auffindbarkeit, Verwechslungsrisiken, Repository-/Domain-Namen sowie
   technische Bezeichner wie Paket- und App-IDs vor einer Umbenennung gemeinsam
   bewerten
