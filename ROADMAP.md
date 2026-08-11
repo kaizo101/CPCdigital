@@ -910,6 +910,9 @@ Muster zu verfallen.
 - [x] Regressionen für Skill-Grenzen, C-Bet-Once-Semantik, echte
   Aggressionsstufen, Paired-Board-Hierarchie, K-6-6-Ranges, AA-Valuebet,
   Kandidatenkanonisierung und exakte 85%-Grenze ergänzen
+- [x] Stake-Invarianz auf Decision- und kurzem Simulationsniveau absichern:
+  dieselbe Identität und Skillstufe entscheidet in proportional identischen
+  100-BB-Situationen unabhängig von der nominalen Blindhöhe gleich
 
 ### Adaptive Reads & Ranges
 
@@ -1051,7 +1054,9 @@ großen UI-Release abschließen.
   `rebuyWhenShortBb`-Policy für Short-Stack-Rebuys gemeinsam mit dem
   Deep-Stack-Cash-out zwischen Händen modellieren, im Debugexport sichtbar
   machen und mit deterministischen Schwellen-, Rebuy-Limit- und
-  Ersatzspieler-Sequenztests absichern
+  Ersatzspieler-Sequenztests absichern; beim Aussetzen wegen zu vieler BB den
+  tatsächlich ausgecashten Stack anzeigen statt den Sitz fälschlich mit
+  `0,00` zu beschriften
 - [ ] Integrationstests für Session-Flow (Setup → mehrere Hände → Rebuy)
 - [ ] Sequenztests für Pre-Selection nach Check, Bet und Reraise sowie für
   Clock-/Resume-Randfälle auf Desktop und Android

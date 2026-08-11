@@ -41,9 +41,9 @@ import {
 
 const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
 const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
-const BIG_BLIND = 20
-const SMALL_BLIND = 10
-const STARTING_CHIPS = 2_000
+const BIG_BLIND = Number(process.env.CALIB_BIG_BLIND) || 20
+const SMALL_BLIND = Number(process.env.CALIB_SMALL_BLIND) || BIG_BLIND / 2
+const STARTING_CHIPS = Number(process.env.CALIB_STARTING_CHIPS) || BIG_BLIND * 100
 const PRINT_CALIBRATION_DETAIL = process.env.CALIB_DETAIL === '1'
 const PRINT_CALIBRATION_SNAPSHOT = process.env.CALIB_JSON === '1'
 const PRINT_WTSD_DETAIL = process.env.CALIB_WTSD_DETAIL === '1'

@@ -19,6 +19,7 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:calibration": "tsx scripts/calibration-regression.ts",
+    "test:stakes": "tsx scripts/stake-invariance.ts",
     "calibrate:baseline": "tsx scripts/calibration-regression.ts --update",
     "test:responsive": "node scripts/responsive-smoke.mjs",
     "calibrate:bots": "tsx packages/client/src/simulation.ts",

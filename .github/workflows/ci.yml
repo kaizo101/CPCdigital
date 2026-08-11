@@ -37,6 +37,9 @@ jobs:
       - name: Run calibration regression
         run: npm run test:calibration
 
+      - name: Verify stake invariance
+        run: npm run test:stakes
+
       - name: Build all workspaces
         run: npm run build
 
