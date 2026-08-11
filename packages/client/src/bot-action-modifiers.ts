@@ -24,7 +24,7 @@ export function applyPersonalityModifiers(
     && botState.personality.archetype.name === 'LAG'
     ? context.variantId === 'texas-holdem'
       ? context.tableSize === 2 ? 0 : 4
-      : 0
+      : context.tableSize >= 7 ? 2 : 0
     : 0
   const ploTagFullRingCalibration = context.gameView.phase !== 'preflop'
     && context.variantId === 'omaha-high'
@@ -39,6 +39,26 @@ export function applyPersonalityModifiers(
     && context.tableSize === 2
     && botState.personality.archetype.name === 'Calling Station'
     ? -3
+    : 0
+  const nlheNitSixMaxPostflopCalibration = context.gameView.phase !== 'preflop'
+    && context.variantId === 'texas-holdem'
+    && context.tableSize >= 3
+    && context.tableSize <= 6
+    && botState.personality.archetype.name === 'Nit'
+    ? -3
+    : 0
+  const nlheNitSixMaxPostflopCallCalibration = context.gameView.phase !== 'preflop'
+    && context.variantId === 'texas-holdem'
+    && context.tableSize >= 3
+    && context.tableSize <= 6
+    && botState.personality.archetype.name === 'Nit'
+    ? 2
+    : 0
+  const ploNitFullRingPostflopCalibration = context.gameView.phase !== 'preflop'
+    && context.variantId === 'omaha-high'
+    && context.tableSize >= 7
+    && botState.personality.archetype.name === 'Nit'
+    ? -1
     : 0
 
   return actions.map(scored => {
@@ -83,6 +103,20 @@ export function applyPersonalityModifiers(
           value: ploCallingStationHuLateStreetCalibration,
         })
       }
+      if (nlheNitSixMaxPostflopCalibration < 0) {
+        contributions.push({
+          category: 'personality',
+          label: 'NLHE Nit six-max postflop restraint',
+          value: nlheNitSixMaxPostflopCalibration,
+        })
+      }
+      if (ploNitFullRingPostflopCalibration < 0) {
+        contributions.push({
+          category: 'personality',
+          label: 'PLO Nit full-ring postflop restraint',
+          value: ploNitFullRingPostflopCalibration,
+        })
+      }
     }
     if (scored.action.type === 'fold') {
       contributions.push({
@@ -118,13 +152,20 @@ export function applyPersonalityModifiers(
         label: 'Patience reduces marginal calls',
         value: -(patience - 50) / personalityDivisor(12, context) * callModScale / ploCallDampener,
       })
-      if (lagPostflopCalibration > 0) {
+      if (lagPostflopCalibration > 0 && context.variantId === 'texas-holdem') {
         contributions.push({
           category: 'personality',
           label: 'LAG postflop pressure calibration',
           value: -4,
         })
       }
+    }
+    if (scored.action.type === 'call' && nlheNitSixMaxPostflopCallCalibration > 0) {
+      contributions.push({
+        category: 'personality',
+        label: 'NLHE Nit six-max bounded bluff-catching',
+        value: nlheNitSixMaxPostflopCallCalibration,
+      })
     }
     if (aggressiveAction && scored.intent === 'bluff') {
       contributions.push({

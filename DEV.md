@@ -186,13 +186,12 @@ Die Ergebnisse werden in `calibration/` versioniert abgelegt. Die
 formatisolierte Ausgangsbasis ist im [v0.8.0-Bericht](calibration/v0.8.0.md)
 dokumentiert.
 
-Der aktuelle 0.8.1-Cut ist im
+Der veröffentlichte 0.8.1-Stand ist im
 [Release-Gate-Report](calibration/v0.8.1-release-gate.md) festgehalten. Tests,
-Build, Responsive-Smoke, Layer-2-Regression und sämtliche strukturellen
-Invarianten sind grün; die Version bleibt dennoch unreleased, bis die dort
-aufgeführten Zielabweichungen bewertet oder korrigiert sind. Der versionierte
-300-Hand-Snapshot gehört zu genau diesem Cut und darf erst nach einer bewusst
-freigegebenen Verhaltensänderung erneut erzeugt werden.
+Build, Responsive-Smoke, Layer-2-Regression, strukturelle Invarianten und alle
+unveränderten Zielranges sind grün. Der versionierte 300-Hand-Snapshot gehört
+zu genau diesem Release und darf erst nach einer bewusst freigegebenen
+Verhaltensänderung erneut erzeugt werden.
 
 Turn C-Bet bezeichnet seit Metrikschema v2 ausschließlich ein echtes Double
 Barrel: derselbe Spieler war Preflop-Aggressor und Flop-C-Bettor und eröffnet
@@ -373,4 +372,6 @@ dokumentiert.
 - **Android nur als Debug-Prototyp**: Gerätekompatibilität, Release-Signierung, Distribution und vollständige mobile Feature-Parität sind noch nicht zugesagt. Die qualitative Erstaufnahme ist abgeschlossen; die vollständige Varianten-/Format-/Lifecycle-Matrix steht noch aus.
 - **Mobile Geometrie**: Sicherheitskorrekturen verhindern die derzeit bekannten oberen Karten-Clips. Eine konsistente Sitz-, Karten- und Bet-Geometrie folgt erst mit der TableGeometry-SSOT in v0.9.0.
 - **Ruhender Server-Prototyp**: `packages/server` bleibt bewusst für eine mögliche v2-Integration erhalten, wird aber vom Offline-Client nicht importiert und ist kein v1-Produktionspfad. Seine aktuelle Härtung ersetzt kein Produktions-Sicherheitsaudit.
-- **Formatierung**: Eine gemeinsame Prettier-Konfiguration ist noch nicht eingecheckt und wird in v0.8.1 als eigener mechanischer Commit eingeführt.
+- **Formatierung**: Eine gemeinsame Prettier-Konfiguration ist noch nicht
+  eingecheckt; die mechanische Vereinheitlichung ist für den
+  Code-Qualitätsblock in v0.8.3 vorgesehen.

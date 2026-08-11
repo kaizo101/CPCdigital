@@ -19,6 +19,11 @@ import { resolveTableFormat } from './bot-table-format'
 import { getPloSprAdjustments, type PloSprAction } from './plo-spr-strategy'
 import { hasAnalysisSkill } from './bot-skill-gates'
 import { cardsToHandPattern } from './preflop-ranges'
+import {
+  calculateForcedAllInSeverity,
+  calculateInverseSeverity,
+  calculateLinearSeverity,
+} from './bot-commitment'
 
 export function scoreActions(context: DecisionContext): ScoredAction[] {
   const actions: ScoredAction[] = []
@@ -51,6 +56,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
   contributions.push(...potCommitmentFactors('fold', context))
   contributions.push(...dynamicFoldFactors(context))
   contributions.push(...cbetDefenseFoldAdjustment(context))
+  contributions.push(...nlheFlopDefenseFactors('fold', context))
   contributions.push(...ploSprFactors('fold', context))
   contributions.push(...ploWrapQualityFactors('fold', context))
   contributions.push(...equityCollapseFactors('fold', context))
@@ -60,6 +66,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
   contributions.push(...checkRaiseResponseFactors('fold', context))
   contributions.push(...floatDefenseFactors('fold', context))
   contributions.push(...opponentProfileFactors('fold', context))
+  contributions.push(...ploLateCallFactors('fold', context))
 
   contributions.push(...rangeBasedFactors('fold', context))
 
@@ -103,6 +110,8 @@ function scoreCheck(context: DecisionContext): ScoredAction {
   contributions.push(...ploBlockerFactors('check', context))
   contributions.push(...checkRaisePlanFactors('check', context))
   contributions.push(...turnBarrelCheckFactors(context))
+  contributions.push(...ploProbeBetFactors('check', context))
+  contributions.push(...ploThinValuePotControlFactors('check', context))
 
   return buildAction({ type: 'check' }, intent, contributions)
 }
@@ -136,6 +145,7 @@ function scoreCall(context: DecisionContext): ScoredAction {
   contributions.push(...potCommitmentFactors('call', context))
   contributions.push(...forcedAllInRiskFactors(context))
   contributions.push(...cbetDefenseCallBonus(context))
+  contributions.push(...nlheFlopDefenseFactors('call', context))
   contributions.push(...opponentProfileFactors('call', context))
 
   contributions.push(...rangeBasedFactors('call', context))
@@ -149,6 +159,7 @@ function scoreCall(context: DecisionContext): ScoredAction {
   contributions.push(...checkRaiseResponseFactors('call', context))
   contributions.push(...checkRaisePlanFactors('call', context))
   contributions.push(...floatDefenseFactors('call', context))
+  contributions.push(...ploLateCallFactors('call', context))
 
   return buildAction({ type: 'call' }, intent, contributions)
 }
@@ -167,6 +178,8 @@ function scoreRaise(context: DecisionContext): ScoredAction {
     ...preflopStrategyFactors('raise', context),
     ...formatPreflopRaiseFactors(context),
     ...streetInitiativeFactors(context),
+    ...ploProbeBetFactors('raise', context),
+    ...ploThinValuePotControlFactors('raise', context),
     ...preflopEscalationFactors('raise', context),
   ]
 
@@ -302,21 +315,21 @@ function aggressiveAllInRiskFactors(context: DecisionContext): ScoreContribution
       )]
     }
     const unopenedOrLimped = gameView.currentBet <= gameView.bigBlind
-    if (unopenedOrLimped && metrics.effectiveStackBb > 40) {
+    if (unopenedOrLimped && metrics.playerStartingStackBb >= 40) {
       return [factor(
         'betting-context',
-        `Deep-stack open shove ${metrics.effectiveStackBb.toFixed(0)} BB`,
+        `Deep-stack open shove ${metrics.playerStartingStackBb.toFixed(0)} BB starting stack`,
         params.scoring.allInMods.deepOpenShove,
       )]
     }
-    if (metrics.effectiveStackBb > 100 && metrics.potCommitment < 0.2) {
+    if (metrics.playerStartingStackBb >= 100 && metrics.potCommitment < 0.2) {
       return [factor(
         'betting-context',
-        `Deep stack not committed (${metrics.effectiveStackBb.toFixed(0)} BB)`,
+        `Deep stack not committed (${metrics.playerStartingStackBb.toFixed(0)} BB starting stack)`,
         params.scoring.allInMods.uncommittedDeep,
       )]
     }
-    if (metrics.effectiveStackBb > 40 && hand.category !== 'premium' && metrics.potCommitment < 0.25) {
+    if (metrics.playerStartingStackBb >= 40 && hand.category !== 'premium' && metrics.potCommitment < 0.25) {
       return [factor(
         'betting-context',
         `Stack not committed for shove (${(metrics.potCommitment * 100).toFixed(0)}%)`,
@@ -416,12 +429,31 @@ function formatPreflopRaiseFactors(context: DecisionContext): ScoreContribution[
 
   const format = resolveTableFormat(context.tableSize)
   const archetype = scoringArchetypeId(context)
+  if (
+    context.variantId === 'texas-holdem'
+    && format === 'six-max'
+    && archetype === 'tag'
+  ) {
+    return [factor('position', 'NLHE TAG six-max — preserve preflop initiative', 2)]
+  }
   if (format === 'full-ring' && archetype === 'lag') {
-    return [factor('position', 'LAG full-ring — preserve preflop initiative', 3)]
+    return [factor(
+      'position',
+      'LAG full-ring — preserve preflop initiative',
+      context.variantId === 'omaha-high' ? 6 : 12,
+    )]
   }
   if (format !== 'heads-up') return []
 
-  if (context.variantId !== 'omaha-high') return []
+  if (context.variantId !== 'omaha-high') {
+    if (
+      archetype === 'calling-station'
+      && (context.streetAnalysis?.preflopRaiseCount ?? 0) >= 1
+    ) {
+      return [factor('position', 'NLHE calling station heads-up — widen selective reraises', 40)]
+    }
+    return []
+  }
 
   const bonus = archetype === 'tag'
     ? 5
@@ -1237,6 +1269,127 @@ function turnTendencyFactor(skillFactor: number): number {
   return 0.55 + skillFactor * 0.45
 }
 
+function ploProbeBetFactors(
+  action: 'check' | 'raise',
+  context: DecisionContext,
+): ScoreContribution[] {
+  const analysis = context.streetAnalysis
+  if (
+    context.variantId !== 'omaha-high'
+    || (context.gameView.phase !== 'turn' && context.gameView.phase !== 'river')
+    || context.metrics.callAmount > 0
+    || !analysis
+  ) return []
+
+  const archetype = scoringArchetypeId(context)
+  const format = resolveTableFormat(context.tableSize)
+  const config = params.scoring.ploProbeBetMods[archetype][format]
+  const baseValue = context.gameView.phase === 'turn' ? config.turn : config.river
+  if (
+    analysis.activeOpponents !== 1
+    && !(baseValue < 0 && format === 'full-ring')
+  ) return []
+  if (
+    analysis.iAmPreflopAggressor
+    && (baseValue >= 0 || context.gameView.phase === 'turn')
+  ) return []
+  if (baseValue === 0) return []
+
+  const hand = context.handAssessment
+  if (baseValue < 0 && isAtLeast(hand.category, 'good')) return []
+  const candidateScale = hand.category === 'premium' || hand.category === 'strong' || hand.category === 'good'
+    ? 1
+    : hand.category === 'medium'
+      ? 0.9
+      : hand.category === 'marginal'
+        ? 0.75
+        : hand.drawTypes.length > 0 || hand.blockerValue > 0
+          ? 0.55
+          : hand.category === 'weak' ? 0.35 : 0.2
+  const streetScale = context.gameView.phase === 'river' ? 1 : 0.8
+  const fieldScale = analysis.activeOpponents >= 2 ? 0.65 : 1
+  const value = Math.round(baseValue * candidateScale * streetScale * fieldScale)
+  if (value === 0) return []
+
+  return [factor(
+    'position',
+    baseValue > 0
+      ? 'PLO probe after preflop aggressor checks — deny a free showdown'
+      : 'PLO pot control — preserve showdown value after checked aggression',
+    action === 'raise' ? value : -value,
+  )]
+}
+
+function ploThinValuePotControlFactors(
+  action: 'check' | 'raise',
+  context: DecisionContext,
+): ScoreContribution[] {
+  if (
+    context.variantId !== 'omaha-high'
+    || (context.gameView.phase !== 'turn' && context.gameView.phase !== 'river')
+    || context.metrics.callAmount > 0
+    || context.streetAnalysis?.activeOpponents !== 1
+    || !context.handAssessment.made
+    || (context.handAssessment.category !== 'medium' && context.handAssessment.category !== 'good')
+  ) return []
+
+  const archetype = scoringArchetypeId(context)
+  const format = resolveTableFormat(context.tableSize)
+  const config = params.scoring.ploThinValuePotControlMods[archetype][format]
+  const baseValue = context.gameView.phase === 'turn' ? config.turn : config.river
+  if (baseValue === 0) return []
+  const value = Math.round(
+    baseValue
+    * (context.handAssessment.category === 'good' ? 0.65 : 1)
+    * (context.gameView.phase === 'river' ? 1 : 0.75),
+  )
+  if (value === 0) return []
+
+  return [factor(
+    'position',
+    baseValue > 0
+      ? 'PLO thin made-hand value — prefer pot control over a called bet'
+      : 'PLO thin made-hand value — seek a callable value bet',
+    action === 'check' ? value : -value,
+  )]
+}
+
+function ploLateCallFactors(
+  action: 'fold' | 'call',
+  context: DecisionContext,
+): ScoreContribution[] {
+  const hand = context.handAssessment
+  if (
+    context.variantId !== 'omaha-high'
+    || (context.gameView.phase !== 'turn' && context.gameView.phase !== 'river')
+    || context.metrics.callAmount <= 0
+    || context.streetAnalysis?.activeOpponents !== 1
+    || hand.category === 'air'
+    || hand.category === 'premium'
+    || hand.category === 'strong'
+    || (hand.category === 'weak' && hand.drawTypes.length === 0 && hand.blockerValue <= 0)
+  ) return []
+
+  const archetype = scoringArchetypeId(context)
+  const format = resolveTableFormat(context.tableSize)
+  const baseValue = params.scoring.ploLateCallMods[archetype][format]
+  if (baseValue === 0) return []
+  const categoryScale = hand.category === 'weak'
+    ? 0.45
+    : hand.category === 'marginal'
+      ? 0.7
+      : 1
+  const priceScale = Math.max(0.35, 1 - Math.max(0, context.metrics.toCallPotRatio))
+  const value = Math.round(baseValue * categoryScale * priceScale)
+  if (value === 0) return []
+
+  return [factor(
+    'betting-context',
+    'PLO late-street call — realize bounded showdown value',
+    action === 'call' ? value : -value,
+  )]
+}
+
 function archetypeCbetDiscipline(
   context: DecisionContext,
   result: ScoreContribution[],
@@ -1253,10 +1406,12 @@ function archetypeCbetDiscipline(
   let disciplineBase = 0
   if (archetypeName === 'LAG') {
     disciplineBase = isPLO ? -16 : (isHU ? 0 : -7)
+  } else if (archetypeName === 'TAG' && !isPLO && format === 'full-ring') {
+    disciplineBase = -5
   } else if (archetypeName === 'Nit') {
     disciplineBase = isHU ? -6 : format === 'six-max' ? -4 : 4
-  } else if (archetypeName === 'Calling Station' && !isPLO && isHU) {
-    disciplineBase = 5
+  } else if (archetypeName === 'Calling Station' && !isPLO) {
+    disciplineBase = isHU ? 10 : format === 'six-max' ? 3 : 0
   } else {
     return
   }
@@ -1489,17 +1644,15 @@ function potCommitmentFactors(
   const { metrics, botState } = context
   if (metrics.potCommitment <= config.minimumPotCommitment) return []
 
-  const commitmentSeverity = clip(
-    (metrics.potCommitment - config.minimumPotCommitment)
-      / (1 - config.minimumPotCommitment),
-    0,
+  const commitmentSeverity = calculateLinearSeverity(
+    metrics.potCommitment,
+    config.minimumPotCommitment,
     1,
   )
-  const skillSusceptibility = clip(
-    (config.skillZeroAt - botState.skill.level)
-      / (config.skillZeroAt - config.skillFullAt),
-    0,
-    1,
+  const skillSusceptibility = calculateInverseSeverity(
+    botState.skill.level,
+    config.skillFullAt,
+    config.skillZeroAt,
   )
   const patiencePressure = Math.max(0, 50 - botState.mentalState.patience) / 100
   const mentalMultiplier = clip(
@@ -1534,22 +1687,15 @@ function forcedAllInRiskFactors(context: DecisionContext): ScoreContribution[] {
     || metrics.potOdds <= config.freePriceThreshold
   ) return []
 
-  const stackSeverity = clip(
-    (metrics.forcedAllInRatio - config.forcedAllInStart)
-      / (config.forcedAllInFull - config.forcedAllInStart),
-    0,
-    1,
-  )
-  const priceSeverity = clip(
-    (metrics.potOdds - config.freePriceThreshold)
-      / (config.fullPriceThreshold - config.freePriceThreshold),
-    0,
-    1,
+  const severity = calculateForcedAllInSeverity(
+    metrics.forcedAllInRatio,
+    metrics.potOdds,
+    config,
   )
   const riskTolerance = clip(botState.personality.riskTolerance / 100, 0, 1)
   const riskScale = config.maximumRiskScale
     - riskTolerance * (config.maximumRiskScale - config.minimumRiskScale)
-  const value = Math.round(categoryPenalty * stackSeverity * priceSeverity * riskScale)
+  const value = Math.round(categoryPenalty * severity.combined * riskScale)
   if (value === 0) return []
 
   return [factor(
@@ -1656,6 +1802,41 @@ function cbetDefenseFoldAdjustment(context: DecisionContext): ScoreContribution[
       ? 'C-Bet defense mix — folding realizable equity too often'
       : 'C-Bet defense mix — disciplined marginal fold',
     -Math.round(callBonus * 0.5 * candidateScale),
+  )]
+}
+
+function nlheFlopDefenseFactors(
+  action: 'fold' | 'call',
+  context: DecisionContext,
+): ScoreContribution[] {
+  const hand = context.handAssessment
+  if (
+    context.variantId !== 'texas-holdem'
+    || context.gameView.phase !== 'flop'
+    || context.metrics.callAmount <= 0
+    || context.streetAnalysis?.iAmPreflopAggressor
+    || (hand.category !== 'air'
+      && hand.category !== 'weak'
+      && hand.category !== 'marginal'
+      && hand.category !== 'medium')
+  ) return []
+
+  const archetype = scoringArchetypeId(context)
+  const format = resolveTableFormat(context.tableSize)
+  const baseValue = params.scoring.nlheFlopDefenseMods[archetype][format]
+  if (baseValue === 0) return []
+  const categoryScale = hand.category === 'air'
+    ? 0.55
+    : hand.category === 'weak'
+      ? 0.75
+      : 1
+  const value = Math.round(baseValue * categoryScale)
+  if (value === 0) return []
+
+  return [factor(
+    'betting-context',
+    'NLHE loose flop defense — continue beyond recognized c-bet lines',
+    action === 'call' ? value : -value,
   )]
 }
 

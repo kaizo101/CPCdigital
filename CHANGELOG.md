@@ -6,6 +6,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+## [0.8.1] — 2026-08-11
+
 ### Added
 
 - **Getrennte Commitment-Semantik**: Bot-Entscheidungen unterscheiden nun echte
@@ -21,6 +23,10 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   versionierten Snapshot. Raten warnen oberhalb von 2 Prozentpunkten und
   schlagen oberhalb von 5 Prozentpunkten fehl; AF verwendet eigene absolute
   Grenzen von 0,2 und 0,5. Strukturelle Verstöße bleiben harte Fehler.
+- **WTSD-Pfaddiagnostik**: Optionale Kalibrierungsdetails trennen All-in-,
+  Call-down-, Aggressor- und Check-down-Showdowns, Rollen, Gegnerfelder,
+  Preisklassen und Fold-Exits. Erhaltungstests verhindern doppelt oder nicht
+  zugeordnete Showdownpfade.
 - **Parameter-Validierung (Layer 3)**: Tests prüfen alle aufgelösten NLHE- und
   PLO-Scoretabellen, Clamp-Grenzen, Skill-Tier-Sortierung und negative
   All-in-Mali. Die Kalibrierungsregression läuft zusätzlich in der CI.
@@ -123,6 +129,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   `marginal` Made Hand. Board-Plays wie `5-2` auf `A-A-T-T-5` erhalten die
   schwache River-Bewertung, während echte Kicker und Full Houses getrennt
   bleiben.
+- **Release-Kalibrierung**: Format- und archetypspezifische Preflop-, C-Bet-,
+  Barrel-, Probe-, Pot-Control- und bounded-Call-Hebel schließen alle
+  unveränderten NLHE-/PLO-Zielranges in Full Ring, 6-max und Heads-up. Die
+  10k-/3k-Gates enthalten keine Invalid-Action-Fallbacks oder uncommitted
+  Deep-Stack-Shoves.
 
 ## [0.8.0] — 2026-08-09
 
@@ -699,7 +710,8 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
 - Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/kaizo101/CPCdigital/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/kaizo101/CPCdigital/compare/v0.7.9...v0.8.0
 [0.7.9]: https://github.com/kaizo101/CPCdigital/compare/v0.7.8...v0.7.9
 [0.7.8]: https://github.com/kaizo101/CPCdigital/compare/v0.7.7...v0.7.8

@@ -131,6 +131,16 @@ const PLO_ARCHETYPE_PREFLOP_SIX_MAX: Partial<Record<BotArchetypeId, CategoryScor
   ),
 }
 
+const PLO_ARCHETYPE_PREFLOP_FULL_RING: Partial<Record<BotArchetypeId, CategoryScoreTable>> = {
+  nit: plo(
+    {
+      fold: { marginal: -7, medium: -2 },
+      call: { marginal: 5, medium: 10 },
+    },
+    PLO_ARCHETYPE_PREFLOP.nit,
+  ),
+}
+
 const PLO_ARCHETYPE_POSTFLOP: Record<BotArchetypeId, CategoryScoreTable> = {
   tag: plo({
     call: { marginal: 4, medium: 10, good: 6 },
@@ -419,6 +429,9 @@ export function getPloScores(
   }
   if (street === 'preflop' && format === 'six-max') {
     return PLO_ARCHETYPE_PREFLOP_SIX_MAX[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
+  }
+  if (street === 'preflop' && format === 'full-ring') {
+    return PLO_ARCHETYPE_PREFLOP_FULL_RING[archetype] ?? table[archetype] ?? PLO_TAG_SCORES
   }
   if (street !== 'preflop' && format === 'heads-up') {
     const headsUp = street === 'river'

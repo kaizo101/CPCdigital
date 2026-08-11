@@ -243,6 +243,42 @@ export function validateBotParameters(candidate: BotParams = params): string[] {
       }
     }
   }
+  for (const archetype of ARCHETYPES) {
+    for (const format of calibrationFormats) {
+      const probe = candidate.scoring.ploProbeBetMods[archetype][format]
+      const thinValue = candidate.scoring.ploThinValuePotControlMods[archetype][format]
+      if (
+        !Number.isFinite(probe.turn) || !Number.isFinite(probe.river)
+        || probe.turn < -100 || probe.turn > 100
+        || probe.river < -100 || probe.river > 100
+      ) {
+        violations.push(
+          `scoring.ploProbeBetMods.${archetype}.${format} values must stay within -100..100`,
+        )
+      }
+      if (
+        !Number.isFinite(thinValue.turn) || !Number.isFinite(thinValue.river)
+        || thinValue.turn < -100 || thinValue.turn > 100
+        || thinValue.river < -100 || thinValue.river > 100
+      ) {
+        violations.push(
+          `scoring.ploThinValuePotControlMods.${archetype}.${format} values must stay within -100..100`,
+        )
+      }
+      const lateCall = candidate.scoring.ploLateCallMods[archetype][format]
+      if (!Number.isFinite(lateCall) || lateCall < 0 || lateCall > 100) {
+        violations.push(
+          `scoring.ploLateCallMods.${archetype}.${format} must stay within 0..100`,
+        )
+      }
+      const flopDefense = candidate.scoring.nlheFlopDefenseMods[archetype][format]
+      if (!Number.isFinite(flopDefense) || flopDefense < 0 || flopDefense > 100) {
+        violations.push(
+          `scoring.nlheFlopDefenseMods.${archetype}.${format} must stay within 0..100`,
+        )
+      }
+    }
+  }
 
   const escalation = candidate.scoring.preflopEscalationMods
   const escalationNumbers = [

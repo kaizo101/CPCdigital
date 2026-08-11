@@ -43,6 +43,7 @@ describe('bot decision metrics', () => {
     }), 20)
 
     expect(metrics.effectiveStackBb).toBe(20)
+    expect(metrics.playerStartingStackBb).toBe(50)
     expect(metrics.potCommitment).toBe(0.25)
     expect(metrics.forcedAllInRatio).toBe(0.5)
     expect(metrics.stackDepth).toBe('short')

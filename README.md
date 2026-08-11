@@ -8,7 +8,7 @@ Im Mittelpunkt steht menschlich wirkendes Casual-Poker statt vorgetäuschter
 Solver-Perfektion. Bots erhalten dabei nur Informationen, die auch ein realer
 Spieler kennen könnte.
 
-Der aktuelle Release ist **v0.8.0**. `CPCdigital` ist weiterhin der interne
+Der aktuelle Release ist **v0.8.1**. `CPCdigital` ist weiterhin der interne
 Arbeitstitel; der endgültige Produktname wird vor dem Release Candidate
 festgelegt.
 
@@ -38,9 +38,8 @@ NLHE und PLO. Maßgeblich für geplante Arbeiten ist die
 [Roadmap](ROADMAP.md); tatsächlich veröffentlichte Änderungen stehen im
 [Changelog](CHANGELOG.md).
 
-Der dokumentierte 0.8.1-Entwicklungsstand hat alle technischen Gates bestanden,
-ist wegen verbleibender Kalibrierungsausreißer aber noch kein Release. Rohwerte,
-Gate-Entscheidung und Wiederaufnahmeplan stehen im
+Version 0.8.1 hat sämtliche technischen und unveränderten Kalibrierungsgates
+bestanden. Die finalen 10k-/3k-Rohwerte und Sicherheitsinvarianten stehen im
 [0.8.1-Kalibrierungsreport](calibration/v0.8.1-release-gate.md).
 
 Die offizielle **[Browser-Demo](https://kaizo101.github.io/CPCdigital/)** wird

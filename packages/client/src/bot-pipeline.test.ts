@@ -905,18 +905,19 @@ describe('bot utility candidates', () => {
     expect(wrapValue(lowSkill, 'call')).toBeUndefined()
   })
 
-  it('makes a deep-stack open shove ineligible without hiding the legal action', () => {
+  it('blocks a non-short open shove at exactly 40 BB without hiding the legal action', () => {
     const legalActions: LegalActions = {
       fold: true,
       check: false,
       callAmount: 20,
-      raise: { minAmount: 60, maxAmount: 2000 },
-      allInAmount: 2000,
+      raise: { minAmount: 60, maxAmount: 800 },
+      allInAmount: 800,
     }
     const decisionContext = context(legalActions, {
-      effectiveStack: 2000,
-      playerStack: 2000,
-      spr: 50,
+      effectiveStack: 800,
+      playerStack: 800,
+      playerStartingStack: 800,
+      spr: 20,
     })
     decisionContext.gameView.phase = 'preflop'
     decisionContext.handAssessment.category = 'premium'
@@ -925,11 +926,96 @@ describe('bot utility candidates', () => {
     const shove = scoreActions(decisionContext)
       .find(candidate => candidate.action.type === 'all-in')!
 
-    expect(shove.utility).toBe(0)
     expect(shove.selectionEligible).toBe(false)
     expect(shove.contributions).toEqual(expect.arrayContaining([
       expect.objectContaining({ label: expect.stringContaining('Deep-stack open shove') }),
     ]))
+  })
+
+  it('keeps the open-shove depth guard below the exact 40 BB boundary', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 799.8 },
+      allInAmount: 799.8,
+    }
+    const decisionContext = context(legalActions, {
+      effectiveStack: 799.8,
+      playerStack: 799.8,
+      playerStartingStack: 799.8,
+      spr: 20,
+    })
+    decisionContext.gameView.phase = 'preflop'
+    decisionContext.handAssessment.category = 'premium'
+    decisionContext.preflopRangeAction = 'raise'
+
+    const shove = scoreActions(decisionContext)
+      .find(candidate => candidate.action.type === 'all-in')!
+
+    expect(shove.contributions.some(
+      contribution => contribution.label.includes('Deep-stack open shove'),
+    )).toBe(false)
+    expect(shove.selectionEligible).not.toBe(false)
+  })
+
+  it('uses the exact 100 BB starting stack when blinds leave only 98.5 BB', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 60,
+      raise: { minAmount: 180, maxAmount: 1970 },
+      allInAmount: 1970,
+    }
+    const exactHundred = context(legalActions, {
+      effectiveStack: 1970,
+      playerStack: 1970,
+      playerStartingStack: 2000,
+      voluntaryHandContribution: 30,
+      spr: 12,
+    })
+    exactHundred.gameView.phase = 'preflop'
+    exactHundred.handAssessment.category = 'premium'
+    exactHundred.preflopRangeAction = 'raise'
+
+    const shove = scoreActions(exactHundred)
+      .find(candidate => candidate.action.type === 'all-in')!
+
+    expect(exactHundred.metrics.effectiveStackBb).toBe(98.5)
+    expect(exactHundred.metrics.playerStartingStackBb).toBe(100)
+    expect(shove.selectionEligible).toBe(false)
+    expect(shove.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: expect.stringContaining('Deep stack not committed') }),
+    ]))
+  })
+
+  it('keeps an uncommitted premium shove below the exact 100 BB boundary eligible', () => {
+    const legalActions: LegalActions = {
+      fold: true,
+      check: false,
+      callAmount: 60,
+      raise: { minAmount: 180, maxAmount: 1969 },
+      allInAmount: 1969,
+    }
+    const belowHundred = context(legalActions, {
+      effectiveStack: 1969,
+      playerStack: 1969,
+      playerStartingStack: 1999,
+      voluntaryHandContribution: 30,
+      spr: 12,
+    })
+    belowHundred.gameView.phase = 'preflop'
+    belowHundred.handAssessment.category = 'premium'
+    belowHundred.preflopRangeAction = 'raise'
+
+    const shove = scoreActions(belowHundred)
+      .find(candidate => candidate.action.type === 'all-in')!
+
+    expect(belowHundred.metrics.playerStartingStackBb).toBe(99.95)
+    expect(shove.contributions.some(
+      contribution => contribution.label.includes('Deep stack not committed'),
+    )).toBe(false)
+    expect(shove.selectionEligible).not.toBe(false)
   })
 
   it('still permits a premium preflop shove once the stack is meaningfully committed', () => {
@@ -943,6 +1029,8 @@ describe('bot utility candidates', () => {
     const decisionContext = context(legalActions, {
       effectiveStack: 2000,
       playerStack: 2000,
+      playerStartingStack: 2500,
+      voluntaryHandContribution: 500,
       spr: 4,
     })
     decisionContext.gameView.phase = 'preflop'

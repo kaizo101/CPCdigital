@@ -128,7 +128,7 @@ describe('archetype-specific mental state modifiers', () => {
 
     expect(contribution({ variantId: 'texas-holdem', tableSize: 6 })).toBe(4)
     expect(contribution({ variantId: 'texas-holdem', tableSize: 2 })).toBeUndefined()
-    expect(contribution({ variantId: 'omaha-high', tableSize: 9 })).toBeUndefined()
+    expect(contribution({ variantId: 'omaha-high', tableSize: 9 })).toBe(2)
     expect(contribution({ variantId: 'omaha-high', tableSize: 6 })).toBeUndefined()
     expect(contribution({ gameView: { ...makeContext(lag).gameView, phase: 'preflop' } })).toBeUndefined()
   })
@@ -154,6 +154,42 @@ describe('archetype-specific mental state modifiers', () => {
       gameView: { ...makeContext(cs).gameView, phase: 'turn' },
     }, 'PLO Calling Station heads-up pot control')).toBe(-3)
     expect(contribution(cs, { variantId: 'omaha-high', tableSize: 2 }, 'PLO Calling Station heads-up pot control')).toBeUndefined()
+  })
+
+  it('adds bounded bluff-catching only to NLHE Nit six-max postflop calls', () => {
+    const nit = createBotState(NIT_PERSONALITY, 100, rng)
+    const contribution = (overrides: Partial<DecisionContext>) => applyPersonalityModifiers(
+      makeActions(makeContext(nit, overrides).legalActions),
+      makeContext(nit, overrides),
+    ).find(action => action.action.type === 'call')!.contributions
+      .find(item => item.label === 'NLHE Nit six-max bounded bluff-catching')?.value
+
+    expect(contribution({ variantId: 'texas-holdem', tableSize: 6 })).toBe(2)
+    expect(contribution({ variantId: 'texas-holdem', tableSize: 9 })).toBeUndefined()
+    expect(contribution({ variantId: 'texas-holdem', tableSize: 2 })).toBeUndefined()
+    expect(contribution({ variantId: 'omaha-high', tableSize: 6 })).toBeUndefined()
+    expect(contribution({
+      gameView: { ...makeContext(nit).gameView, phase: 'preflop' },
+    })).toBeUndefined()
+  })
+
+  it('restrains PLO Nit aggression only at full-ring tables', () => {
+    const nit = createBotState(NIT_PERSONALITY, 100, rng)
+    const contribution = (overrides: Partial<DecisionContext>) => applyPersonalityModifiers(
+      makeActions(makeContext(nit, overrides).legalActions),
+      makeContext(nit, overrides),
+    ).find(action => action.action.type === 'raise')!.contributions
+      .find(item => item.label === 'PLO Nit full-ring postflop restraint')?.value
+
+    expect(contribution({ variantId: 'omaha-high', tableSize: 9 })).toBe(-1)
+    expect(contribution({ variantId: 'omaha-high', tableSize: 6 })).toBeUndefined()
+    expect(contribution({ variantId: 'omaha-high', tableSize: 2 })).toBeUndefined()
+    expect(contribution({ variantId: 'texas-holdem', tableSize: 9 })).toBeUndefined()
+    expect(contribution({
+      variantId: 'omaha-high',
+      tableSize: 9,
+      gameView: { ...makeContext(nit).gameView, phase: 'preflop' },
+    })).toBeUndefined()
   })
 
   it('makes tilted Calling Station prefer calling', () => {

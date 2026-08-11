@@ -54,7 +54,7 @@ function makeCtx(overrides: Partial<DecisionContext> = {}): DecisionContext {
     metrics: {
       totalPot: 100, callAmount: 0, potOdds: 0, toCallPotRatio: 0, potRaiseTo: 100,
       minRaiseTo: 10, maxRaiseTo: 100, playerStack: 1000, effectiveStack: 1000,
-      effectiveStackBb: 100, spr: 10, potCommitment: 0,
+      effectiveStackBb: 100, playerStartingStackBb: 100, spr: 10, potCommitment: 0,
       forcedAllInRatio: 0, stackDepth: 'deep',
     },
     legalActions: { fold: true, check: true, callAmount: null, raise: null, allInAmount: null },
@@ -294,6 +294,43 @@ describe('pot commitment versus forced all-in risk', () => {
     )).toBe(false)
   })
 
+  it('keeps the exact pot-commitment and skill boundaries stable after rounding', () => {
+    const atCommitmentStart = commitmentContext({
+      archetype: CALLING_STATION_PERSONALITY,
+      skill: 20,
+      potCommitment: 0.25,
+      forcedAllInRatio: 0.2,
+      potOdds: 0.1,
+      patience: 50,
+      tilt: 0,
+    })
+    const atFullSkill = commitmentContext({
+      archetype: CALLING_STATION_PERSONALITY,
+      skill: 20,
+      potCommitment: 1,
+      forcedAllInRatio: 0.2,
+      potOdds: 0.1,
+      patience: 50,
+      tilt: 0,
+    })
+    const atZeroSkill = commitmentContext({
+      archetype: CALLING_STATION_PERSONALITY,
+      skill: 70,
+      potCommitment: 1,
+      forcedAllInRatio: 0.2,
+      potOdds: 0.1,
+      patience: 50,
+      tilt: 0,
+    })
+    const commitmentValue = (context: DecisionContext) => action(context, 'call').contributions
+      .find(contribution => contribution.label.includes('Voluntary pot commitment'))
+      ?.value
+
+    expect(commitmentValue(atCommitmentStart)).toBeUndefined()
+    expect(commitmentValue(atFullSkill)).toBe(params.scoring.commitmentBehavior.maximumCallBonus)
+    expect(commitmentValue(atZeroSkill)).toBeUndefined()
+  })
+
   it('penalizes an expensive forced-all-in bluff catch without inventing pot commitment', () => {
     const context = commitmentContext({
       archetype: CALLING_STATION_PERSONALITY,
@@ -330,6 +367,29 @@ describe('pot commitment versus forced all-in risk', () => {
       contribution => contribution.label.includes('Forced all-in'),
     )).toBe(false)
     expect(action(context, 'call').utility).toBeGreaterThan(action(context, 'fold').utility)
+  })
+
+  it('uses inclusive zero and full boundaries for forced-all-in risk', () => {
+    const riskValue = (forcedAllInRatio: number, potOdds: number) => {
+      const context = commitmentContext({
+        archetype: CALLING_STATION_PERSONALITY,
+        skill: 42,
+        category: 'marginal',
+        potCommitment: 0,
+        forcedAllInRatio,
+        potOdds,
+        riskTolerance: 50,
+      })
+      return action(context, 'call').contributions
+        .find(contribution => contribution.label.includes('Forced all-in'))
+        ?.value
+    }
+
+    expect(riskValue(0.4, 0.4)).toBeUndefined()
+    expect(riskValue(1, 0.1)).toBeUndefined()
+    expect(riskValue(1, 0.4)).toBe(
+      params.scoring.commitmentBehavior.forcedCategoryPenalty.marginal,
+    )
   })
 
   it('keeps a high-skill TAG rational after investing most of its stack', () => {
@@ -494,6 +554,59 @@ describe('continuation-bet defense calibration', () => {
   })
 })
 
+describe('continuation-bet initiative calibration', () => {
+  function tagCbetContext(tableSize: number): DecisionContext {
+    const base = makeCtx()
+    return makeCtx({
+      tableSize,
+      activePlayerCount: tableSize,
+      gameView: {
+        ...base.gameView,
+        phase: 'flop',
+        board: [
+          { rank: 'Q', suit: 'hearts' },
+          { rank: '8', suit: 'clubs' },
+          { rank: '2', suit: 'diamonds' },
+        ],
+      },
+      handAssessment: {
+        ...base.handAssessment,
+        category: 'air',
+        made: false,
+      },
+      legalActions: {
+        fold: false,
+        check: true,
+        callAmount: null,
+        raise: { minAmount: 20, maxAmount: 1000 },
+        allInAmount: null,
+      },
+      streetAnalysis: {
+        preflopAggressor: 'bot',
+        preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'bot', flop: null, turn: null, river: null },
+        iAmPreflopAggressor: true,
+        opponentLines: new Map(),
+        activeOpponents: 1,
+        opponentShowedWeakness: false,
+        opponentCheckRaised: false,
+        street: 'flop',
+        actionCountThisStreet: 0,
+      },
+    })
+  }
+
+  it('restrains only NLHE TAG full-ring non-value c-bets', () => {
+    const discipline = (tableSize: number) => scoreActions(tagCbetContext(tableSize))
+      .find(action => action.action.type === 'raise')!
+      .contributions.find(item => item.label.startsWith('TAG C-Bet discipline'))
+
+    expect(discipline(9)?.value).toBe(-6)
+    expect(discipline(6)).toBeUndefined()
+    expect(discipline(2)).toBeUndefined()
+  })
+})
+
 describe('PLO preflop reraise calibration', () => {
   it('keeps TAG reraises less suppressed than LAG reraises outside heads-up', () => {
     const context = makeCtx({
@@ -553,6 +666,26 @@ describe('PLO preflop reraise calibration', () => {
     expect(contribution('texas-holdem', 2)).toBeUndefined()
   })
 
+  it('preserves TAG preflop initiative only in NLHE six-max', () => {
+    const contribution = (variantId: DecisionContext['variantId'], tableSize: number) => scoreActions(makeCtx({
+      variantId,
+      tableSize,
+      legalActions: {
+        fold: true,
+        check: false,
+        callAmount: 10,
+        raise: { minAmount: 30, maxAmount: 100 },
+        allInAmount: null,
+      },
+    })).find(action => action.action.type === 'raise')!.contributions
+      .find(item => item.label === 'NLHE TAG six-max — preserve preflop initiative')?.value
+
+    expect(contribution('texas-holdem', 6)).toBe(2)
+    expect(contribution('texas-holdem', 9)).toBeUndefined()
+    expect(contribution('texas-holdem', 2)).toBeUndefined()
+    expect(contribution('omaha-high', 6)).toBeUndefined()
+  })
+
   it('preserves LAG preflop initiative only at full-ring tables', () => {
     const contribution = (tableSize: number) => {
       const base = makeCtx({
@@ -576,8 +709,146 @@ describe('PLO preflop reraise calibration', () => {
         .find(item => item.label === 'LAG full-ring — preserve preflop initiative')?.value
     }
 
-    expect(contribution(9)).toBe(3)
+    expect(contribution(9)).toBe(12)
     expect(contribution(6)).toBeUndefined()
+  })
+
+  it('uses a smaller full-ring initiative correction for PLO LAG', () => {
+    const context = makeCtx({
+      variantId: 'omaha-high',
+      tableSize: 9,
+      botState: {
+        ...makeCtx().botState,
+        personality: {
+          ...makeCtx().botState.personality,
+          archetype: { name: 'LAG' } as any,
+        },
+      },
+      legalActions: {
+        fold: true,
+        check: false,
+        callAmount: 10,
+        raise: { minAmount: 30, maxAmount: 100 },
+        allInAmount: null,
+      },
+    })
+    const contribution = scoreActions(context)
+      .find(action => action.action.type === 'raise')!.contributions
+      .find(item => item.label === 'LAG full-ring — preserve preflop initiative')
+
+    expect(contribution?.value).toBe(6)
+  })
+})
+
+describe('showdown-flow calibration', () => {
+  function openPloContext(
+    archetype: 'TAG' | 'LAG',
+    tableSize: number,
+    activeOpponents: number,
+    category: DecisionContext['handAssessment']['category'] = 'marginal',
+  ): DecisionContext {
+    const base = makeCtx()
+    return makeCtx({
+      variantId: 'omaha-high',
+      tableSize,
+      gameView: { ...base.gameView, phase: 'river' },
+      botState: {
+        ...base.botState,
+        personality: {
+          ...base.botState.personality,
+          archetype: { name: archetype } as any,
+        },
+      },
+      handAssessment: { ...base.handAssessment, category },
+      legalActions: {
+        fold: false,
+        check: true,
+        callAmount: null,
+        raise: { minAmount: 20, maxAmount: 100 },
+        allInAmount: null,
+      },
+      streetAnalysis: {
+        preflopAggressor: 'opp',
+        preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'opp', flop: null, turn: null, river: null },
+        iAmPreflopAggressor: false,
+        opponentLines: new Map(),
+        activeOpponents,
+        opponentShowedWeakness: true,
+        opponentCheckRaised: false,
+        street: 'river',
+        actionCountThisStreet: 0,
+      },
+    })
+  }
+
+  it('turns checked aggression into selective PLO probes', () => {
+    const actions = scoreActions(openPloContext('TAG', 2, 1))
+    const contribution = (type: 'check' | 'raise') => actions
+      .find(action => action.action.type === type)!.contributions
+      .find(item => item.label.includes('deny a free showdown'))!.value
+
+    expect(contribution('check')).toBeLessThan(0)
+    expect(contribution('raise')).toBeGreaterThan(0)
+  })
+
+  it('gives PLO LAG multiway pot control without suppressing good value', () => {
+    const marginal = scoreActions(openPloContext('LAG', 9, 3))
+    const contribution = (type: 'check' | 'raise') => marginal
+      .find(action => action.action.type === type)!.contributions
+      .find(item => item.label.includes('preserve showdown value'))!.value
+
+    expect(contribution('check')).toBeGreaterThan(0)
+    expect(contribution('raise')).toBeLessThan(0)
+
+    const good = scoreActions(openPloContext('LAG', 9, 3, 'good'))
+    expect(good.flatMap(action => action.contributions)
+      .some(item => item.label.includes('preserve showdown value'))).toBe(false)
+  })
+
+  it('widens non-cbet NLHE flop defense only for configured Calling Stations', () => {
+    const base = makeCtx({
+      gameView: { ...makeCtx().gameView, phase: 'flop' },
+      tableSize: 2,
+      metrics: { ...makeCtx().metrics, callAmount: 20, toCallPotRatio: 0.2 },
+      legalActions: {
+        fold: true,
+        check: false,
+        callAmount: 20,
+        raise: null,
+        allInAmount: null,
+      },
+      handAssessment: { ...makeCtx().handAssessment, category: 'weak' },
+      streetAnalysis: {
+        preflopAggressor: null,
+        preflopRaiseCount: 0,
+        streetAggressor: { preflop: null, flop: 'opp', turn: null, river: null },
+        iAmPreflopAggressor: false,
+        opponentLines: new Map(),
+        activeOpponents: 1,
+        opponentShowedWeakness: false,
+        opponentCheckRaised: false,
+        street: 'flop',
+        actionCountThisStreet: 1,
+      },
+    })
+    const labels = (name: 'TAG' | 'Calling Station') => scoreActions({
+      ...base,
+      botState: {
+        ...base.botState,
+        personality: {
+          ...base.botState.personality,
+          archetype: { name } as any,
+        },
+      },
+    }).flatMap(action => action.contributions.map(item => item.label))
+
+    expect(labels('Calling Station')).toContain(
+      'NLHE loose flop defense — continue beyond recognized c-bet lines',
+    )
+    expect(labels('TAG')).not.toContain(
+      'NLHE loose flop defense — continue beyond recognized c-bet lines',
+    )
   })
 })
 

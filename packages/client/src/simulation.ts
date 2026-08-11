@@ -34,6 +34,10 @@ import {
   type CalibrationRegressionSnapshot,
 } from './calibration-regression'
 import { calibrationDealerIndex, calibrationHandSeeds } from './calibration-seeding'
+import {
+  CalibrationShowdownDiagnostics,
+  CalibrationShowdownHandTracker,
+} from './calibration-showdown-diagnostics'
 
 const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
 const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
@@ -42,6 +46,7 @@ const SMALL_BLIND = 10
 const STARTING_CHIPS = 2_000
 const PRINT_CALIBRATION_DETAIL = process.env.CALIB_DETAIL === '1'
 const PRINT_CALIBRATION_SNAPSHOT = process.env.CALIB_JSON === '1'
+const PRINT_WTSD_DETAIL = process.env.CALIB_WTSD_DETAIL === '1'
 const HAND_STRENGTH_CATEGORIES: HandStrengthCategory[] = [
   'air',
   'weak',
@@ -330,6 +335,7 @@ interface SimulationStats {
   actionErrors: number
   durationMs: number
   decisionTrace?: Record<string, Record<string, Record<string, number>>>
+  showdownDiagnostics: CalibrationShowdownDiagnostics
 }
 
 function createPlayers(playerCount: number): Player[] {
@@ -400,6 +406,7 @@ function createStats(): SimulationStats {
     actionErrors: 0,
     durationMs: 0,
     decisionTrace: {},
+    showdownDiagnostics: new CalibrationShowdownDiagnostics(),
   }
 }
 
@@ -462,6 +469,7 @@ function simulateFormat(
     }
 
     const metricAccumulator = new CalibrationHandAccumulator()
+    const showdownTracker = new CalibrationShowdownHandTracker()
     const flopSeenPlayers = new Set<string>()
     const turnSeenPlayers = new Set<string>()
     const riverSeenPlayers = new Set<string>()
@@ -479,6 +487,9 @@ function simulateFormat(
       const botView = game.getPlayerView(botId)
       const holeCards = botView.ownCards
       const botState = botStates.get(botId)
+      const activeOpponentsAtDecision = Math.max(0, state.players.filter(candidate => (
+        candidate.status === 'active' || candidate.status === 'all-in'
+      )).length - 1)
       if (!player || !holeCards || !botState) throw new Error(`${format.name}: missing state for ${botId}`)
 
       observeOpponentHistory(
@@ -514,7 +525,7 @@ function simulateFormat(
         && state.phase === 'preflop'
         && state.currentBet <= state.bigBlind
         && (state.bettingContext?.legalActions.allInAmount ?? 0) > state.currentBet
-        && (decisionMetrics?.effectiveStackBb ?? 0) > 40
+        && (decisionMetrics?.playerStartingStackBb ?? 0) >= 40
       ) {
         stats.deepOpenShoves++
       }
@@ -522,9 +533,9 @@ function simulateFormat(
         && (state.bettingContext?.legalActions.allInAmount ?? 0) > state.currentBet
       if (aggressiveAllIn && decisionMetrics) {
         const uncommittedPreflop = state.phase === 'preflop' && (
-          (decisionMetrics.effectiveStackBb > 100 && decisionMetrics.potCommitment < 0.2)
+          (decisionMetrics.playerStartingStackBb >= 100 && decisionMetrics.potCommitment < 0.2)
           || (
-            decisionMetrics.effectiveStackBb > 40
+            decisionMetrics.playerStartingStackBb >= 40
             && handCategory !== 'premium'
             && decisionMetrics.potCommitment < 0.25
           )
@@ -544,6 +555,15 @@ function simulateFormat(
         allInAmount: state.bettingContext?.legalActions.allInAmount,
       })
       pfa = metricDelta.preflopAggressorId
+      showdownTracker.recordAction({
+        playerId: botId,
+        phase: state.phase,
+        action,
+        role: botId === pfa ? 'pfa' : 'non-pfa',
+        category: handCategory,
+        potOdds: decisionMetrics?.potOdds ?? state.bettingContext?.potOdds ?? 0,
+        activeOpponents: activeOpponentsAtDecision,
+      })
 
       if (metricDelta.threeBetOpportunity && handCategory) {
         stats.threeBetByCategory[handCategory].opportunities++
@@ -577,6 +597,11 @@ function simulateFormat(
           for (const candidate of state.players) {
             if (candidate.status === 'active' || candidate.status === 'all-in') {
               flopSeenPlayers.add(candidate.id)
+              showdownTracker.recordFlopSeen(
+                candidate.id,
+                candidate.id === pfa ? 'pfa' : 'non-pfa',
+                Math.max(0, activePlayers - 1),
+              )
               if (state.communityCards.length >= 4) turnSeenPlayers.add(candidate.id)
               if (state.communityCards.length >= 5) riverSeenPlayers.add(candidate.id)
             }
@@ -663,6 +688,7 @@ function simulateFormat(
       .filter((event): event is Extract<(typeof history)[number], { type: 'CardsRevealed' }> => event.type === 'CardsRevealed')
       .map(event => event.playerId)
     const showdown = summarizeShowdown(flopSeenPlayers, revealedPlayerIds)
+    stats.showdownDiagnostics.recordHand(showdownTracker.summarize(revealedPlayerIds, pfa))
     stats.postflop.handsSeenFlop += showdown.handsSeenFlop
     stats.postflop.wentToShowdown += showdown.wentToShowdown
     const reachedTurn = history.some(event => event.type === 'CommunityCardDealt' && event.phase === 'turn')
@@ -738,7 +764,8 @@ function createRegressionEntry(
       invalidActions: stats.actionErrors,
       deepOpenShoves: stats.deepOpenShoves,
       uncommittedDeepShoves: stats.uncommittedDeepShoves,
-      metricViolations: calibrationInvariantViolations({
+      metricViolations: [
+        ...calibrationInvariantViolations({
         threeBets: stats.threeBets,
         threeBetOpportunities: stats.threeBetOpportunities,
         cBets,
@@ -750,7 +777,9 @@ function createRegressionEntry(
         handsSeenRiver: postflop.handsSeenRiver,
         wentToShowdown: postflop.wentToShowdown,
         wonAtShowdown: postflop.wonAtShowdown,
-      }),
+        }),
+        ...stats.showdownDiagnostics.violations(postflop.handsSeenFlop, postflop.wentToShowdown),
+      ],
     },
   }
 }
@@ -790,6 +819,31 @@ function printStats(
       .filter((value): value is string => value !== null)
       .join(' · ')
     console.log(`3-bet by category: ${categorySummary}`)
+  }
+
+  if (PRINT_WTSD_DETAIL) {
+    const diagnostics = stats.showdownDiagnostics
+    const segmentLabel = (segment: { flopSeen: number; showdowns: number }) => (
+      `${calibrationPercentage(segment.showdowns, segment.flopSeen).toFixed(1)}% `
+      + `(${segment.showdowns}/${segment.flopSeen})`
+    )
+    console.log(
+      `WTSD paths: all-in ${diagnostics.paths['all-in']} · `
+      + `call-down ${diagnostics.paths['call-down']} · `
+      + `aggressor ${diagnostics.paths['aggressor-to-showdown']} · `
+      + `check-down ${diagnostics.paths['check-down']}`,
+    )
+    console.log(
+      `WTSD by role: PFA ${segmentLabel(diagnostics.byRole.pfa)} · `
+      + `non-PFA ${segmentLabel(diagnostics.byRole['non-pfa'])}`,
+    )
+    console.log(
+      `WTSD by field: HU ${segmentLabel(diagnostics.byOpponents['heads-up'])} · `
+      + `3-way ${segmentLabel(diagnostics.byOpponents['three-way'])} · `
+      + `multiway ${segmentLabel(diagnostics.byOpponents.multiway)}`,
+    )
+    console.log('Fold exits (street|role|category|price|field):')
+    for (const exit of diagnostics.foldExits()) console.log(`  ${exit.key}: ${exit.count}`)
   }
 
   console.log('Positions:')

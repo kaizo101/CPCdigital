@@ -17,6 +17,8 @@ export interface DecisionMetrics {
   playerStack: number
   effectiveStack: number
   effectiveStackBb: number
+  /** Player stack at hand start, before blinds and voluntary action. */
+  playerStartingStackBb: number
   spr: number
   /** Voluntary chips already invested relative to the stack at hand start. */
   potCommitment: number
@@ -71,6 +73,7 @@ export function deriveDecisionMetrics(
     playerStack: context.playerStack,
     effectiveStack: context.effectiveStack,
     effectiveStackBb,
+    playerStartingStackBb: safeRatio(playerStartingStack, bigBlind),
     spr: context.spr,
     potCommitment: clamp(safeRatio(voluntaryHandContribution, playerStartingStack), 0, 1),
     forcedAllInRatio: clamp(safeRatio(context.callAmount, context.playerStack), 0, 1),

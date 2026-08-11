@@ -752,18 +752,15 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 
 ---
 
-## 🎯 0.8.1 — PLO-Strategie & NLHE-Verfeinerung
+## ✅ 0.8.1 — PLO-Strategie & NLHE-Verfeinerung
 
 **Ziel:** PLO-spezifische Score-Lücken schließen und NLHE-Entscheidungstiefe verbessern.
 
-> **Dokumentierter Cut vom 10.08.2026:** Der geplante Strategieumfang ist
-> implementiert, die technische Prüfung ist vollständig grün und die
-> 3k-/10k-Kalibrierung wurde ausgeführt. 0.8.1 ist noch nicht releasefähig,
-> weil das Kalibrierungs-Gate nicht vollständig geschlossen ist. Maßgeblich für
-> den Wiedereinstieg sind der
-> [Release-Gate-Report](calibration/v0.8.1-release-gate.md) und der dort
-> festgehaltene nächste Arbeitsblock; bis dahin erfolgen kein Version-Bump,
-> Release-Tag oder Baseline-Refresh.
+> **Release vom 11.08.2026:** Strategieumfang, Commitment-Grenzen und
+> WTSD-Diagnostik sind implementiert. Sämtliche technischen Gates sowie die
+> unveränderten NLHE-/PLO-Zielranges sind in den finalen 10k-/3k-Läufen grün.
+> Rohwerte und Invarianten stehen im
+> [Release-Gate-Report](calibration/v0.8.1-release-gate.md).
 
 ### PLO-Strategie
 
@@ -858,27 +855,26 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 - [x] 3k-Entwicklungsläufe + 10k-Release-Läufe für alle vier Archetypen in NLHE
   und PLO, Full Ring und 6-max abgeschlossen; die deterministische v2-Baseline
   wurde nach den Score-Änderungen neu erzeugt und ohne Driftfehler validiert.
-- [ ] Full-Ring-/6-max-Kalibrierung vollständig innerhalb der unveränderten
-  Zielranges. Die Kernmetriken sind weitgehend stabil; offen bleiben die im
-  [Release-Gate-Report](calibration/v0.8.1-release-gate.md) exakt aufgeführten
-  Randwerte und das PLO-WTSD-Modellproblem.
-- [ ] HU-Kalibrierung: 4 von 8 Kombinationen liegen vollständig innerhalb aller
-  geschärften Targets. NLHE Calling Station sowie PLO TAG, Nit und Calling
-  Station behalten die im Release-Gate-Report dokumentierten Ausreißer.
+- [x] Full-Ring-/6-max-Kalibrierung vollständig innerhalb der unveränderten
+  Zielranges; finale Bestätigung mit 10.000 Händen je Archetyp und Format.
+- [x] HU-Kalibrierung für alle acht Varianten-/Archetypkombinationen innerhalb
+  der geschärften Targets; finale Bestätigung mit 3.000 Händen je Archetyp.
 - [x] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves und
   0 Uncommitted-Deep-Shoves in allen 3k-/10k-Gate-Läufen.
 - [x] Skill-Gating-Smoke: Low-Skill-Bot (20) und High-Skill-Bot (90) zeigen messbar
   unterschiedliches Entscheidungsverhalten in denselben Szenarien
 - [x] Die nach dem dokumentierten Cut freigegebene Commitment-Korrektur wurde
   mit identischen Seeds auf 300/3k sowie für PLO LAG und Calling Station Full
-  Ring auf 10k geprüft. Der falsche Must-call-Hebel ist entfernt; PLO-LAG-WTSD
-  bleibt als offenes Modellproblem im Release-Gate dokumentiert.
-- [ ] **Commitment-Boundary-Suite nach Cut**: Die ungerundeten Interpolationen
+  Ring auf 10k geprüft. Der falsche Must-call-Hebel ist entfernt; die getrennte
+  WTSD-Pfaddiagnostik führte zu begrenzten, formatgenauen Strategiehebeln.
+- [x] **Commitment-Boundary-Suite nach Cut**: Die ungerundeten Interpolationen
   exakt bei Pot-Commitment 25%, Skill 20/70, Forced-All-in 40%/100% und Pot
   Odds 10%/40% sowie jeweils unmittelbar darunter/darüber testen. Insbesondere
   muss die multiplikative Verknüpfung bei Hand #36 trotz 100% Reststack-Risiko
-  wegen 4,8% Pot Odds exakt null ergeben. Dies ist der erste Wiedereinstieg vor
-  weiterer WTSD-Arbeit.
+  wegen 4,8% Pot Odds exakt null ergeben.
+- [x] **WTSD-Pfaddiagnostik**: Showdowns nach All-in, Call-down, Aggressor und
+  Check-down sowie nach Rolle, Gegnerfeld und Preisband getrennt; Fold-Exits
+  und Erhaltungsinvarianten verhindern pauschales Matrix-Tuning.
 
 ---
 

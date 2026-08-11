@@ -58,10 +58,14 @@ export interface ScoringParams {
     nlhe: CalibrationArchetypeFormatMap<number>
     plo: CalibrationArchetypeFormatMap<number>
   }
+  nlheFlopDefenseMods: CalibrationArchetypeFormatMap<number>
   turnBarrelMods: {
     nlhe: CalibrationArchetypeFormatMap<{ nonAir: number; air: number }>
     plo: CalibrationArchetypeFormatMap<{ nonAir: number; air: number }>
   }
+  ploProbeBetMods: CalibrationArchetypeFormatMap<{ turn: number; river: number }>
+  ploThinValuePotControlMods: CalibrationArchetypeFormatMap<{ turn: number; river: number }>
+  ploLateCallMods: CalibrationArchetypeFormatMap<number>
   boardDangers: {
     connected: number
     trips: number
@@ -502,13 +506,13 @@ export const DEFAULT_PARAMS: BotParams = {
       nlhe: {
         tag: { 'full-ring': 9, 'six-max': 12, 'heads-up': 40 },
         nit: { 'full-ring': 8, 'six-max': -4, 'heads-up': 4 },
-        lag: { 'full-ring': 0, 'six-max': 0, 'heads-up': 8 },
+        lag: { 'full-ring': 2, 'six-max': 5, 'heads-up': 8 },
         'calling-station': { 'full-ring': 4, 'six-max': 55, 'heads-up': 70 },
       },
       plo: {
-        tag: { 'full-ring': 13, 'six-max': 7, 'heads-up': 12 },
-        nit: { 'full-ring': 2, 'six-max': -3, 'heads-up': 2 },
-        lag: { 'full-ring': 8, 'six-max': 2, 'heads-up': 4 },
+        tag: { 'full-ring': 13, 'six-max': 8, 'heads-up': 12 },
+        nit: { 'full-ring': 3, 'six-max': -2, 'heads-up': 2 },
+        lag: { 'full-ring': 10, 'six-max': 3, 'heads-up': 4 },
         'calling-station': { 'full-ring': 22, 'six-max': 15, 'heads-up': 20 },
       },
     },
@@ -526,6 +530,12 @@ export const DEFAULT_PARAMS: BotParams = {
         'calling-station': { 'full-ring': 30, 'six-max': 30, 'heads-up': 30 },
       },
     },
+    nlheFlopDefenseMods: {
+      tag: { 'full-ring': 0, 'six-max': 0, 'heads-up': 0 },
+      nit: { 'full-ring': 0, 'six-max': 0, 'heads-up': 0 },
+      lag: { 'full-ring': 0, 'six-max': 0, 'heads-up': 0 },
+      'calling-station': { 'full-ring': 0, 'six-max': 8, 'heads-up': 25 },
+    },
     turnBarrelMods: {
       nlhe: {
         tag: {
@@ -534,13 +544,13 @@ export const DEFAULT_PARAMS: BotParams = {
           'heads-up': { nonAir: 6, air: 6 },
         },
         nit: {
-          'full-ring': { nonAir: 0, air: 0 },
-          'six-max': { nonAir: 0, air: -1 },
+          'full-ring': { nonAir: -2, air: -2 },
+          'six-max': { nonAir: -3, air: -3 },
           'heads-up': { nonAir: -12, air: -12 },
         },
         lag: {
           'full-ring': { nonAir: 5, air: 5 },
-          'six-max': { nonAir: 10, air: 10 },
+          'six-max': { nonAir: 12, air: 12 },
           'heads-up': { nonAir: 15, air: 15 },
         },
         'calling-station': {
@@ -556,13 +566,13 @@ export const DEFAULT_PARAMS: BotParams = {
           'heads-up': { nonAir: 1, air: 1 },
         },
         nit: {
-          'full-ring': { nonAir: -15, air: -15 },
+          'full-ring': { nonAir: -10, air: -10 },
           'six-max': { nonAir: -14, air: -14 },
           'heads-up': { nonAir: -2, air: -2 },
         },
         lag: {
           'full-ring': { nonAir: -16, air: -16 },
-          'six-max': { nonAir: -3, air: -3 },
+          'six-max': { nonAir: 3, air: 3 },
           'heads-up': { nonAir: 0, air: 0 },
         },
         'calling-station': {
@@ -571,6 +581,56 @@ export const DEFAULT_PARAMS: BotParams = {
           'heads-up': { nonAir: -12, air: -12 },
         },
       },
+    },
+    ploProbeBetMods: {
+      tag: {
+        'full-ring': { turn: 4, river: 4 },
+        'six-max': { turn: 18, river: 18 },
+        'heads-up': { turn: 24, river: 24 },
+      },
+      nit: {
+        'full-ring': { turn: 24, river: 24 },
+        'six-max': { turn: 24, river: 24 },
+        'heads-up': { turn: 32, river: 32 },
+      },
+      lag: {
+        'full-ring': { turn: -100, river: -100 },
+        'six-max': { turn: -8, river: -14 },
+        'heads-up': { turn: 0, river: 0 },
+      },
+      'calling-station': {
+        'full-ring': { turn: 0, river: 0 },
+        'six-max': { turn: 0, river: 0 },
+        'heads-up': { turn: 36, river: 36 },
+      },
+    },
+    ploThinValuePotControlMods: {
+      tag: {
+        'full-ring': { turn: 0, river: 0 },
+        'six-max': { turn: 0, river: 0 },
+        'heads-up': { turn: 0, river: 0 },
+      },
+      nit: {
+        'full-ring': { turn: 0, river: -10 },
+        'six-max': { turn: 0, river: -10 },
+        'heads-up': { turn: 0, river: -10 },
+      },
+      lag: {
+        'full-ring': { turn: 0, river: 0 },
+        'six-max': { turn: 0, river: 0 },
+        'heads-up': { turn: 0, river: 0 },
+      },
+      'calling-station': {
+        'full-ring': { turn: 0, river: 0 },
+        'six-max': { turn: 0, river: 0 },
+        'heads-up': { turn: 0, river: -25 },
+      },
+    },
+    ploLateCallMods: {
+      tag: { 'full-ring': 0, 'six-max': 0, 'heads-up': 0 },
+      nit: { 'full-ring': 8, 'six-max': 0, 'heads-up': 18 },
+      lag: { 'full-ring': 16, 'six-max': 8, 'heads-up': 0 },
+      'calling-station': { 'full-ring': 0, 'six-max': 0, 'heads-up': 65 },
     },
     boardDangers: {
       connected: -5,

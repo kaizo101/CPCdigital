@@ -108,6 +108,21 @@ describe('validateBotParameters', () => {
     ]))
   })
 
+  it('detects invalid showdown-flow calibration cells', () => {
+    const candidate = cloneParams()
+    candidate.scoring.ploProbeBetMods.lag['full-ring'].river = -101
+    candidate.scoring.ploThinValuePotControlMods.nit['heads-up'].turn = Number.NaN
+    candidate.scoring.ploLateCallMods['calling-station']['heads-up'] = 101
+    candidate.scoring.nlheFlopDefenseMods['calling-station']['six-max'] = -1
+
+    expect(validateBotParameters(candidate)).toEqual(expect.arrayContaining([
+      'scoring.ploProbeBetMods.lag.full-ring values must stay within -100..100',
+      'scoring.ploThinValuePotControlMods.nit.heads-up values must stay within -100..100',
+      'scoring.ploLateCallMods.calling-station.heads-up must stay within 0..100',
+      'scoring.nlheFlopDefenseMods.calling-station.six-max must stay within 0..100',
+    ]))
+  })
+
   it('detects drift between parameter defaults and the NLHE TAG score table', () => {
     const candidate = cloneParams()
     candidate.scoring.handStrength.raise.premium = 39
