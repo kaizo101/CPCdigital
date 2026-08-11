@@ -60,6 +60,11 @@ export const HABIT_DEFINITIONS: HabitDefinition[] = [
     description: 'Capable of firing all three streets as a bluff when the board runs out favorably.',
   },
   {
+    id: 'turn-double-barrel',
+    name: 'Double-barrels blank turns',
+    description: 'Continues selected value, draw, and bluff lines after a flop bet when the turn is favorable.',
+  },
+  {
     id: 'fold-to-pressure',
     name: 'Folds to pressure',
     description: 'Frequently folds medium-strength hands when facing aggression on later streets.',
@@ -94,8 +99,11 @@ export function generateIdentityHabits(
     'calling-station': ['sticky-postflop', 'defend-blinds-wide', 'check-back-medium', 'fold-to-pressure'],
   }
 
-  const preferred = archetypePreferences[archetypeId] ?? HABIT_DEFINITIONS.map(h => h.id)
-  const others = HABIT_DEFINITIONS.map(h => h.id).filter(id => !preferred.includes(id))
+  const selectableIds = HABIT_DEFINITIONS
+    .map(h => h.id)
+    .filter(id => id !== 'turn-double-barrel')
+  const preferred = archetypePreferences[archetypeId] ?? selectableIds
+  const others = selectableIds.filter(id => !preferred.includes(id))
 
   const weighted: string[] = []
   for (const id of preferred) {
@@ -120,8 +128,12 @@ export function habitIdsToActiveHabits(
 ): ActiveHabit[] {
   const habitMap = new Map(HABIT_DEFINITIONS.map(h => [h.id, h]))
   const consistencyRandom = createSeededRandom(`${identitySeed}:habit-consistency`)
+  const expandedHabitIds = habitIds.includes('three-barrel-bluff')
+    && !habitIds.includes('turn-double-barrel')
+    ? [...habitIds, 'turn-double-barrel']
+    : habitIds
 
-  return habitIds.map(id => {
+  return expandedHabitIds.map(id => {
     const def = habitMap.get(id)
     if (!def) throw new Error(`Unknown habit id: ${id}`)
     const consistency = 0.55 + consistencyRandom() * 0.35
@@ -233,6 +245,48 @@ function createHabitModifier(
           if (action.action.type === 'raise' && wasFlopAggressor && wasTurnAggressor) {
             return [{ category: 'personality', label: 'Habit: three-barrel bluff', value: ai(10) }]
           }
+        }
+        return []
+      }
+      case 'turn-double-barrel': {
+        const analysis = context.streetAnalysis
+        if (
+          context.variantId !== 'texas-holdem'
+          || phase !== 'turn'
+          || !analysis
+          || analysis.streetAggressor.flop !== context.botId
+          || analysis.streetAggressor.turn !== null
+          || analysis.activeOpponents !== 1
+          || context.metrics.callAmount > 0
+          || hand.boardGotWorse
+          || hand.equityCollapse > 0
+          || context.botState.skill.level < 50
+        ) return []
+
+        const valueCandidate = hand.made
+          && (hand.category === 'medium'
+            || hand.category === 'good'
+            || hand.category === 'strong'
+            || hand.category === 'premium')
+        const drawCandidate = hand.drawTypes.length > 0 && hand.cleanOuts >= 6
+        const bluffCandidate = !hand.made
+          && hand.drawTypes.length === 0
+          && (hand.category === 'air' || hand.category === 'weak' || hand.category === 'marginal')
+          && context.boardTexture === 'dry'
+        if (!valueCandidate && !drawCandidate && !bluffCandidate) return []
+
+        const base = valueCandidate ? 9 : drawCandidate ? 11 : 13
+        const label = valueCandidate
+          ? 'Habit: double-barrels blank turn for value'
+          : drawCandidate
+            ? 'Habit: double-barrels blank turn with draw'
+            : 'Habit: double-barrels blank turn as bluff'
+        const skillScale = 0.5 + context.botState.skill.level / 200
+        if (action.action.type === 'raise') {
+          return [{ category: 'personality', label, value: ai(base) * skillScale }]
+        }
+        if (action.action.type === 'check') {
+          return [{ category: 'personality', label, value: ai(-Math.ceil(base / 2)) * skillScale }]
         }
         return []
       }

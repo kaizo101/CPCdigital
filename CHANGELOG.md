@@ -8,6 +8,14 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Added
 
+- **Getrennte Commitment-Semantik**: Bot-Entscheidungen unterscheiden nun echte
+  freiwillige Pot-Beteiligung (`potCommitment`) von der Größe eines geforderten
+  Calls relativ zum Reststack (`forcedAllInRatio`). Blinds erzeugen kein
+  Sunk-Cost-Signal; niedriger Skill, Archetyp, Tilt und Geduld skalieren eine
+  begrenzte menschliche Commitment-Tendenz. Große Reststack-Calls mit schwacher
+  Hand werden dagegen vorsichtiger bewertet, während starke Hände und sehr
+  günstige Pot Odds geschützt bleiben. Beide Werte sind im Bot-Debug und im
+  Session-Debug-Export sichtbar.
 - **Kalibrierungs-Regression (Layer 2)**: Ein deterministischer 300-Hand-Smoke
   vergleicht alle 24 Varianten-/Archetyp-/Formatkombinationen mit einem
   versionierten Snapshot. Raten warnen oberhalb von 2 Prozentpunkten und
@@ -22,8 +30,83 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   bevorzugen Protection mit verwundbaren Made Hands und hohe SPR realisieren
   starke saubere Draws; Risikotoleranz und Aggression erhalten dabei den
   Archetypenunterschied.
+- **PLO-Board-Dynamics**: Turn- und River-Übergänge liefern statt eines binären
+  `boardGotWorse`-Signals einen handrelativen Equity-Collapse-Wert. Gepaarte
+  Boards entwerten Flushes und Straights, neu mögliche Flushes Non-Flush-Hände
+  und dichter werdende Straight-Boards werden nach tatsächlicher Hand- und
+  Nut-Stärke abgestuft. Gegen Bets wirkt der Faktor voll, bei ungeöffneter
+  Aktion nur als kleines Pot-Control-Signal; hohe Risikotoleranz dämpft ihn.
+- **PLO-River-Disziplin**: Schwache und mittlere Bluff-Catcher reagieren nun
+  auf Mehrstreet-Druck und fehlende Nut-Blocker. Nut-, Near-Nut- und
+  Second-Nut-Value bleibt ausgenommen; reale Flush-/Straight-Blocker,
+  Archetypen-Risikotoleranz und ein bereits verrechneter Equity Collapse
+  reduzieren die Strafe kontrolliert.
+- **PLO-Positionshebel**: Die echte Postflop-Aktionsreihenfolge bestimmt IP/OOP
+  auch nach Folds korrekt. In Position können dünne Redraws kostenlos realisiert
+  werden, realisierbare OOP-Equity foldet seltener und Made Hands mit
+  sauberen Nut-Redraws erhalten eine eigene Freeroll-Linie.
+- **PLO-Wrap-Kombinatorik**: `wrap-8+` und `wrap-13+` unterscheiden nun Nut-,
+  Mixed-, Second- und Bottom-Wraps anhand jeder physischen Out-Karte. Dominierte
+  Straight-Outs zählen nicht länger als `cleanOuts` oder Premium-SPR-Equity;
+  niedrige Skills können die rohe Out-Zahl weiterhin archetypisch überschätzen.
+- **Analyse-Skill-Gates**: Zentrale, validierte Schwellen staffeln PLO Board
+  Dynamics, River Discipline, Nut-Potential, Freerolls, Blocker und
+  Wrap-Dominanz. Skill 20 arbeitet in komplexen Wrap-Spots weiter mit der rohen
+  Out-Zahl; Skill 90 nutzt sämtliche Ebenen. Wahrnehmungsfehler und vereinfachte
+  Annahmen sind im Bot-Debug sichtbar.
+- **PLO-Blocker-Linien**: Erkannte Nut- und Teilblocker beeinflussen nun gezielt
+  Bluff-Catches, Bluff-Raises und Value-Pressure. Der Effekt skaliert mit
+  Blockerqualität, Skill sowie Aggression oder Risikotoleranz; Low-Skill-Bots und
+  NLHE bleiben von diesem PLO-spezifischen Pfad getrennt.
+- **Dynamische Implied Odds**: Der frühere pauschale +7-Callbonus berücksichtigt
+  nun effektiven Gegnerstack, wahrgenommenes Nut-Potential und aktive Gegner.
+  Tiefe Multiway-Pots stärken nut-nahe Draws, während dominierbare Draws wegen
+  Reverse Implied Odds weniger Bonus erhalten; Preflop wird nicht beeinflusst.
+- **Check-Raise-Strategie**: Die Street-Analyse erkennt klassische gegnerische
+  Check-Raises nun korrekt und nur auf der aktuellen Street. Calls, Folds und
+  Reraises reagieren differenziert nach Hand-Schutz, Preis, Skill, Archetyp und
+  Variante. Geeignete OOP-Heads-up-Spots erhalten außerdem ausführbare Value-
+  und Nut-Draw-Check-Raise-Pläne für NLHE und PLO.
+- **NLHE Turn-Double-Barrel-Habit**: Bots mit bestehender Three-Barrel-Neigung
+  können nun bereits auf geeigneten Blank Turns weiterfeuern. Value-, Draw- und
+  Bluff-Kandidaten werden getrennt bewertet; Skill, deterministische Habit-
+  Konsistenz und die gewichtete Aktionswahl halten die Linie individuell. Das
+  Habit bleibt auf Heads-up-in-der-Hand-NLHE-Spots begrenzt, verändert PLO nicht
+  und lost bestehende gespeicherte Identitäten nicht neu aus.
+- **NLHE Float-Defense**: Street-History erkennt nun exakt, wenn derselbe Gegner
+  eine Flop-C-Bet callt und nach dem Check des Aggressors den Turn bettet.
+  Geeignete Bluff-Catcher, Draws, Value-Hände und echte Blocker-Rebluffs reagieren
+  nach Preis, Boardentwicklung, Skill, Persönlichkeit und Gegnerread; normale
+  Turn-Bets, Air ohne Blocker und PLO erhalten keinen Float-Bonus.
+- **Preflop 4-Bet/5-Bet-Modell**: Preflop-Eskalationen unterscheiden jetzt
+  Value-Core, kontrollierte NLHE-A5s/A4s-Blockerbluffs und klare Fold-Ranges.
+  5-Bets benötigen passendes Stack-Commitment; nach einer 5-Bet bleiben
+  Non-Core-Raises und -Shoves ausgeschlossen. PLO nutzt eine separate lineare
+  Value-/Fold-Logik, und Deep-Stack-Shove-Sicherungen bleiben erhalten.
+- **NLHE River-Bet-Fold-Linien**: Bots können eine dünne Heads-up-Valuebet als
+  konkreten Bet-Fold-Plan in der Hand-Memory speichern. Die Fortsetzung wird nur
+  nach der exakten Sequenz eigene Opening-Bet → gegnerischer Raise aktiviert:
+  Fold gewinnt kontrolliert gegen den Bluff-Catch, während Reraises und Shoves
+  aus der Auswahl fallen. Nut-nahe Hände, Multiway, PLO und Low-Skill bleiben
+  geschützt; der aktive Plan erscheint im Bot-Debug.
+- **Formatgenaue Postflop-Kalibrierung**: C-Bet-Defense, Turn-Barrels und
+  PLO-Preflop-Reraises besitzen gezielte Varianten-/Archetyp-/Formathebel. Ein
+  C-Bet-Defense-Faktor wirkt nur gegen die echte Flop-C-Bet des
+  Preflop-Aggressors; NLHE-HU-LAG und Calling Station können dabei kontrolliert
+  auch Dead Air weiterspielen, ohne andere Formate zu verändern.
 
 ### Fixed
+
+- **Korrekte Turn-C-Bet-Metrik**: Turn-Bets nach einem durchgecheckten Flop
+  zählen nicht länger als Double Barrel. Eine Opportunity entsteht nur, wenn
+  derselbe Spieler Preflop-Aggressor und Flop-C-Bettor war und der Turn noch
+  nicht eröffnet wurde.
+- **PLO-Reraise-Kalibrierung**: Die generische Preflop-Reraise-Strafe skaliert
+  nach Archetyp und Format. Dadurch werden die zuvor zu hohen LAG-3-Bets in
+  Full Ring/6-max begrenzt, ohne die PLO-HU-Initiative aller Archetypen
+  abzuschneiden.
+- **PLO-Wheel-Nut-Erkennung**: Die Wheel-Straight wird in der geordneten
+  Straight-Suche als Five-high statt irrtümlich als Ace-high behandelt.
 
 - **Handisolierte Kalibrierungs-Seeds**: Deck- und Entscheidungs-RNG werden pro
   Hand separat abgeleitet und der Dealer explizit rotiert. Unterschiedlich

@@ -19,6 +19,9 @@ export interface ArchetypeParams {
   emotionality: TraitParams
 }
 
+type CalibrationFormatMap<T> = Record<'full-ring' | 'six-max' | 'heads-up', T>
+type CalibrationArchetypeFormatMap<T> = Record<BotArchetypeId, CalibrationFormatMap<T>>
+
 export interface ScoringParams {
   handStrength: {
     fold: Record<string, number>
@@ -39,7 +42,6 @@ export interface ScoringParams {
     delayedCbet: number
     weaknessSteal: number
     weaknessTrap: number
-    checkRaiseCaution: number
     multiwayWeak: number
     multiwayMedium: number
     opponentStrength: number
@@ -47,6 +49,18 @@ export interface ScoringParams {
     flushDangerPerCard: number
     reraiseBase: number
     reraisePerLevel: number
+  }
+  cbetDefenseCallBonus: {
+    nlhe: CalibrationArchetypeFormatMap<number>
+    plo: CalibrationArchetypeFormatMap<number>
+  }
+  cbetDefenseRaiseBase: {
+    nlhe: CalibrationArchetypeFormatMap<number>
+    plo: CalibrationArchetypeFormatMap<number>
+  }
+  turnBarrelMods: {
+    nlhe: CalibrationArchetypeFormatMap<{ nonAir: number; air: number }>
+    plo: CalibrationArchetypeFormatMap<{ nonAir: number; air: number }>
   }
   boardDangers: {
     connected: number
@@ -77,6 +91,73 @@ export interface ScoringParams {
     uncommittedStrong: number
     uncommittedDeep: number
     uncommittedPostflop: number
+  }
+  preflopEscalationMods: {
+    skillGate: number
+    aggressionGate: number
+    maxPolarizedStackBb: number
+    commitmentGate: number
+    shortValueStackBb: number
+    fourBet: {
+      valueFold: number
+      polarizedFold: number
+      defaultFold: number
+      valueCall: number
+      polarizedCall: number
+      defaultCall: number
+      valueRaise: number
+      polarizedRaise: number
+      defaultRaise: number
+      valueAllIn: number
+      defaultAllIn: number
+    }
+    fiveBet: {
+      valueFold: number
+      polarizedFold: number
+      defaultFold: number
+      valueCall: number
+      defaultCall: number
+      valueRaise: number
+      polarizedRaise: number
+      defaultRaise: number
+      valueAllIn: number
+      polarizedAllIn: number
+      defaultAllIn: number
+    }
+    facingFiveBet: {
+      valueFold: number
+      defaultFold: number
+      valueCall: number
+      defaultCall: number
+      valueRaiseCommitted: number
+      valueRaiseUncommitted: number
+      defaultRaise: number
+      valueAllIn: number
+      defaultAllIn: number
+    }
+  }
+  commitmentBehavior: {
+    minimumPotCommitment: number
+    maximumCallBonus: number
+    skillFullAt: number
+    skillZeroAt: number
+    maximumMentalMultiplier: number
+    archetypeMultiplier: Record<BotArchetypeId, number>
+    forcedAllInStart: number
+    forcedAllInFull: number
+    freePriceThreshold: number
+    fullPriceThreshold: number
+    forcedCategoryPenalty: {
+      air: number
+      weak: number
+      marginal: number
+      medium: number
+      good: number
+      strong: number
+      premium: number
+    }
+    minimumRiskScale: number
+    maximumRiskScale: number
   }
   callDownMods: {
     weakTurnPressure: number
@@ -111,6 +192,108 @@ export interface ScoringParams {
     drawCallStrong: number
     drawRaiseStrong: number
   }
+  equityCollapseMods: {
+    fold: number
+    check: number
+    call: number
+    raise: number
+    allIn: number
+    openActionScale: number
+    minimumArchetypeScale: number
+  }
+  ploRiverDisciplineMods: {
+    fold: number
+    call: number
+    raise: number
+    allIn: number
+    blockerThreshold: number
+    pressureStep: number
+    collapseOverlapScale: number
+    minimumArchetypeScale: number
+  }
+  ploPositionMods: {
+    ipCheckEquity: number
+    oopFoldEquity: number
+    freerollFold: number
+    freerollCheck: number
+    freerollCall: number
+    freerollRaise: number
+    freerollAllIn: number
+    freerollMinCleanOuts: number
+  }
+  analysisSkillGates: {
+    boardDynamics: number
+    riverDiscipline: number
+    nutPotential: number
+    freeroll: number
+    blocker: number
+    wrapDominance: number
+  }
+  ploWrapQualityMods: {
+    minimumDisciplineScale: number
+    nut: { fold: number; check: number; call: number; raise: number; allIn: number }
+    mixed: { fold: number; check: number; call: number; raise: number; allIn: number }
+    second: { fold: number; check: number; call: number; raise: number; allIn: number }
+    bottom: { fold: number; check: number; call: number; raise: number; allIn: number }
+  }
+  ploBlockerMods: {
+    nutThreshold: number
+    foldDefense: number
+    callDefense: number
+    bluffCheck: number
+    bluffRaise: number
+    bluffAllIn: number
+    valueCheck: number
+    valueRaise: number
+    valueAllIn: number
+  }
+  checkRaiseMods: {
+    respectSkillGate: number
+    planningSkillGate: number
+    foldRespect: number
+    foldProtected: number
+    callRespect: number
+    callProtected: number
+    reraiseRespect: number
+    allInRespect: number
+    planCheckValue: number
+    planCheckDraw: number
+    executeCallValue: number
+    executeCallDraw: number
+    executeRaiseValue: number
+    executeRaiseDraw: number
+    executeAllInValue: number
+    executeAllInDraw: number
+    ploRespectScale: number
+    maxPressureScale: number
+  }
+  floatDefenseMods: {
+    skillGate: number
+    foldCandidate: number
+    callCandidate: number
+    callValue: number
+    raiseCandidate: number
+    raiseValue: number
+    raiseBlockerBluff: number
+    allInValue: number
+    worseBoardScale: number
+    largeBetFloor: number
+    aggressiveReadBoost: number
+  }
+  betFoldMods: {
+    skillGate: number
+    minimumShowdownValue: number
+    minimumRelativeStrength: number
+    openBet: number
+    openCheck: number
+    openAllIn: number
+    responseFold: number
+    responseCall: number
+    responseRaise: number
+    responseAllIn: number
+    minimumDisciplineScale: number
+    maxPressureScale: number
+  }
   utilityBaseline: number
   skillTiers: { threshold: number; factor: number }[]
 }
@@ -122,13 +305,27 @@ export interface BettingParams {
   sizingMultiplier: number
   sizingClampMin: number
   sizingClampMax: number
-  foldCommitmentPenalty: number
   foldCapMin: number
   foldCapMax: number
   callDeepDrawBonus: number
+  callImpliedOdds: {
+    maxEffectiveStackBb: number
+    maxStackScale: number
+    multiwayStep: number
+    maxMultiwayAdjustment: number
+    minimumBonus: number
+    maximumBonus: number
+    nutPotentialScale: {
+      nuts: number
+      'near-nuts': number
+      'second-nuts': number
+      strong: number
+      medium: number
+      weak: number
+    }
+  }
   callShortDrawPenalty: number
   callLowSprBonus: number
-  callCommitmentPenalty: number
   callCapMin: number
   callCapMax: number
   raiseSprBonus: number
@@ -293,7 +490,6 @@ export const DEFAULT_PARAMS: BotParams = {
       delayedCbet: 8,
       weaknessSteal: 10,
       weaknessTrap: -5,
-      checkRaiseCaution: -8,
       multiwayWeak: -10,
       multiwayMedium: -5,
       opponentStrength: -7,
@@ -301,6 +497,80 @@ export const DEFAULT_PARAMS: BotParams = {
       flushDangerPerCard: -6,
       reraiseBase: -5,
       reraisePerLevel: -3,
+    },
+    cbetDefenseCallBonus: {
+      nlhe: {
+        tag: { 'full-ring': 9, 'six-max': 12, 'heads-up': 40 },
+        nit: { 'full-ring': 8, 'six-max': -4, 'heads-up': 4 },
+        lag: { 'full-ring': 0, 'six-max': 0, 'heads-up': 8 },
+        'calling-station': { 'full-ring': 4, 'six-max': 55, 'heads-up': 70 },
+      },
+      plo: {
+        tag: { 'full-ring': 13, 'six-max': 7, 'heads-up': 12 },
+        nit: { 'full-ring': 2, 'six-max': -3, 'heads-up': 2 },
+        lag: { 'full-ring': 8, 'six-max': 2, 'heads-up': 4 },
+        'calling-station': { 'full-ring': 22, 'six-max': 15, 'heads-up': 20 },
+      },
+    },
+    cbetDefenseRaiseBase: {
+      nlhe: {
+        tag: { 'full-ring': 30, 'six-max': 30, 'heads-up': 30 },
+        nit: { 'full-ring': 30, 'six-max': 30, 'heads-up': 30 },
+        lag: { 'full-ring': 80, 'six-max': 95, 'heads-up': 120 },
+        'calling-station': { 'full-ring': 30, 'six-max': 30, 'heads-up': 30 },
+      },
+      plo: {
+        tag: { 'full-ring': 30, 'six-max': 30, 'heads-up': 30 },
+        nit: { 'full-ring': 30, 'six-max': 30, 'heads-up': 30 },
+        lag: { 'full-ring': 120, 'six-max': 110, 'heads-up': 110 },
+        'calling-station': { 'full-ring': 30, 'six-max': 30, 'heads-up': 30 },
+      },
+    },
+    turnBarrelMods: {
+      nlhe: {
+        tag: {
+          'full-ring': { nonAir: 5, air: 5 },
+          'six-max': { nonAir: 7, air: 7 },
+          'heads-up': { nonAir: 6, air: 6 },
+        },
+        nit: {
+          'full-ring': { nonAir: 0, air: 0 },
+          'six-max': { nonAir: 0, air: -1 },
+          'heads-up': { nonAir: -12, air: -12 },
+        },
+        lag: {
+          'full-ring': { nonAir: 5, air: 5 },
+          'six-max': { nonAir: 10, air: 10 },
+          'heads-up': { nonAir: 15, air: 15 },
+        },
+        'calling-station': {
+          'full-ring': { nonAir: -15, air: -15 },
+          'six-max': { nonAir: -12, air: -12 },
+          'heads-up': { nonAir: -15, air: -15 },
+        },
+      },
+      plo: {
+        tag: {
+          'full-ring': { nonAir: -1, air: -1 },
+          'six-max': { nonAir: -1, air: -1 },
+          'heads-up': { nonAir: 1, air: 1 },
+        },
+        nit: {
+          'full-ring': { nonAir: -15, air: -15 },
+          'six-max': { nonAir: -14, air: -14 },
+          'heads-up': { nonAir: -2, air: -2 },
+        },
+        lag: {
+          'full-ring': { nonAir: -16, air: -16 },
+          'six-max': { nonAir: -3, air: -3 },
+          'heads-up': { nonAir: 0, air: 0 },
+        },
+        'calling-station': {
+          'full-ring': { nonAir: -16, air: -16 },
+          'six-max': { nonAir: -15, air: -15 },
+          'heads-up': { nonAir: -12, air: -12 },
+        },
+      },
     },
     boardDangers: {
       connected: -5,
@@ -331,6 +601,78 @@ export const DEFAULT_PARAMS: BotParams = {
       uncommittedStrong: -60,
       uncommittedDeep: -90,
       uncommittedPostflop: -80,
+    },
+    preflopEscalationMods: {
+      skillGate: 70,
+      aggressionGate: 65,
+      maxPolarizedStackBb: 100,
+      commitmentGate: 0.25,
+      shortValueStackBb: 60,
+      fourBet: {
+        valueFold: -12,
+        polarizedFold: 2,
+        defaultFold: 7,
+        valueCall: 5,
+        polarizedCall: -5,
+        defaultCall: 2,
+        valueRaise: 12,
+        polarizedRaise: 8,
+        defaultRaise: -14,
+        valueAllIn: 8,
+        defaultAllIn: -16,
+      },
+      fiveBet: {
+        valueFold: -16,
+        polarizedFold: -3,
+        defaultFold: 16,
+        valueCall: 8,
+        defaultCall: -14,
+        valueRaise: 14,
+        polarizedRaise: 5,
+        defaultRaise: -28,
+        valueAllIn: 12,
+        polarizedAllIn: 4,
+        defaultAllIn: -32,
+      },
+      facingFiveBet: {
+        valueFold: -20,
+        defaultFold: 22,
+        valueCall: 10,
+        defaultCall: -22,
+        valueRaiseCommitted: 6,
+        valueRaiseUncommitted: -8,
+        defaultRaise: -36,
+        valueAllIn: 8,
+        defaultAllIn: -40,
+      },
+    },
+    commitmentBehavior: {
+      minimumPotCommitment: 0.25,
+      maximumCallBonus: 8,
+      skillFullAt: 20,
+      skillZeroAt: 70,
+      maximumMentalMultiplier: 1.5,
+      archetypeMultiplier: {
+        nit: 0.5,
+        tag: 0.7,
+        lag: 1,
+        'calling-station': 1.25,
+      },
+      forcedAllInStart: 0.4,
+      forcedAllInFull: 1,
+      freePriceThreshold: 0.1,
+      fullPriceThreshold: 0.4,
+      forcedCategoryPenalty: {
+        air: -10,
+        weak: -8,
+        marginal: -6,
+        medium: -3,
+        good: 0,
+        strong: 0,
+        premium: 0,
+      },
+      minimumRiskScale: 0.75,
+      maximumRiskScale: 1.25,
     },
     callDownMods: {
       weakTurnPressure: -10,
@@ -365,6 +707,108 @@ export const DEFAULT_PARAMS: BotParams = {
       drawCallStrong: 10,
       drawRaiseStrong: 6,
     },
+    equityCollapseMods: {
+      fold: 14,
+      check: 8,
+      call: -14,
+      raise: -18,
+      allIn: -24,
+      openActionScale: 0.15,
+      minimumArchetypeScale: 0.15,
+    },
+    ploRiverDisciplineMods: {
+      fold: 12,
+      call: -16,
+      raise: -18,
+      allIn: -24,
+      blockerThreshold: 30,
+      pressureStep: 0.25,
+      collapseOverlapScale: 0.5,
+      minimumArchetypeScale: 0.15,
+    },
+    ploPositionMods: {
+      ipCheckEquity: 5,
+      oopFoldEquity: -8,
+      freerollFold: -14,
+      freerollCheck: -4,
+      freerollCall: 6,
+      freerollRaise: 12,
+      freerollAllIn: 6,
+      freerollMinCleanOuts: 4,
+    },
+    analysisSkillGates: {
+      boardDynamics: 30,
+      riverDiscipline: 40,
+      nutPotential: 50,
+      freeroll: 60,
+      blocker: 65,
+      wrapDominance: 70,
+    },
+    ploWrapQualityMods: {
+      minimumDisciplineScale: 0.2,
+      nut: { fold: -10, check: -4, call: 8, raise: 10, allIn: 6 },
+      mixed: { fold: -3, check: 2, call: 3, raise: 2, allIn: -2 },
+      second: { fold: 8, check: 4, call: -6, raise: -10, allIn: -14 },
+      bottom: { fold: 12, check: 6, call: -10, raise: -16, allIn: -22 },
+    },
+    ploBlockerMods: {
+      nutThreshold: 30,
+      foldDefense: -8,
+      callDefense: 6,
+      bluffCheck: -4,
+      bluffRaise: 12,
+      bluffAllIn: 5,
+      valueCheck: -3,
+      valueRaise: 7,
+      valueAllIn: 5,
+    },
+    checkRaiseMods: {
+      respectSkillGate: 30,
+      planningSkillGate: 50,
+      foldRespect: 10,
+      foldProtected: -10,
+      callRespect: -9,
+      callProtected: 5,
+      reraiseRespect: -12,
+      allInRespect: -15,
+      planCheckValue: 8,
+      planCheckDraw: 5,
+      executeCallValue: -4,
+      executeCallDraw: -3,
+      executeRaiseValue: 12,
+      executeRaiseDraw: 8,
+      executeAllInValue: 5,
+      executeAllInDraw: 3,
+      ploRespectScale: 1.2,
+      maxPressureScale: 1.5,
+    },
+    floatDefenseMods: {
+      skillGate: 40,
+      foldCandidate: -8,
+      callCandidate: 7,
+      callValue: 5,
+      raiseCandidate: 5,
+      raiseValue: 10,
+      raiseBlockerBluff: 7,
+      allInValue: 4,
+      worseBoardScale: 0.4,
+      largeBetFloor: 0.35,
+      aggressiveReadBoost: 0.25,
+    },
+    betFoldMods: {
+      skillGate: 50,
+      minimumShowdownValue: 40,
+      minimumRelativeStrength: 50,
+      openBet: 10,
+      openCheck: -5,
+      openAllIn: -20,
+      responseFold: 40,
+      responseCall: -40,
+      responseRaise: -45,
+      responseAllIn: -60,
+      minimumDisciplineScale: 0.55,
+      maxPressureScale: 1.4,
+    },
     utilityBaseline: 50,
     skillTiers: [
       { threshold: 90, factor: 1 },
@@ -381,13 +825,27 @@ export const DEFAULT_PARAMS: BotParams = {
     sizingMultiplier: 18,
     sizingClampMin: -14,
     sizingClampMax: 8,
-    foldCommitmentPenalty: -14,
     foldCapMin: -25,
     foldCapMax: 25,
     callDeepDrawBonus: 7,
+    callImpliedOdds: {
+      maxEffectiveStackBb: 200,
+      maxStackScale: 1.25,
+      multiwayStep: 0.1,
+      maxMultiwayAdjustment: 0.3,
+      minimumBonus: 1,
+      maximumBonus: 12,
+      nutPotentialScale: {
+        nuts: 1.15,
+        'near-nuts': 1.05,
+        'second-nuts': 1,
+        strong: 0.85,
+        medium: 0.6,
+        weak: 0.35,
+      },
+    },
     callShortDrawPenalty: -7,
     callLowSprBonus: 10,
-    callCommitmentPenalty: -10,
     callCapMin: -25,
     callCapMax: 25,
     raiseSprBonus: 12,

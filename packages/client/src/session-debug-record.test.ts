@@ -88,6 +88,8 @@ describe('session debug record', () => {
     const record = runner.createSessionDebugRecord('test', 'EUR')
     expect(record.botDecisions).not.toHaveLength(0)
     expect(record.botDecisions[0].snapshot.hand.split(' ')).toHaveLength(4)
+    expect(record.botDecisions[0].snapshot.potCommitment).toBeGreaterThanOrEqual(0)
+    expect(record.botDecisions[0].snapshot.forcedAllInRatio).toBeGreaterThanOrEqual(0)
     runner.cleanup()
   })
 })

@@ -1,7 +1,12 @@
 import type { BotArchetypeId } from './bot-archetypes'
 import type { DecisionContext, ScoredAction, ScoreContribution } from './bot-decision-types'
 import { isAtLeast } from './bot-variant-evaluation'
-import { determineLineCommitment, lineCommitmentModifiers } from './bot-line-planning'
+import {
+  betFoldEscalationBlocked,
+  betFoldLineModifiers,
+  determineLineCommitment,
+  lineCommitmentModifiers,
+} from './bot-line-planning'
 
 function personalityDivisor(base: number, context: DecisionContext): number {
   return context.variantId === 'omaha-high' ? base * 1.3 : base
@@ -15,6 +20,26 @@ export function applyPersonalityModifiers(
   const { aggression, bluffFrequency, riskTolerance } = botState.personality
   const { tilt, confidence, patience } = botState.mentalState
   const marginalHand = !isAtLeast(context.handAssessment.category, 'strong')
+  const lagPostflopCalibration = context.gameView.phase !== 'preflop'
+    && botState.personality.archetype.name === 'LAG'
+    ? context.variantId === 'texas-holdem'
+      ? context.tableSize === 2 ? 0 : 4
+      : 0
+    : 0
+  const ploTagFullRingCalibration = context.gameView.phase !== 'preflop'
+    && context.variantId === 'omaha-high'
+    && context.tableSize >= 7
+    && botState.personality.archetype.name === 'TAG'
+    ? 3
+    : 0
+  const ploCallingStationHuLateStreetCalibration = (
+    context.gameView.phase === 'turn' || context.gameView.phase === 'river'
+  )
+    && context.variantId === 'omaha-high'
+    && context.tableSize === 2
+    && botState.personality.archetype.name === 'Calling Station'
+    ? -3
+    : 0
 
   return actions.map(scored => {
     const contributions: ScoreContribution[] = []
@@ -35,6 +60,27 @@ export function applyPersonalityModifiers(
           category: 'personality',
           label: 'Passive style avoids initiative',
           value: -((30 - aggression) * 1.1),
+        })
+      }
+      if (lagPostflopCalibration > 0) {
+        contributions.push({
+          category: 'personality',
+          label: 'LAG postflop pressure calibration',
+          value: lagPostflopCalibration,
+        })
+      }
+      if (ploTagFullRingCalibration > 0) {
+        contributions.push({
+          category: 'personality',
+          label: 'PLO TAG full-ring pressure calibration',
+          value: ploTagFullRingCalibration,
+        })
+      }
+      if (ploCallingStationHuLateStreetCalibration < 0) {
+        contributions.push({
+          category: 'personality',
+          label: 'PLO Calling Station heads-up pot control',
+          value: ploCallingStationHuLateStreetCalibration,
         })
       }
     }
@@ -72,6 +118,13 @@ export function applyPersonalityModifiers(
         label: 'Patience reduces marginal calls',
         value: -(patience - 50) / personalityDivisor(12, context) * callModScale / ploCallDampener,
       })
+      if (lagPostflopCalibration > 0) {
+        contributions.push({
+          category: 'personality',
+          label: 'LAG postflop pressure calibration',
+          value: -4,
+        })
+      }
     }
     if (aggressiveAction && scored.intent === 'bluff') {
       contributions.push({
@@ -145,7 +198,12 @@ export function applyPersonalityModifiers(
       contributions.push(...lineCommitmentModifiers(commitment, context.gameView.phase, scored))
     }
 
-    const modified = addContributions(scored, contributions)
+    contributions.push(...betFoldLineModifiers(context, scored))
+
+    const strategicallyEligible = betFoldEscalationBlocked(context, scored)
+      ? { ...scored, selectionEligible: false }
+      : scored
+    const modified = addContributions(strategicallyEligible, contributions)
     if (modified.selectionEligible === false && modified.utility > 0) {
       return {
         ...modified,
@@ -154,7 +212,7 @@ export function applyPersonalityModifiers(
           ...modified.contributions,
           {
             category: 'betting-context',
-            label: 'All-in outside strategic eligibility',
+            label: 'Action outside strategic eligibility',
             value: -modified.utility,
           },
         ],

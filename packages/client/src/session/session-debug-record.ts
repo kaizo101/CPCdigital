@@ -79,6 +79,9 @@ export interface CompactDecisionSnapshot {
       allInAmount: number | null
     }
     totalPot: number
+    playerStack?: number
+    playerStartingStack?: number
+    voluntaryHandContribution?: number
     effectiveStack: number
     toCall: number
     minRaiseTo: number
@@ -103,6 +106,8 @@ export interface CompactBotDebugDecision {
     board: string
     potOdds: number
     spr: number
+    potCommitment: number
+    forcedAllInRatio: number
     tilt: number
     confidence: number
   }

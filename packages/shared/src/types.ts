@@ -72,6 +72,10 @@ export interface BettingContext {
   minRaiseTo: number
   maxRaiseTo: number
   playerStack: number
+  /** Player stack at the beginning of the hand, before blinds or voluntary action. */
+  playerStartingStack?: number
+  /** Calls, bets and raises already paid this hand; forced blinds are excluded. */
+  voluntaryHandContribution?: number
   /** Remaining stack effective against the deepest live opponent. */
   effectiveStack: number
   spr: number

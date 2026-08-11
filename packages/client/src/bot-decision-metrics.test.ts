@@ -4,6 +4,7 @@ import {
   calculateContextualRaiseTo,
   deriveDecisionMetrics,
   getBettingContextAdjustment,
+  getBettingContextFactors,
 } from './bot-decision-metrics'
 
 function bettingContext(overrides: Partial<BettingContext> = {}): BettingContext {
@@ -32,15 +33,18 @@ function bettingContext(overrides: Partial<BettingContext> = {}): BettingContext
 }
 
 describe('bot decision metrics', () => {
-  it('normalizes effective stack and call commitment', () => {
+  it('separates voluntary pot commitment from the forced-all-in ratio', () => {
     const metrics = deriveDecisionMetrics(bettingContext({
       callAmount: 300,
       playerStack: 600,
+      playerStartingStack: 1000,
+      voluntaryHandContribution: 250,
       effectiveStack: 400,
     }), 20)
 
     expect(metrics.effectiveStackBb).toBe(20)
-    expect(metrics.callCommitment).toBe(0.5)
+    expect(metrics.potCommitment).toBe(0.25)
+    expect(metrics.forcedAllInRatio).toBe(0.5)
     expect(metrics.stackDepth).toBe('short')
   })
 
@@ -68,6 +72,63 @@ describe('bot decision metrics', () => {
 
     expect(getBettingContextAdjustment('call', deep, hand))
       .toBeGreaterThan(getBettingContextAdjustment('call', short, hand))
+  })
+
+  it('scales implied odds with effective stack and nut potential', () => {
+    const impliedValue = (
+      effectiveStack: number,
+      nutPotential: 'nuts' | 'weak',
+    ) => getBettingContextFactors(
+      'call',
+      deriveDecisionMetrics(bettingContext({ effectiveStack }), 20),
+      { category: 'weak', hasDraw: true, nutPotential },
+      { phase: 'turn', activeOpponents: 1 },
+    ).find(factor => factor.label.startsWith('Implied odds'))!.value
+
+    expect(impliedValue(4000, 'nuts')).toBeGreaterThan(impliedValue(2000, 'nuts'))
+    expect(impliedValue(2000, 'nuts')).toBeGreaterThan(impliedValue(2000, 'weak'))
+  })
+
+  it('rewards multiway nut draws but discounts dominated multiway draws', () => {
+    const impliedValue = (
+      nutPotential: 'nuts' | 'medium',
+      activeOpponents: number,
+    ) => getBettingContextFactors(
+      'call',
+      deriveDecisionMetrics(bettingContext({ effectiveStack: 2000 }), 20),
+      { category: 'weak', hasDraw: true, nutPotential },
+      { phase: 'flop', activeOpponents },
+    ).find(factor => factor.label.startsWith('Implied odds'))!.value
+
+    expect(impliedValue('nuts', 4)).toBeGreaterThan(impliedValue('nuts', 1))
+    expect(impliedValue('medium', 4)).toBeLessThan(impliedValue('medium', 1))
+  })
+
+  it('does not apply postflop implied odds to a preflop draw profile', () => {
+    const factors = getBettingContextFactors(
+      'call',
+      deriveDecisionMetrics(bettingContext({ effectiveStack: 2400 }), 20),
+      { category: 'weak', hasDraw: true, nutPotential: 'nuts' },
+      { phase: 'preflop', activeOpponents: 3 },
+    )
+
+    expect(factors.some(factor => factor.label.startsWith('Implied odds'))).toBe(false)
+  })
+
+  it('keeps PLO-style preflop reraises more disciplined than the NLHE half-scale', () => {
+    const metrics = deriveDecisionMetrics(bettingContext({
+      potOdds: 0.3,
+      toCallPotRatio: 0.5,
+    }), 20)
+    const hand = { category: 'medium' as const, hasDraw: false }
+    const raisePenalty = (preflopReraisePenaltyScale: number) => getBettingContextFactors(
+      'raise',
+      metrics,
+      hand,
+      { phase: 'preflop', preflopRaiseCount: 1, preflopReraisePenaltyScale },
+    ).reduce((sum, factor) => sum + factor.value, 0)
+
+    expect(raisePenalty(1)).toBeLessThan(raisePenalty(0.5))
   })
 
   it('increases value aggression at low SPR', () => {
@@ -115,5 +176,23 @@ describe('bot decision metrics', () => {
     )
 
     expect(worseBoard).toBeGreaterThan(stableBoard)
+  })
+
+  it('uses smaller sizing after a quantified equity collapse', () => {
+    const metrics = deriveDecisionMetrics(bettingContext(), 20)
+    const stableBoard = calculateContextualRaiseTo(
+      metrics,
+      { category: 'good', hasDraw: false, equityCollapse: 0 },
+      'neutral',
+      'early',
+    )
+    const collapsedBoard = calculateContextualRaiseTo(
+      metrics,
+      { category: 'good', hasDraw: false, equityCollapse: 0.8 },
+      'neutral',
+      'early',
+    )
+
+    expect(collapsedBoard).toBeLessThan(stableBoard)
   })
 })

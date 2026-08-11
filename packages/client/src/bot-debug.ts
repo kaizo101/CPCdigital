@@ -26,6 +26,7 @@ export interface BotDebugProfile {
     handsWon: number
     raisedPreflop: boolean
     lastAction: string | null
+    betFoldStreet: string | null
   }
   reads: Array<{
     playerId: string

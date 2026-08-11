@@ -76,7 +76,7 @@ function initializeBotState(
     memory: {
       handsPlayed: 0,
       handsWon: 0,
-      hand: { raisedPreflop: false, lastAction: null, lastStreet: null },
+      hand: { raisedPreflop: false, lastAction: null, lastStreet: null, betFoldStreet: null },
     },
   }
 }

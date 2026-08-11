@@ -49,6 +49,7 @@ function makeContext(
       cleanOuts: 0,
       blockerValue: 0,
       drawTypes: [],
+      equityCollapse: 0,
       boardGotWorse: false,
       strength: 50,
     },
@@ -57,7 +58,8 @@ function makeContext(
       spr: 5,
       effectiveStack: 500,
       stackDepth: 'medium' as const,
-      callCommitment: 0.1,
+      potCommitment: 0.1,
+      forcedAllInRatio: 0.1,
       minRaiseTo: 100,
       maxRaiseTo: 1000,
       preferredRaiseTo: 150,
@@ -111,6 +113,47 @@ describe('archetype-specific mental state modifiers', () => {
     const results = applyPersonalityModifiers(actions, ctx)
 
     expect(findUtility(results, 'raise')).toBeGreaterThan(findUtility(results, 'fold') + 10)
+  })
+
+  it('adds a bounded postflop pressure bias only where LAG calibration needs it', () => {
+    const lag = createBotState(LAG_PERSONALITY, 100, rng)
+    lag.mentalState.tilt = 0
+    lag.mentalState.confidence = 50
+    lag.mentalState.patience = 50
+    const contribution = (overrides: Partial<DecisionContext>) => applyPersonalityModifiers(
+      makeActions(makeContext(lag, overrides).legalActions),
+      makeContext(lag, overrides),
+    ).find(action => action.action.type === 'raise')!.contributions
+      .find(item => item.label === 'LAG postflop pressure calibration')?.value
+
+    expect(contribution({ variantId: 'texas-holdem', tableSize: 6 })).toBe(4)
+    expect(contribution({ variantId: 'texas-holdem', tableSize: 2 })).toBeUndefined()
+    expect(contribution({ variantId: 'omaha-high', tableSize: 9 })).toBeUndefined()
+    expect(contribution({ variantId: 'omaha-high', tableSize: 6 })).toBeUndefined()
+    expect(contribution({ gameView: { ...makeContext(lag).gameView, phase: 'preflop' } })).toBeUndefined()
+  })
+
+  it('keeps the final PLO postflop corrections archetype and format local', () => {
+    const tag = createBotState(TAG_PERSONALITY, 100, rng)
+    const cs = createBotState(CALLING_STATION_PERSONALITY, 100, rng)
+    const contribution = (
+      botState: ReturnType<typeof createBotState>,
+      overrides: Partial<DecisionContext>,
+      label: string,
+    ) => applyPersonalityModifiers(
+      makeActions(makeContext(botState, overrides).legalActions),
+      makeContext(botState, overrides),
+    ).find(action => action.action.type === 'raise')!.contributions
+      .find(item => item.label === label)?.value
+
+    expect(contribution(tag, { variantId: 'omaha-high', tableSize: 9 }, 'PLO TAG full-ring pressure calibration')).toBe(3)
+    expect(contribution(tag, { variantId: 'omaha-high', tableSize: 6 }, 'PLO TAG full-ring pressure calibration')).toBeUndefined()
+    expect(contribution(cs, {
+      variantId: 'omaha-high',
+      tableSize: 2,
+      gameView: { ...makeContext(cs).gameView, phase: 'turn' },
+    }, 'PLO Calling Station heads-up pot control')).toBe(-3)
+    expect(contribution(cs, { variantId: 'omaha-high', tableSize: 2 }, 'PLO Calling Station heads-up pot control')).toBeUndefined()
   })
 
   it('makes tilted Calling Station prefer calling', () => {

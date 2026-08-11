@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { DecisionActionHistoryEvent } from '@cpc/shared'
 import type { BotContext } from './bot-context'
-import { omahaVariantEvaluator } from './omaha-hand-evaluation'
+import {
+  calculateOmahaBlockerValue,
+  calculateOmahaEquityCollapse,
+  findStraightTop,
+  omahaVariantEvaluator,
+} from './omaha-hand-evaluation'
 
 function makeContext(communityCards: BotContext['publicState']['communityCards']): BotContext {
   return {
@@ -363,10 +368,11 @@ describe('omaha draw detection', () => {
       const result = omahaVariantEvaluator.evaluate(ctx)
 
       expect(result.handAssessment.drawTypes).toContain('wrap-13+')
+      expect(result.handAssessment.drawTypes).toContain('nut-wrap')
       expect(result.handAssessment.cleanOuts).toBe(13)
     })
 
-    it('recognizes an ace-low wheel out', () => {
+    it('recognizes an ace-low wheel out but excludes it when every out is dominated', () => {
       const ctx = makeContext([
         { rank: '3', suit: 'spades' },
         { rank: '4', suit: 'diamonds' },
@@ -382,7 +388,77 @@ describe('omaha draw detection', () => {
       const result = omahaVariantEvaluator.evaluate(ctx)
 
       expect(result.handAssessment.drawTypes).toContain('gutshot')
-      expect(result.handAssessment.cleanOuts).toBe(4)
+      expect(result.handAssessment.cleanOuts).toBe(0)
+    })
+
+    it('separates a large bottom wrap from a clean nut wrap', () => {
+      const bottom = makeContext([
+        { rank: 'A', suit: 'spades' },
+        { rank: 'Q', suit: 'diamonds' },
+        { rank: 'J', suit: 'clubs' },
+      ])
+      bottom.ownCards = [
+        { rank: 'T', suit: 'hearts' },
+        { rank: '9', suit: 'clubs' },
+        { rank: '8', suit: 'diamonds' },
+        { rank: '7', suit: 'hearts' },
+      ]
+      const nut = makeContext([
+        { rank: '9', suit: 'spades' },
+        { rank: '6', suit: 'diamonds' },
+        { rank: '2', suit: 'clubs' },
+      ])
+      nut.ownCards = [
+        { rank: 'T', suit: 'hearts' },
+        { rank: '8', suit: 'clubs' },
+        { rank: '7', suit: 'diamonds' },
+        { rank: 'K', suit: 'hearts' },
+      ]
+
+      const bottomAssessment = omahaVariantEvaluator.evaluate(bottom).handAssessment
+      const nutAssessment = omahaVariantEvaluator.evaluate(nut).handAssessment
+      expect(bottomAssessment.drawTypes).toEqual(expect.arrayContaining(['wrap-13+', 'bottom-wrap']))
+      expect(bottomAssessment.cleanOuts).toBe(0)
+      expect(nutAssessment.drawTypes).toEqual(expect.arrayContaining(['wrap-13+', 'nut-wrap']))
+      expect(nutAssessment.cleanOuts).toBe(13)
+      expect(nutAssessment.drawQuality).toBeGreaterThan(bottomAssessment.drawQuality)
+    })
+
+    it('marks wraps whose outs are uniformly second-best', () => {
+      const ctx = makeContext([
+        { rank: 'A', suit: 'spades' },
+        { rank: '9', suit: 'diamonds' },
+        { rank: '8', suit: 'clubs' },
+      ])
+      ctx.ownCards = [
+        { rank: 'K', suit: 'hearts' },
+        { rank: 'J', suit: 'clubs' },
+        { rank: '7', suit: 'diamonds' },
+        { rank: '5', suit: 'hearts' },
+      ]
+
+      const assessment = omahaVariantEvaluator.evaluate(ctx).handAssessment
+      expect(assessment.drawTypes).toEqual(expect.arrayContaining(['wrap-8+', 'second-wrap']))
+      expect(assessment.cleanOuts).toBe(0)
+    })
+
+    it('filters dominated wrap cards when the next card is the river', () => {
+      const ctx = makeContext([
+        { rank: 'A', suit: 'spades' },
+        { rank: 'K', suit: 'diamonds' },
+        { rank: 'Q', suit: 'clubs' },
+        { rank: '5', suit: 'hearts' },
+      ])
+      ctx.ownCards = [
+        { rank: 'J', suit: 'diamonds' },
+        { rank: '9', suit: 'clubs' },
+        { rank: '4', suit: 'hearts' },
+        { rank: '3', suit: 'spades' },
+      ]
+
+      const assessment = omahaVariantEvaluator.evaluate(ctx).handAssessment
+      expect(assessment.drawTypes).toEqual(expect.arrayContaining(['wrap-8+', 'bottom-wrap']))
+      expect(assessment.cleanOuts).toBe(0)
     })
   })
 
@@ -427,5 +503,122 @@ describe('omaha draw detection', () => {
       expect(result.handAssessment.drawTypes.filter(t =>
         t.startsWith('wrap') || t === 'oesd' || t === 'gutshot')).toEqual([])
     })
+  })
+})
+
+describe('PLO board equity collapse', () => {
+  it('treats a paired final card as severe for straights and flushes but harmless for boats', () => {
+    const pairedRiver = [
+      { rank: 'K', suit: 'clubs' },
+      { rank: '9', suit: 'diamonds' },
+      { rank: '2', suit: 'spades' },
+      { rank: '4', suit: 'hearts' },
+      { rank: '4', suit: 'clubs' },
+    ] as const
+
+    expect(calculateOmahaEquityCollapse([...pairedRiver], 5, 'near-nuts')).toBe(0.85)
+    expect(calculateOmahaEquityCollapse([...pairedRiver], 6, 'near-nuts')).toBe(0.85)
+    expect(calculateOmahaEquityCollapse([...pairedRiver], 7, 'medium')).toBe(0)
+  })
+
+  it('collapses a non-flush hand when the board becomes three-suited', () => {
+    const thirdHeart = [
+      { rank: 'K', suit: 'hearts' },
+      { rank: '9', suit: 'hearts' },
+      { rank: '2', suit: 'clubs' },
+      { rank: '4', suit: 'hearts' },
+    ] as const
+
+    expect(calculateOmahaEquityCollapse([...thirdHeart], 4, 'strong')).toBe(0.8)
+    expect(calculateOmahaEquityCollapse([...thirdHeart], 6, 'near-nuts')).toBe(0)
+  })
+
+  it('grades new straight density by the hand actual rank and nut position', () => {
+    const connectedTurn = [
+      { rank: 'K', suit: 'clubs' },
+      { rank: '6', suit: 'diamonds' },
+      { rank: '2', suit: 'clubs' },
+      { rank: '4', suit: 'spades' },
+    ] as const
+
+    expect(calculateOmahaEquityCollapse([...connectedTurn], 3, 'medium')).toBe(0.6)
+    expect(calculateOmahaEquityCollapse([...connectedTurn], 5, 'nuts')).toBe(0.08)
+    expect(calculateOmahaEquityCollapse([...connectedTurn], 5, 'weak')).toBe(0.5)
+  })
+
+  it('returns zero for a blank transition and before the turn', () => {
+    const blankTurn = [
+      { rank: 'A', suit: 'clubs' },
+      { rank: '8', suit: 'diamonds' },
+      { rank: '2', suit: 'clubs' },
+      { rank: 'Q', suit: 'spades' },
+    ] as const
+
+    expect(calculateOmahaEquityCollapse([...blankTurn], 3, 'medium')).toBe(0)
+    expect(calculateOmahaEquityCollapse(blankTurn.slice(0, 3), 3, 'medium')).toBe(0)
+  })
+})
+
+describe('PLO river blockers', () => {
+  it('grades the nut and second-nut flush blockers on a three-flush board', () => {
+    const board = [
+      { rank: 'K', suit: 'hearts' },
+      { rank: '9', suit: 'hearts' },
+      { rank: '2', suit: 'hearts' },
+      { rank: '4', suit: 'clubs' },
+      { rank: '7', suit: 'diamonds' },
+    ] as const
+
+    expect(calculateOmahaBlockerValue([
+      { rank: 'A', suit: 'hearts' },
+      { rank: 'Q', suit: 'clubs' },
+      { rank: 'J', suit: 'diamonds' },
+      { rank: 'T', suit: 'spades' },
+    ], [...board])).toBe(30)
+    expect(calculateOmahaBlockerValue([
+      { rank: 'Q', suit: 'hearts' },
+      { rank: '8', suit: 'clubs' },
+      { rank: '6', suit: 'diamonds' },
+      { rank: '3', suit: 'spades' },
+    ], [...board])).toBe(15)
+  })
+
+  it('recognizes complete and partial nut-straight blockers', () => {
+    const board = [
+      { rank: '9', suit: 'clubs' },
+      { rank: 'T', suit: 'diamonds' },
+      { rank: 'J', suit: 'spades' },
+      { rank: '2', suit: 'hearts' },
+      { rank: '2', suit: 'clubs' },
+    ] as const
+
+    expect(calculateOmahaBlockerValue([
+      { rank: 'K', suit: 'hearts' },
+      { rank: 'Q', suit: 'clubs' },
+      { rank: '5', suit: 'diamonds' },
+      { rank: '4', suit: 'spades' },
+    ], [...board])).toBe(30)
+    expect(calculateOmahaBlockerValue([
+      { rank: 'K', suit: 'hearts' },
+      { rank: '8', suit: 'clubs' },
+      { rank: '5', suit: 'diamonds' },
+      { rank: '4', suit: 'spades' },
+    ], [...board])).toBe(12)
+  })
+
+  it('treats the wheel as five-high when finding its nut hole-card pair', () => {
+    expect(findStraightTop([14, 5, 4, 3, 2], 5)).toBe(5)
+    expect(calculateOmahaBlockerValue([
+      { rank: '5', suit: 'hearts' },
+      { rank: '4', suit: 'clubs' },
+      { rank: 'K', suit: 'diamonds' },
+      { rank: 'Q', suit: 'spades' },
+    ], [
+      { rank: 'A', suit: 'clubs' },
+      { rank: '2', suit: 'diamonds' },
+      { rank: '3', suit: 'spades' },
+      { rank: '8', suit: 'hearts' },
+      { rank: '9', suit: 'clubs' },
+    ])).toBe(30)
   })
 })

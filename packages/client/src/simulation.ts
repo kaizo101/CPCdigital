@@ -522,17 +522,17 @@ function simulateFormat(
         && (state.bettingContext?.legalActions.allInAmount ?? 0) > state.currentBet
       if (aggressiveAllIn && decisionMetrics) {
         const uncommittedPreflop = state.phase === 'preflop' && (
-          (decisionMetrics.effectiveStackBb > 100 && decisionMetrics.callCommitment < 0.2)
+          (decisionMetrics.effectiveStackBb > 100 && decisionMetrics.potCommitment < 0.2)
           || (
             decisionMetrics.effectiveStackBb > 40
             && handCategory !== 'premium'
-            && decisionMetrics.callCommitment < 0.25
+            && decisionMetrics.potCommitment < 0.25
           )
         )
         const uncommittedPostflop = state.phase !== 'preflop'
           && decisionMetrics.spr >= 6
           && decisionMetrics.effectiveStackBb >= 100
-          && decisionMetrics.callCommitment < 0.25
+          && decisionMetrics.potCommitment < 0.25
           && nutPotential !== 'nuts'
         if (uncommittedPreflop || uncommittedPostflop) stats.uncommittedDeepShoves++
       }
@@ -596,14 +596,10 @@ function simulateFormat(
           if (metricDelta.foldToCBet) stats.postflop.foldToCBets++
         }
 
-        // Turn C-Bet: PFA can open turn with a bet when nobody led out
-        if (
-          state.phase === 'turn'
-          && metricDelta.aggressionRole === 'pfa'
-          && state.currentBet === 0
-        ) {
+        // Turn C-Bet: the flop c-bettor can continue on an unled turn.
+        if (metricDelta.turnCBetOpportunity) {
           stats.postflop.turnCBetOpps++
-          if (metricDelta.aggressionClass === 'aggressive') {
+          if (metricDelta.turnCBet) {
             stats.postflop.turnCBets++
           }
         }

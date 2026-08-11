@@ -38,6 +38,7 @@ explizit begründet, statt still an einzelne Laufergebnisse angepasst zu werden.
 
 ## Berichte
 
+- [v0.8.1 — Release-Gate, Rohwerte und offener Kalibrierungsbefund](v0.8.1-release-gate.md)
 - [v0.8.0 — Format-Isolation und strukturelle NLHE-/PLO-Baseline](v0.8.0.md)
 - [v0.7.8 — NLHE-C-Bet-Metrik und Regression](v0.7.8.md)
 - [v0.7.8 — PLO-Abschluss nach Metrik-Audit](plo-nit-kalibrierung.md)

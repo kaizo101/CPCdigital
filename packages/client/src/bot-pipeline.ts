@@ -12,6 +12,7 @@ import {
   applySkillPerception,
   type SkillPerceptionError,
 } from './bot-skill-perception'
+import { isNlheRiverBetFoldOpening } from './bot-line-planning'
 
 export { applyPersonalityModifiers } from './bot-action-modifiers'
 export { scoreActions } from './bot-action-scoring'
@@ -37,6 +38,7 @@ export interface DecisionResult {
     raisedPreflop?: boolean
     lastAction?: 'bet' | 'check' | 'call' | 'fold' | null
     lastStreet?: string | null
+    betFoldStreet?: string | null
   }
 }
 
@@ -68,11 +70,15 @@ function deriveStateUpdates(
   action: PlayerAction,
   context: DecisionContext,
 ): DecisionResult['stateUpdates'] {
-  const updates: DecisionResult['stateUpdates'] = { lastStreet: context.gameView.phase }
+  const updates: DecisionResult['stateUpdates'] = {
+    lastStreet: context.gameView.phase,
+    betFoldStreet: null,
+  }
 
   if (action.type === 'raise') {
     updates.lastAction = 'bet'
     if (context.gameView.phase === 'preflop') updates.raisedPreflop = true
+    if (isNlheRiverBetFoldOpening(context)) updates.betFoldStreet = context.gameView.phase
     return updates
   }
 

@@ -5,7 +5,7 @@ import { getPloSprAdjustments, getPloSprZoneWeights, type PloSprAction } from '.
 function context(overrides: Partial<DecisionContext['handAssessment']> = {}, spr = 1): DecisionContext {
   return {
     variantId: 'omaha-high',
-    botState: { personality: { riskTolerance: 0, aggression: 0 } },
+    botState: { personality: { riskTolerance: 0, aggression: 0 }, skill: { level: 90 } },
     gameView: { phase: 'flop' },
     metrics: { spr },
     handAssessment: {
@@ -20,6 +20,7 @@ function context(overrides: Partial<DecisionContext['handAssessment']> = {}, spr
       cleanOuts: 0,
       blockerValue: 0,
       drawTypes: [],
+      equityCollapse: 0,
       boardGotWorse: false,
       strength: 50,
       ...overrides,
@@ -120,6 +121,34 @@ describe('getPloSprAdjustments', () => {
     }
   })
 
+  it('does not treat raw bottom-wrap outs as premium low-SPR equity', () => {
+    const nutWrap = context({
+      category: 'medium',
+      rank: 1,
+      made: false,
+      drawQuality: 11,
+      cleanOuts: 13,
+      drawTypes: ['wrap-13+', 'nut-wrap'],
+    })
+    const bottomWrap = context({
+      category: 'medium',
+      rank: 1,
+      made: false,
+      drawQuality: 4,
+      cleanOuts: 0,
+      drawTypes: ['wrap-13+', 'bottom-wrap'],
+    })
+
+    expect(value('fold', nutWrap)).toBe(-12)
+    expect(value('all-in', nutWrap)).toBe(12)
+    expect(value('fold', bottomWrap)).toBe(6)
+    expect(value('all-in', bottomWrap)).toBe(-8)
+
+    bottomWrap.botState.skill.level = 20
+    expect(value('fold', bottomWrap)).toBe(-12)
+    expect(value('all-in', bottomWrap)).toBe(12)
+  })
+
   it('prefers protection raises with vulnerable made hands in the middle zone', () => {
     const vulnerable = context({
       category: 'good',
@@ -155,7 +184,7 @@ describe('getPloSprAdjustments', () => {
       made: false,
       drawQuality: 8,
       cleanOuts: 13,
-      drawTypes: ['wrap-13+'],
+      drawTypes: ['wrap-13+', 'nut-wrap'],
     }, 15)
 
     expect(value('fold', draw)).toBe(-10)

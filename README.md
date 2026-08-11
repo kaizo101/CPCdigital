@@ -38,6 +38,11 @@ NLHE und PLO. Maßgeblich für geplante Arbeiten ist die
 [Roadmap](ROADMAP.md); tatsächlich veröffentlichte Änderungen stehen im
 [Changelog](CHANGELOG.md).
 
+Der dokumentierte 0.8.1-Entwicklungsstand hat alle technischen Gates bestanden,
+ist wegen verbleibender Kalibrierungsausreißer aber noch kein Release. Rohwerte,
+Gate-Entscheidung und Wiederaufnahmeplan stehen im
+[0.8.1-Kalibrierungsreport](calibration/v0.8.1-release-gate.md).
+
 Die offizielle **[Browser-Demo](https://kaizo101.github.io/CPCdigital/)** wird
 direkt aus diesem öffentlichen Repository gebaut. Sie eignet sich zum schnellen
 Ausprobieren; Desktop bleibt die primäre Entwicklungsplattform.

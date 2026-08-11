@@ -1,5 +1,6 @@
 import type { RandomSource } from './bot-action-selection'
 import type { DecisionContext, ScoredAction } from './bot-decision-types'
+import { hasAnalysisSkill } from './bot-skill-gates'
 
 export type PerceptionField =
   | 'relative-strength'
@@ -7,6 +8,9 @@ export type PerceptionField =
   | 'draws'
   | 'clean-outs'
   | 'blocker-value'
+  | 'nut-potential'
+  | 'board-dynamics'
+  | 'wrap-quality'
   | 'pot-odds'
   | 'bet-size'
   | 'spr'
@@ -17,8 +21,8 @@ export type PerceptionField =
 export interface SkillPerceptionError {
   field: PerceptionField
   label: string
-  actual: number | string[]
-  perceived: number | string[]
+  actual: number | string | string[]
+  perceived: number | string | string[]
 }
 
 export interface SkillPerceptionResult {
@@ -44,6 +48,29 @@ export function applySkillPerception(
     drawTypes: [...context.handAssessment.drawTypes],
   }
   const metrics = { ...context.metrics }
+  const plo = context.variantId === 'omaha-high'
+
+  if (plo && !hasAnalysisSkill(skill, 'boardDynamics') && hand.equityCollapse > 0) {
+    errors.push({
+      field: 'board-dynamics',
+      label: 'Board transition',
+      actual: hand.equityCollapse,
+      perceived: 0,
+    })
+    hand.equityCollapse = 0
+    hand.boardGotWorse = false
+  }
+
+  if (plo && !hasAnalysisSkill(skill, 'nutPotential') && hand.nutPotential !== 'medium') {
+    errors.push({
+      field: 'nut-potential',
+      label: 'Nut potential',
+      actual: hand.nutPotential,
+      perceived: 'medium',
+    })
+    hand.nutPotential = 'medium'
+    if (hand.equityCollapse > 0) hand.equityCollapse = 0.5
+  }
 
   hand.relativeStrength = perceivedNumber(
     errors, 'relative-strength', 'Relative hand strength', hand.relativeStrength,
@@ -53,10 +80,43 @@ export function applySkillPerception(
     errors, 'vulnerability', 'Vulnerability', hand.vulnerability,
     gaussian(rng) * 12 * errorScale, 0, 100,
   )
-  hand.blockerValue = perceivedNumber(
-    errors, 'blocker-value', 'Blocker value', hand.blockerValue,
-    gaussian(rng) * 15 * errorScale, 0, 100,
-  )
+  const blockerDelta = gaussian(rng) * 15 * errorScale
+  if (plo && !hasAnalysisSkill(skill, 'blocker')) {
+    if (hand.blockerValue > 0) {
+      errors.push({
+        field: 'blocker-value',
+        label: 'Blocker value',
+        actual: hand.blockerValue,
+        perceived: 0,
+      })
+    }
+    hand.blockerValue = 0
+  } else {
+    hand.blockerValue = perceivedNumber(
+      errors, 'blocker-value', 'Blocker value', hand.blockerValue,
+      blockerDelta, 0, 100,
+    )
+  }
+
+  if (plo && !hasAnalysisSkill(skill, 'wrapDominance')) {
+    const wrapQualityTypes: readonly string[] = ['nut-wrap', 'mixed-wrap', 'second-wrap', 'bottom-wrap']
+    const qualityTypes = hand.drawTypes.filter(type => wrapQualityTypes.includes(type))
+    if (qualityTypes.length > 0) {
+      hand.drawTypes = hand.drawTypes.filter(type => !wrapQualityTypes.includes(type))
+      const rawOutFloor = hand.drawTypes.includes('wrap-13+')
+        ? 13
+        : hand.drawTypes.includes('wrap-8+')
+          ? 8
+          : hand.cleanOuts
+      errors.push({
+        field: 'wrap-quality',
+        label: 'Wrap quality',
+        actual: qualityTypes,
+        perceived: `raw ${rawOutFloor}-out estimate`,
+      })
+      hand.cleanOuts = Math.max(hand.cleanOuts, rawOutFloor)
+    }
+  }
 
   if (hand.drawTypes.length > 0 && rng.random() < errorScale * 0.35) {
     const actualDraws = [...hand.drawTypes]
@@ -161,8 +221,10 @@ function gaussian(rng: RandomSource): number {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
 }
 
-function formatValue(value: number | string[]): string {
-  return Array.isArray(value) ? value.join(', ') || 'none' : Number(value.toFixed(3)).toString()
+function formatValue(value: number | string | string[]): string {
+  if (Array.isArray(value)) return value.join(', ') || 'none'
+  if (typeof value === 'string') return value
+  return Number(value.toFixed(3)).toString()
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

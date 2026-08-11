@@ -30,6 +30,16 @@ export interface StreetAnalysis {
   opponentShowedWeakness: boolean
   /** Did an opponent show strength with a check-raise? */
   opponentCheckRaised: boolean
+  /** Did the bot check earlier on the current street? */
+  iCheckedCurrentStreet?: boolean
+  /** Did the bot already complete a check-raise on the current street? */
+  iCheckRaisedCurrentStreet?: boolean
+  /** Did the bot make the first aggressive action on the current street? */
+  iBetCurrentStreet?: boolean
+  /** Did an opponent raise after that opening bet on the current street? */
+  opponentRaisedMyBetCurrentStreet?: boolean
+  /** Active opponents that called the bot's flop bet and bet after its turn check. */
+  turnFloatPlayerIds?: string[]
   /** Current street */
   street: 'preflop' | 'flop' | 'turn' | 'river'
   /** Total number of non-fold actions viable this street */
@@ -66,9 +76,15 @@ export function analyzeStreetAction(
 
   let opponentShowedWeakness = false
   let opponentCheckRaised = false
+  let iCheckedCurrentStreet = false
+  let iCheckRaisedCurrentStreet = false
+  let iBetCurrentStreet = false
+  let opponentRaisedMyBetCurrentStreet = false
   let actionCountThisStreet = 0
+  const flopCBetCallers = new Set<string>()
+  const turnBettorsAfterBotCheck = new Set<string>()
 
-  const streetStates = new Map<string, { lastAction: string | null; lastAggressor: string | null; checksThisRound: string[] }>()
+  const streetStates = new Map<string, { lastAction: string | null; lastAggressor: string | null; checkedPlayers: Set<string> }>()
   let previousPhaseAggressor: string | null = null
 
   for (const event of actionHistory) {
@@ -82,7 +98,7 @@ export function analyzeStreetAction(
 
       let state = streetStates.get(eventPhase)
       if (!state) {
-        state = { lastAction: null, lastAggressor: null, checksThisRound: [] }
+        state = { lastAction: null, lastAggressor: null, checkedPlayers: new Set() }
         streetStates.set(eventPhase, state)
       }
 
@@ -93,8 +109,31 @@ export function analyzeStreetAction(
         : action
 
       if (aggressiveAction) {
-        if (state.checksThisRound.includes(event.playerId)) {
-          opponentCheckRaised = true
+        const previousStreetAggressor = state.lastAggressor
+        if (eventPhase === currentPhase) {
+          if (event.playerId === botId && previousStreetAggressor === null) {
+            iBetCurrentStreet = true
+          } else if (
+            event.playerId !== botId
+            && previousStreetAggressor === botId
+            && iBetCurrentStreet
+          ) {
+            opponentRaisedMyBetCurrentStreet = true
+          }
+        }
+        if (
+          eventPhase === 'turn'
+          && event.playerId !== botId
+          && state.checkedPlayers.has(botId)
+        ) {
+          turnBettorsAfterBotCheck.add(event.playerId)
+        }
+        if (state.checkedPlayers.has(event.playerId)) {
+          if (eventPhase === currentPhase) {
+            if (event.playerId === botId) iCheckRaisedCurrentStreet = true
+            else opponentCheckRaised = true
+          }
+          state.checkedPlayers.delete(event.playerId)
         }
         switch (eventPhase) {
           case 'preflop':
@@ -107,13 +146,18 @@ export function analyzeStreetAction(
         }
         state.lastAggressor = event.playerId
         state.lastAction = 'raise'
-        state.checksThisRound = []
       } else if (action === 'check') {
-        state.checksThisRound.push(event.playerId)
+        state.checkedPlayers.add(event.playerId)
+        if (eventPhase === currentPhase && event.playerId === botId) {
+          iCheckedCurrentStreet = true
+        }
         if (previousPhaseAggressor === event.playerId || state.lastAction === 'raise') {
           opponentShowedWeakness = true
         }
       } else if (action === 'call') {
+        if (eventPhase === 'flop' && state.lastAggressor === botId && event.playerId !== botId) {
+          flopCBetCallers.add(event.playerId)
+        }
         state.lastAction = 'call'
       } else if (action === 'fold') {
         state.lastAction = 'fold'
@@ -155,6 +199,12 @@ export function analyzeStreetAction(
     }
   }
 
+  const turnFloatPlayerIds = currentPhase === 'turn'
+    && flopLastAggressor === botId
+    && iCheckedCurrentStreet
+    ? [...flopCBetCallers].filter(playerId => turnBettorsAfterBotCheck.has(playerId))
+    : []
+
   return {
     preflopAggressor: preflopLastAggressor,
     preflopRaiseCount,
@@ -164,6 +214,11 @@ export function analyzeStreetAction(
     activeOpponents: opponentIds.length,
     opponentShowedWeakness,
     opponentCheckRaised,
+    iCheckedCurrentStreet,
+    iCheckRaisedCurrentStreet,
+    iBetCurrentStreet,
+    opponentRaisedMyBetCurrentStreet,
+    turnFloatPlayerIds,
     street: currentPhase,
     actionCountThisStreet,
   }

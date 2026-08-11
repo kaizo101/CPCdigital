@@ -96,6 +96,8 @@ export interface CalibrationActionDelta {
   cBet: boolean
   foldToCBetOpportunity: boolean
   foldToCBet: boolean
+  turnCBetOpportunity: boolean
+  turnCBet: boolean
   aggressionClass: AggressionActionClass
   aggressionRole: 'pfa' | 'non-pfa' | null
   preflopAggressorId: string | null
@@ -122,6 +124,8 @@ export class CalibrationHandAccumulator {
     let cBet = false
     let foldToCBetOpportunity = false
     let foldToCBet = false
+    let turnCBetOpportunity = false
+    let turnCBet = false
     let aggressionRole: CalibrationActionDelta['aggressionRole'] = null
 
     if (phase === 'preflop') {
@@ -168,6 +172,12 @@ export class CalibrationHandAccumulator {
         && currentBet > 0
       foldToCBet = foldToCBetOpportunity && action.type === 'fold'
 
+      turnCBetOpportunity = phase === 'turn'
+        && playerId === this.preflopAggressorId
+        && this.activeFlopCbettorId === this.preflopAggressorId
+        && currentBet === 0
+      turnCBet = turnCBetOpportunity && aggressive
+
       if (phase === 'flop' && aggressive && playerId !== this.preflopAggressorId) {
         this.activeFlopCbettorId = null
       }
@@ -180,6 +190,8 @@ export class CalibrationHandAccumulator {
       cBet,
       foldToCBetOpportunity,
       foldToCBet,
+      turnCBetOpportunity,
+      turnCBet,
       aggressionClass,
       aggressionRole,
       preflopAggressorId: this.preflopAggressorId,

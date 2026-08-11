@@ -1,6 +1,7 @@
 import type { DecisionContext } from './bot-decision-types'
 import { params } from './bot-params'
 import { isAtLeast } from './bot-variant-evaluation'
+import { hasAnalysisSkill } from './bot-skill-gates'
 
 export type PloSprAction = 'fold' | 'check' | 'call' | 'raise' | 'all-in'
 
@@ -85,8 +86,13 @@ export function getPloSprAdjustments(
   const hand = context.handAssessment
   const config = params.scoring.ploSprZones
   const weights = getPloSprZoneWeights(context.metrics.spr)
+  const recognizesWrapQuality = hasAnalysisSkill(context.botState.skill.level, 'wrapDominance')
+  const premiumWrap = hand.drawTypes.includes('wrap-13+')
+    && (!recognizesWrapQuality
+      || hand.drawTypes.includes('nut-wrap')
+      || (hand.drawTypes.includes('mixed-wrap') && hand.cleanOuts >= 8))
   const premiumDraw = hand.drawTypes.includes('nut-flush-draw')
-    || hand.drawTypes.includes('wrap-13+')
+    || premiumWrap
     || (hand.drawTypes.includes('combo-draw') && hand.cleanOuts >= 8)
   const highEquityMadeHand = hand.made
     && isAtLeast(hand.category, 'good')

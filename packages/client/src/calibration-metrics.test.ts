@@ -132,6 +132,42 @@ describe('calibration metrics', () => {
     expect(accumulator.threeBetPlayers).toEqual(new Set(['three-bettor']))
   })
 
+  it('counts a turn c-bet only after the same PFA c-bet the flop', () => {
+    const accumulator = new CalibrationHandAccumulator()
+    accumulator.recordAction({
+      phase: 'preflop', playerId: 'pfa', action: { type: 'raise', amount: 60 }, currentBet: 20,
+    })
+    accumulator.recordAction({
+      phase: 'flop', playerId: 'pfa', action: { type: 'raise', amount: 80 }, currentBet: 0,
+    })
+    accumulator.recordAction({
+      phase: 'flop', playerId: 'caller', action: { type: 'call' }, currentBet: 80,
+    })
+    const turn = accumulator.recordAction({
+      phase: 'turn', playerId: 'pfa', action: { type: 'raise', amount: 180 }, currentBet: 0,
+    })
+
+    expect(turn).toMatchObject({ turnCBetOpportunity: true, turnCBet: true })
+  })
+
+  it('does not count a delayed turn bet after the PFA checked the flop', () => {
+    const accumulator = new CalibrationHandAccumulator()
+    accumulator.recordAction({
+      phase: 'preflop', playerId: 'pfa', action: { type: 'raise', amount: 60 }, currentBet: 20,
+    })
+    accumulator.recordAction({
+      phase: 'flop', playerId: 'pfa', action: { type: 'check' }, currentBet: 0,
+    })
+    accumulator.recordAction({
+      phase: 'flop', playerId: 'caller', action: { type: 'check' }, currentBet: 0,
+    })
+    const delayedBet = accumulator.recordAction({
+      phase: 'turn', playerId: 'pfa', action: { type: 'raise', amount: 80 }, currentBet: 0,
+    })
+
+    expect(delayedBet).toMatchObject({ turnCBetOpportunity: false, turnCBet: false })
+  })
+
   it('classifies a passive all-in through the accumulator as a call', () => {
     const accumulator = new CalibrationHandAccumulator()
     const delta = accumulator.recordAction({

@@ -727,7 +727,9 @@ den Strategieänderungen von 0.8.1, die adaptive Validierung nach 0.8.2.
 - [x] HU-Kalibrierung: bestehende Targets in `simulation.ts` schärfen (alle 4 Archetypen, NLHE + PLO)
 - [x] Integrationstests für Format-Isolation und explizite HU-Tabellenauswahl
 - [x] Strukturelle Baseline: NLHE 10k und PLO 3k für alle vier Archetypen
-- [ ] 0.8.1: finale 10k-Postflop-Validierung für NLHE und PLO
+- [x] 0.8.1: finale 10k-Postflop-Validierung für NLHE und PLO durchgeführt;
+  Rohwerte und verbleibende Ausreißer stehen im
+  [0.8.1-Release-Gate-Report](calibration/v0.8.1-release-gate.md)
 
 ### Release-Gate
 
@@ -754,22 +756,41 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 
 **Ziel:** PLO-spezifische Score-Lücken schließen und NLHE-Entscheidungstiefe verbessern.
 
+> **Dokumentierter Cut vom 10.08.2026:** Der geplante Strategieumfang ist
+> implementiert, die technische Prüfung ist vollständig grün und die
+> 3k-/10k-Kalibrierung wurde ausgeführt. 0.8.1 ist noch nicht releasefähig,
+> weil das Kalibrierungs-Gate nicht vollständig geschlossen ist. Maßgeblich für
+> den Wiedereinstieg sind der
+> [Release-Gate-Report](calibration/v0.8.1-release-gate.md) und der dort
+> festgehaltene nächste Arbeitsblock; bis dahin erfolgen kein Version-Bump,
+> Release-Tag oder Baseline-Refresh.
+
 ### PLO-Strategie
 
 - [x] **SPR-Zonen (PLO)**: Graduelle SPR-Skalierung statt binär ≤3. SPR 1-3 →
   Nut-or-Fold, SPR 4-8 → Protection-heavy, SPR 8-15 → Draw-heavy. Fundamentale
   PLO-Strategie-Variable, aktuell nur +12/−8 bei SPR≤3.
-- [ ] **PLO-Board-Dynamics**: `boardGotWorse` boolean → Equity-Collapse-Multiplikator.
+- [x] **PLO-Board-Dynamics**: `boardGotWorse` boolean → Equity-Collapse-Multiplikator.
   Gepaarter River bricht Flush/Straight-Value drastisch, Monotone-Board kollabiert
-  Non-Flush-Hände. Jede Turn-/River-Karte in PLO verändert die Equity-Landschaft.
-- [ ] **PLO-River-Disziplin**: PLO-spezifische Call-Down-Verstärkung. Kein Bluff-Catch
+  Non-Flush-Hände. Jede Turn-/River-Karte in PLO verändert die Equity-Landschaft;
+  die Scorewirkung ist druck- und risikotoleranzabhängig, damit ungeöffnete
+  Turn-Barrels und Calling Stations nicht pauschal überkorrigiert werden.
+- [x] **PLO-River-Disziplin**: PLO-spezifische Call-Down-Verstärkung. Kein Bluff-Catch
   ohne Blocker am River, Board-Pair oder 3rd-Flush → drastischer Fold-Malus.
-  PLO-River-Calling-Range muss enger sein als NLHE.
-- [ ] **PLO-Positionshebel**: IP-Checkbonus, OOP-Fold-Malus, Freerolling-Modell.
+  PLO-River-Calling-Range muss enger sein als NLHE. Nut-, Near-Nut- und
+  Second-Nut-Value bleibt geschützt; Blocker, Mehrstreet-Druck,
+  Risikotoleranz und bereits verrechneter Equity Collapse skalieren den Effekt.
+- [x] **PLO-Positionshebel**: IP-Checkbonus, OOP-Fold-Malus, Freerolling-Modell.
   In PLO realisiert IP dünne Redraws kostenlos, OOP wird auf Completern ausgeblufft.
-- [ ] **PLO-Wrap-Kombinatorik**: Bottom-Wrap vs. Nut-Wrap unterscheiden. `wrap-8+`/`wrap-13+`
+  Die tatsächliche Postflop-Aktionsreihenfolge berücksichtigt gefoldete Spieler;
+  realisierbare OOP-Equity wird fold-resistenter und Made-Hand-plus-Nut-Redraw-
+  Freerolls bevorzugen aggressive Fortsetzungen vor dem River.
+- [x] **PLO-Wrap-Kombinatorik**: Bottom-Wrap vs. Nut-Wrap unterscheiden. `wrap-8+`/`wrap-13+`
   erkannt, aber kein Unterschied zwischen Nut-Outs und 2nd/3rd-Outs. Bottom-Wrap-Player
-  wird von jedem höheren Wrap gefreerollt.
+  wird von jedem höheren Wrap gefreerollt. Nut-, Mixed-, Second- und Bottom-Wraps
+  klassifizieren nun jede physische Out-Karte gegen die höchstmögliche
+  gegnerische Straight; dominierte Outs zählen nicht als `cleanOuts`. Skill <30
+  überschätzt die rohe Out-Zahl weiterhin, höhere Skills nutzen die Dominanzinfo.
 
 ### NLHE-Verfeinerung & Infrastruktur
 
@@ -778,34 +799,86 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 - [x] **Layer 3 — Parameter-Validierung**: Score-Tabellen, Clamps,
   Skill-Tier-Reihenfolge und All-in-Strafen prüfen
 
-- [ ] **Skill-Gating**: Neue Analyse-Tiefe als Feature-Flags mit `skillGate`-Schwellen.
+- [x] **Skill-Gating**: Neue Analyse-Tiefe als Feature-Flags mit `skillGate`-Schwellen.
   Skill-20-Nit: nur Outs-Zahl. Skill-90-TAG: Nut-Wrap vs. Bottom-Wrap. Bestehendes
-  Muster: `sizingTell.skillGate: 30`.
-- [ ] **Blocker-Logik**: `blockerValue` postflop für Flush-Nut, Straight-Nut und
-  Value-Bets nutzen. PLO postflop aktuell immer 0 — 4 Hole Cards = massives
-  Blocker-Potenzial.
-- [ ] **Implied Odds**: Dynamisch statt statisch +7. Kopplung an Gegner-Stack,
-  Draw-Nut-Potential und Anzahl aktiver Gegner.
-- [ ] **Check-Raise-Respekt**: Call/Fold-Malus bei Gegner-Check-Raise. Intentionales
-  Check-Raise-Line-Planning für beide Varianten.
-- [ ] **NLHE Turn-Double-Barrel**: Neues Habit. Bot soll nach Flop-C-Bet auf Blank-Turns
-  weiter feuern können — nicht nur am River (`three-barrel-bluff`).
-- [ ] **NLHE Float-Defense**: Gegnerische Float-Pattern erkennen. Gegner callt Flop-C-Bet,
-  bettet Turn → Pattern-Detection + Defensiv-Scoring.
-- [ ] **Preflop 4-Bet/5-Bet**: `facing-3bet` abgedeckt, darüber nur generischer Reraise-
-  Penalty. 4-Bet/5-Bet-Modell mit Stack-Commitment, Range-Polarisierung, Fold-to-5-Bet.
-- [ ] **NLHE Bet-Fold-Lines**: Street-übergreifende Entscheidungsplanung. "Bette River
-  für Value, folde auf Raise" statt isolierter Street-Entscheidungen.
+  Muster: `sizingTell.skillGate: 30`. Zentrale Gates schalten Board Dynamics
+  ab 30, River Discipline ab 40, Nut-Potential ab 50, Freerolls ab 60,
+  Blocker ab 65 und Wrap-Dominanz ab 70 frei. Niedrige Skills sehen bei Wraps
+  weiterhin die rohe Out-Zahl statt der tatsächlichen Dominanz.
+- [x] **Blocker-Logik**: `blockerValue` wird postflop über River Discipline hinaus
+  für Bluff-Catches, selektive Bluffs und Value-Pressure genutzt. Nut-/Second-Nut-
+  Flush- sowie vollständige/partielle Nut-Straight-Blocker skalieren nach
+  Blockerqualität, Skill und Archetyp. Niedrige Skills bleiben unter dem zentralen
+  Blocker-Gate; NLHE behält seinen getrennten, bestehenden All-in-Blockerpfad.
+- [x] **Implied Odds**: Der statische +7-Callbonus skaliert nun mit effektivem
+  Gegnerstack, wahrgenommenem Draw-Nut-Potential und aktiven Gegnern. Nut-nahe
+  Draws gewinnen in tiefen Multiway-Pots zusätzlichen Wert; dominierbare Draws
+  werden dort wegen Reverse Implied Odds kontrolliert abgewertet. Preflop bleibt
+  von diesem Postflop-Faktor ausgenommen.
+- [x] **Check-Raise-Respekt**: Klassische Check-Raises werden spieler- und
+  streetgenau erkannt. Ungeschützte Ranges folden häufiger und callen/reraisen
+  seltener abhängig von Preis, Skill, Risikotoleranz und Variante; Premium-/Nut-
+  Value bleibt geschützt. OOP-Heads-up-Spots können für beide Varianten als
+  Value-Trap oder Nut-Draw-Semi-Bluff geplant und nach dem gegnerischen Bet
+  tatsächlich als Check-Raise ausgeführt werden.
+- [x] **NLHE Turn-Double-Barrel**: Bestehende Three-Barrel-Identitäten erhalten
+  deterministisch eine Turn-Vorstufe, ohne den Roster neu auszulosen. Das Habit
+  feuert Heads-up nach eigener Flop-Aggression auf ungefährlichen Turns mit
+  geeigneten Value-, Draw- oder Bluff-Kandidaten; Skill, Habit-Konsistenz und
+  Entscheidungsauswahl erhalten individuelle Varianz. PLO und Multiway-Pots
+  bleiben ausgeschlossen.
+- [x] **NLHE Float-Defense**: Die Ereignissequenz erkennt gegnerspezifisch eigene
+  Flop-C-Bet → gegnerischen Call → eigenen Turn-Check → gegnerischen Turn-Bet,
+  ohne normale Turn-Aggression als Float fehlzuklassifizieren. Made-Hand-Bluff-
+  Catcher, brauchbare Draws, Value und aggressive Blocker-Rebluffs verteidigen
+  abhängig von Preis, Board-Transition, Skill, Archetyp und Gegnerread; Air ohne
+  Blocker und PLO bleiben ausgenommen.
+- [x] **Preflop 4-Bet/5-Bet**: Eigene Eskalationsstufen trennen 4-Bet-Value,
+  seltene skill- und aggressionsgebundene NLHE-A5s/A4s-Polarisierung,
+  commitment-abhängige 5-Bets und Fold-to-5-Bet-Ranges. Nach einer 5-Bet
+  bleibt nur der stackabhängige Value-Core aktiv; PLO verwendet bewusst keine
+  NLHE-Blockerbluffs. Selection-Gates und bestehende Deep-Stack-Sicherungen
+  verhindern, dass generische Boni ausgeschlossene Raises oder Shoves wiederbeleben.
+- [x] **Pot-Commitment vs. Forced-All-in**: Freiwillig investierte Chips werden
+  relativ zum Stack zu Handbeginn und ohne Blinds erfasst. Nur dieses Signal
+  kann bei anfälligen Bots eine begrenzte Sunk-Cost-Tendenz auslösen; der
+  geforderte Call relativ zum Reststack wirkt bei schwachen, teuren Calls als
+  separates Varianzrisiko. Gute/starke Hände und Pot Odds bis 10% bleiben
+  geschützt; beide Rohwerte erscheinen in Debug-Ansicht und Session-Export.
+- [x] **NLHE Bet-Fold-Lines**: Geeignete Heads-up-River-Spots mit mittlerem oder
+  gutem, aber nicht geschütztem Showdown-Value speichern beim Bet eine konkrete
+  Bet-Fold-Absicht in der Hand-Memory. Nur die exakte Sequenz eigene Opening-Bet
+  → gegnerischer Raise aktiviert den Fold-Plan; Calls werden nach Preis und
+  Archetyp diszipliniert abgewertet, Reraises und Shoves ausgeschlossen. Starke/
+  nut-nahe Hände, Multiway-Pots, PLO und Low-Skill-Bots bleiben ausgenommen, und
+  der aktive Plan ist im Bot-Debug sichtbar.
 
 ### Release-Gate
 
-- [ ] 3k-Entwicklungsläufe + 10k-Release-Läufe für alle vier Archetypen in NLHE und PLO,
-  Full Ring und 6-max — die statische 0.8.0-Baseline ist nach den Score-Änderungen
-  neu zu validieren und postflop auf die unveränderten Zielranges zu kalibrieren
-- [ ] HU-Kalibrierung: 8 Kombinationen (NLHE + PLO) innerhalb der geschärften Targets
-- [ ] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves
-- [ ] Skill-Gating-Smoke: Low-Skill-Bot (20) und High-Skill-Bot (90) zeigen messbar
+- [x] 3k-Entwicklungsläufe + 10k-Release-Läufe für alle vier Archetypen in NLHE
+  und PLO, Full Ring und 6-max abgeschlossen; die deterministische v2-Baseline
+  wurde nach den Score-Änderungen neu erzeugt und ohne Driftfehler validiert.
+- [ ] Full-Ring-/6-max-Kalibrierung vollständig innerhalb der unveränderten
+  Zielranges. Die Kernmetriken sind weitgehend stabil; offen bleiben die im
+  [Release-Gate-Report](calibration/v0.8.1-release-gate.md) exakt aufgeführten
+  Randwerte und das PLO-WTSD-Modellproblem.
+- [ ] HU-Kalibrierung: 4 von 8 Kombinationen liegen vollständig innerhalb aller
+  geschärften Targets. NLHE Calling Station sowie PLO TAG, Nit und Calling
+  Station behalten die im Release-Gate-Report dokumentierten Ausreißer.
+- [x] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves und
+  0 Uncommitted-Deep-Shoves in allen 3k-/10k-Gate-Läufen.
+- [x] Skill-Gating-Smoke: Low-Skill-Bot (20) und High-Skill-Bot (90) zeigen messbar
   unterschiedliches Entscheidungsverhalten in denselben Szenarien
+- [x] Die nach dem dokumentierten Cut freigegebene Commitment-Korrektur wurde
+  mit identischen Seeds auf 300/3k sowie für PLO LAG und Calling Station Full
+  Ring auf 10k geprüft. Der falsche Must-call-Hebel ist entfernt; PLO-LAG-WTSD
+  bleibt als offenes Modellproblem im Release-Gate dokumentiert.
+- [ ] **Commitment-Boundary-Suite nach Cut**: Die ungerundeten Interpolationen
+  exakt bei Pot-Commitment 25%, Skill 20/70, Forced-All-in 40%/100% und Pot
+  Odds 10%/40% sowie jeweils unmittelbar darunter/darüber testen. Insbesondere
+  muss die multiplikative Verknüpfung bei Hand #36 trotz 100% Reststack-Risiko
+  wegen 4,8% Pot Odds exakt null ergeben. Dies ist der erste Wiedereinstieg vor
+  weiterer WTSD-Arbeit.
 
 ---
 

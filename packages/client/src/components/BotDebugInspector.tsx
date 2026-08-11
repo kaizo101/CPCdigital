@@ -277,7 +277,8 @@ function DecisionDetails({ debug, currency }: { debug: BotDebugDecision; currenc
           ['Bet / Pot', formatNumber(metrics.toCallPotRatio)],
           ['Eff. Stack', `${formatChips(metrics.effectiveStack, currency)} · ${formatNumber(metrics.effectiveStackBb)} BB`],
           ['SPR', formatNumber(metrics.spr)],
-          ['Commitment', formatPercent(metrics.callCommitment)],
+          ['Pot-Commitment', formatPercent(metrics.potCommitment)],
+          ['Forced-All-in', formatPercent(metrics.forcedAllInRatio)],
           ['Raise-Grenzen', `${formatChips(metrics.minRaiseTo, currency)} – ${formatChips(metrics.maxRaiseTo, currency)}`],
           ['Tischgröße', `${context.position.tableSize} Spieler`],
           ['Action History', `${context.actionHistory.length} Events`],
@@ -315,6 +316,7 @@ function DecisionDetails({ debug, currency }: { debug: BotDebugDecision; currenc
           ['Confidence', formatNumber(profile.mentalState.confidence)],
           ['Patience', formatNumber(profile.mentalState.patience)],
           ['Momentum', formatNumber(profile.mentalState.momentum)],
+          ['Bet-Fold-Plan', profile.memory.betFoldStreet ?? '–'],
         ]} />
         <div style={{ marginTop: 7, color: '#93a0ac', fontSize: 10 }}>
           Reads: {profile.reads.length === 0
@@ -445,8 +447,9 @@ function formatSigned(value: number): string {
   return `${value > 0 ? '+' : ''}${formatNumber(value)}`
 }
 
-function formatDebugValue(value: number | string[]): string {
-  return Array.isArray(value) ? value.join(', ') || 'keine' : formatNumber(value)
+function formatDebugValue(value: number | string | string[]): string {
+  if (Array.isArray(value)) return value.join(', ') || 'keine'
+  return typeof value === 'string' ? value : formatNumber(value)
 }
 
 function utilityColor(utility: number): string {

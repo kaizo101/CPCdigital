@@ -30,6 +30,8 @@ export interface VariantHandAssessment {
   cleanOuts: number
   blockerValue: number
   drawTypes: string[]
+  /** Hand-relative equity loss caused by the newest board card (0 = none, 1 = collapse). */
+  equityCollapse: number
   boardGotWorse: boolean
   strength: number  // 0-100 numeric hand strength (replaces category for base scoring)
 }

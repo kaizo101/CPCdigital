@@ -32,7 +32,9 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const relativeStrength = calculateOmahaRelativeStrength(rank, cleanOuts)
     const isRiver = communityCards.length === 5
     const drawTypes = isRiver ? [] : identifyOmahaDrawTypes(drawAnalysis)
-    const boardGotWorse = omahaBoardGotMoreDangerous(communityCards, rank)
+    const equityCollapse = calculateOmahaEquityCollapse(communityCards, rank, nutPotential)
+    const boardGotWorse = equityCollapse > 0
+    const blockerValue = calculateOmahaBlockerValue(ownCards, communityCards)
     const strength = calculateOmahaStrength(rank, drawQuality, cleanOuts, communityCards.length)
     const category = categorizeOmaha(rank, drawQuality, cleanOuts, communityCards)
     const street: PloStreet = context.publicState.phase === 'river'
@@ -53,8 +55,9 @@ export const omahaVariantEvaluator: VariantEvaluator = {
         vulnerability,
         drawQuality,
         cleanOuts,
-        blockerValue: 0,
+        blockerValue,
         drawTypes,
+        equityCollapse,
         boardGotWorse,
         strength,
       },
@@ -129,6 +132,7 @@ function preflopAssess(ownCards: Card[], tableSize: number = 9, archetypeId?: st
     cleanOuts: 0,
     blockerValue: aceCount > 0 ? aceCount * 3 : 0,
     drawTypes: [],
+    equityCollapse: 0,
     boardGotWorse: false,
     strength,
   }
@@ -350,17 +354,66 @@ function cardSuitChar(card: Card): string {
   return card.suit[0]
 }
 
-function findStraightTop(visibleRanks: number[], minRequired: number): number {
+const OMAHA_STRAIGHT_RUNS = [
+  ...Array.from({ length: 9 }, (_, index) => {
+    const top = 14 - index
+    return { top, ranks: Array.from({ length: 5 }, (__, offset) => top - offset) }
+  }),
+  { top: 5, ranks: [14, 5, 4, 3, 2] },
+]
+
+export function findStraightTop(visibleRanks: number[], minRequired: number): number {
   const present = new Set(visibleRanks)
-  const STRAIGHT_RUNS = [
-    [14, 13, 12, 11, 10],
-    [14, 5, 4, 3, 2],
-    ...[...Array(8)].map((_, i) => [13 - i, 12 - i, 11 - i, 10 - i, 9 - i]),
-  ]
-  for (const ranks of STRAIGHT_RUNS) {
-    if (ranks.filter(r => present.has(r)).length >= minRequired) return ranks[0]
+  for (const run of OMAHA_STRAIGHT_RUNS) {
+    if (run.ranks.filter(rank => present.has(rank)).length >= minRequired) return run.top
   }
   return 0
+}
+
+/** Nut-combination blockers relevant to PLO river bluff-catching (0-100). */
+export function calculateOmahaBlockerValue(ownCards: Card[], communityCards: Card[]): number {
+  let value = 0
+
+  for (const suit of ['hearts', 'diamonds', 'clubs', 'spades'] as const) {
+    const boardOfSuit = communityCards.filter(card => card.suit === suit)
+    if (boardOfSuit.length < 3) continue
+
+    const unavailable = new Set(boardOfSuit.map(rankValue))
+    const highestUnseen = Array.from({ length: 13 }, (_, index) => 14 - index)
+      .filter(rank => !unavailable.has(rank))
+    const suitedHoleRanks = ownCards.filter(card => card.suit === suit).map(rankValue)
+    if (suitedHoleRanks.includes(highestUnseen[0])) value = Math.max(value, 30)
+    else if (suitedHoleRanks.includes(highestUnseen[1])) value = Math.max(value, 15)
+  }
+
+  const boardRanks = new Set(communityCards.map(rankValue))
+  const ownRanks = new Set(ownCards.map(rankValue))
+  const nutRun = OMAHA_STRAIGHT_RUNS.find(run => (
+    run.ranks.filter(rank => boardRanks.has(rank)).length >= 3
+  ))
+  if (nutRun) {
+    const boardCandidates = nutRun.ranks.filter(rank => boardRanks.has(rank))
+    const missingPairs: number[][] = []
+    for (let first = 0; first < boardCandidates.length - 2; first++) {
+      for (let second = first + 1; second < boardCandidates.length - 1; second++) {
+        for (let third = second + 1; third < boardCandidates.length; third++) {
+          const selectedBoard = new Set([
+            boardCandidates[first],
+            boardCandidates[second],
+            boardCandidates[third],
+          ])
+          missingPairs.push(nutRun.ranks.filter(rank => !selectedBoard.has(rank)))
+        }
+      }
+    }
+    if (missingPairs.some(pair => pair.every(rank => ownRanks.has(rank)))) {
+      value = Math.max(value, 30)
+    } else if (missingPairs.some(pair => pair.some(rank => ownRanks.has(rank)))) {
+      value = Math.max(value, 12)
+    }
+  }
+
+  return value
 }
 
 function calculateOmahaDrawQuality(draws: OmahaDrawAnalysis): number {
@@ -378,7 +431,13 @@ function calculateOmahaDrawQuality(draws: OmahaDrawAnalysis): number {
 
   if (draws.flushOutCards.length > 0 && draws.straightOutCards.length > 0) score += 3
 
-  return score
+  if (wrapCount >= 8) {
+    if (draws.wrapQuality === 'nut') score += 3
+    else if (draws.wrapQuality === 'second') score -= 2
+    else if (draws.wrapQuality === 'bottom') score -= 4
+  }
+
+  return Math.max(0, score)
 }
 
 function calculateOmahaCleanOuts(
@@ -428,7 +487,6 @@ function isDominatedStraightOut(
 ): boolean {
   const newBoard = [...communityCards, out]
   if (newBoard.length < 3) return false
-  if (newBoard.length >= 5) return false
 
   const myBestTop = bestStraightTopForHoleCards(ownCards, newBoard, true)
   if (myBestTop <= 0) return false
@@ -448,12 +506,18 @@ function bestStraightTopForHoleCards(
     for (const trio of combinations(board, 3)) {
       if (!allowAnyHole && pair.some(c => board.some(b => cardKey(c) === cardKey(b)))) continue
       if (isFiveCardStraight([...pair, ...trio])) {
-        const top = Math.max(...[...pair, ...trio].map(rankValue))
+        const top = fiveCardStraightTop([...pair, ...trio])
         if (top > best) best = top
       }
     }
   }
   return best
+}
+
+function fiveCardStraightTop(cards: Card[]): number {
+  const ranks = new Set(cards.map(rankValue))
+  if ([14, 5, 4, 3, 2].every(rank => ranks.has(rank))) return 5
+  return Math.max(0, ...ranks)
 }
 
 function identifyOmahaDrawTypes(draws: OmahaDrawAnalysis): string[] {
@@ -468,6 +532,10 @@ function identifyOmahaDrawTypes(draws: OmahaDrawAnalysis): string[] {
   else if (wrapCount >= 8) types.push('wrap-8+')
   else if (draws.straightOutRanks >= 2) types.push('oesd')
   else if (draws.straightOutRanks === 1) types.push('gutshot')
+
+  if (wrapCount >= 8 && draws.wrapQuality !== 'none') {
+    types.push(`${draws.wrapQuality}-wrap`)
+  }
 
   if (draws.flushOutCards.length > 0 && draws.straightOutCards.length > 0) {
     types.push('combo-draw')
@@ -500,63 +568,50 @@ export function omahaBoardGotMoreDangerous(
   communityCards: Card[],
   handRank: number,
 ): boolean {
-  if (communityCards.length < 4) return false
+  return calculateOmahaEquityCollapse(communityCards, handRank, 'medium') > 0
+}
+
+/** Quantifies how strongly the newest board card devalues the current PLO hand. */
+export function calculateOmahaEquityCollapse(
+  communityCards: Card[],
+  handRank: number,
+  nutPotential: NutPotential,
+): number {
+  if (communityCards.length < 4 || handRank >= 7) return 0
 
   const previousBoard = communityCards.slice(0, -1)
   const newCard = communityCards[communityCards.length - 1]
+  let collapse = 0
 
-  if (handRank >= 8) return false
-
-  if (handRank === 7) {
-    if (previousBoard.some(c => c.rank === newCard.rank)) return false
-    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
+  const boardPaired = previousBoard.some(card => card.rank === newCard.rank)
+  if (boardPaired) {
+    if (handRank === 5 || handRank === 6) collapse = 0.85
+    else if (handRank === 4) collapse = 0.55
+    else collapse = 0.5
   }
 
-  if (handRank === 6) {
-    if (previousBoard.some(c => c.rank === newCard.rank)) return true
-    return false
+  const previousSuitCount = previousBoard.filter(card => card.suit === newCard.suit).length
+  const flushCompleted = previousSuitCount === 2
+  if (flushCompleted && handRank < 6) collapse = Math.max(collapse, 0.8)
+
+  const previousStraightWindows = omahaStraightWindowCount(previousBoard)
+  const currentStraightWindows = omahaStraightWindowCount(communityCards)
+  if (currentStraightWindows > previousStraightWindows) {
+    if (handRank < 5) collapse = Math.max(collapse, 0.6)
+    else if (handRank === 5) {
+      const straightCollapse: Record<NutPotential, number> = {
+        nuts: 0.08,
+        'near-nuts': 0.12,
+        'second-nuts': 0.2,
+        strong: 0.28,
+        medium: 0.4,
+        weak: 0.5,
+      }
+      collapse = Math.max(collapse, straightCollapse[nutPotential])
+    }
   }
 
-  if (handRank === 5) {
-    if (previousBoard.some(c => c.rank === newCard.rank)) return true
-    const prevSuitCounts = new Map<string, number>()
-    for (const c of previousBoard) prevSuitCounts.set(c.suit, (prevSuitCounts.get(c.suit) ?? 0) + 1)
-    if ((prevSuitCounts.get(newCard.suit) ?? 0) >= 2) return true
-    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
-  }
-
-  if (handRank === 4) {
-    if (previousBoard.some(c => c.rank === newCard.rank)) return false
-    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
-  }
-
-  if (handRank === 3) {
-    if (previousBoard.some(c => c.rank === newCard.rank)) return false
-    return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
-  }
-
-  return omahaBoardDangerScore(communityCards) > omahaBoardDangerScore(previousBoard)
-}
-
-function omahaBoardDangerScore(communityCards: Card[]): number {
-  const suitCounts = new Map<Card['suit'], number>()
-  const rankCounts = new Map<Card['rank'], number>()
-  for (const card of communityCards) {
-    suitCounts.set(card.suit, (suitCounts.get(card.suit) ?? 0) + 1)
-    rankCounts.set(card.rank, (rankCounts.get(card.rank) ?? 0) + 1)
-  }
-
-  let score = 0
-  const maxSuitCount = Math.max(0, ...suitCounts.values())
-  if (maxSuitCount >= 3) score += 6 + (maxSuitCount - 3) * 2
-
-  const rankPattern = [...rankCounts.values()].sort((left, right) => right - left)
-  if ((rankPattern[0] ?? 0) >= 3) score += 8
-  else if ((rankPattern[0] ?? 0) === 2) score += 5
-  if (rankPattern.filter(count => count >= 2).length >= 2) score += 4
-
-  score += omahaStraightWindowCount(communityCards) * 2
-  return score
+  return Math.round(collapse * 100) / 100
 }
 
 function omahaStraightWindowCount(communityCards: Card[]): number {
@@ -573,6 +628,7 @@ function omahaStraightWindowCount(communityCards: Card[]): number {
 interface OmahaDrawAnalysis {
   straightOutCards: Card[]
   straightOutRanks: number
+  wrapQuality: 'none' | 'nut' | 'mixed' | 'second' | 'bottom'
   flushOutCards: Card[]
   flushDrawSuits: number
   nutFlushDraw: boolean
@@ -583,6 +639,7 @@ function analyzeOmahaDraws(ownCards: Card[], communityCards: Card[]): OmahaDrawA
   const empty: OmahaDrawAnalysis = {
     straightOutCards: [],
     straightOutRanks: 0,
+    wrapQuality: 'none',
     flushOutCards: [],
     flushDrawSuits: 0,
     nutFlushDraw: false,
@@ -598,6 +655,7 @@ function analyzeOmahaDraws(ownCards: Card[], communityCards: Card[]): OmahaDrawA
   const straightOutCards = hasMadeStraight
     ? []
     : unseenCards.filter(card => hasOmahaStraight(ownCards, [...communityCards, card]))
+  const wrapQuality = classifyOmahaWrap(ownCards, communityCards, straightOutCards)
 
   const flushOutCards: Card[] = []
   let flushDrawSuits = 0
@@ -630,11 +688,38 @@ function analyzeOmahaDraws(ownCards: Card[], communityCards: Card[]): OmahaDrawA
   return {
     straightOutCards,
     straightOutRanks: new Set(straightOutCards.map(card => card.rank)).size,
+    wrapQuality,
     flushOutCards,
     flushDrawSuits,
     nutFlushDraw,
     secondFlushDraw,
   }
+}
+
+function classifyOmahaWrap(
+  ownCards: Card[],
+  communityCards: Card[],
+  straightOutCards: Card[],
+): OmahaDrawAnalysis['wrapQuality'] {
+  if (straightOutCards.length < 8) return 'none'
+
+  let nutOuts = 0
+  let secondOuts = 0
+  let dominatedOuts = 0
+  for (const out of straightOutCards) {
+    const newBoard = [...communityCards, out]
+    const myTop = bestStraightTopForHoleCards(ownCards, newBoard, true)
+    const nutTop = findStraightTop(newBoard.map(rankValue), 3)
+    const gap = nutTop - myTop
+    if (gap <= 0) nutOuts++
+    else if (gap === 1) secondOuts++
+    else dominatedOuts++
+  }
+
+  if (nutOuts === straightOutCards.length) return 'nut'
+  if (nutOuts > 0) return 'mixed'
+  if (secondOuts > 0 && dominatedOuts === 0) return 'second'
+  return 'bottom'
 }
 
 function hasOmahaStraight(ownCards: Card[], communityCards: Card[]): boolean {

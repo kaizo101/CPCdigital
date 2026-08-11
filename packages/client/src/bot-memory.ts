@@ -4,12 +4,14 @@ export interface BotDecisionMemoryUpdate {
   raisedPreflop?: boolean
   lastAction?: 'bet' | 'check' | 'call' | 'fold' | null
   lastStreet?: string | null
+  betFoldStreet?: string | null
 }
 
 export function resetHandMemory(memory: BotSessionMemory): void {
   memory.hand.raisedPreflop = false
   memory.hand.lastAction = null
   memory.hand.lastStreet = null
+  memory.hand.betFoldStreet = null
 }
 
 export function applyDecisionMemory(
@@ -21,6 +23,11 @@ export function applyDecisionMemory(
   if (update.lastStreet !== undefined) {
     memory.hand.lastStreet = isStreet(update.lastStreet) ? update.lastStreet : null
   }
+  if (update.betFoldStreet !== undefined) {
+    memory.hand.betFoldStreet = isPostflopStreet(update.betFoldStreet)
+      ? update.betFoldStreet
+      : null
+  }
 }
 
 export function recordHandResult(memory: BotSessionMemory, won: boolean): void {
@@ -30,4 +37,8 @@ export function recordHandResult(memory: BotSessionMemory, won: boolean): void {
 
 function isStreet(value: string | null): value is NonNullable<BotSessionMemory['hand']['lastStreet']> {
   return value === 'preflop' || value === 'flop' || value === 'turn' || value === 'river'
+}
+
+function isPostflopStreet(value: string | null): value is NonNullable<BotSessionMemory['hand']['betFoldStreet']> {
+  return value === 'flop' || value === 'turn' || value === 'river'
 }

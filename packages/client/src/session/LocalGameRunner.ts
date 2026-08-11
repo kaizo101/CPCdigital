@@ -225,6 +225,8 @@ export class LocalGameRunner {
           board: d.context.publicState.communityCards.map(c => `${c.rank}${c.suit[0]}`).join(' ') || '-',
           potOdds: Math.round(d.metrics.potOdds * 100),
           spr: Math.round(d.metrics.spr * 10) / 10,
+          potCommitment: Math.round(d.metrics.potCommitment * 1000) / 1000,
+          forcedAllInRatio: Math.round(d.metrics.forcedAllInRatio * 1000) / 1000,
           tilt: d.profile.mentalState.tilt,
           confidence: d.profile.mentalState.confidence,
         },
@@ -934,6 +936,7 @@ function createBotDebugProfile(botState: BotState): BotDebugProfile {
       handsWon: botState.memory.handsWon,
       raisedPreflop: botState.memory.hand.raisedPreflop,
       lastAction: botState.memory.hand.lastAction,
+      betFoldStreet: botState.memory.hand.betFoldStreet,
     },
     reads: [...botState.reads.opponents.values()].map(read => ({
       playerId: read.playerId,

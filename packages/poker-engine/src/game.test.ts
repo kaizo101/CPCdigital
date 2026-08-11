@@ -177,6 +177,36 @@ describe('startHand', () => {
     expect(context.legalActions.raise).toEqual({ minAmount: 80, maxAmount: 1000 })
   })
 
+  it('tracks voluntary hand contributions separately from forced blinds', () => {
+    const game = new PokerGame(makePlayers(4), { ...config, initialDealerIndex: 0 })
+    game.startHand()
+
+    const opener = game.getPublicState().bettingContext!
+    expect(opener.playerId).toBe('p4')
+    expect(opener.playerStartingStack).toBe(1000)
+    expect(opener.voluntaryHandContribution).toBe(0)
+
+    game.applyAction('p4', { type: 'raise', amount: 50 })
+    game.applyAction('p1', { type: 'fold' })
+
+    const smallBlind = game.getPublicState().bettingContext!
+    expect(smallBlind.playerId).toBe('p2')
+    expect(smallBlind.playerStartingStack).toBe(1000)
+    expect(smallBlind.voluntaryHandContribution).toBe(0)
+    game.applyAction('p2', { type: 'call' })
+
+    const bigBlind = game.getPublicState().bettingContext!
+    expect(bigBlind.playerId).toBe('p3')
+    expect(bigBlind.playerStartingStack).toBe(1000)
+    expect(bigBlind.voluntaryHandContribution).toBe(0)
+    game.applyAction('p3', { type: 'call' })
+
+    const postflop = game.getPublicState().bettingContext!
+    expect(postflop.playerId).toBe('p2')
+    expect(postflop.playerStartingStack).toBe(1000)
+    expect(postflop.voluntaryHandContribution).toBe(40)
+  })
+
   it('keeps the full preflop bring-in when the big blind is all-in short', () => {
     const players = [
       makePlayer('p1', 15, 0),

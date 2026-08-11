@@ -62,6 +62,8 @@ export interface BotHandMemory {
   raisedPreflop: boolean
   lastAction: 'bet' | 'check' | 'call' | 'fold' | null
   lastStreet: 'preflop' | 'flop' | 'turn' | 'river' | null
+  /** Street on which a thin-value bet was explicitly planned to fold to a raise. */
+  betFoldStreet: 'flop' | 'turn' | 'river' | null
 }
 
 export interface BotSessionMemory {

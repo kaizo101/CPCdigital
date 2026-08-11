@@ -63,6 +63,7 @@ function evaluatePreflop(context: Parameters<VariantEvaluator['evaluate']>[0]) {
       cleanOuts: 0,
       blockerValue: ownCards.some(card => card.rank === 'A' || card.rank === 'K') ? 10 : 0,
       drawTypes: [],
+      equityCollapse: 0,
       boardGotWorse: false,
       strength: preflopStrength(category),
     } satisfies NlheHandAssessment,
@@ -116,6 +117,7 @@ export function assessHand(
       cleanOuts: 0,
       blockerValue: 0,
       drawTypes: [],
+      equityCollapse: 0,
       boardGotWorse: false,
       strength: 0,
     }
@@ -147,6 +149,7 @@ export function assessHand(
     cleanOuts: isRiver ? 0 : calculateCleanOuts(holeCards, communityCards, evalResult),
     blockerValue: calculateBlockerValue(holeCards, communityCards),
     drawTypes: isRiver ? [] : identifyDrawTypes(holeCards, communityCards, evalResult),
+    equityCollapse: 0,
     boardGotWorse: boardGotMoreDangerous(communityCards),
     strength: calculateHandStrength(category, drawQuality),
   }

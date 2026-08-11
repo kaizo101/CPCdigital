@@ -67,6 +67,7 @@ export class PokerGame {
   private minRaise = 0
   private roundBets = new Map<PlayerId, number>()    // reset each street
   private totalHandBets = new Map<PlayerId, number>() // accumulates whole hand (for side pots)
+  private voluntaryHandBets = new Map<PlayerId, number>() // excludes forced blinds
   private foldedPlayers = new Set<PlayerId>()
   private allInPlayers = new Set<PlayerId>()
   private lastActionBet = new Map<PlayerId, number>()
@@ -248,6 +249,7 @@ export class PokerGame {
     this.lastActionMinRaise.clear()
     this.roundBets.clear()
     this.totalHandBets.clear()
+    this.voluntaryHandBets.clear()
     this.currentBet = 0
     const openingPhase = this.getOpeningBettingPhase()
     this.minRaise = this.getMinimumBetSize(openingPhase)
@@ -333,7 +335,7 @@ export class PokerGame {
       case 'call': {
         if (toCall <= 0) throw new Error('Nothing to call — use check')
         const callAmt = Math.min(toCall, player.chips)
-        this.placeBet(playerId, callAmt)
+        this.placeBet(playerId, callAmt, true)
         if (this.findPlayer(playerId)!.chips === 0) {
           this.allInPlayers.add(playerId)
           this.setStatus(playerId, 'all-in')
@@ -358,7 +360,7 @@ export class PokerGame {
         if (this.variant.bettingStructure.type !== 'fixed-limit') this.minRaise = raiseSize
         this.fullRaisesThisRound++
         this.currentBet = amount
-        this.placeBet(playerId, additional)
+        this.placeBet(playerId, additional, true)
         if (this.findPlayer(playerId)!.chips === 0) {
           this.allInPlayers.add(playerId)
           this.setStatus(playerId, 'all-in')
@@ -385,7 +387,7 @@ export class PokerGame {
           this.currentBet = newTotal
           this.reopenBettingAfterRaise(playerId)
         }
-        this.placeBet(playerId, chips)
+        this.placeBet(playerId, chips, true)
         this.allInPlayers.add(playerId)
         this.setStatus(playerId, 'all-in')
         break
@@ -435,7 +437,7 @@ export class PokerGame {
     const bb = inHand[bbIdx]
 
     const sbAmt = Math.min(this.config.smallBlind, sb.chips)
-    this.placeBet(sb.id, sbAmt)
+    this.placeBet(sb.id, sbAmt, false)
     if (this.findPlayer(sb.id)!.chips === 0) { this.allInPlayers.add(sb.id); this.setStatus(sb.id, 'all-in') }
     this.handHistory.push({
       type: 'BlindPosted',
@@ -447,7 +449,7 @@ export class PokerGame {
     })
 
     const bbAmt = Math.min(this.config.bigBlind, bb.chips)
-    this.placeBet(bb.id, bbAmt)
+    this.placeBet(bb.id, bbAmt, false)
     if (this.findPlayer(bb.id)!.chips === 0) { this.allInPlayers.add(bb.id); this.setStatus(bb.id, 'all-in') }
     // A short all-in big blind does not reduce the preflop bring-in.
     this.currentBet = this.config.bigBlind
@@ -877,13 +879,17 @@ export class PokerGame {
     }
   }
 
-  private placeBet(playerId: PlayerId, amount: number): void {
+  private placeBet(playerId: PlayerId, amount: number, voluntary: boolean): void {
     const player = this.findPlayer(playerId)!
     const actual = this.roundCents(Math.min(amount, player.chips))
     const newRound = this.roundCents((this.roundBets.get(playerId) ?? 0) + actual)
     const newTotal = this.roundCents((this.totalHandBets.get(playerId) ?? 0) + actual)
     this.roundBets.set(playerId, newRound)
     this.totalHandBets.set(playerId, newTotal)
+    if (voluntary) {
+      const newVoluntary = this.roundCents((this.voluntaryHandBets.get(playerId) ?? 0) + actual)
+      this.voluntaryHandBets.set(playerId, newVoluntary)
+    }
     this.mutatePlayer(playerId, p => ({ ...p, chips: this.roundCents(p.chips - actual), roundBet: newRound }))
   }
 
@@ -923,6 +929,10 @@ export class PokerGame {
     this.totalHandBets.set(
       highest.playerId,
       this.roundCents((this.totalHandBets.get(highest.playerId) ?? 0) - refund)
+    )
+    this.voluntaryHandBets.set(
+      highest.playerId,
+      this.roundCents(Math.max(0, (this.voluntaryHandBets.get(highest.playerId) ?? 0) - refund)),
     )
     this.allInPlayers.delete(highest.playerId)
     this.mutatePlayer(highest.playerId, player => ({
@@ -975,6 +985,9 @@ export class PokerGame {
     )
     const deepestOpponentStack = opponents.reduce((max, opponent) => Math.max(max, opponent.chips), 0)
     const effectiveStack = this.roundCents(Math.min(currentPlayer.chips, deepestOpponentStack))
+    const totalHandContribution = this.totalHandBets.get(currentPlayer.id) ?? 0
+    const playerStartingStack = this.roundCents(currentPlayer.chips + totalHandContribution)
+    const voluntaryHandContribution = this.voluntaryHandBets.get(currentPlayer.id) ?? 0
     const canMoveAllIn = currentPlayer.chips > 0 && (
       stackRaiseTo <= this.currentBet
       || (hasRaiseRights && stackRaiseTo <= maxRaiseTo)
@@ -991,6 +1004,8 @@ export class PokerGame {
       minRaiseTo,
       maxRaiseTo,
       playerStack: currentPlayer.chips,
+      playerStartingStack,
+      voluntaryHandContribution,
       effectiveStack,
       spr: totalPot > 0 ? effectiveStack / totalPot : 0,
       legalActions: {

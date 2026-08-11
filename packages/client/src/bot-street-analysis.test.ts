@@ -114,8 +114,83 @@ describe('street analysis', () => {
       acted('hero', 'flop', 'raise', 300),
       acted('bot-1', 'flop', 'call'),
     ])
+    const flopAnalysis = analyzeStreetAction('hero', history, 'flop', ['hero', 'bot-1'])
+    expect(flopAnalysis.opponentCheckRaised).toBe(false)
+    expect(flopAnalysis.iCheckedCurrentStreet).toBe(true)
+    expect(flopAnalysis.iCheckRaisedCurrentStreet).toBe(true)
+
+    const turnAnalysis = analyzeStreetAction('hero', history, 'turn', ['hero', 'bot-1'])
+    expect(turnAnalysis.opponentCheckRaised).toBe(false)
+    expect(turnAnalysis.iCheckedCurrentStreet).toBe(false)
+    expect(turnAnalysis.iCheckRaisedCurrentStreet).toBe(false)
+  })
+
+  it('detects an opponent check-raise only on the current street', () => {
+    const history = makeHistory([
+      blindPosted('hero', 10, 'small'),
+      blindPosted('bot-1', 20, 'big'),
+      acted('hero', 'preflop', 'raise', 60),
+      acted('bot-1', 'preflop', 'call'),
+      acted('bot-1', 'flop', 'check'),
+      acted('hero', 'flop', 'raise', 100),
+      acted('bot-1', 'flop', 'raise', 300),
+    ])
+
+    expect(analyzeStreetAction('hero', history, 'flop', ['hero', 'bot-1']).opponentCheckRaised).toBe(true)
+    expect(analyzeStreetAction('hero', history, 'turn', ['hero', 'bot-1']).opponentCheckRaised).toBe(false)
+  })
+
+  it('detects an opponent raise after the bot opened the current street', () => {
+    const history = makeHistory([
+      acted('bot-1', 'river', 'check'),
+      acted('hero', 'river', 'raise', 100),
+      acted('bot-1', 'river', 'raise', 300),
+    ])
+
+    const river = analyzeStreetAction('hero', history, 'river', ['hero', 'bot-1'])
+    expect(river.iBetCurrentStreet).toBe(true)
+    expect(river.opponentRaisedMyBetCurrentStreet).toBe(true)
+
+    const turn = analyzeStreetAction('hero', history, 'turn', ['hero', 'bot-1'])
+    expect(turn.iBetCurrentStreet).toBe(false)
+    expect(turn.opponentRaisedMyBetCurrentStreet).toBe(false)
+  })
+
+  it('does not mistake the bots raise over an opponent bet for an opening bet', () => {
+    const history = makeHistory([
+      acted('bot-1', 'river', 'raise', 100),
+      acted('hero', 'river', 'raise', 300),
+    ])
+    const analysis = analyzeStreetAction('hero', history, 'river', ['hero', 'bot-1'])
+
+    expect(analysis.iBetCurrentStreet).toBe(false)
+    expect(analysis.opponentRaisedMyBetCurrentStreet).toBe(false)
+  })
+
+  it('detects a turn float only after flop call and hero turn check', () => {
+    const history = makeHistory([
+      blindPosted('hero', 10, 'small'),
+      blindPosted('bot-1', 20, 'big'),
+      acted('hero', 'preflop', 'raise', 60),
+      acted('bot-1', 'preflop', 'call'),
+      acted('hero', 'flop', 'raise', 100),
+      acted('bot-1', 'flop', 'call'),
+      acted('hero', 'turn', 'check'),
+      acted('bot-1', 'turn', 'raise', 120),
+    ])
     const analysis = analyzeStreetAction('hero', history, 'turn', ['hero', 'bot-1'])
-    expect(analysis.opponentCheckRaised).toBe(false)
+
+    expect(analysis.opponentLines.get('bot-1')).toEqual(expect.objectContaining({
+      flop: 'check-call',
+      turn: 'bet',
+    }))
+    expect(analysis.turnFloatPlayerIds).toEqual(['bot-1'])
+
+    const withoutTurnCheck = history.filter(event => !(
+      event.type === 'PlayerActed' && event.phase === 'turn' && event.playerId === 'hero'
+    ))
+    expect(analyzeStreetAction('hero', withoutTurnCheck, 'turn', ['hero', 'bot-1']).turnFloatPlayerIds)
+      .toEqual([])
   })
 
   it('tracks multiway situations', () => {

@@ -1,4 +1,5 @@
-import type { ScoredAction, ScoreContribution } from './bot-decision-types'
+import type { DecisionContext, ScoredAction, ScoreContribution } from './bot-decision-types'
+import { params } from './bot-params'
 import type { StreetAnalysis } from './bot-street-analysis'
 
 export interface LineCommitment {
@@ -6,6 +7,96 @@ export interface LineCommitment {
   plan: 'aggressive' | 'passive-call' | 'give-up' | null
   /** How many streets the plan spans */
   plannedStreets: number
+}
+
+function isNlheRiverThinValue(context: DecisionContext): boolean {
+  const config = params.scoring.betFoldMods
+  const hand = context.handAssessment
+  return context.variantId === 'texas-holdem'
+    && context.gameView.phase === 'river'
+    && context.botState.skill.level >= config.skillGate
+    && (context.streetAnalysis?.activeOpponents ?? Math.max(1, context.activePlayerCount - 1)) === 1
+    && hand.made
+    && (hand.category === 'medium' || hand.category === 'good')
+    && hand.showdownValue >= config.minimumShowdownValue
+    && hand.relativeStrength >= config.minimumRelativeStrength
+    && hand.nutPotential !== 'nuts'
+    && hand.nutPotential !== 'near-nuts'
+    && hand.nutPotential !== 'second-nuts'
+}
+
+/** True before a thin river value-bet that should not stack off to a raise. */
+export function isNlheRiverBetFoldOpening(context: DecisionContext): boolean {
+  return isNlheRiverThinValue(context)
+    && context.metrics.callAmount <= 0
+    && context.legalActions.check
+    && context.legalActions.raise !== null
+}
+
+/** True only for the second decision in an explicitly remembered bet → raise sequence. */
+export function isNlheRiverBetFoldResponse(context: DecisionContext): boolean {
+  return isNlheRiverThinValue(context)
+    && context.metrics.callAmount > 0
+    && context.botState.memory.hand.betFoldStreet === 'river'
+    && context.streetAnalysis?.iBetCurrentStreet === true
+    && context.streetAnalysis.opponentRaisedMyBetCurrentStreet === true
+}
+
+export function betFoldLineModifiers(
+  context: DecisionContext,
+  scored: ScoredAction,
+): ScoreContribution[] {
+  const config = params.scoring.betFoldMods
+  if (isNlheRiverBetFoldOpening(context)) {
+    const aggression = Math.max(0, Math.min(1, context.botState.personality.aggression / 100))
+    const scale = 0.75 + aggression * 0.5
+    const value = scored.action.type === 'raise'
+      ? config.openBet
+      : scored.action.type === 'check'
+        ? config.openCheck
+        : scored.action.type === 'all-in'
+          ? config.openAllIn
+          : 0
+    if (value === 0) return []
+    return [{
+      category: 'strategy',
+      label: 'NLHE river bet-fold plan — thin value',
+      value: Math.round(value * scale),
+    }]
+  }
+
+  if (!isNlheRiverBetFoldResponse(context)) return []
+  const riskTolerance = Math.max(0, Math.min(1, context.botState.personality.riskTolerance / 100))
+  const disciplineScale = config.minimumDisciplineScale
+    + (1 - config.minimumDisciplineScale) * (1 - riskTolerance)
+  const pressureScale = Math.min(
+    config.maxPressureScale,
+    0.75 + Math.max(0, context.metrics.toCallPotRatio),
+  )
+  const scale = disciplineScale * pressureScale
+  const value = scored.action.type === 'fold'
+    ? config.responseFold
+    : scored.action.type === 'call'
+      ? config.responseCall
+      : scored.action.type === 'raise'
+        ? config.responseRaise
+        : scored.action.type === 'all-in'
+          ? config.responseAllIn
+          : 0
+  if (value === 0) return []
+  return [{
+    category: 'strategy',
+    label: 'NLHE river bet-fold plan — opponent raised thin value',
+    value: Math.round(value * scale),
+  }]
+}
+
+export function betFoldEscalationBlocked(
+  context: DecisionContext,
+  scored: ScoredAction,
+): boolean {
+  return isNlheRiverBetFoldResponse(context)
+    && (scored.action.type === 'raise' || scored.action.type === 'all-in')
 }
 
 export function determineLineCommitment(

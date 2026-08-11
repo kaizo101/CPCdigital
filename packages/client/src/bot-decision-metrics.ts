@@ -1,6 +1,6 @@
 import type { BettingContext } from '@cpc/shared'
 import { params } from './bot-params'
-import type { HandStrengthCategory } from './bot-variant-evaluation'
+import type { HandStrengthCategory, NutPotential } from './bot-variant-evaluation'
 import { isAtLeast } from './bot-variant-evaluation'
 
 export type StackDepth = 'short' | 'medium' | 'deep'
@@ -18,15 +18,20 @@ export interface DecisionMetrics {
   effectiveStack: number
   effectiveStackBb: number
   spr: number
-  callCommitment: number
+  /** Voluntary chips already invested relative to the stack at hand start. */
+  potCommitment: number
+  /** Amount required to call relative to the currently remaining stack. */
+  forcedAllInRatio: number
   stackDepth: StackDepth
 }
 
 export interface DecisionHandProfile {
   category: HandStrengthCategory
   hasDraw: boolean
+  nutPotential?: NutPotential
   boardGotWorse?: boolean
   boardWorseSensitivity?: number
+  equityCollapse?: number
 }
 
 export interface BettingContextFactor {
@@ -38,6 +43,9 @@ export interface BettingSituation {
   phase?: string
   /** Voluntary aggressive actions already made preflop; blinds do not count. */
   preflopRaiseCount?: number
+  activeOpponents?: number
+  /** PLO keeps the full reraise penalty; NLHE uses the looser half-scale. */
+  preflopReraisePenaltyScale?: number
 }
 
 /** Normalizes the engine's betting values for strategy code and debug output. */
@@ -49,6 +57,8 @@ export function deriveDecisionMetrics(
 
   const stackShortBb = params.betting.stackShort
   const stackDeepBb = params.betting.stackDeep
+  const playerStartingStack = context.playerStartingStack ?? context.playerStack
+  const voluntaryHandContribution = context.voluntaryHandContribution ?? 0
 
   return {
     totalPot: context.totalPot,
@@ -62,7 +72,8 @@ export function deriveDecisionMetrics(
     effectiveStack: context.effectiveStack,
     effectiveStackBb,
     spr: context.spr,
-    callCommitment: safeRatio(context.callAmount, context.playerStack),
+    potCommitment: clamp(safeRatio(voluntaryHandContribution, playerStartingStack), 0, 1),
+    forcedAllInRatio: clamp(safeRatio(context.callAmount, context.playerStack), 0, 1),
     stackDepth: effectiveStackBb <= stackShortBb ? 'short' : effectiveStackBb >= stackDeepBb ? 'deep' : 'medium',
   }
 }
@@ -101,9 +112,6 @@ export function getBettingContextFactors(
       { label: `Pot odds ${(metrics.potOdds * 100).toFixed(1)}%`, value: -priceAdjustment },
       { label: `Bet/pot ratio ${metrics.toCallPotRatio.toFixed(2)}`, value: -sizingAdjustment },
     ]
-    if (metrics.callCommitment >= 0.5 && (isAtLeast(hand.category, 'strong'))) {
-      factors.push({ label: `Call commitment ${(metrics.callCommitment * 100).toFixed(0)}%`, value: params.betting.foldCommitmentPenalty })
-    }
     return capFactors(factors, params.betting.foldCapMin, params.betting.foldCapMax)
   }
 
@@ -114,16 +122,14 @@ export function getBettingContextFactors(
     ]
 
     if (hand.hasDraw) {
-      if (metrics.stackDepth === 'deep') factors.push({ label: `Deep stack ${metrics.effectiveStackBb.toFixed(0)} BB`, value: params.betting.callDeepDrawBonus })
+      if (!isPreflop && metrics.stackDepth === 'deep') {
+        factors.push(impliedOddsFactor(metrics, hand, situation))
+      }
       if (metrics.stackDepth === 'short') factors.push({ label: `Short stack ${metrics.effectiveStackBb.toFixed(0)} BB`, value: params.betting.callShortDrawPenalty })
     }
     if (useSpr && metrics.spr <= 2 && (isAtLeast(hand.category, 'strong'))) {
       factors.push({ label: `Low SPR ${metrics.spr.toFixed(2)}`, value: params.betting.callLowSprBonus })
     }
-    if (metrics.callCommitment >= 0.5 && (hand.category === 'air' || hand.category === 'weak')) {
-      factors.push({ label: `Call commitment ${(metrics.callCommitment * 100).toFixed(0)}%`, value: params.betting.callCommitmentPenalty })
-    }
-
     return capFactors(factors, params.betting.callCapMin, params.betting.callCapMax)
   }
 
@@ -145,7 +151,9 @@ export function getBettingContextFactors(
     ? (situation.preflopRaiseCount ?? 0) > 0
     : metrics.toCallPotRatio > 0
   if (facingBet) {
-    const factor = isPreflop ? 0.5 : 1 // Half penalty preflop (3-bet is fine, 4-bet+ less so)
+    const factor = isPreflop
+      ? (situation.preflopReraisePenaltyScale ?? 0.5)
+      : 1
     if (hand.category === 'medium' || hand.category === 'marginal') {
       factors.push({ label: 'Reraising medium hand into a bet', value: Math.round(params.betting.raiseReraiseMedium * factor) })
     }
@@ -161,6 +169,43 @@ export function getBettingContextFactors(
   }
 
   return capFactors(factors, params.betting.raiseCapMin, params.betting.raiseCapMax)
+}
+
+function impliedOddsFactor(
+  metrics: Readonly<DecisionMetrics>,
+  hand: Readonly<DecisionHandProfile>,
+  situation: Readonly<BettingSituation>,
+): BettingContextFactor {
+  const config = params.betting.callImpliedOdds
+  const stackRange = Math.max(1, config.maxEffectiveStackBb - params.betting.stackDeep)
+  const stackProgress = clamp(
+    (metrics.effectiveStackBb - params.betting.stackDeep) / stackRange,
+    0,
+    1,
+  )
+  const stackScale = 1 + stackProgress * (config.maxStackScale - 1)
+  const nutScale = hand.nutPotential
+    ? config.nutPotentialScale[hand.nutPotential]
+    : 1
+  const activeOpponents = Math.max(1, Math.round(situation.activeOpponents ?? 1))
+  const multiwayAdjustment = Math.min(
+    config.maxMultiwayAdjustment,
+    Math.max(0, activeOpponents - 1) * config.multiwayStep,
+  )
+  const dominatedDraw = hand.nutPotential === 'medium' || hand.nutPotential === 'weak'
+  const multiwayScale = dominatedDraw
+    ? 1 - multiwayAdjustment
+    : 1 + multiwayAdjustment
+  const value = Math.round(clamp(
+    params.betting.callDeepDrawBonus * stackScale * nutScale * multiwayScale,
+    config.minimumBonus,
+    config.maximumBonus,
+  ))
+
+  return {
+    label: `Implied odds · ${metrics.effectiveStackBb.toFixed(0)} BB effective · ${hand.nutPotential ?? 'unknown'} draw · ${activeOpponents} opponent${activeOpponents === 1 ? '' : 's'}`,
+    value,
+  }
 }
 
 export function calculateContextualRaiseTo(
@@ -191,7 +236,9 @@ export function calculateContextualRaiseTo(
 
   if (boardTexture === 'wet') potFraction += params.betting.raiseSizingMods.wetBoard
   if (boardTexture === 'dry') potFraction += params.betting.raiseSizingMods.dryBoard
-  if (hand.boardGotWorse && hand.category !== 'air') {
+  if ((hand.equityCollapse ?? 0) > 0 && hand.category !== 'air') {
+    potFraction -= 0.12 * (hand.equityCollapse ?? 0)
+  } else if (hand.boardGotWorse && hand.category !== 'air') {
     potFraction += 0.08 * (hand.boardWorseSensitivity ?? 1)
   }
   if (position === 'late') potFraction += params.betting.raiseSizingMods.latePosition

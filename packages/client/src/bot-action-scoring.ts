@@ -1,4 +1,4 @@
-import type { PlayerAction } from '@cpc/shared'
+import type { Card, PlayerAction } from '@cpc/shared'
 import {
   calculateContextualRaiseTo,
   getBettingContextFactors,
@@ -17,6 +17,8 @@ import { roundToCents } from './utils/format'
 import { params } from './bot-params'
 import { resolveTableFormat } from './bot-table-format'
 import { getPloSprAdjustments, type PloSprAction } from './plo-spr-strategy'
+import { hasAnalysisSkill } from './bot-skill-gates'
+import { cardsToHandPattern } from './preflop-ranges'
 
 export function scoreActions(context: DecisionContext): ScoredAction[] {
   const actions: ScoredAction[] = []
@@ -39,6 +41,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
     factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('fold', hand.strength)),
     ...bettingFactors('fold', context),
     ...preflopStrategyFactors('fold', context),
+    ...preflopEscalationFactors('fold', context),
   ]
 
   if (gameView.phase === 'preflop' && context.botState.memory.hand.raisedPreflop && metrics.potOdds <= 0.15) {
@@ -47,7 +50,15 @@ function scoreFold(context: DecisionContext): ScoredAction {
   contributions.push(...multiwayFactors('fold', context))
   contributions.push(...potCommitmentFactors('fold', context))
   contributions.push(...dynamicFoldFactors(context))
+  contributions.push(...cbetDefenseFoldAdjustment(context))
   contributions.push(...ploSprFactors('fold', context))
+  contributions.push(...ploWrapQualityFactors('fold', context))
+  contributions.push(...equityCollapseFactors('fold', context))
+  contributions.push(...ploRiverDisciplineFactors('fold', context))
+  contributions.push(...ploPositionFactors('fold', context))
+  contributions.push(...ploBlockerFactors('fold', context))
+  contributions.push(...checkRaiseResponseFactors('fold', context))
+  contributions.push(...floatDefenseFactors('fold', context))
   contributions.push(...opponentProfileFactors('fold', context))
 
   contributions.push(...rangeBasedFactors('fold', context))
@@ -86,6 +97,12 @@ function scoreCheck(context: DecisionContext): ScoredAction {
     }
   }
   contributions.push(...ploSprFactors('check', context))
+  contributions.push(...ploWrapQualityFactors('check', context))
+  contributions.push(...equityCollapseFactors('check', context))
+  contributions.push(...ploPositionFactors('check', context))
+  contributions.push(...ploBlockerFactors('check', context))
+  contributions.push(...checkRaisePlanFactors('check', context))
+  contributions.push(...turnBarrelCheckFactors(context))
 
   return buildAction({ type: 'check' }, intent, contributions)
 }
@@ -109,6 +126,7 @@ function scoreCall(context: DecisionContext): ScoredAction {
     factor('hand-strength', `Call with ${hand.category}`, handValue + strengthScore('call', hand.strength)),
     ...bettingFactors('call', context),
     ...preflopStrategyFactors('call', context),
+    ...preflopEscalationFactors('call', context),
   ]
 
   if (gameView.phase === 'preflop' && context.botState.memory.hand.raisedPreflop && metrics.potOdds <= 0.15) {
@@ -116,12 +134,21 @@ function scoreCall(context: DecisionContext): ScoredAction {
   }
   contributions.push(...multiwayFactors('call', context))
   contributions.push(...potCommitmentFactors('call', context))
+  contributions.push(...forcedAllInRiskFactors(context))
   contributions.push(...cbetDefenseCallBonus(context))
   contributions.push(...opponentProfileFactors('call', context))
 
   contributions.push(...rangeBasedFactors('call', context))
   contributions.push(...weakCallDownFactors(context))
   contributions.push(...ploSprFactors('call', context))
+  contributions.push(...ploWrapQualityFactors('call', context))
+  contributions.push(...equityCollapseFactors('call', context))
+  contributions.push(...ploRiverDisciplineFactors('call', context))
+  contributions.push(...ploPositionFactors('call', context))
+  contributions.push(...ploBlockerFactors('call', context))
+  contributions.push(...checkRaiseResponseFactors('call', context))
+  contributions.push(...checkRaisePlanFactors('call', context))
+  contributions.push(...floatDefenseFactors('call', context))
 
   return buildAction({ type: 'call' }, intent, contributions)
 }
@@ -129,7 +156,6 @@ function scoreCall(context: DecisionContext): ScoredAction {
 function scoreRaise(context: DecisionContext): ScoredAction {
   const { handAssessment: hand, position, boardTexture } = context
   const intent = aggressiveIntent(context)
-  const depthFactors = preflopRaiseDepthFactors(context)
   const contributions: ScoreContribution[] = [
     baseContribution(),
     factor('hand-strength', `Raise with ${hand.category}`, (
@@ -139,8 +165,9 @@ function scoreRaise(context: DecisionContext): ScoredAction {
     ) + strengthScore('raise', hand.strength)),
     ...bettingFactors('raise', context),
     ...preflopStrategyFactors('raise', context),
+    ...formatPreflopRaiseFactors(context),
     ...streetInitiativeFactors(context),
-    ...depthFactors,
+    ...preflopEscalationFactors('raise', context),
   ]
 
   if (hand.relativeStrength > 70) contributions.push(factor('hand-strength', 'High relative strength', params.scoring.raiseBonus.highRelStrength))
@@ -163,9 +190,12 @@ function scoreRaise(context: DecisionContext): ScoredAction {
       boardTexture === 'wet' ? 8 : 6,
     ))
   }
-  if (hand.boardGotWorse && (hand.category === 'medium' || hand.category === 'good' || hand.category === 'strong')) {
-    const sensitivity = context.variantId === 'omaha-high' ? 0.4 : 1
-    contributions.push(factor('hand-strength', 'Board got more dangerous — protect harder', Math.round(8 * sensitivity)))
+  if (
+    context.variantId !== 'omaha-high'
+    && hand.boardGotWorse
+    && (hand.category === 'medium' || hand.category === 'good' || hand.category === 'strong')
+  ) {
+    contributions.push(factor('hand-strength', 'Board got more dangerous — protect harder', 8))
   }
   if (hand.drawQuality > 50) contributions.push(factor('hand-strength', 'Strong draw equity', params.scoring.raiseBonus.drawQuality))
   if (hand.cleanOuts >= 8) contributions.push(factor('hand-strength', `${hand.cleanOuts} clean outs`, params.scoring.raiseBonus.cleanOuts))
@@ -176,6 +206,14 @@ function scoreRaise(context: DecisionContext): ScoredAction {
 
   contributions.push(...rangeBasedFactors('raise', context))
   contributions.push(...ploSprFactors('raise', context))
+  contributions.push(...ploWrapQualityFactors('raise', context))
+  contributions.push(...equityCollapseFactors('raise', context))
+  contributions.push(...ploRiverDisciplineFactors('raise', context))
+  contributions.push(...ploPositionFactors('raise', context))
+  contributions.push(...ploBlockerFactors('raise', context))
+  contributions.push(...checkRaiseResponseFactors('raise', context))
+  contributions.push(...checkRaisePlanFactors('raise', context))
+  contributions.push(...floatDefenseFactors('raise', context))
 
   const scored = buildAction(
     { type: 'raise', amount: calculateRaiseTo(context) },
@@ -206,6 +244,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
     ) + strengthScore('all-in', hand.strength)),
     ...bettingFactors('raise', context),
     ...preflopStrategyFactors('raise', context),
+    ...preflopEscalationFactors('all-in', context),
     ...riskFactors,
   ]
 
@@ -221,10 +260,18 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
   if (metrics.effectiveStack > 0 && metrics.playerStack > metrics.effectiveStack * 2) {
     contributions.push(factor('betting-context', 'Stack greatly exceeds effective stack', params.scoring.allInMods.exceedsEffectiveStack))
   }
-  if (hand.blockerValue >= 30 && hand.category === 'air') {
+  if (context.variantId !== 'omaha-high' && hand.blockerValue >= 30 && hand.category === 'air') {
     contributions.push(factor('hand-strength', 'Relevant blocker', params.scoring.allInMods.blockerValue))
   }
   contributions.push(...ploSprFactors('all-in', context))
+  contributions.push(...ploWrapQualityFactors('all-in', context))
+  contributions.push(...equityCollapseFactors('all-in', context))
+  contributions.push(...ploRiverDisciplineFactors('all-in', context))
+  contributions.push(...ploPositionFactors('all-in', context))
+  contributions.push(...ploBlockerFactors('all-in', context))
+  contributions.push(...checkRaiseResponseFactors('all-in', context))
+  contributions.push(...checkRaisePlanFactors('all-in', context))
+  contributions.push(...floatDefenseFactors('all-in', context))
 
   const scored = buildAction({ type: 'all-in' }, aggressiveIntent(context), contributions)
   return riskFactors.length > 0
@@ -262,17 +309,17 @@ function aggressiveAllInRiskFactors(context: DecisionContext): ScoreContribution
         params.scoring.allInMods.deepOpenShove,
       )]
     }
-    if (metrics.effectiveStackBb > 100 && metrics.callCommitment < 0.2) {
+    if (metrics.effectiveStackBb > 100 && metrics.potCommitment < 0.2) {
       return [factor(
         'betting-context',
         `Deep stack not committed (${metrics.effectiveStackBb.toFixed(0)} BB)`,
         params.scoring.allInMods.uncommittedDeep,
       )]
     }
-    if (metrics.effectiveStackBb > 40 && hand.category !== 'premium' && metrics.callCommitment < 0.25) {
+    if (metrics.effectiveStackBb > 40 && hand.category !== 'premium' && metrics.potCommitment < 0.25) {
       return [factor(
         'betting-context',
-        `Stack not committed for shove (${(metrics.callCommitment * 100).toFixed(0)}%)`,
+        `Stack not committed for shove (${(metrics.potCommitment * 100).toFixed(0)}%)`,
         params.scoring.allInMods.uncommittedStrong,
       )]
     }
@@ -282,7 +329,7 @@ function aggressiveAllInRiskFactors(context: DecisionContext): ScoreContribution
   if (
     metrics.spr >= 6
     && metrics.effectiveStackBb >= 100
-    && metrics.callCommitment < 0.25
+    && metrics.potCommitment < 0.25
     && hand.nutPotential !== 'nuts'
   ) {
     return [factor(
@@ -305,11 +352,7 @@ function weakCallDownFactors(context: DecisionContext): ScoreContribution[] {
     || hand.drawTypes.length > 0
   ) return []
 
-  const aggressiveStreetCount = Math.max(0, ...[...streetAnalysis.opponentLines.values()].map(line => (
-    [line.flop, line.turn, line.river].filter(action => (
-      action === 'bet' || action === 'bet-call' || action === 'bet-fold' || action === 'check-raise'
-    )).length
-  )))
+  const aggressiveStreetCount = maxAggressiveStreetCount(context)
   const contributions: ScoreContribution[] = []
 
   if (aggressiveStreetCount >= 2) {
@@ -332,6 +375,15 @@ function weakCallDownFactors(context: DecisionContext): ScoreContribution[] {
   return contributions
 }
 
+function maxAggressiveStreetCount(context: DecisionContext): number {
+  if (!context.streetAnalysis) return 0
+  return Math.max(0, ...[...context.streetAnalysis.opponentLines.values()].map(line => (
+    [line.flop, line.turn, line.river].filter(action => (
+      action === 'bet' || action === 'bet-call' || action === 'bet-fold' || action === 'check-raise'
+    )).length
+  )))
+}
+
 function bettingFactors(
   action: DecisionActionKind,
   context: DecisionContext,
@@ -339,10 +391,48 @@ function bettingFactors(
   return getBettingContextFactors(action, context.metrics, {
     category: context.handAssessment.category,
     hasDraw: context.handAssessment.drawTypes.length > 0,
+    nutPotential: context.handAssessment.nutPotential,
   }, {
     phase: context.gameView.phase,
     preflopRaiseCount: context.streetAnalysis?.preflopRaiseCount,
+    preflopReraisePenaltyScale: preflopReraisePenaltyScale(context),
+    activeOpponents: context.streetAnalysis?.activeOpponents
+      ?? Math.max(1, context.activePlayerCount - 1),
   }).map(({ label, value }) => factor('betting-context', label, value))
+}
+
+function preflopReraisePenaltyScale(context: DecisionContext): number {
+  if (context.variantId !== 'omaha-high') return 0.5
+  if (resolveTableFormat(context.tableSize) === 'heads-up') return 0
+
+  const archetype = scoringArchetypeId(context)
+  if (archetype === 'tag') return 0.55
+  if (archetype === 'calling-station') return 0.5
+  return 1
+}
+
+function formatPreflopRaiseFactors(context: DecisionContext): ScoreContribution[] {
+  if (context.gameView.phase !== 'preflop') return []
+
+  const format = resolveTableFormat(context.tableSize)
+  const archetype = scoringArchetypeId(context)
+  if (format === 'full-ring' && archetype === 'lag') {
+    return [factor('position', 'LAG full-ring — preserve preflop initiative', 3)]
+  }
+  if (format !== 'heads-up') return []
+
+  if (context.variantId !== 'omaha-high') return []
+
+  const bonus = archetype === 'tag'
+    ? 5
+    : archetype === 'lag'
+      ? 9
+      : archetype === 'calling-station' ? 7 : 6
+  return [factor(
+    'position',
+    'PLO heads-up — widen preflop initiative',
+    bonus,
+  )]
 }
 
 function ploSprFactors(
@@ -353,24 +443,527 @@ function ploSprFactors(
     .map(({ label, value }) => factor('betting-context', label, value))
 }
 
-function preflopRaiseDepthFactors(context: DecisionContext): ScoreContribution[] {
-  if (context.gameView.phase !== 'preflop') return []
-  const raiseCount = context.streetAnalysis?.preflopRaiseCount ?? 0
-  if (raiseCount < 2 || context.handAssessment.category === 'premium') return []
+function ploWrapQualityFactors(
+  action: PloSprAction,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const config = params.scoring.ploWrapQualityMods
+  if (
+    context.variantId !== 'omaha-high'
+    || context.gameView.phase === 'preflop'
+    || !hasAnalysisSkill(context.botState.skill.level, 'wrapDominance')
+  ) return []
 
-  const proposedLevel = raiseCount + 2
-  const variantFactor = context.variantId === 'omaha-high' ? 8 : 6
+  const quality = context.handAssessment.drawTypes.includes('nut-wrap')
+    ? 'nut'
+    : context.handAssessment.drawTypes.includes('mixed-wrap')
+      ? 'mixed'
+      : context.handAssessment.drawTypes.includes('second-wrap')
+        ? 'second'
+        : context.handAssessment.drawTypes.includes('bottom-wrap')
+          ? 'bottom'
+          : null
+  if (!quality) return []
+
+  const qualityConfig = config[quality]
+  const baseValue = action === 'all-in' ? qualityConfig.allIn : qualityConfig[action]
+  const skillScale = skillLevelFactor(context.botState.skill.level)
+  const aggression = Math.max(0, Math.min(1, context.botState.personality.aggression / 100))
+  const riskTolerance = Math.max(0, Math.min(1, context.botState.personality.riskTolerance / 100))
+  const archetypeScale = quality === 'nut'
+    ? 0.75 + aggression * 0.5
+    : quality === 'second' || quality === 'bottom'
+      ? Math.max(config.minimumDisciplineScale, 1 - riskTolerance)
+      : 1
+
+  return [factor(
+    'hand-strength',
+    `PLO ${quality} wrap — domination-aware straight outs`,
+    Math.round(baseValue * skillScale * archetypeScale),
+  )]
+}
+
+function equityCollapseFactors(
+  action: PloSprAction,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const collapse = context.handAssessment.equityCollapse
+  if (
+    context.variantId !== 'omaha-high'
+    || context.gameView.phase === 'preflop'
+    || !hasAnalysisSkill(context.botState.skill.level, 'boardDynamics')
+    || collapse <= 0
+    || (action === 'fold' && context.metrics.callAmount <= 0)
+  ) return []
+
+  const config = params.scoring.equityCollapseMods
+  const baseValue = action === 'all-in' ? config.allIn : config[action]
+  const riskTolerance = Math.max(0, Math.min(1, context.botState.personality.riskTolerance / 100))
+  const archetypeScale = Math.max(config.minimumArchetypeScale, 1 - riskTolerance)
+  const pressureScale = context.metrics.callAmount > 0
+    ? archetypeScale
+    : config.openActionScale * archetypeScale
+  return [factor(
+    'board-texture',
+    `PLO equity collapse ${(collapse * 100).toFixed(0)}% after board transition${pressureScale < 1 ? ' (open action)' : ''}`,
+    Math.round(baseValue * collapse * pressureScale),
+  )]
+}
+
+function ploRiverDisciplineFactors(
+  action: Exclude<PloSprAction, 'check'>,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const hand = context.handAssessment
+  if (
+    context.variantId !== 'omaha-high'
+    || context.gameView.phase !== 'river'
+    || !hasAnalysisSkill(context.botState.skill.level, 'riverDiscipline')
+    || context.metrics.callAmount <= 0
+    || hand.nutPotential === 'nuts'
+    || hand.nutPotential === 'near-nuts'
+    || hand.nutPotential === 'second-nuts'
+    || isAtLeast(hand.category, 'strong')
+  ) return []
+
+  const config = params.scoring.ploRiverDisciplineMods
+  const blockerGap = Math.max(0, Math.min(1, 1 - hand.blockerValue / config.blockerThreshold))
+  if (blockerGap <= 0) return []
+
+  const riskTolerance = Math.max(0, Math.min(1, context.botState.personality.riskTolerance / 100))
+  const archetypeScale = Math.max(config.minimumArchetypeScale, 1 - riskTolerance)
+  const pressureStreets = maxAggressiveStreetCount(context)
+  const pressureScale = 1 + Math.max(0, pressureStreets - 1) * config.pressureStep
+  const overlapScale = hand.equityCollapse > 0 ? config.collapseOverlapScale : 1
+  const baseValue = action === 'all-in' ? config.allIn : config[action]
+  const value = Math.round(baseValue * blockerGap * archetypeScale * pressureScale * overlapScale)
+
+  return [factor(
+    'betting-context',
+    `PLO river discipline — ${pressureStreets || 1}-street pressure, blocker ${Math.round(hand.blockerValue)}`
+      + `${overlapScale < 1 ? ', collapse overlap reduced' : ''}`,
+    value,
+  )]
+}
+
+function isPostflopInPosition(context: DecisionContext): boolean {
+  const players = context.gameView.players
+  const botIndex = players.findIndex(player => player.id === context.botId)
+  const dealerIndex = players.findIndex(player => player.isDealer)
+  const activeActors = players
+    .map((player, index) => ({ player, index }))
+    .filter(({ player }) => player.status === 'active')
+  if (botIndex < 0 || dealerIndex < 0 || activeActors.length < 2) return false
+
+  const postflopOrder = (index: number) => (
+    index - ((dealerIndex + 1) % players.length) + players.length
+  ) % players.length
+  const latestActionOrder = Math.max(...activeActors.map(({ index }) => postflopOrder(index)))
+  return postflopOrder(botIndex) === latestActionOrder
+}
+
+function ploPositionFactors(
+  action: PloSprAction,
+  context: DecisionContext,
+): ScoreContribution[] {
+  if (context.variantId !== 'omaha-high' || context.gameView.phase === 'preflop') return []
+
+  const hand = context.handAssessment
+  const config = params.scoring.ploPositionMods
+  const inPosition = isPostflopInPosition(context)
+  const result: ScoreContribution[] = []
+  const freeroll = hasAnalysisSkill(context.botState.skill.level, 'freeroll')
+    && context.gameView.phase !== 'river'
+    && hand.made
+    && isAtLeast(hand.category, 'good')
+    && hand.drawTypes.length > 0
+    && hand.cleanOuts >= config.freerollMinCleanOuts
+    && (hand.nutPotential === 'nuts'
+      || hand.nutPotential === 'near-nuts'
+      || hand.nutPotential === 'second-nuts'
+      || hand.nutPotential === 'strong')
+
+  if (freeroll) {
+    const aggressionScale = 0.75 + Math.max(0, Math.min(100, context.botState.personality.aggression)) / 200
+    const baseValue = action === 'all-in' ? config.freerollAllIn : {
+      fold: config.freerollFold,
+      check: config.freerollCheck,
+      call: config.freerollCall,
+      raise: config.freerollRaise,
+    }[action]
+    result.push(factor(
+      'position',
+      `PLO freeroll — made ${hand.nutPotential} hand with ${hand.cleanOuts} clean redraw outs`,
+      Math.round(baseValue * aggressionScale),
+    ))
+  } else if (
+    action === 'check'
+    && inPosition
+    && context.metrics.callAmount <= 0
+    && hand.drawTypes.length > 0
+  ) {
+    result.push(factor('position', 'PLO in position — realize thin redraw for free', config.ipCheckEquity))
+  }
+
+  const realizableEquity = hand.drawTypes.length > 0
+    || hand.category === 'marginal'
+    || hand.category === 'medium'
+    || hand.category === 'good'
+  const riverDefendable = context.gameView.phase !== 'river'
+    || hand.blockerValue > 0
+    || hand.nutPotential === 'strong'
+  if (
+    action === 'fold'
+    && !inPosition
+    && context.metrics.callAmount > 0
+    && realizableEquity
+    && riverDefendable
+  ) {
+    const riskScale = 0.5 + Math.max(0, Math.min(100, context.botState.personality.riskTolerance)) / 200
+    result.push(factor(
+      'position',
+      'PLO out of position — avoid exploitable fold with realizable equity',
+      Math.round(config.oopFoldEquity * riskScale),
+    ))
+  }
+
+  return result
+}
+
+function ploBlockerFactors(
+  action: PloSprAction,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const hand = context.handAssessment
+  if (
+    context.variantId !== 'omaha-high'
+    || context.gameView.phase === 'preflop'
+    || !hasAnalysisSkill(context.botState.skill.level, 'blocker')
+    || hand.blockerValue <= 0
+  ) return []
+
+  const config = params.scoring.ploBlockerMods
+  const blockerScale = Math.max(0, Math.min(1, hand.blockerValue / config.nutThreshold))
+  const skillScale = skillLevelFactor(context.botState.skill.level)
+  const aggression = Math.max(0, Math.min(1, context.botState.personality.aggression / 100))
+  const riskTolerance = Math.max(0, Math.min(1, context.botState.personality.riskTolerance / 100))
+  const aggressionScale = 0.75 + aggression * 0.5
+  const defenseScale = 0.5 + riskTolerance * 0.5
+  const valueCandidate = hand.made && isAtLeast(hand.category, 'good')
+  const bluffCandidate = !valueCandidate
+    && (hand.category === 'air' || hand.category === 'weak' || hand.category === 'marginal')
+  const bluffCatchCandidate = hand.made
+    || hand.category === 'medium'
+    || hand.category === 'marginal'
+
+  let baseValue = 0
+  let archetypeScale = 1
+  let role: 'bluff-catch' | 'bluff' | 'value' | null = null
+
+  if (
+    (action === 'fold' || action === 'call')
+    && context.metrics.callAmount > 0
+    && bluffCatchCandidate
+  ) {
+    baseValue = action === 'fold' ? config.foldDefense : config.callDefense
+    archetypeScale = defenseScale
+    role = 'bluff-catch'
+  } else if (action === 'check' && context.metrics.callAmount <= 0) {
+    if (bluffCandidate) {
+      baseValue = config.bluffCheck
+      archetypeScale = aggressionScale
+      role = 'bluff'
+    } else if (valueCandidate) {
+      baseValue = config.valueCheck
+      archetypeScale = aggressionScale
+      role = 'value'
+    }
+  } else if (action === 'raise') {
+    if (bluffCandidate) {
+      baseValue = config.bluffRaise
+      archetypeScale = aggressionScale
+      role = 'bluff'
+    } else if (valueCandidate) {
+      baseValue = config.valueRaise
+      archetypeScale = aggressionScale
+      role = 'value'
+    }
+  } else if (action === 'all-in') {
+    if (bluffCandidate) {
+      baseValue = config.bluffAllIn
+      archetypeScale = aggressionScale
+      role = 'bluff'
+    } else if (valueCandidate) {
+      baseValue = config.valueAllIn
+      archetypeScale = aggressionScale
+      role = 'value'
+    }
+  }
+
+  if (!role || baseValue === 0) return []
+  return [factor(
+    'hand-strength',
+    `PLO blocker ${Math.round(hand.blockerValue)} — ${role}`,
+    Math.round(baseValue * blockerScale * skillScale * archetypeScale),
+  )]
+}
+
+function checkRaiseResponseFactors(
+  action: Exclude<PloSprAction, 'check'>,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const analysis = context.streetAnalysis
+  const config = params.scoring.checkRaiseMods
+  if (
+    context.gameView.phase === 'preflop'
+    || !analysis?.opponentCheckRaised
+    || context.metrics.callAmount <= 0
+    || context.botState.skill.level < config.respectSkillGate
+  ) return []
+
+  const hand = context.handAssessment
+  const protectedHand = context.variantId === 'omaha-high'
+    ? hand.category === 'premium'
+      || hand.nutPotential === 'nuts'
+      || hand.nutPotential === 'near-nuts'
+      || hand.nutPotential === 'second-nuts'
+    : isAtLeast(hand.category, 'strong')
+  const baseValue = action === 'fold'
+    ? protectedHand ? config.foldProtected : config.foldRespect
+    : action === 'call'
+      ? protectedHand ? config.callProtected : config.callRespect
+      : protectedHand
+        ? 0
+        : action === 'raise' ? config.reraiseRespect : config.allInRespect
+  if (baseValue === 0) return []
+
+  const pressureScale = 1 + Math.min(
+    config.maxPressureScale - 1,
+    Math.max(0, context.metrics.toCallPotRatio) * 0.5,
+  )
+  const riskTolerance = Math.max(0, Math.min(1, context.botState.personality.riskTolerance / 100))
+  const archetypeScale = 0.75 + (1 - riskTolerance) * 0.5
+  const variantScale = context.variantId === 'omaha-high' ? config.ploRespectScale : 1
+  const skillScale = skillLevelFactor(context.botState.skill.level)
+
+  return [factor(
+    'betting-context',
+    `Opponent check-raised — ${protectedHand ? 'protected continuation' : 'range-strength respect'}`,
+    Math.round(baseValue * pressureScale * archetypeScale * variantScale * skillScale),
+  )]
+}
+
+function checkRaisePlanFactors(
+  action: Exclude<PloSprAction, 'fold'>,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const config = params.scoring.checkRaiseMods
+  const analysis = context.streetAnalysis
+  if (
+    context.gameView.phase === 'preflop'
+    || context.botState.skill.level < config.planningSkillGate
+    || !analysis
+    || analysis.activeOpponents !== 1
+  ) return []
+
+  const hand = context.handAssessment
+  const valueCandidate = hand.made && (
+    isAtLeast(hand.category, 'strong')
+    || hand.nutPotential === 'nuts'
+    || hand.nutPotential === 'near-nuts'
+  ) && hand.equityCollapse === 0
+  const semiBluffCandidate = hand.drawTypes.length > 0
+    && hand.cleanOuts >= (context.variantId === 'omaha-high' ? 8 : 6)
+    && hand.nutPotential !== 'weak'
+  if (!valueCandidate && !semiBluffCandidate) return []
+
+  const aggression = Math.max(0, Math.min(1, context.botState.personality.aggression / 100))
+  const scale = skillLevelFactor(context.botState.skill.level) * (0.75 + aggression * 0.5)
+  const openActionPlan = action === 'check'
+    && context.metrics.callAmount <= 0
+    && !isPostflopInPosition(context)
+    && !analysis.iCheckedCurrentStreet
+  const executionOpportunity = action !== 'check'
+    && context.metrics.callAmount > 0
+    && analysis.iCheckedCurrentStreet === true
+    && analysis.iCheckRaisedCurrentStreet !== true
+    && analysis.streetAggressor[context.gameView.phase] !== context.botId
+  if (!openActionPlan && !executionOpportunity) return []
+
+  let baseValue = 0
+  if (openActionPlan) {
+    baseValue = valueCandidate ? config.planCheckValue : config.planCheckDraw
+  } else if (action === 'call') {
+    baseValue = valueCandidate ? config.executeCallValue : config.executeCallDraw
+  } else if (action === 'raise') {
+    baseValue = valueCandidate ? config.executeRaiseValue : config.executeRaiseDraw
+  } else if (action === 'all-in') {
+    baseValue = valueCandidate ? config.executeAllInValue : config.executeAllInDraw
+  }
+  if (baseValue === 0) return []
+
   return [factor(
     'strategy',
-    `${proposedLevel}-bet depth tightens non-premium range`,
-    -variantFactor * (raiseCount - 1),
+    `Check-raise plan — ${valueCandidate ? 'value trap' : 'nut-draw semi-bluff'}`,
+    Math.round(baseValue * scale),
+  )]
+}
+
+function floatDefenseFactors(
+  action: Exclude<PloSprAction, 'check'>,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const config = params.scoring.floatDefenseMods
+  const floaters = context.streetAnalysis?.turnFloatPlayerIds ?? []
+  if (
+    context.variantId !== 'texas-holdem'
+    || context.gameView.phase !== 'turn'
+    || floaters.length === 0
+    || context.metrics.callAmount <= 0
+    || context.botState.skill.level < config.skillGate
+  ) return []
+
+  const hand = context.handAssessment
+  const valueCandidate = hand.made && isAtLeast(hand.category, 'strong')
+  const bluffCatchCandidate = hand.made
+    && (hand.category === 'marginal' || hand.category === 'medium' || hand.category === 'good')
+  const drawCandidate = hand.drawTypes.length > 0 && hand.cleanOuts >= 6
+  const blockerBluffCandidate = !hand.made
+    && hand.drawTypes.length === 0
+    && hand.blockerValue >= 30
+    && context.botState.personality.aggression >= 60
+  const defendCandidate = valueCandidate || bluffCatchCandidate || drawCandidate
+  if (!defendCandidate && !blockerBluffCandidate) return []
+
+  let baseValue = 0
+  if (action === 'fold' && defendCandidate) {
+    baseValue = config.foldCandidate
+  } else if (action === 'call' && defendCandidate) {
+    baseValue = valueCandidate ? config.callValue : config.callCandidate
+  } else if (action === 'raise') {
+    baseValue = valueCandidate
+      ? config.raiseValue
+      : blockerBluffCandidate
+        ? config.raiseBlockerBluff
+        : defendCandidate ? config.raiseCandidate : 0
+  } else if (action === 'all-in' && valueCandidate) {
+    baseValue = config.allInValue
+  }
+  if (baseValue === 0) return []
+
+  const priceScale = Math.max(
+    config.largeBetFloor,
+    1 - Math.max(0, context.metrics.toCallPotRatio) * 0.5,
+  )
+  const boardScale = hand.boardGotWorse ? config.worseBoardScale : 1
+  const riskTolerance = Math.max(0, Math.min(1, context.botState.personality.riskTolerance / 100))
+  const aggression = Math.max(0, Math.min(1, context.botState.personality.aggression / 100))
+  const archetypeScale = action === 'raise' || action === 'all-in'
+    ? 0.75 + aggression * 0.5
+    : 0.75 + riskTolerance * 0.5
+  const read = context.opponentStats
+  const readScale = read && read.aggression > 50
+    ? 1 + ((read.aggression - 50) / 50) * read.confidence * config.aggressiveReadBoost
+    : 1
+  const value = Math.round(
+    baseValue
+    * priceScale
+    * boardScale
+    * archetypeScale
+    * readScale
+    * skillLevelFactor(context.botState.skill.level),
+  )
+  if (value === 0) return []
+
+  return [factor(
+    'opponent-read',
+    `Turn float detected from ${floaters.join(', ')} — ${valueCandidate ? 'protect value' : blockerBluffCandidate ? 'blocker rebluff' : 'controlled defense'}`,
+    value,
+  )]
+}
+
+type PreflopEscalationAction = 'fold' | 'call' | 'raise' | 'all-in'
+
+function preflopEscalationProfile(context: DecisionContext): {
+  raiseCount: number
+  coreValue: boolean
+  polarizedBluff: boolean
+  committed: boolean
+} | null {
+  if (context.gameView.phase !== 'preflop') return null
+  const raiseCount = context.streetAnalysis?.preflopRaiseCount ?? 0
+  if (raiseCount < 2) return null
+
+  const config = params.scoring.preflopEscalationMods
+  const cards = context.gameView.myCards
+  const pattern = context.variantId === 'texas-holdem' && cards.length === 2
+    ? cardsToHandPattern(cards as [Card, Card])
+    : null
+  const deepValueCore = pattern === 'AA' || pattern === 'KK'
+  const normalValueCore = context.handAssessment.category === 'premium'
+    && context.metrics.effectiveStackBb <= config.maxPolarizedStackBb
+  const coreValue = deepValueCore || normalValueCore
+  const committed = context.metrics.potCommitment >= config.commitmentGate
+  const polarizedBluff = context.variantId === 'texas-holdem'
+    && (pattern === 'A5s' || pattern === 'A4s')
+    && context.botState.skill.level >= config.skillGate
+    && context.botState.personality.aggression >= config.aggressionGate
+    && context.metrics.effectiveStackBb <= config.maxPolarizedStackBb
+
+  return { raiseCount, coreValue, polarizedBluff, committed }
+}
+
+function preflopEscalationFactors(
+  action: PreflopEscalationAction,
+  context: DecisionContext,
+): ScoreContribution[] {
+  const profile = preflopEscalationProfile(context)
+  if (!profile) return []
+  const config = params.scoring.preflopEscalationMods
+  const { raiseCount, coreValue, polarizedBluff, committed } = profile
+  let value: number
+  let rangeLabel: string
+
+  if (raiseCount === 2) {
+    const scores = config.fourBet
+    rangeLabel = coreValue ? 'value core' : polarizedBluff ? 'polarized ace blocker' : 'non-core range'
+    if (action === 'fold') value = coreValue ? scores.valueFold : polarizedBluff ? scores.polarizedFold : scores.defaultFold
+    else if (action === 'call') value = coreValue ? scores.valueCall : polarizedBluff ? scores.polarizedCall : scores.defaultCall
+    else if (action === 'raise') value = coreValue ? scores.valueRaise : polarizedBluff ? scores.polarizedRaise : scores.defaultRaise
+    else value = coreValue && (committed || context.metrics.effectiveStackBb <= config.shortValueStackBb)
+      ? scores.valueAllIn
+      : scores.defaultAllIn
+  } else if (raiseCount === 3) {
+    const scores = config.fiveBet
+    const committedPolarizedBluff = polarizedBluff && committed
+    rangeLabel = coreValue ? 'value core' : committedPolarizedBluff ? 'committed ace-blocker bluff' : 'fold-to-5-bet range'
+    if (action === 'fold') value = coreValue ? scores.valueFold : committedPolarizedBluff ? scores.polarizedFold : scores.defaultFold
+    else if (action === 'call') value = coreValue ? scores.valueCall : scores.defaultCall
+    else if (action === 'raise') value = coreValue ? scores.valueRaise : committedPolarizedBluff ? scores.polarizedRaise : scores.defaultRaise
+    else value = coreValue ? scores.valueAllIn : committedPolarizedBluff ? scores.polarizedAllIn : scores.defaultAllIn
+  } else {
+    const scores = config.facingFiveBet
+    rangeLabel = coreValue ? 'value core' : 'fold-to-escalation range'
+    if (action === 'fold') value = coreValue ? scores.valueFold : scores.defaultFold
+    else if (action === 'call') value = coreValue ? scores.valueCall : scores.defaultCall
+    else if (action === 'raise') value = coreValue
+      ? committed ? scores.valueRaiseCommitted : scores.valueRaiseUncommitted
+      : scores.defaultRaise
+    else value = coreValue ? scores.valueAllIn : scores.defaultAllIn
+  }
+
+  return [factor(
+    'strategy',
+    `${raiseCount + 2}-bet model — ${rangeLabel}`,
+    value,
   )]
 }
 
 function preflopRaiseDepthBlocked(context: DecisionContext): boolean {
-  return context.gameView.phase === 'preflop'
-    && (context.streetAnalysis?.preflopRaiseCount ?? 0) >= 3
-    && context.handAssessment.category !== 'premium'
+  const profile = preflopEscalationProfile(context)
+  if (!profile || profile.raiseCount < 3) return false
+  if (profile.coreValue) return false
+  return !(profile.raiseCount === 3 && profile.polarizedBluff && profile.committed)
 }
 
 function preflopStrategyFactors(
@@ -419,7 +1012,7 @@ function calculateRaiseTo(context: DecisionContext): number {
       category: context.handAssessment.category,
       hasDraw: context.handAssessment.drawTypes.length > 0,
       boardGotWorse: context.handAssessment.boardGotWorse,
-      boardWorseSensitivity: context.variantId === 'omaha-high' ? 0.4 : 1,
+      equityCollapse: context.handAssessment.equityCollapse,
     },
     context.boardTexture,
     context.position,
@@ -507,9 +1100,15 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
     if (analysis.streetAggressor.flop === null && analysis.streetAggressor.turn === null) {
       result.push(factor('position', 'Delayed c-bet after flop checked through', Math.round(params.scoring.streetInitiative.delayedCbet * skillFactor)))
     }
-    if (gameView.phase === 'turn' && analysis.streetAggressor.flop === context.botId && hand.category !== 'air') {
-      const huBoost = resolveTableFormat(context.tableSize) === 'heads-up' ? 1.5 : 1.0
-      result.push(factor('position', 'Double-barrel — continue turn pressure', Math.round(34 * skillFactor * huBoost)))
+    if (gameView.phase === 'turn' && analysis.streetAggressor.flop === context.botId) {
+      const barrel = turnBarrelAdjustment(context)
+      if (barrel) {
+        result.push(factor(
+          'position',
+          barrel.label,
+          Math.round(barrel.value * turnTendencyFactor(skillFactor)),
+        ))
+      }
     }
   }
 
@@ -522,10 +1121,6 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
     }
   }
 
-  if (analysis.opponentCheckRaised && skillFactor >= 0.2) {
-    result.push(factor('position', 'Opponent check-raised — proceed with caution', Math.round(params.scoring.streetInitiative.checkRaiseCaution * skillFactor)))
-  }
-
   if (analysis.activeOpponents >= 2) {
     const multiwayScale = Math.min(1, (analysis.activeOpponents - 1) / 4)
     if (hand.category === 'weak' || hand.category === 'air') {
@@ -536,10 +1131,17 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
     }
   }
 
-  if (!analysis.iAmPreflopAggressor && context.metrics.toCallPotRatio > 0 && (hand.category === 'weak' || hand.category === 'marginal' || hand.category === 'medium')) {
+  const cbetRaiseCandidateScale = isFacingContinuationBet(context)
+    ? cbetDefenseCandidateScale(context, true)
+    : 0
+  if (cbetRaiseCandidateScale > 0) {
     const riskTolerance = context.botState.personality.riskTolerance
     const riskFactor = 1 - (riskTolerance - 50) / 100
-    result.push(factor('position', 'Defend C-Bet with a raise — apply pressure back', Math.round(30 * riskFactor * skillFactor)))
+    const variant = context.variantId === 'omaha-high' ? 'plo' : 'nlhe'
+    const archetype = scoringArchetypeId(context)
+    const format = resolveTableFormat(context.tableSize)
+    const raiseBase = params.scoring.cbetDefenseRaiseBase[variant][archetype][format]
+    result.push(factor('position', 'Defend C-Bet with a raise — apply pressure back', Math.round(raiseBase * riskFactor * skillFactor * cbetRaiseCandidateScale)))
   }
 
   const opponentLines = [...(analysis.opponentLines.values() ?? [])]
@@ -580,6 +1182,61 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
   return result
 }
 
+function turnBarrelAdjustment(context: DecisionContext): { value: number; label: string } | null {
+  const analysis = context.streetAnalysis
+  const hand = context.handAssessment
+  if (
+    context.gameView.phase !== 'turn'
+    || !analysis?.iAmPreflopAggressor
+    || analysis.streetAggressor.flop !== context.botId
+  ) return null
+
+  const variant = context.variantId === 'omaha-high' ? 'plo' : 'nlhe'
+  const format = resolveTableFormat(context.tableSize)
+  const archetype = scoringArchetypeId(context)
+  const config = params.scoring.turnBarrelMods[variant][archetype][format]
+  const airCandidate = hand.category === 'air'
+    && !hand.boardGotWorse
+    && (
+      context.boardTexture === 'dry'
+      || hand.drawTypes.length > 0
+      || hand.blockerValue >= 10
+    )
+  const value = hand.category === 'air'
+    ? airCandidate ? config.air : 0
+    : config.nonAir
+  if (value === 0) return null
+
+  return {
+    value,
+    label: hand.category === 'air'
+      ? 'Double-barrel — selective turn bluff'
+      : 'Double-barrel — continue turn pressure',
+  }
+}
+
+function turnBarrelCheckFactors(context: DecisionContext): ScoreContribution[] {
+  const barrel = turnBarrelAdjustment(context)
+  if (!barrel) return []
+  const skillFactor = skillLevelFactor(context.botState.skill.level)
+  const value = -Math.round(
+    barrel.value
+    * turnTendencyFactor(skillFactor),
+  )
+  if (value === 0) return []
+  return [factor(
+    'position',
+    barrel.value > 0
+      ? 'Double-barrel plan — checking surrenders initiative'
+      : 'Double-barrel restraint — prefer pot control',
+    value,
+  )]
+}
+
+function turnTendencyFactor(skillFactor: number): number {
+  return 0.55 + skillFactor * 0.45
+}
+
 function archetypeCbetDiscipline(
   context: DecisionContext,
   result: ScoreContribution[],
@@ -588,7 +1245,8 @@ function archetypeCbetDiscipline(
   const archetypeName = context.botState.personality.archetype.name
   const hand = context.handAssessment
   const isPLO = context.variantId === 'omaha-high'
-  const isHU = resolveTableFormat(context.tableSize) === 'heads-up'
+  const format = resolveTableFormat(context.tableSize)
+  const isHU = format === 'heads-up'
 
   if (hand.category === 'premium' || hand.category === 'strong') return
 
@@ -596,7 +1254,9 @@ function archetypeCbetDiscipline(
   if (archetypeName === 'LAG') {
     disciplineBase = isPLO ? -16 : (isHU ? 0 : -7)
   } else if (archetypeName === 'Nit') {
-    disciplineBase = isHU ? -6 : 4
+    disciplineBase = isHU ? -6 : format === 'six-max' ? -4 : 4
+  } else if (archetypeName === 'Calling Station' && !isPLO && isHU) {
+    disciplineBase = 5
   } else {
     return
   }
@@ -825,23 +1485,77 @@ function potCommitmentFactors(
   action: 'fold' | 'call',
   context: DecisionContext,
 ): ScoreContribution[] {
-  const { gameView, metrics } = context
-  if (gameView.phase === 'preflop' || metrics.callCommitment < 0.4) return []
+  const config = params.scoring.commitmentBehavior
+  const { metrics, botState } = context
+  if (metrics.potCommitment <= config.minimumPotCommitment) return []
 
-  const commitmentPct = Math.round(metrics.callCommitment * 100)
-  const severity = Math.min(1, metrics.callCommitment)
+  const commitmentSeverity = clip(
+    (metrics.potCommitment - config.minimumPotCommitment)
+      / (1 - config.minimumPotCommitment),
+    0,
+    1,
+  )
+  const skillSusceptibility = clip(
+    (config.skillZeroAt - botState.skill.level)
+      / (config.skillZeroAt - config.skillFullAt),
+    0,
+    1,
+  )
+  const patiencePressure = Math.max(0, 50 - botState.mentalState.patience) / 100
+  const mentalMultiplier = clip(
+    1 + (botState.mentalState.tilt / 200) + patiencePressure,
+    1,
+    config.maximumMentalMultiplier,
+  )
+  const susceptibility = clip(
+    skillSusceptibility
+      * config.archetypeMultiplier[scoringArchetypeId(context)]
+      * mentalMultiplier,
+    0,
+    1,
+  )
+  const value = Math.round(config.maximumCallBonus * commitmentSeverity * susceptibility)
+  if (value === 0) return []
 
-  if (action === 'fold') {
-    return [factor(
-      'betting-context',
-      `Pot committed ${commitmentPct}% — folding is very costly`,
-      Math.round(-35 * severity),
-    )]
-  }
   return [factor(
     'betting-context',
-    `Pot committed ${commitmentPct}% — must call down`,
-    Math.round(12 * severity),
+    `Voluntary pot commitment ${(metrics.potCommitment * 100).toFixed(0)}% — sunk-cost tendency`,
+    action === 'call' ? value : -value,
+  )]
+}
+
+function forcedAllInRiskFactors(context: DecisionContext): ScoreContribution[] {
+  const config = params.scoring.commitmentBehavior
+  const { metrics, handAssessment: hand, botState } = context
+  const categoryPenalty = config.forcedCategoryPenalty[hand.category]
+  if (
+    categoryPenalty === 0
+    || metrics.forcedAllInRatio <= config.forcedAllInStart
+    || metrics.potOdds <= config.freePriceThreshold
+  ) return []
+
+  const stackSeverity = clip(
+    (metrics.forcedAllInRatio - config.forcedAllInStart)
+      / (config.forcedAllInFull - config.forcedAllInStart),
+    0,
+    1,
+  )
+  const priceSeverity = clip(
+    (metrics.potOdds - config.freePriceThreshold)
+      / (config.fullPriceThreshold - config.freePriceThreshold),
+    0,
+    1,
+  )
+  const riskTolerance = clip(botState.personality.riskTolerance / 100, 0, 1)
+  const riskScale = config.maximumRiskScale
+    - riskTolerance * (config.maximumRiskScale - config.minimumRiskScale)
+  const value = Math.round(categoryPenalty * stackSeverity * priceSeverity * riskScale)
+  if (value === 0) return []
+
+  return [factor(
+    'betting-context',
+    `Forced all-in ${(metrics.forcedAllInRatio * 100).toFixed(0)}% — variance risk`,
+    value,
   )]
 }
 
@@ -879,7 +1593,7 @@ function dynamicFoldFactors(context: DecisionContext): ScoreContribution[] {
       : tableFormat === 'heads-up'
         ? hand.category === 'air' || hand.category === 'weak' || hand.category === 'marginal' || hand.category === 'medium'
         : hand.category === 'weak' || hand.category === 'marginal' || hand.category === 'medium'
-    if (!isPFA && handInDefenseRange) {
+    if (isFacingContinuationBet(context) && handInDefenseRange) {
       result.push(factor('betting-context', 'C-Bet defense — call with equity', Math.round(basePenalty * catMul * riskFactor * variantBoost * huMultiplier)))
     } else if (isPFA && hand.category !== 'air') {
       result.push(factor('betting-context', 'PFA defending flop lead', Math.round(-7 * riskFactor * variantBoost)))
@@ -905,14 +1619,87 @@ function dynamicFoldFactors(context: DecisionContext): ScoreContribution[] {
 }
 
 function cbetDefenseCallBonus(context: DecisionContext): ScoreContribution[] {
-  const { gameView, handAssessment: hand, metrics, streetAnalysis } = context
-  if (gameView.phase !== 'flop' || metrics.toCallPotRatio <= 0) return []
-  if (streetAnalysis?.iAmPreflopAggressor) return []
-  if (hand.category !== 'weak' && hand.category !== 'marginal' && hand.category !== 'medium') return []
+  if (!isFacingContinuationBet(context)) return []
+  const candidateScale = cbetDefenseCandidateScale(context, false)
+  if (candidateScale <= 0) return []
+
+  const variant = context.variantId === 'omaha-high' ? 'plo' : 'nlhe'
+  const archetype = scoringArchetypeId(context)
+  const format = resolveTableFormat(context.tableSize)
+  const value = Math.round(
+    params.scoring.cbetDefenseCallBonus[variant][archetype][format] * candidateScale,
+  )
+  if (value === 0) return []
 
   return [factor(
     'betting-context',
-    'C-Bet defense — prefer raise over call',
-    -4,
+    value > 0
+      ? 'C-Bet defense — continue with realizable equity'
+      : 'C-Bet defense — prefer raise or fold over a marginal call',
+    value,
   )]
+}
+
+function cbetDefenseFoldAdjustment(context: DecisionContext): ScoreContribution[] {
+  if (!isFacingContinuationBet(context)) return []
+  const candidateScale = cbetDefenseCandidateScale(context, false)
+  if (candidateScale <= 0) return []
+  const variant = context.variantId === 'omaha-high' ? 'plo' : 'nlhe'
+  const archetype = scoringArchetypeId(context)
+  const format = resolveTableFormat(context.tableSize)
+  const callBonus = params.scoring.cbetDefenseCallBonus[variant][archetype][format]
+  if (callBonus === 0) return []
+
+  return [factor(
+    'betting-context',
+    callBonus > 0
+      ? 'C-Bet defense mix — folding realizable equity too often'
+      : 'C-Bet defense mix — disciplined marginal fold',
+    -Math.round(callBonus * 0.5 * candidateScale),
+  )]
+}
+
+function cbetDefenseCandidateScale(context: DecisionContext, allowBlockerAir: boolean): number {
+  const hand = context.handAssessment
+  if (hand.category === 'air') {
+    if (hand.drawTypes.length > 0 || (allowBlockerAir && hand.blockerValue >= 20)) return 1
+
+    const format = resolveTableFormat(context.tableSize)
+    if (
+      context.variantId === 'texas-holdem'
+      && format === 'six-max'
+      && context.streetAnalysis?.activeOpponents === 1
+      && scoringArchetypeId(context) === 'calling-station'
+    ) return 1
+    if (context.variantId !== 'texas-holdem' || format !== 'heads-up') return 0
+
+    const archetype = scoringArchetypeId(context)
+    if (archetype === 'lag') return 0.75
+    if (archetype === 'calling-station') return 1
+    return 0
+  }
+  return hand.category === 'weak' || hand.category === 'marginal' || hand.category === 'medium'
+    ? 1
+    : 0
+}
+
+function isFacingContinuationBet(context: DecisionContext): boolean {
+  const analysis = context.streetAnalysis
+  if (
+    context.gameView.phase !== 'flop'
+    || context.metrics.toCallPotRatio <= 0
+    || !analysis
+    || analysis.iAmPreflopAggressor
+  ) return false
+
+  const preflopAggressor = analysis.streetAggressor.preflop
+  return preflopAggressor !== null && analysis.streetAggressor.flop === preflopAggressor
+}
+
+function scoringArchetypeId(context: DecisionContext): 'tag' | 'nit' | 'lag' | 'calling-station' {
+  const name = context.botState.personality.archetype.name
+  if (name === 'Nit') return 'nit'
+  if (name === 'LAG') return 'lag'
+  if (name === 'Calling Station') return 'calling-station'
+  return 'tag'
 }
