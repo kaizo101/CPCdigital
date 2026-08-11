@@ -5,7 +5,9 @@ export interface BotDecisionInfo {
   playerId: string
   action: string
   handCategory: string
-  scores: Array<{ action: string; utility: number }>
+  handProfile?: string
+  chosenCandidateId?: string
+  scores: Array<{ candidateId?: string; action: string; utility: number }>
   topContributions: string[]
 }
 

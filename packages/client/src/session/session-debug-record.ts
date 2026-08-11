@@ -15,12 +15,17 @@ import type { BotDebugDecision, BotDebugProfile } from '../bot-debug'
 import type { BotIdentity } from '../bot-identities'
 import type { DecisionComplexity } from '../bot-decision-complexity'
 import type { DecisionResult } from '../bot-pipeline'
+import type { PerceivedOpponentRange } from '../bot-range-estimation'
+import type { OpponentLine, StreetAggressionState, BettingStreet } from '../bot-street-analysis'
+import type { VariantHandAssessment } from '../bot-variant-evaluation'
+import type { ActionIntent, ScoreContribution } from '../bot-decision-types'
 import type { BotDecisionTiming } from '../bot-timing'
 import type { DisplayCurrency } from '../utils/format'
 
 export const SESSION_DEBUG_SCHEMA = 'cpcdigital.session-debug'
 export const SESSION_DEBUG_SCHEMA_VERSION = 1
 const SESSION_DEBUG_SCHEMA_VERSION_V2 = 2
+export const SESSION_DEBUG_SCHEMA_VERSION_V3 = 3
 
 export interface SessionHistoryEvent {
   handNumber: number
@@ -118,6 +123,31 @@ export interface CompactBotDebugDecision {
   timing: BotDecisionTiming
 }
 
+export interface CompactBotDebugDecisionV3 extends CompactBotDebugDecision {
+  chosenCandidateId: string
+  candidates: Array<{
+    candidateId: string
+    action: PlayerAction
+    intent: ActionIntent
+    utility: number
+    selectionEligible: boolean
+    contributions: ScoreContribution[]
+  }>
+  selectionDiagnostics: DecisionResult['selectionDiagnostics']
+  analysis: {
+    objectiveHandAssessment: VariantHandAssessment
+    perceivedHandAssessment: VariantHandAssessment
+    objectiveOpponentRanges: PerceivedOpponentRange[]
+    perceivedOpponentRanges: PerceivedOpponentRange[]
+    street: {
+      preflopAggressor: string | null
+      preflopRaiseCount: number
+      streetAggression?: Record<BettingStreet, StreetAggressionState>
+      opponentLines: OpponentLine[]
+    } | null
+  }
+}
+
 export interface SessionDebugRecordV2 {
   schema: 'cpcdigital.session-debug'
   schemaVersion: 2
@@ -149,7 +179,12 @@ export interface SessionDebugRecordV2 {
   botDecisions: CompactBotDebugDecision[]
 }
 
-export function serializeSessionDebugRecord(record: SessionDebugRecord | SessionDebugRecordV2): string {
+export interface SessionDebugRecordV3 extends Omit<SessionDebugRecordV2, 'schemaVersion' | 'botDecisions'> {
+  schemaVersion: typeof SESSION_DEBUG_SCHEMA_VERSION_V3
+  botDecisions: CompactBotDebugDecisionV3[]
+}
+
+export function serializeSessionDebugRecord(record: SessionDebugRecord | SessionDebugRecordV2 | SessionDebugRecordV3): string {
   return JSON.stringify(record, null, 2)
 }
 
@@ -158,7 +193,7 @@ export function createSessionDebugFilename(exportedAt: string): string {
   return `cpcdigital-session-debug_${timestamp}.json`
 }
 
-export function downloadSessionDebugRecord(record: SessionDebugRecord | SessionDebugRecordV2): void {
+export function downloadSessionDebugRecord(record: SessionDebugRecord | SessionDebugRecordV2 | SessionDebugRecordV3): void {
   requestTextFileExport({
     data: serializeSessionDebugRecord(record),
     filename: createSessionDebugFilename(record.exportedAt),

@@ -1,11 +1,37 @@
 import type { DecisionActionHistoryEvent } from '@cpc/shared'
 import { aggressiveActionPotFraction, isAggressiveHistoryEvent } from './bot-sizing'
+import type { Position } from './bot-types'
 
-type BettingStreet = 'preflop' | 'flop' | 'turn' | 'river'
+export type BettingStreet = 'preflop' | 'flop' | 'turn' | 'river'
+
+export type PreflopRole =
+  | 'none'
+  | 'blind-checker'
+  | 'limper'
+  | 'caller'
+  | 'open-raiser'
+  | 'three-bettor'
+  | 'four-bettor-plus'
+  | 'folded'
+
+export interface PublicPlayerPosition {
+  positionsFromDealer: number
+  category: Position
+}
+
+export interface StreetAggressionState {
+  aggressiveActionCount: number
+  openingAggressor: string | null
+  lastAggressor: string | null
+  orderedAggressors: string[]
+}
 
 export interface OpponentLine {
   playerId: string
   preflop: 'raised' | 'called' | 'folded' | null
+  /** Public position and exact preflop role, retained instead of collapsing both into `preflop`. */
+  position?: PublicPlayerPosition
+  preflopRole?: PreflopRole
   flop: 'bet' | 'check-call' | 'check-fold' | 'check-raise' | 'bet-call' | 'bet-fold' | null
   turn: 'bet' | 'check-call' | 'check-fold' | 'check-raise' | 'bet-call' | 'bet-fold' | null
   river: 'bet' | 'check-call' | 'check-fold' | 'check-raise' | 'bet-call' | 'bet-fold' | null
@@ -20,6 +46,8 @@ export interface StreetAnalysis {
   preflopRaiseCount: number
   /** Who has the initiative on each street (last aggressor) */
   streetAggressor: { preflop: string | null; flop: string | null; turn: string | null; river: string | null }
+  /** Ordered, per-street aggression. Present in production; optional for legacy fixtures. */
+  streetAggression?: Record<BettingStreet, StreetAggressionState>
   /** Am I the preflop aggressor? */
   iAmPreflopAggressor: boolean
   /** Per-opponent action lines for the current hand */
@@ -51,6 +79,7 @@ export function analyzeStreetAction(
   actionHistory: readonly DecisionActionHistoryEvent[],
   phase: string,
   activePlayerIds: string[],
+  playerPositions: ReadonlyMap<string, PublicPlayerPosition> = new Map(),
 ): StreetAnalysis {
   const opponentIds = activePlayerIds.filter(id => id !== botId)
 
@@ -65,6 +94,8 @@ export function analyzeStreetAction(
     opponentLines.set(id, {
       playerId: id,
       preflop: null,
+      position: playerPositions.get(id),
+      preflopRole: 'none',
       flop: null,
       turn: null,
       river: null,
@@ -73,6 +104,7 @@ export function analyzeStreetAction(
   }
 
   const currentPhase = phase === 'waiting' ? 'preflop' : phase as StreetAnalysis['street']
+  const streetAggression = createStreetAggression()
 
   let opponentShowedWeakness = false
   let opponentCheckRaised = false
@@ -109,6 +141,11 @@ export function analyzeStreetAction(
         : action
 
       if (aggressiveAction) {
+        const aggression = streetAggression[eventPhase]
+        if (aggression.aggressiveActionCount === 0) aggression.openingAggressor = event.playerId
+        aggression.aggressiveActionCount++
+        aggression.lastAggressor = event.playerId
+        aggression.orderedAggressors.push(event.playerId)
         const previousStreetAggressor = state.lastAggressor
         if (eventPhase === currentPhase) {
           if (event.playerId === botId && previousStreetAggressor === null) {
@@ -177,13 +214,23 @@ export function analyzeStreetAction(
       switch (eventPhase) {
         case 'preflop':
           if (aggressiveAction) {
+            const raiseDepth = streetAggression.preflop.aggressiveActionCount
+            line.preflopRole = raiseDepth === 1
+              ? 'open-raiser'
+              : raiseDepth === 2
+                ? 'three-bettor'
+                : 'four-bettor-plus'
             if (line.preflop === null || line.preflop === 'called') {
               line.preflop = 'raised'
             }
           } else if (lineAction === 'call') {
+            line.preflopRole = streetAggression.preflop.aggressiveActionCount === 0 ? 'limper' : 'caller'
             if (line.preflop === null) line.preflop = 'called'
+          } else if (lineAction === 'check') {
+            line.preflopRole = 'blind-checker'
           } else if (lineAction === 'fold') {
             line.preflop = 'folded'
+            line.preflopRole = 'folded'
           }
           break
         case 'flop':
@@ -209,6 +256,7 @@ export function analyzeStreetAction(
     preflopAggressor: preflopLastAggressor,
     preflopRaiseCount,
     streetAggressor: { preflop: preflopLastAggressor, flop: flopLastAggressor, turn: turnLastAggressor, river: riverLastAggressor },
+    streetAggression,
     iAmPreflopAggressor: preflopLastAggressor === botId,
     opponentLines,
     activeOpponents: opponentIds.length,
@@ -222,6 +270,16 @@ export function analyzeStreetAction(
     street: currentPhase,
     actionCountThisStreet,
   }
+}
+
+function createStreetAggression(): Record<BettingStreet, StreetAggressionState> {
+  const empty = (): StreetAggressionState => ({
+    aggressiveActionCount: 0,
+    openingAggressor: null,
+    lastAggressor: null,
+    orderedAggressors: [],
+  })
+  return { preflop: empty(), flop: empty(), turn: empty(), river: empty() }
 }
 
 function resolveLineAction(

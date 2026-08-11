@@ -304,9 +304,23 @@ Kalibrierungen, ersetzen deren Release-Gates aber nicht.
 
 Der Session-Debug-Export (JSON) enthält den kompletten Spielverlauf inkl. privater Bot-Karten und ist für die Offline-Analyse gedacht.
 
+Seit Schema v3 umfasst er die vollständige aktuell laufende Session, nicht nur
+die letzten fünf abgeschlossenen Hände. Jede Botentscheidung enthält die stabile
+ID des gewählten Kandidaten, sämtliche legalen Kandidaten mit ungekürzten
+Contributions, die unveränderte 85%-Auswahldiagnostik sowie objektive und
+skillabhängig wahrgenommene Hand-/Range-Werte. Die Street-Analyse exportiert
+Preflop-Rollen, Positionen und die echte Aggressionsfolge. Das JSON enthält
+private Botkarten und ist daher nicht zum öffentlichen Teilen bestimmt.
+
+Der Exportknopf in den Sessionstatistiken öffnet eine Auswahl:
+
+- PokerStars-Handhistory (`.txt`) für kompaktes Lesen und Teilen
+- vollständige Debug-Session (`.json`) für reproduzierbare Ursachenanalyse
+
 ## Bug-Reproduktion
 
-1. Session-Debug-Export erstellen (Button im Debug-Inspector)
+1. Vollständige Debug-Session über den Exportknopf der Sessionstatistiken oder
+   den Button im Debug-Inspector erstellen
 2. Replay der betroffenen Hand öffnen (↻-Button)
 3. Mit Step-Through und "Cards on" den Spielverlauf nachvollziehen
 4. Bot-Entscheidungsgründe im Debug-Inspector prüfen

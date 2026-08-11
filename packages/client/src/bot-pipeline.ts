@@ -3,7 +3,9 @@ import { applyPersonalityModifiers } from './bot-action-modifiers'
 import { scoreActions } from './bot-action-scoring'
 import {
   defaultRandom,
-  weightedChoice,
+  selectionDiagnostics,
+  weightedCandidateChoice,
+  type SelectionDiagnostics,
   type RandomSource,
 } from './bot-action-selection'
 import type { DecisionContext, ScoredAction } from './bot-decision-types'
@@ -17,6 +19,7 @@ import { isNlheRiverBetFoldOpening } from './bot-line-planning'
 export { applyPersonalityModifiers } from './bot-action-modifiers'
 export { scoreActions } from './bot-action-scoring'
 export { weightedChoice } from './bot-action-selection'
+export { selectionDiagnostics } from './bot-action-selection'
 export type { RandomSource } from './bot-action-selection'
 export { applySkillPerception } from './bot-skill-perception'
 export type { SkillPerceptionError } from './bot-skill-perception'
@@ -31,9 +34,16 @@ export type {
 
 export interface DecisionResult {
   action: PlayerAction
+  chosenCandidateId: string
   allActions: ScoredAction[]
   chosenUtility: number
+  selectionDiagnostics: SelectionDiagnostics
   perceptionErrors: SkillPerceptionError[]
+  perceivedHandAssessment: DecisionContext['handAssessment']
+  perceivedOpponentRanges: NonNullable<DecisionContext['opponentRanges']>
+  objectiveHandAssessment: DecisionContext['handAssessment']
+  objectiveOpponentRanges: NonNullable<DecisionContext['opponentRanges']>
+  objectiveStreetAnalysis: DecisionContext['streetAnalysis']
   stateUpdates: {
     raisedPreflop?: boolean
     lastAction?: 'bet' | 'check' | 'call' | 'fold' | null
@@ -53,15 +63,22 @@ export function decideAction(
     perception.errors,
   )
   const personalityActions = applyPersonalityModifiers(scoredActions, context)
-  const chosenAction = weightedChoice(personalityActions, rng)
-  const chosenScored = personalityActions.find(candidate => sameAction(candidate.action, chosenAction))
+  const chosenScored = weightedCandidateChoice(personalityActions, rng)
+  const chosenAction = chosenScored.action
   const stateUpdates = deriveStateUpdates(chosenAction, context)
 
   return {
     action: chosenAction,
+    chosenCandidateId: chosenScored.candidateId,
     allActions: personalityActions,
-    chosenUtility: chosenScored?.utility ?? 0,
+    chosenUtility: chosenScored.utility,
+    selectionDiagnostics: selectionDiagnostics(personalityActions),
     perceptionErrors: perception.errors,
+    perceivedHandAssessment: perception.context.handAssessment,
+    perceivedOpponentRanges: perception.context.opponentRanges ?? [],
+    objectiveHandAssessment: context.handAssessment,
+    objectiveOpponentRanges: context.opponentRanges ?? [],
+    objectiveStreetAnalysis: context.streetAnalysis,
     stateUpdates,
   }
 }
@@ -93,9 +110,4 @@ function deriveStateUpdates(
 
   updates.lastAction = action.type
   return updates
-}
-
-function sameAction(left: PlayerAction, right: PlayerAction): boolean {
-  return left.type === right.type
-    && (left.type !== 'raise' || (right.type === 'raise' && left.amount === right.amount))
 }

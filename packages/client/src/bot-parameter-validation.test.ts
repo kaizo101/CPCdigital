@@ -211,6 +211,17 @@ describe('validateBotParameters', () => {
     ]))
   })
 
+  it('detects contextual analysis gates that become available out of order', () => {
+    const candidate = cloneParams()
+    candidate.scoring.analysisSkillGates.positionAwareRanges = 60
+    candidate.scoring.analysisSkillGates.rangeBoardInteraction = 40
+    candidate.scoring.analysisSkillGates.pairedBoardHierarchy = 70
+
+    expect(validateBotParameters(candidate)).toContain(
+      'scoring.analysisSkillGates contextual analysis gates must be ascending',
+    )
+  })
+
   it('detects invalid PLO blocker factors', () => {
     const candidate = cloneParams()
     candidate.scoring.ploBlockerMods.nutThreshold = 0

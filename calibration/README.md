@@ -15,7 +15,7 @@ Die Berichte enthalten je nach Release:
 Der kurze Layer-2-Regressionslauf wird mit `npm run test:calibration`
 ausgeführt. Er simuliert deterministisch 300 Hände für alle 24 Kombinationen
 aus NLHE/PLO, vier Archetypen und drei Formaten und vergleicht sie mit dem
-[v0.8.1-Snapshot](v0.8.1-300-hand.json). Abweichungen von mehr als 2
+[v0.8.2-Foundation-Snapshot](v0.8.2-foundation-300-hand.json). Abweichungen von mehr als 2
 Prozentpunkten werden gemeldet, mehr als 5 Prozentpunkte sowie strukturelle
 Verstöße schlagen fehl. Für den nichtprozentualen Aggressionsfaktor gelten
 0,2 als Warn- und 0,5 als Fehlergrenze.
@@ -38,6 +38,7 @@ explizit begründet, statt still an einzelne Laufergebnisse angepasst zu werden.
 
 ## Berichte
 
+- [v0.8.2 — Foundation-Snapshot nach Kontext-, Auswahl- und Diagnostikumbau](v0.8.2-foundation-300-hand.json)
 - [v0.8.1 — bestandenes Release-Gate und finale Rohwerte](v0.8.1-release-gate.md)
 - [v0.8.0 — Format-Isolation und strukturelle NLHE-/PLO-Baseline](v0.8.0.md)
 - [v0.7.8 — NLHE-C-Bet-Metrik und Regression](v0.7.8.md)

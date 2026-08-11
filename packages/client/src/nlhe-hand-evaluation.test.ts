@@ -212,6 +212,47 @@ describe('NLHE bot hand assessment', () => {
     }
   })
 
+  it('preserves the real two-pair hierarchy on a single-paired board', () => {
+    const streets = [
+      [card('K', 'diamonds'), card('6', 'clubs'), card('6', 'diamonds')],
+      [card('K', 'diamonds'), card('6', 'clubs'), card('6', 'diamonds'), card('7', 'clubs')],
+      [card('K', 'diamonds'), card('6', 'clubs'), card('6', 'diamonds'), card('7', 'clubs'), card('J', 'hearts')],
+    ]
+
+    for (const community of streets) {
+      const aces = assessHand([card('A', 'clubs'), card('A', 'diamonds')], community)
+      const king = assessHand([card('K', 'clubs'), card('Q', 'clubs')], community)
+      const queens = assessHand([card('Q', 'spades'), card('Q', 'hearts')], community)
+      const deuces = assessHand([card('2', 'spades'), card('2', 'hearts')], community)
+      const trips = assessHand([card('6', 'spades'), card('5', 'spades')], community)
+
+      expect(aces).toMatchObject({ rank: 3, category: 'good', pairType: 'pocket' })
+      expect(king).toMatchObject({ rank: 3, category: 'medium', pairType: 'top', kickerStrength: 'top' })
+      expect(queens).toMatchObject({ rank: 3, category: 'marginal', pairType: 'pocket' })
+      expect(deuces).toMatchObject({ rank: 3, category: 'weak', pairType: 'pocket' })
+      expect(trips).toMatchObject({ rank: 4, category: 'medium' })
+      expect(aces.relativeStrength).toBeGreaterThan(king.relativeStrength)
+      expect(king.relativeStrength).toBeGreaterThan(queens.relativeStrength)
+      expect(queens.relativeStrength).toBeGreaterThan(deuces.relativeStrength)
+    }
+  })
+
+  it('exports objective made-hand provenance without changing the action category key', () => {
+    const assessment = assessHand(
+      [card('A', 'clubs'), card('A', 'diamonds')],
+      [card('K', 'diamonds'), card('6', 'clubs'), card('6', 'diamonds'), card('7', 'clubs'), card('J', 'hearts')],
+    )
+
+    expect(assessment.madeHandProfile).toMatchObject({
+      name: expect.stringContaining('Two Pair'),
+      usesHoleCards: 2,
+      playsBoard: false,
+      pairRanks: [14, 6],
+      kickerRanks: [13],
+      counterfeitStatus: 'none',
+    })
+  })
+
   it('carries the board-play downgrade through game state, bot context and action selection', () => {
     const decision = decideTagDecision(
       contextFor(

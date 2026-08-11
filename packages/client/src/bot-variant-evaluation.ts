@@ -9,6 +9,15 @@ export function isAtLeast(c: HandStrengthCategory, min: HandStrengthCategory): b
 export type NutPotential = 'nuts' | 'near-nuts' | 'second-nuts' | 'strong' | 'medium' | 'weak'
 export type BoardTexture = 'dry' | 'neutral' | 'wet'
 
+export interface MadeHandProfile {
+  name: string
+  usesHoleCards: number
+  playsBoard: boolean
+  pairRanks: number[]
+  kickerRanks: number[]
+  counterfeitStatus: 'none' | 'plays-board' | 'hole-pair-dominated'
+}
+
 export interface CategoryScoreTable {
   fold: Record<string, number>
   check: Record<string, number>
@@ -34,6 +43,8 @@ export interface VariantHandAssessment {
   equityCollapse: number
   boardGotWorse: boolean
   strength: number  // 0-100 numeric hand strength (replaces category for base scoring)
+  /** Exact objective made-hand details; optional for variants not yet migrated. */
+  madeHandProfile?: MadeHandProfile
 }
 
 export interface VariantEvaluation {

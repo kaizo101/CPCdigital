@@ -1,6 +1,7 @@
 import type { RandomSource } from './bot-action-selection'
 import type { DecisionContext, ScoredAction } from './bot-decision-types'
-import { hasAnalysisSkill } from './bot-skill-gates'
+import { analysisSkillWeight, hasAnalysisSkill } from './bot-skill-gates'
+import { rangeFromScore } from './bot-range-estimation'
 
 export type PerceptionField =
   | 'relative-strength'
@@ -17,6 +18,10 @@ export type PerceptionField =
   | 'opponent-vpip'
   | 'opponent-aggression'
   | 'opponent-fold-to-bet'
+  | 'paired-board-hierarchy'
+  | 'opponent-position-range'
+  | 'opponent-range-board'
+  | 'opponent-card-removal'
 
 export interface SkillPerceptionError {
   field: PerceptionField
@@ -49,6 +54,35 @@ export function applySkillPerception(
   }
   const metrics = { ...context.metrics }
   const plo = context.variantId === 'omaha-high'
+  const nlhe = context.variantId === 'texas-holdem'
+
+  if (nlhe && hand.rank === 3 && boardContainsPair(context.gameView.board)) {
+    const weight = analysisSkillWeight(skill, 'pairedBoardHierarchy')
+    hand.relativeStrength = blendedPerception(
+      errors,
+      'paired-board-hierarchy',
+      'Paired-board relative strength',
+      hand.relativeStrength,
+      50,
+      weight,
+    )
+    hand.showdownValue = blendedPerception(
+      errors,
+      'paired-board-hierarchy',
+      'Paired-board showdown value',
+      hand.showdownValue,
+      50,
+      weight,
+    )
+    hand.strength = blendedPerception(
+      errors,
+      'paired-board-hierarchy',
+      'Paired-board action strength',
+      hand.strength,
+      50,
+      weight,
+    )
+  }
 
   if (plo && !hasAnalysisSkill(skill, 'boardDynamics') && hand.equityCollapse > 0) {
     errors.push({
@@ -175,10 +209,80 @@ export function applySkillPerception(
     )
   }
 
+  const opponentRanges = context.opponentRanges?.map(range => {
+    const positionWeight = analysisSkillWeight(skill, 'positionAwareRanges')
+    const boardWeight = analysisSkillWeight(skill, 'rangeBoardInteraction')
+    const removalWeight = analysisSkillWeight(skill, 'cardRemoval')
+    const positionAdjustment = range.positionAdjustment * positionWeight
+    const roleAdjustment = range.roleAdjustment * positionWeight
+    let boardFitAdjustment = 0
+    let tripsRepresentation = range.tripsRepresentation
+
+    if (range.baseTripsRepresentation != null) {
+      const cardRemovalScale = 1 + ((range.cardRemovalScale ?? 1) - 1) * removalWeight
+      const multiwayScale = 1 + ((range.multiwayScale ?? 1) - 1) * removalWeight
+      tripsRepresentation = clamp(range.baseTripsRepresentation * cardRemovalScale * multiwayScale, 0, 1)
+      boardFitAdjustment = boardWeight === 0 ? 0 : (tripsRepresentation - 0.4) * 12 * boardWeight
+    }
+
+    recordPerception(errors, 'opponent-position-range', `Position/role range ${range.playerId}`,
+      range.positionAdjustment + range.roleAdjustment, positionAdjustment + roleAdjustment)
+    recordPerception(errors, 'opponent-range-board', `Board fit ${range.playerId}`,
+      range.boardFitAdjustment, boardFitAdjustment)
+    if (range.tripsRepresentation != null && tripsRepresentation != null) {
+      recordPerception(errors, 'opponent-card-removal', `Card removal ${range.playerId}`,
+        range.tripsRepresentation, tripsRepresentation)
+    }
+
+    const score = range.lineScore + positionAdjustment + roleAdjustment + boardFitAdjustment
+    return rangeFromScore({
+      ...range,
+      score,
+      positionAdjustment,
+      roleAdjustment,
+      boardFitAdjustment,
+      tripsRepresentation,
+    })
+  })
+
   return {
-    context: { ...context, handAssessment: hand, metrics, opponentStats },
+    context: { ...context, handAssessment: hand, metrics, opponentStats, opponentRanges },
     errors,
   }
+}
+
+function blendedPerception(
+  errors: SkillPerceptionError[],
+  field: PerceptionField,
+  label: string,
+  actual: number,
+  generic: number,
+  weight: number,
+): number {
+  const perceived = generic + (actual - generic) * weight
+  recordPerception(errors, field, label, actual, perceived)
+  return perceived
+}
+
+function recordPerception(
+  errors: SkillPerceptionError[],
+  field: PerceptionField,
+  label: string,
+  actual: number,
+  perceived: number,
+): void {
+  if (Math.abs(perceived - actual) > 0.000_001) {
+    errors.push({ field, label, actual, perceived })
+  }
+}
+
+function boardContainsPair(cards: readonly { rank: string }[]): boolean {
+  const ranks = new Set<string>()
+  for (const card of cards) {
+    if (ranks.has(card.rank)) return true
+    ranks.add(card.rank)
+  }
+  return false
 }
 
 export function addPerceptionReasons(

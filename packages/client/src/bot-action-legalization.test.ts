@@ -3,7 +3,7 @@ import type { PublicGameState } from '@cpc/shared'
 import { legalizeBotAction } from './bot-tag'
 
 describe('bot raise legalization', () => {
-  it('caps a normal raise below the stack when the corresponding all-in is ineligible', () => {
+  it('never converts a selected raise into a differently scored all-in', () => {
     const player = { id: 'bot', chips: 1_000 } as PublicGameState['players'][number]
     const state = {
       currentBet: 100,
@@ -21,9 +21,9 @@ describe('bot raise legalization', () => {
       },
     } as PublicGameState
 
-    expect(legalizeBotAction(state, player, { type: 'raise', amount: 1_000 }, false))
+    expect(legalizeBotAction(state, player, { type: 'raise', amount: 1_000 }))
       .toEqual({ type: 'raise', amount: 990 })
-    expect(legalizeBotAction(state, player, { type: 'raise', amount: 1_000 }, true))
+    expect(legalizeBotAction(state, player, { type: 'all-in' }))
       .toEqual({ type: 'all-in' })
   })
 })

@@ -17,6 +17,7 @@ describe('street-aware bot habits', () => {
   it('lets NLHE sticky-call influence decay while preserving separate PLO tuning', () => {
     const sticky = habitIdsToActiveHabits('sticky-test', ['sticky-postflop'])[0]
     const call: ScoredAction = {
+      candidateId: 'call',
       action: { type: 'call' },
       intent: 'bluff-catch',
       utility: 50,
@@ -68,6 +69,7 @@ describe('street-aware bot habits', () => {
       },
     } as unknown as DecisionContext
     const action = (type: 'check' | 'raise'): ScoredAction => ({
+      candidateId: type === 'raise' ? 'raise:100' : 'check',
       action: type === 'raise' ? { type, amount: 100 } : { type },
       intent: type === 'raise' ? 'bluff' : 'pot-control',
       utility: 50,
@@ -85,6 +87,7 @@ describe('street-aware bot habits', () => {
   it('does not barrel PLO, scary turns, multiway pots, or low-skill spots', () => {
     const habit = habitIdsToActiveHabits('barrel-isolation', ['turn-double-barrel'])[0]
     const raise: ScoredAction = {
+      candidateId: 'raise:100',
       action: { type: 'raise', amount: 100 },
       intent: 'semi-bluff',
       utility: 50,

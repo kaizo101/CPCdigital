@@ -230,6 +230,50 @@ describe('street analysis', () => {
     expect(analysis.opponentLines.get('bot-1')?.aggressivePotFractions.flop).toBe(0.75)
   })
 
+  it('retains public position, preflop role, and ordered postflop aggression depth', () => {
+    const positions = new Map([
+      ['utg', { positionsFromDealer: 3, category: 'early' as const }],
+      ['hero', { positionsFromDealer: 2, category: 'blinds' as const }],
+    ])
+    const history = makeHistory([
+      acted('utg', 'preflop', 'raise', 60),
+      acted('hero', 'preflop', 'call'),
+      acted('utg', 'flop', 'raise', 100),
+      acted('hero', 'flop', 'raise', 300),
+      acted('utg', 'flop', 'raise', 700),
+    ])
+
+    const analysis = analyzeStreetAction('hero', history, 'flop', ['hero', 'utg'], positions)
+    expect(analysis.opponentLines.get('utg')).toEqual(expect.objectContaining({
+      position: { positionsFromDealer: 3, category: 'early' },
+      preflopRole: 'open-raiser',
+    }))
+    expect(analysis.streetAggression?.flop).toEqual({
+      aggressiveActionCount: 3,
+      openingAggressor: 'utg',
+      lastAggressor: 'utg',
+      orderedAggressors: ['utg', 'hero', 'utg'],
+    })
+  })
+
+  it('distinguishes limpers, callers, three-bettors, and four-bettors', () => {
+    const history = makeHistory([
+      acted('limper', 'preflop', 'call'),
+      acted('opener', 'preflop', 'raise', 60),
+      acted('caller', 'preflop', 'call'),
+      acted('three', 'preflop', 'raise', 180),
+      acted('four', 'preflop', 'raise', 500),
+    ])
+    const ids = ['hero', 'limper', 'opener', 'caller', 'three', 'four']
+    const analysis = analyzeStreetAction('hero', history, 'flop', ids)
+
+    expect(analysis.opponentLines.get('limper')?.preflopRole).toBe('limper')
+    expect(analysis.opponentLines.get('opener')?.preflopRole).toBe('open-raiser')
+    expect(analysis.opponentLines.get('caller')?.preflopRole).toBe('caller')
+    expect(analysis.opponentLines.get('three')?.preflopRole).toBe('three-bettor')
+    expect(analysis.opponentLines.get('four')?.preflopRole).toBe('four-bettor-plus')
+  })
+
   it('does not treat a passive all-in call as aggression or sizing evidence', () => {
     const event = acted('bot-1', 'flop', 'all-in', 20)
     event.totalBet = 40

@@ -6,6 +6,39 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ## [Unreleased]
 
+### Added
+
+- **Vollständiger Entscheidungskontext**: Bots bewahren öffentliche Position,
+  Preflop-Rolle und die geordnete Aggressionsstufe jeder Street. C-Bet-Logik
+  greift nur beim ersten passenden Flop-Angriff; Opening-Bets werden nicht mehr
+  als Reraises behandelt.
+- **Skillabhängige Kontextwahrnehmung**: Paired-Board-Hierarchie,
+  positionsabhängige Ranges, Board-Interaktion und Card Removal werden ab ihren
+  jeweiligen Skill-Schwellen stetig eingeblendet. Die Wirkung ist an der
+  Schwelle exakt null und erreicht erst bei Skill 100 den objektiven Wert.
+- **NLHE-Paired-Board-Hierarchie**: Board-Play, Pocket-Pairs, Top Pair samt
+  Kicker und Trips werden auf einfach gepaarten Boards getrennt bewertet.
+  Gegnerische Trips-Repräsentation berücksichtigt Preflop-Rolle, Position,
+  eigene Karten und Multiway-Felder.
+- **Auswahl- und Exportdiagnostik v3**: Aktionskandidaten besitzen stabile IDs,
+  stackgroße Raises werden als genau ein All-in-Kandidat geführt und die
+  unveränderte 85%-Plausibilitätsgrenze wird mit Kandidatenzahl und Utility-Gap
+  sichtbar. Der vollständige Session-Debugexport enthält alle Entscheidungen,
+  Contributions sowie objektive und wahrgenommene Analysewerte; der normale
+  Export lässt klar zwischen Handhistory und Debug-JSON wählen.
+- **Kalibrierungs-Snapshot**: Der deterministische 300-Hand-Smoke erhält nach
+  den bewusst spielwirksamen Kontext- und Kandidatenänderungen eine eigene
+  0.8.2-Foundation-Baseline. Die 0.8.1-Datei bleibt unverändert als historischer
+  Vergleich erhalten; strukturelle Invarianten gelten weiterhin unverändert.
+
+### Changed
+
+- **C-Bet-Defense mit schwachem Made Hand**: Aggressive Bots dürfen gegen eine
+  C-Bet weiterhin Druck ausüben, erhalten aber nicht mehr denselben Raise-Schub
+  wie ein echter Draw. Im reproduzierten Alva-artigen Spot bleiben Call und
+  Raise innerhalb der bestehenden Auswahlstreuung, statt den Shove-Pfad
+  strukturell zu erzwingen.
+
 ## [0.8.1] — 2026-08-11
 
 ### Added

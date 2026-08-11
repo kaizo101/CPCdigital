@@ -3,6 +3,7 @@ import type { ActiveHabit } from './bot-habits'
 import type { PreflopStrategyAction } from './bot-category-scores'
 import type { DecisionMetrics } from './bot-decision-metrics'
 import type { StreetAnalysis } from './bot-street-analysis'
+import type { PerceivedOpponentRange } from './bot-range-estimation'
 import type { BotState, Position } from './bot-types'
 import type { BoardTexture, CategoryScoreTable, VariantHandAssessment } from './bot-variant-evaluation'
 
@@ -36,6 +37,8 @@ export interface ScoreContribution {
 }
 
 export interface ScoredAction {
+  /** Stable identity carried from scoring through selection, legalization, replay, and export. */
+  candidateId: string
   action: PlayerAction
   intent: ActionIntent
   utility: number
@@ -85,4 +88,6 @@ export interface DecisionContext {
   opponentStats?: { vpip: number; aggression: number; foldToBet: number; confidence: number }
   botHabits?: ActiveHabit[]
   streetAnalysis?: StreetAnalysis
+  /** Objective public-information range evidence; skill perception may simplify it before scoring. */
+  opponentRanges?: PerceivedOpponentRange[]
 }

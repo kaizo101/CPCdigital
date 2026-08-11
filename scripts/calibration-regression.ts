@@ -12,7 +12,7 @@ const HANDS_PER_FORMAT = 300
 const BASELINE_PATH = join(
   process.cwd(),
   'calibration',
-  'v0.8.1-300-hand.json',
+  'v0.8.2-foundation-300-hand.json',
 )
 const UPDATE_BASELINE = process.argv.includes('--update')
 

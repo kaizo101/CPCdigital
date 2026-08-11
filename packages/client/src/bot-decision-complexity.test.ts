@@ -3,7 +3,7 @@ import { PokerGame } from '@cpc/poker-engine'
 import type { Player, PlayerAction } from '@cpc/shared'
 import { createBotContext } from './bot-context'
 import { assessDecisionComplexity } from './bot-decision-complexity'
-import type { DecisionResult, ScoredAction } from './bot-pipeline'
+import { selectionDiagnostics, type DecisionResult, type ScoredAction } from './bot-pipeline'
 
 function currentContext() {
   const players: Player[] = ['bot', 'villain'].map((id, seatIndex) => ({
@@ -25,16 +25,25 @@ function currentContext() {
 
 function decision(action: PlayerAction, utilities: Array<[PlayerAction, number]>): DecisionResult {
   const allActions: ScoredAction[] = utilities.map(([candidateAction, utility]) => ({
+    candidateId: candidateAction.type === 'raise' ? `raise:${candidateAction.amount}` : candidateAction.type,
     action: candidateAction,
     intent: candidateAction.type === 'fold' ? 'fold' : 'value',
     utility,
     contributions: [],
   }))
+  const chosen = allActions.find(candidate => candidate.action.type === action.type)!
   return {
     action,
+    chosenCandidateId: chosen.candidateId,
     allActions,
-    chosenUtility: allActions.find(candidate => candidate.action.type === action.type)?.utility ?? 0,
+    chosenUtility: chosen.utility,
+    selectionDiagnostics: selectionDiagnostics(allActions),
     perceptionErrors: [],
+    perceivedHandAssessment: {} as DecisionResult['perceivedHandAssessment'],
+    perceivedOpponentRanges: [],
+    objectiveHandAssessment: {} as DecisionResult['objectiveHandAssessment'],
+    objectiveOpponentRanges: [],
+    objectiveStreetAnalysis: undefined,
     stateUpdates: {},
   }
 }

@@ -6,6 +6,7 @@ import type { DecisionContext } from './bot-decision-types'
 import { createBotState } from './bot-state'
 import { CALLING_STATION_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
 import { assessHand } from './nlhe-hand-evaluation'
+import { selectionDiagnostics } from './bot-action-selection'
 
 function makeCtx(overrides: Partial<DecisionContext> = {}): DecisionContext {
   return {
@@ -205,6 +206,66 @@ describe('river board-play discipline', () => {
     expect(callOverFold(boardPlay, 50)).toBeGreaterThan(callOverFold(boardPlay, 75))
     expect(callOverFold(boardPlay, 75)).toBeLessThan(callOverFold(kingKicker, 75))
     expect(callOverFold(kingKicker, 75)).toBeLessThan(callOverFold(fullHouse, 75))
+  })
+
+  it('recognizes pocket aces on K-6-6-7-J as a high-skill river value bet', () => {
+    const pairedBoard: Card[] = [
+      { rank: 'K', suit: 'diamonds' },
+      { rank: '6', suit: 'clubs' },
+      { rank: '6', suit: 'diamonds' },
+      { rank: '7', suit: 'clubs' },
+      { rank: 'J', suit: 'hearts' },
+    ]
+    const aces: [Card, Card] = [
+      { rank: 'A', suit: 'clubs' },
+      { rank: 'A', suit: 'diamonds' },
+    ]
+    const base = makeCtx()
+    const actions = scoreActions(makeCtx({
+      gameView: {
+        ...base.gameView,
+        myCards: aces,
+        board: pairedBoard,
+        pot: 100,
+        phase: 'river',
+      },
+      botState: {
+        ...base.botState,
+        skill: { level: 100, observation: 100 },
+      },
+      position: 'late',
+      handAssessment: assessHand(aces, pairedBoard),
+      legalActions: {
+        fold: false,
+        check: true,
+        callAmount: null,
+        raise: { minAmount: 40, maxAmount: 100 },
+        allInAmount: null,
+      },
+      streetAnalysis: {
+        preflopAggressor: 'bot',
+        preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'bot', flop: null, turn: null, river: null },
+        iAmPreflopAggressor: true,
+        opponentLines: new Map([['opp', {
+          playerId: 'opp',
+          preflop: 'called',
+          flop: null,
+          turn: null,
+          river: null,
+          aggressivePotFractions: { preflop: null, flop: null, turn: null, river: null },
+        }]]),
+        activeOpponents: 1,
+        opponentShowedWeakness: true,
+        opponentCheckRaised: false,
+        street: 'river',
+        actionCountThisStreet: 1,
+      },
+    }))
+    const check = actions.find(candidate => candidate.action.type === 'check')!
+    const raise = actions.find(candidate => candidate.action.type === 'raise')!
+
+    expect(raise.utility).toBeGreaterThan(check.utility)
   })
 })
 
@@ -517,6 +578,24 @@ describe('continuation-bet defense calibration', () => {
     expect(labels.some(label => label.includes('Defend C-Bet'))).toBe(false)
   })
 
+  it('does not reapply c-bet defense after the defender raised and the PFA reraised', () => {
+    const repeated = defenseContext('opp')
+    repeated.streetAnalysis = {
+      ...repeated.streetAnalysis!,
+      streetAggression: {
+        preflop: { aggressiveActionCount: 1, openingAggressor: 'opp', lastAggressor: 'opp', orderedAggressors: ['opp'] },
+        flop: { aggressiveActionCount: 3, openingAggressor: 'opp', lastAggressor: 'opp', orderedAggressors: ['opp', 'bot', 'opp'] },
+        turn: { aggressiveActionCount: 0, openingAggressor: null, lastAggressor: null, orderedAggressors: [] },
+        river: { aggressiveActionCount: 0, openingAggressor: null, lastAggressor: null, orderedAggressors: [] },
+      },
+    }
+
+    const raise = scoreActions(repeated).find(candidate => candidate.action.type === 'raise')!
+    const labels = raise.contributions.map(contribution => contribution.label)
+    expect(labels.some(label => label.includes('C-Bet'))).toBe(false)
+    expect(labels).toContain('Reraise spot (3-bet) — tighten range')
+  })
+
   it('mixes a bounded amount of heads-up dead-air defense only for loose NLHE archetypes', () => {
     const deadAir = defenseContext('opp')
     deadAir.handAssessment = {
@@ -551,6 +630,40 @@ describe('continuation-bet defense calibration', () => {
       item.label === 'C-Bet defense — continue with realizable equity'
       || item.label === 'Defend C-Bet with a raise — apply pressure back'
     ))).toBe(false)
+  })
+
+  it('keeps weak made-hand LAG defense mixed instead of forcing the raise candidate', () => {
+    const weakMade = defenseContext('opp')
+    weakMade.tableSize = 6
+    weakMade.handAssessment = {
+      ...weakMade.handAssessment,
+      category: 'weak',
+      made: true,
+      drawTypes: [],
+      cleanOuts: 0,
+    }
+    weakMade.botState = {
+      ...weakMade.botState,
+      personality: {
+        ...weakMade.botState.personality,
+        archetype: { name: 'LAG' } as any,
+        aggression: 80,
+      },
+    }
+
+    const actions = scoreActions(weakMade)
+    const diagnostics = selectionDiagnostics(actions)
+    const raise = actions.find(candidate => candidate.action.type === 'raise')!
+    const fullBase = params.scoring.cbetDefenseRaiseBase.nlhe.lag['six-max']
+    const raiseBonus = raise.contributions.find(contribution => (
+      contribution.label === 'Defend C-Bet with a raise — apply pressure back'
+    ))!
+
+    expect(raiseBonus.value).toBeLessThan(fullBase)
+    expect(
+      diagnostics.plausibleCandidateCount,
+      actions.map(candidate => `${candidate.candidateId}:${candidate.utility}`).join(', '),
+    ).toBeGreaterThanOrEqual(2)
   })
 })
 
@@ -604,6 +717,37 @@ describe('continuation-bet initiative calibration', () => {
     expect(discipline(9)?.value).toBe(-6)
     expect(discipline(6)).toBeUndefined()
     expect(discipline(2)).toBeUndefined()
+  })
+
+  it('does not grant the PFA another c-bet opportunity while facing a flop raise', () => {
+    const facingRaise = tagCbetContext(6)
+    facingRaise.metrics = {
+      ...facingRaise.metrics,
+      callAmount: 20,
+      toCallPotRatio: 0.2,
+      potOdds: 20 / 120,
+    }
+    facingRaise.legalActions = {
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 },
+      allInAmount: null,
+    }
+    facingRaise.streetAnalysis = {
+      ...facingRaise.streetAnalysis!,
+      streetAggressor: { preflop: 'bot', flop: 'opp', turn: null, river: null },
+      streetAggression: {
+        preflop: { aggressiveActionCount: 1, openingAggressor: 'bot', lastAggressor: 'bot', orderedAggressors: ['bot'] },
+        flop: { aggressiveActionCount: 2, openingAggressor: 'bot', lastAggressor: 'opp', orderedAggressors: ['bot', 'opp'] },
+        turn: { aggressiveActionCount: 0, openingAggressor: null, lastAggressor: null, orderedAggressors: [] },
+        river: { aggressiveActionCount: 0, openingAggressor: null, lastAggressor: null, orderedAggressors: [] },
+      },
+    }
+
+    const raise = scoreActions(facingRaise).find(candidate => candidate.action.type === 'raise')!
+    expect(raise.contributions.some(contribution => contribution.label === 'Continuation bet opportunity')).toBe(false)
+    expect(raise.contributions.some(contribution => contribution.label === 'Reraise spot (2-bet) — tighten range')).toBe(true)
   })
 })
 

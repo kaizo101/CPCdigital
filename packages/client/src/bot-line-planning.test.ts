@@ -20,7 +20,7 @@ function analysis(overrides: Partial<StreetAnalysis> = {}): StreetAnalysis {
 }
 
 function scoredAction(type: string): ScoredAction {
-  return { action: { type: type as any }, intent: 'fold', utility: 50, contributions: [] }
+  return { candidateId: type, action: { type: type as any }, intent: 'fold', utility: 50, contributions: [] }
 }
 
 describe('line commitment', () => {

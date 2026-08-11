@@ -27,7 +27,7 @@ describe('session debug record', () => {
     const parsed = JSON.parse(serializeSessionDebugRecord(record))
 
     expect(record.schema).toBe(SESSION_DEBUG_SCHEMA)
-    expect(record.schemaVersion).toBe(2)
+    expect(record.schemaVersion).toBe(3)
     expect(record.app).toEqual({ name: 'CPCdigital', version: '0.6.0' })
     expect(record.session.config).toEqual(expect.objectContaining({ maxPlayers: 5, seed: 'debug-record' }))
     expect(record.session.players).toHaveLength(5)
@@ -60,6 +60,25 @@ describe('session debug record', () => {
       .toBe('cpcdigital-session-debug_2026-07-19_20-15-30-123.json')
   })
 
+  it('keeps the beginning of a long current session instead of truncating to five hands', () => {
+    const runner = new LocalGameRunner()
+    runner.setupTable({
+      smallBlind: 10,
+      bigBlind: 20,
+      startingChips: 2000,
+      maxPlayers: 2,
+      seed: 'full-session-debug-record',
+    }, 1)
+    runner.startHand()
+
+    ;(runner as unknown as { currentHandNumber: number }).currentHandNumber = 7
+    const record = runner.createSessionDebugRecord('test', 'EUR')
+
+    expect(record.session.currentHandNumber).toBe(7)
+    expect(record.history.some(entry => entry.handNumber === 1)).toBe(true)
+    runner.cleanup()
+  })
+
   it('exports all four Omaha hole cards in compact bot decisions', () => {
     vi.useFakeTimers()
     const runner = new LocalGameRunner()
@@ -90,6 +109,14 @@ describe('session debug record', () => {
     expect(record.botDecisions[0].snapshot.hand.split(' ')).toHaveLength(4)
     expect(record.botDecisions[0].snapshot.potCommitment).toBeGreaterThanOrEqual(0)
     expect(record.botDecisions[0].snapshot.forcedAllInRatio).toBeGreaterThanOrEqual(0)
+    expect(record.botDecisions[0].chosenCandidateId).toBeTruthy()
+    expect(record.botDecisions[0].candidates).not.toHaveLength(0)
+    expect(record.botDecisions[0].candidates.some(candidate => (
+      candidate.candidateId === record.botDecisions[0].chosenCandidateId
+    ))).toBe(true)
+    expect(record.botDecisions[0].selectionDiagnostics.plausibleCandidateCount).toBeGreaterThanOrEqual(1)
+    expect(record.botDecisions[0].analysis.objectiveHandAssessment).toBeTruthy()
+    expect(record.botDecisions[0].analysis.perceivedHandAssessment).toBeTruthy()
     runner.cleanup()
   })
 })

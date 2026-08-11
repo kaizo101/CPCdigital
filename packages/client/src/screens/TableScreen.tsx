@@ -1,4 +1,4 @@
-import { Fragment, useEffect } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { Card, HandResult, Player, PlayerAction, PublicGameState, TableOptions } from '@cpc/shared'
 import { createRoot } from 'react-dom/client'
 import { SessionStats } from '../components/SessionStats'
@@ -117,6 +117,7 @@ export function TableScreen({
   onExportSessionLog: () => void
 }) {
   const showDebug = debugMode
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const layout = useResponsiveLayout()
   const runtime = getAppRuntime()
 
@@ -739,7 +740,7 @@ export function TableScreen({
             stats={sessionStats}
             playerNames={playerNames}
             heroId="hero"
-            onExport={onExportSessionLog}
+            onExport={() => setExportDialogOpen(true)}
             showDebug={showDebug}
             compact
           />
@@ -802,7 +803,7 @@ export function TableScreen({
             stats={sessionStats}
             playerNames={playerNames}
             heroId="hero"
-            onExport={onExportSessionLog}
+            onExport={() => setExportDialogOpen(true)}
             showDebug={showDebug}
           />
           {(() => {
@@ -941,6 +942,45 @@ export function TableScreen({
               : 'desktop'}
           />
         </div>
+        {exportDialogOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Session exportieren"
+            onClick={() => setExportDialogOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 220,
+              display: 'grid', placeItems: 'center',
+              background: 'rgba(0,0,0,0.72)', padding: 16,
+            }}
+          >
+            <div
+              onClick={event => event.stopPropagation()}
+              style={{
+                width: 'min(420px, calc(100vw - 32px))',
+                border: '1px solid rgba(255,255,255,0.16)', borderRadius: 12,
+                background: '#11151a', padding: 18, color: '#e5edf5',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.55)',
+              }}
+            >
+              <div style={{ fontSize: 17, fontWeight: 800 }}>Session exportieren</div>
+              <div style={{ marginTop: 5, color: '#94a3b8', fontSize: 12 }}>
+                Wähle das Format passend zum Zweck.
+              </div>
+              <div style={{ display: 'grid', gap: 9, marginTop: 15 }}>
+                <button type="button" onClick={() => { setExportDialogOpen(false); onExportSessionLog() }} style={actionButtonStyle('#334155')}>
+                  PokerStars-Handhistory (.txt)
+                </button>
+                <button type="button" onClick={() => { setExportDialogOpen(false); onExportDebugRecord() }} style={actionButtonStyle('#075985')}>
+                  Vollständige Debug-Session (.json)
+                </button>
+                <button type="button" onClick={() => setExportDialogOpen(false)} style={actionButtonStyle('#30343c')}>
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {showDebug && (
         <div className="debug-dock">
           <BotDebugInspector

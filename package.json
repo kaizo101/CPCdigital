@@ -2,7 +2,7 @@
   "name": "cpcdigital",
   "productName": "CPCdigital",
   "private": true,
-  "version": "0.8.1",
+  "version": "0.8.2-dev",
   "license": "AGPL-3.0-only",
   "type": "module",
   "engines": {

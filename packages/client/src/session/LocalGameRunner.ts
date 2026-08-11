@@ -63,14 +63,10 @@ function identityArchetypeId(botState: BotState): BotArchetypeId {
 }
 import type {
   CompactDecisionSnapshot,
-  SessionDebugRecord,
-  SessionDebugRecordV2,
+  SessionDebugRecordV3,
   SessionHistoryEvent,
 } from './session-debug-record'
-import {
-  SESSION_DEBUG_SCHEMA,
-  SESSION_DEBUG_SCHEMA_VERSION,
-} from './session-debug-record'
+import { SESSION_DEBUG_SCHEMA_VERSION_V3 } from './session-debug-record'
 import type { DisplayCurrency } from '../utils/format'
 import {
   appendHandReplayToArchive,
@@ -202,18 +198,13 @@ export class LocalGameRunner {
     return this.botDebugDecisions.slice(-50)
   }
 
-  createSessionDebugRecord(appVersion: string, displayCurrency: DisplayCurrency): SessionDebugRecordV2 {
+  createSessionDebugRecord(appVersion: string, displayCurrency: DisplayCurrency): SessionDebugRecordV3 {
     if (!this.sessionOptions || !this.sessionStartedAt) {
       throw new Error('Cannot export a debug record before a session has started')
     }
     const exportedAt = new Date().toISOString()
 
-    const gameActive = this.game && this.game.getPublicState().phase !== 'waiting'
-    const lastCompleteHand = gameActive ? Math.max(0, this.currentHandNumber - 1) : this.currentHandNumber
-    const firstIncludedHand = Math.max(1, lastCompleteHand - 4)
-
     const compactBotDecisions = this.botDebugDecisions
-      .filter(d => d.handNumber >= firstIncludedHand)
       .map(d => ({
         sequence: d.sequence,
         handNumber: d.handNumber,
@@ -231,7 +222,29 @@ export class LocalGameRunner {
           confidence: d.profile.mentalState.confidence,
         },
         action: d.decision.action,
+        chosenCandidateId: d.decision.chosenCandidateId,
         scores: flattenContributions(d.decision.allActions),
+        candidates: d.decision.allActions.map(candidate => ({
+          candidateId: candidate.candidateId,
+          action: candidate.action,
+          intent: candidate.intent,
+          utility: candidate.utility,
+          selectionEligible: candidate.selectionEligible !== false,
+          contributions: candidate.contributions,
+        })),
+        selectionDiagnostics: d.decision.selectionDiagnostics,
+        analysis: {
+          objectiveHandAssessment: d.decision.objectiveHandAssessment,
+          perceivedHandAssessment: d.decision.perceivedHandAssessment,
+          objectiveOpponentRanges: d.decision.objectiveOpponentRanges,
+          perceivedOpponentRanges: d.decision.perceivedOpponentRanges,
+          street: d.decision.objectiveStreetAnalysis ? {
+            preflopAggressor: d.decision.objectiveStreetAnalysis.preflopAggressor,
+            preflopRaiseCount: d.decision.objectiveStreetAnalysis.preflopRaiseCount,
+            streetAggression: d.decision.objectiveStreetAnalysis.streetAggression,
+            opponentLines: [...d.decision.objectiveStreetAnalysis.opponentLines.values()],
+          } : null,
+        },
         perceptionErrors: d.decision.perceptionErrors.map(e =>
           `${e.label}: ${typeof e.actual === 'number' ? e.actual.toFixed(1) : e.actual} → ${typeof e.perceived === 'number' ? e.perceived.toFixed(1) : e.perceived}`,
         ),
@@ -239,9 +252,9 @@ export class LocalGameRunner {
         timing: d.timing,
       }))
 
-    const record: SessionDebugRecordV2 = {
+    const record: SessionDebugRecordV3 = {
       schema: 'cpcdigital.session-debug',
-      schemaVersion: 2,
+      schemaVersion: SESSION_DEBUG_SCHEMA_VERSION_V3,
       app: { name: 'CPCdigital', version: appVersion },
       exportedAt,
       session: {
@@ -265,8 +278,8 @@ export class LocalGameRunner {
           rebuysRemaining: (identity.rebuyPolicy?.maxRebuys ?? 0) - (this.rebuyManager.rebuysUsed.get(playerId) ?? 0),
         },
       })),
-      history: this.sessionHistory.filter(h => h.handNumber >= firstIncludedHand),
-      decisionSnapshots: this.sessionDecisionSnapshots.filter(s => s.handNumber >= firstIncludedHand),
+      history: this.sessionHistory,
+      decisionSnapshots: this.sessionDecisionSnapshots,
       botDecisions: compactBotDecisions,
     }
     return structuredClone(record)
@@ -767,11 +780,16 @@ export class LocalGameRunner {
         playerId: d.playerId,
         action: d.decision.action.type === 'raise' ? `raise ${d.decision.action.amount}` : d.decision.action.type,
         handCategory: d.evaluation.handAssessment.category,
-        scores: d.decision.allActions.slice(0, 3).map(a => ({
+        handProfile: formatHandProfile(d),
+        chosenCandidateId: d.decision.chosenCandidateId,
+        scores: d.decision.allActions.map(a => ({
+          candidateId: a.candidateId,
           action: a.action.type === 'raise' ? `raise ${a.action.amount}` : a.action.type,
           utility: a.utility,
         })),
-        topContributions: (d.decision.allActions.find(a => a.action.type === d.decision.action.type)?.contributions ?? [])
+        topContributions: (d.decision.allActions.find(a => (
+          a.candidateId === d.decision.chosenCandidateId
+        ))?.contributions ?? [])
           .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
           .slice(0, 5)
           .map(c => `${c.label}: ${c.value > 0 ? '+' : ''}${c.value}`),
@@ -961,4 +979,30 @@ function flattenContributions(allActions: ScoredAction[]): string[] {
       .join(', ')
     return `[${actionLabel} u=${Math.round(action.utility)}] ${contribs}`
   })
+}
+
+function formatHandProfile(debug: BotDebugDecision): string {
+  const hand = debug.decision.perceivedHandAssessment
+  const chosen = debug.decision.allActions.find(candidate => (
+    candidate.candidateId === debug.decision.chosenCandidateId
+  ))
+  const nlhe = hand as typeof hand & {
+    pairType?: string
+    kickerStrength?: string
+  }
+  const drawNames: Record<string, string> = {
+    'open-ended-straight-draw': 'OESD',
+    gutshot: 'Gutshot',
+    'nut-flush-draw': 'Nut Flush Draw',
+    'flush-draw': 'Flush Draw',
+    'combo-draw': 'Combo Draw',
+  }
+  const parts: string[] = [hand.category]
+  if (hand.madeHandProfile?.name) parts.push(hand.madeHandProfile.name)
+  if (nlhe.pairType) parts.push(`${nlhe.pairType} pair`)
+  if (nlhe.kickerStrength) parts.push(`${nlhe.kickerStrength} kicker`)
+  for (const draw of hand.drawTypes) parts.push(drawNames[draw] ?? draw)
+  if (hand.cleanOuts > 0) parts.push(`${hand.cleanOuts} outs`)
+  if (chosen?.intent) parts.push(chosen.intent)
+  return parts.join(' · ')
 }

@@ -6,6 +6,7 @@ import type {
   VariantHandAssessment,
   HandStrengthCategory,
   VariantEvaluation,
+  MadeHandProfile,
 } from './bot-variant-evaluation'
 import { getNlheScores } from './bot-category-scores'
 import { cardsToHandPattern, getStartingHandPercentile, getPreflopSituation } from './preflop-ranges'
@@ -133,33 +134,160 @@ export function assessHand(
   const drawQuality = isRiver ? 0 : calculateDrawQuality(holeCards, communityCards)
 
   // Build assessment
+  const sharedPairTwoPairCategory = rank === 3 && hasSharedPair(communityCards, holeCards)
+    ? categorizeSharedPairTwoPair(holeCards, communityCards)
+    : null
+  const resolvedCategory = boardOnlyTwoPair ? 'weak' : sharedPairTwoPairCategory ?? category
+  const playsBoard = isRiver && !holdemHandImprovesBoard(holeCards, communityCards)
+  const madeHandProfile = buildMadeHandProfile(evalResult, holeCards, communityCards, playsBoard)
   const assessment: NlheHandAssessment = {
-    category,
+    category: resolvedCategory,
     rank,
     made: rank >= 2 && !boardOnlyTwoPair,
     relativeStrength: boardOnlyTwoPair
       ? 20
-      : calculateRelativeStrength(evalResult, communityCards, holeCards),
-    showdownValue: boardOnlyTwoPair ? 25 : calculateShowdownValue(rank),
+      : sharedPairTwoPairCategory
+        ? pairedBoardCategoryValue(sharedPairTwoPairCategory, 4)
+        : calculateRelativeStrength(evalResult, communityCards, holeCards),
+    showdownValue: boardOnlyTwoPair
+      ? 25
+      : sharedPairTwoPairCategory
+        ? pairedBoardCategoryValue(sharedPairTwoPairCategory, 0)
+        : calculateShowdownValue(rank),
     nutPotential: boardOnlyTwoPair
       ? 'weak'
       : calculateNutPotential(evalResult, communityCards, holeCards),
-    vulnerability: calculateVulnerability(evalResult, communityCards, holeCards),
+    vulnerability: sharedPairTwoPairCategory
+      ? pairedBoardVulnerability(sharedPairTwoPairCategory)
+      : calculateVulnerability(evalResult, communityCards, holeCards),
     drawQuality,
     cleanOuts: isRiver ? 0 : calculateCleanOuts(holeCards, communityCards, evalResult),
     blockerValue: calculateBlockerValue(holeCards, communityCards),
     drawTypes: isRiver ? [] : identifyDrawTypes(holeCards, communityCards, evalResult),
     equityCollapse: 0,
     boardGotWorse: boardGotMoreDangerous(communityCards),
-    strength: calculateHandStrength(category, drawQuality),
+    strength: calculateHandStrength(resolvedCategory, drawQuality),
+    madeHandProfile,
   }
 
   // Add pair type if applicable
   if ((rank === 2 || rank === 3) && !boardOnlyTwoPair) {
     assessment.pairType = determinePairType(holeCards, communityCards)
+    if (assessment.pairType !== 'pocket') {
+      assessment.kickerStrength = getKickerRank(holeCards, communityCards)
+    }
   }
 
   return assessment
+}
+
+function categorizeSharedPairTwoPair(
+  holeCards: [Card, Card],
+  communityCards: Card[],
+): HandStrengthCategory {
+  const boardCounts = countRanks(communityCards)
+  const pairedBoardRanks = new Set([...boardCounts.entries()]
+    .filter(([, count]) => count >= 2)
+    .map(([rank]) => rank))
+  const singletonRanks = communityCards
+    .map(card => rankValue(card.rank))
+    .filter(rank => !pairedBoardRanks.has(rank))
+  const highestSingleton = Math.max(0, ...singletonRanks)
+
+  if (holeCards[0].rank === holeCards[1].rank) {
+    const pocketRank = rankValue(holeCards[0].rank)
+    if (pocketRank > highestSingleton) return 'good'
+    if (pocketRank >= 10 && highestSingleton - pocketRank <= 2) return 'marginal'
+    return 'weak'
+  }
+
+  const matchedRanks = holeCards
+    .map(card => rankValue(card.rank))
+    .filter(rank => singletonRanks.includes(rank))
+  if (matchedRanks.length > 0) {
+    return Math.max(...matchedRanks) === highestSingleton ? 'medium' : 'marginal'
+  }
+
+  return 'marginal'
+}
+
+function pairedBoardCategoryValue(category: HandStrengthCategory, bonus: number): number {
+  const values: Partial<Record<HandStrengthCategory, number>> = {
+    good: 74,
+    medium: 62,
+    marginal: 46,
+    weak: 28,
+  }
+  return Math.min(100, (values[category] ?? 45) + bonus)
+}
+
+function pairedBoardVulnerability(category: HandStrengthCategory): number {
+  if (category === 'good') return 42
+  if (category === 'medium') return 55
+  if (category === 'marginal') return 68
+  return 78
+}
+
+function buildMadeHandProfile(
+  evalResult: EvalResult,
+  holeCards: [Card, Card],
+  communityCards: Card[],
+  playsBoard: boolean,
+): MadeHandProfile {
+  const holeKeys = new Set(holeCards.map(cardKey))
+  const bestKeys = evalResult.cards.map(normalizeSolverCard)
+  const usesHoleCards = bestKeys.filter(card => holeKeys.has(card)).length
+  const bestRanks = evalResult.cards.map(card => solverRankValue(card[0]))
+  const bestCounts = countNumbers(bestRanks)
+  const pairRanks = [...bestCounts.entries()]
+    .filter(([, count]) => count >= 2)
+    .map(([rank]) => rank)
+    .sort((left, right) => right - left)
+  const kickerRanks = [...bestCounts.entries()]
+    .filter(([, count]) => count === 1)
+    .map(([rank]) => rank)
+    .sort((left, right) => right - left)
+  const pocketPair = holeCards[0].rank === holeCards[1].rank
+  const boardHighestUnpaired = Math.max(0, ...communityCards
+    .map(card => rankValue(card.rank))
+    .filter(rank => (countRanks(communityCards).get(rank) ?? 0) === 1))
+  const pocketRank = pocketPair ? rankValue(holeCards[0].rank) : 0
+
+  return {
+    name: evalResult.name,
+    usesHoleCards,
+    playsBoard,
+    pairRanks,
+    kickerRanks,
+    counterfeitStatus: playsBoard
+      ? 'plays-board'
+      : pocketPair && evalResult.rank === 3 && pocketRank < boardHighestUnpaired
+        ? 'hole-pair-dominated'
+        : 'none',
+  }
+}
+
+function countRanks(cards: Card[]): Map<number, number> {
+  return countNumbers(cards.map(card => rankValue(card.rank)))
+}
+
+function countNumbers(values: number[]): Map<number, number> {
+  const counts = new Map<number, number>()
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
+  return counts
+}
+
+function cardKey(card: Card): string {
+  const suit = { clubs: 'c', diamonds: 'd', hearts: 'h', spades: 's' }[card.suit]
+  return `${card.rank}${suit}`
+}
+
+function normalizeSolverCard(card: string): string {
+  return `${card[0]}${card.at(-1)}`
+}
+
+function solverRankValue(rank: string): number {
+  return rankValue(rank as Card['rank'])
 }
 
 /** A river two-pair hand whose hole cards do not beat the shared board hand. */

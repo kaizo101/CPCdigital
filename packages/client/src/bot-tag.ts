@@ -8,7 +8,8 @@ import type { BotState, BotPersonality, Position, MentalEvent } from './bot-type
 import type { ActiveHabit } from './bot-habits'
 import type { DecisionContext } from './bot-pipeline'
 import { analyzeStreetAction } from './bot-street-analysis'
-import type { BotContext } from './bot-context'
+import { estimateOpponentRanges } from './bot-range-estimation'
+import { getPositionCategory, type BotContext } from './bot-context'
 import { deriveDecisionMetrics, type DecisionMetrics } from './bot-decision-metrics'
 import { params } from './bot-params'
 import type { VariantEvaluation, VariantHandAssessment } from './bot-variant-evaluation'
@@ -70,11 +71,27 @@ export function decideBotDecision(
   const { handAssessment, boardTexture, preferredRaiseTo, categoryScores } = evaluation
   const metrics = deriveDecisionMetrics(bettingContext, state.bigBlind)
 
+  const playersInHand = state.players
+    .filter(player => player.status !== 'waiting')
+    .sort((left, right) => left.seatIndex - right.seatIndex)
+  const dealerId = state.players[state.dealerIndex]?.id
+  const dealerPositionIndex = playersInHand.findIndex(player => player.id === dealerId)
+  const playerPositions = new Map(playersInHand.map((player, index) => {
+    const positionsFromDealer = dealerPositionIndex < 0
+      ? 0
+      : (index - dealerPositionIndex + playersInHand.length) % playersInHand.length
+    return [player.id, {
+      positionsFromDealer,
+      category: getPositionCategory(positionsFromDealer, playersInHand.length),
+    }] as const
+  }))
+
   const streetAnalysis = analyzeStreetAction(
     botId,
     botContext.actionHistory,
     state.phase,
     state.players.filter(p => p.status !== 'folded' && p.status !== 'waiting').map(p => p.id),
+    playerPositions,
   )
 
   // Prefer the opponent whose aggression created the current decision. In
@@ -175,6 +192,12 @@ export function decideBotDecision(
     opponentStats,
     botHabits,
     streetAnalysis,
+    opponentRanges: estimateOpponentRanges(streetAnalysis, {
+      variantId: evaluation.variantId,
+      board: state.communityCards,
+      ownCards: holeCards,
+      activeOpponents: streetAnalysis.activeOpponents,
+    }),
   }
 
   const result = pipelineDecide(context, { random })
@@ -183,10 +206,7 @@ export function decideBotDecision(
   // Apply state updates from the decision (separated for purity)
   applyDecisionMemory(botState.memory, result.stateUpdates)
 
-  const aggressiveAllInEligible = result.allActions
-    .find(candidate => candidate.action.type === 'all-in')
-    ?.selectionEligible !== false
-  const legalAction = legalizeBotAction(state, me, action, aggressiveAllInEligible)
+  const legalAction = legalizeBotAction(state, me, action)
   return {
     action: legalAction,
     decisionResult: { ...result, action: legalAction },
@@ -250,7 +270,6 @@ export function legalizeBotAction(
   state: PublicGameState,
   player: PublicGameState['players'][number],
   action: PlayerAction,
-  aggressiveAllInEligible: boolean = true,
 ): PlayerAction {
   const bettingContext = state.bettingContext
   if (!bettingContext || bettingContext.playerId !== player.id) {
@@ -268,16 +287,14 @@ export function legalizeBotAction(
   if (action.type === 'call') return legal.callAmount != null ? action : passiveAction
   if (action.type === 'all-in') return legal.allInAmount != null ? action : passiveAction
 
-  const aggressiveAllIn = legal.allInAmount != null && legal.allInAmount > state.currentBet
   if (!legal.raise) {
-    return aggressiveAllIn && aggressiveAllInEligible ? { type: 'all-in' } : passiveAction
+    return passiveAction
   }
 
   const betStep = calculateChipUnit(state.smallBlind, state.bigBlind)
   const snappedAmount = roundToCents(Math.round(action.amount / betStep) * betStep)
   const raiseAmount = Math.max(legal.raise.minAmount, snappedAmount)
   if (raiseAmount >= legal.raise.maxAmount) {
-    if (legal.allInAmount != null && aggressiveAllInEligible) return { type: 'all-in' }
     const maxNonAllIn = roundToCents(legal.raise.maxAmount - betStep)
     return maxNonAllIn >= legal.raise.minAmount
       ? { type: 'raise', amount: maxNonAllIn }

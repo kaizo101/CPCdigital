@@ -183,7 +183,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
     if (withDecisions && replay.botDecisions?.length) {
       text += '\n\n=== BOT DECISIONS ===\n'
       for (const d of replay.botDecisions) {
-        text += `\n${d.playerId} (${d.handCategory}): ${d.action}\n`
+        text += `\n${d.playerId} (${d.handProfile ?? d.handCategory}): ${d.action}\n`
         text += `  Scores: ${d.scores.map(s => `${s.action}:${s.utility.toFixed(0)}`).join(' | ')}\n`
         text += `  Beiträge: ${d.topContributions.join(', ')}\n`
       }
@@ -199,7 +199,7 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
       if (withDecisions && r.botDecisions?.length) {
         text += '\n--- Bot Decisions ---\n'
         for (const d of r.botDecisions) {
-          text += `${d.playerId} (${d.handCategory}): ${d.action} | ${d.topContributions.slice(0, 3).join(' | ')}\n`
+          text += `${d.playerId} (${d.handProfile ?? d.handCategory}): ${d.action} | ${d.topContributions.slice(0, 3).join(' | ')}\n`
         }
       }
       text += '\n'

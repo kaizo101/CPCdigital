@@ -78,9 +78,9 @@ function makeContext(
 
 function makeActions(legalActions: LegalActions): ScoredAction[] {
   const actions: ScoredAction[] = []
-  if (legalActions.fold) actions.push({ action: { type: 'fold' }, intent: 'fold', utility: 50, contributions: [] })
-  if (legalActions.callAmount != null) actions.push({ action: { type: 'call' }, intent: 'bluff-catch', utility: 50, contributions: [] })
-  if (legalActions.raise) actions.push({ action: { type: 'raise', amount: legalActions.raise.minAmount }, intent: 'value', utility: 50, contributions: [] })
+  if (legalActions.fold) actions.push({ candidateId: 'fold', action: { type: 'fold' }, intent: 'fold', utility: 50, contributions: [] })
+  if (legalActions.callAmount != null) actions.push({ candidateId: 'call', action: { type: 'call' }, intent: 'bluff-catch', utility: 50, contributions: [] })
+  if (legalActions.raise) actions.push({ candidateId: `raise:${legalActions.raise.minAmount}`, action: { type: 'raise', amount: legalActions.raise.minAmount }, intent: 'value', utility: 50, contributions: [] })
   return actions
 }
 
@@ -270,7 +270,7 @@ describe('archetype-specific mental state modifiers', () => {
     })
     const pLO = { ...nLHE, variantId: 'omaha-high' as const }
 
-    const raise: ScoredAction = { action: { type: 'raise', amount: 100 }, intent: 'value', utility: 50, contributions: [] }
+    const raise: ScoredAction = { candidateId: 'raise:100', action: { type: 'raise', amount: 100 }, intent: 'value', utility: 50, contributions: [] }
 
     const nlheResult = applyPersonalityModifiers([raise], nLHE)
     const ploResult = applyPersonalityModifiers([raise], pLO)

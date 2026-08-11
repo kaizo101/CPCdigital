@@ -510,6 +510,18 @@ export function validateBotParameters(candidate: BotParams = params): string[] {
   if (orderedGates.some((value, index) => index > 0 && value < orderedGates[index - 1])) {
     violations.push('scoring.analysisSkillGates must be ascending by analysis depth')
   }
+  const contextualGates = [
+    gates.aggressionDepth,
+    gates.positionAwareRanges,
+    gates.rangeBoardInteraction,
+    gates.cardRemoval,
+  ]
+  if (
+    gates.pairedBoardHierarchy > gates.positionAwareRanges
+    || contextualGates.some((value, index) => index > 0 && value < contextualGates[index - 1])
+  ) {
+    violations.push('scoring.analysisSkillGates contextual analysis gates must be ascending')
+  }
 
   const wrap = candidate.scoring.ploWrapQualityMods
   if (

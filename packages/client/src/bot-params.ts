@@ -226,10 +226,15 @@ export interface ScoringParams {
     freerollMinCleanOuts: number
   }
   analysisSkillGates: {
+    aggressionDepth: number
+    pairedBoardHierarchy: number
     boardDynamics: number
+    positionAwareRanges: number
+    rangeBoardInteraction: number
     riverDiscipline: number
     nutPotential: number
     freeroll: number
+    cardRemoval: number
     blocker: number
     wrapDominance: number
   }
@@ -797,10 +802,15 @@ export const DEFAULT_PARAMS: BotParams = {
       freerollMinCleanOuts: 4,
     },
     analysisSkillGates: {
+      aggressionDepth: 30,
+      pairedBoardHierarchy: 30,
       boardDynamics: 30,
+      positionAwareRanges: 40,
+      rangeBoardInteraction: 50,
       riverDiscipline: 40,
       nutPotential: 50,
       freeroll: 60,
+      cardRemoval: 65,
       blocker: 65,
       wrapDominance: 70,
     },

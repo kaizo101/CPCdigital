@@ -13,11 +13,11 @@ import type {
 import { isAtLeast } from './bot-variant-evaluation'
 import { estimateOpponentRanges, rangeStrengthModifier } from './bot-range-estimation'
 import { getSizingTell } from './bot-reads'
-import { roundToCents } from './utils/format'
+import { calculateChipUnit, roundToCents } from './utils/format'
 import { params } from './bot-params'
 import { resolveTableFormat } from './bot-table-format'
 import { getPloSprAdjustments, type PloSprAction } from './plo-spr-strategy'
-import { hasAnalysisSkill } from './bot-skill-gates'
+import { analysisSkillWeight, hasAnalysisSkill } from './bot-skill-gates'
 import { cardsToHandPattern } from './preflop-ranges'
 import {
   calculateForcedAllInSeverity,
@@ -32,7 +32,7 @@ export function scoreActions(context: DecisionContext): ScoredAction[] {
   if (legal.check) actions.push(scoreCheck(context))
   if (legal.fold) actions.push(scoreFold(context))
   if (legal.callAmount != null) actions.push(scoreCall(context))
-  if (legal.raise) actions.push(scoreRaise(context))
+  if (legal.raise && !raiseCanonicalizesToAllIn(context)) actions.push(scoreRaise(context))
   if (legal.allInAmount != null) actions.push(scoreAllIn(context))
 
   return actions
@@ -98,7 +98,13 @@ function scoreCheck(context: DecisionContext): ScoredAction {
     contributions.push(factor('hand-strength', 'River check in position misses value', -20))
   }
 
-  if (analysis && gameView.phase === 'flop' && analysis.iAmPreflopAggressor) {
+  if (
+    analysis
+    && gameView.phase === 'flop'
+    && analysis.iAmPreflopAggressor
+    && currentStreetAggressionCount(context) === 0
+    && context.metrics.callAmount <= 0
+  ) {
     if (hand.category !== 'premium' && hand.category !== 'strong') {
       contributions.push(factor('position', 'Check as PFA on flop — c-bet preferred', -30))
     }
@@ -244,7 +250,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
   const passiveAllIn = allInAmount <= gameView.currentBet
   if (passiveAllIn) {
     const call = scoreCall(context)
-    return { ...call, action: { type: 'all-in' } }
+    return { ...call, candidateId: 'all-in:passive-call', action: { type: 'all-in' } }
   }
 
   const riskFactors = aggressiveAllInRiskFactors(context)
@@ -1036,30 +1042,32 @@ function preflopStrategyFactors(
 }
 
 function calculateRaiseTo(context: DecisionContext): number {
-  if (context.preferredRaiseTo != null) return roundToCents(context.preferredRaiseTo)
-  const sa = context.streetAnalysis
-  return roundToCents(calculateContextualRaiseTo(
-    context.metrics,
-    {
-      category: context.handAssessment.category,
-      hasDraw: context.handAssessment.drawTypes.length > 0,
-      boardGotWorse: context.handAssessment.boardGotWorse,
-      equityCollapse: context.handAssessment.equityCollapse,
-    },
-    context.boardTexture,
-    context.position,
-    sa ? {
-      iAmPreflopAggressor: sa.iAmPreflopAggressor,
-      activeOpponents: sa.activeOpponents,
-      opponentShowedWeakness: sa.opponentShowedWeakness,
-      opponentCheckRaised: sa.opponentCheckRaised,
-    } : undefined,
-    context.botState.skill.level,
-    {
-      phase: context.gameView.phase,
-      preflopRaiseCount: context.streetAnalysis?.preflopRaiseCount,
-    },
-  ))
+  const preferred = context.preferredRaiseTo != null
+    ? roundToCents(context.preferredRaiseTo)
+    : roundToCents(calculateContextualRaiseTo(
+        context.metrics,
+        {
+          category: context.handAssessment.category,
+          hasDraw: context.handAssessment.drawTypes.length > 0,
+          boardGotWorse: context.handAssessment.boardGotWorse,
+          equityCollapse: context.handAssessment.equityCollapse,
+        },
+        context.boardTexture,
+        context.position,
+        context.streetAnalysis ? {
+          iAmPreflopAggressor: context.streetAnalysis.iAmPreflopAggressor,
+          activeOpponents: context.streetAnalysis.activeOpponents,
+          opponentShowedWeakness: context.streetAnalysis.opponentShowedWeakness,
+          opponentCheckRaised: context.streetAnalysis.opponentCheckRaised,
+        } : undefined,
+        context.botState.skill.level,
+        {
+          phase: context.gameView.phase,
+          preflopRaiseCount: context.streetAnalysis?.preflopRaiseCount,
+        },
+      ))
+  const step = calculateChipUnit(context.gameView.smallBlind, context.gameView.bigBlind)
+  return roundToCents(Math.round(preferred / step) * step)
 }
 
 function buildAction(
@@ -1072,7 +1080,18 @@ function buildAction(
   if (utility !== rawUtility) {
     contributions.push(factor('base', 'Utility cap', utility - rawUtility))
   }
-  return { action, intent, utility, contributions }
+  return { candidateId: candidateIdForAction(action), action, intent, utility, contributions }
+}
+
+function candidateIdForAction(action: PlayerAction): string {
+  return action.type === 'raise' ? `raise:${action.amount}` : action.type
+}
+
+function raiseCanonicalizesToAllIn(context: DecisionContext): boolean {
+  const raise = context.legalActions.raise
+  const allInAmount = context.legalActions.allInAmount
+  if (!raise || allInAmount == null || allInAmount <= context.gameView.currentBet) return false
+  return calculateRaiseTo(context) >= raise.maxAmount
 }
 
 function baseContribution(): ScoreContribution {
@@ -1120,7 +1139,12 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
   const { gameView } = context
   const hand = context.handAssessment
 
-  if (gameView.phase === 'flop' && analysis.iAmPreflopAggressor) {
+  if (
+    gameView.phase === 'flop'
+    && analysis.iAmPreflopAggressor
+    && currentStreetAggressionCount(context) === 0
+    && context.metrics.callAmount <= 0
+  ) {
     result.push(factor('position', 'Continuation bet opportunity', Math.round(params.scoring.streetInitiative.cbetOpportunity * skillFactor)))
     if (hand.category === 'air' && context.boardTexture === 'dry') {
       result.push(factor('position', 'Bluff C-Bet on dry board as PFA', Math.round(15 * skillFactor)))
@@ -1164,7 +1188,7 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
   }
 
   const cbetRaiseCandidateScale = isFacingContinuationBet(context)
-    ? cbetDefenseCandidateScale(context, true)
+    ? cbetDefenseRaiseCandidateScale(context)
     : 0
   if (cbetRaiseCandidateScale > 0) {
     const riskTolerance = context.botState.personality.riskTolerance
@@ -1206,9 +1230,11 @@ function streetInitiativeFactors(context: DecisionContext): ScoreContribution[] 
   }
 
   const reraiseLevel = detectReraiseLevel(context)
-  if (reraiseLevel >= 1 && skillFactor >= 0.3) {
+  const aggressionDepthWeight = analysisSkillWeight(skill, 'aggressionDepth')
+  if (reraiseLevel >= 1 && aggressionDepthWeight > 0) {
     result.push(factor('position', `Reraise spot (${reraiseLevel + 1}-bet) — tighten range`,
-      params.scoring.streetInitiative.reraiseBase + reraiseLevel * params.scoring.streetInitiative.reraisePerLevel))
+      (params.scoring.streetInitiative.reraiseBase + reraiseLevel * params.scoring.streetInitiative.reraisePerLevel)
+        * aggressionDepthWeight))
   }
 
   return result
@@ -1436,7 +1462,7 @@ function rangeBasedFactors(
   const analysis = context.streetAnalysis
   if (!analysis) return []
 
-  const ranges = estimateOpponentRanges(analysis)
+  const ranges = context.opponentRanges ?? estimateOpponentRanges(analysis)
   if (ranges.length === 0) return []
 
   const result: ScoreContribution[] = []
@@ -1612,12 +1638,21 @@ function detectReraiseLevel(context: DecisionContext): number {
   if (context.gameView.phase === 'preflop') return analysis.preflopRaiseCount
 
   const phase = context.gameView.phase as 'flop' | 'turn' | 'river'
-  const streetAggressor = analysis.streetAggressor[phase]
+  const aggression = analysis.streetAggression?.[phase]
+  const streetAggressor = aggression?.lastAggressor ?? analysis.streetAggressor[phase]
   if (!streetAggressor) return 0
 
   if (streetAggressor === context.botId) return 0
 
-  return 1
+  return Math.max(0, (aggression?.aggressiveActionCount ?? 1) - 1)
+}
+
+function currentStreetAggressionCount(context: DecisionContext): number {
+  const analysis = context.streetAnalysis
+  if (!analysis) return 0
+  const phase = context.gameView.phase
+  return analysis.streetAggression?.[phase]?.aggressiveActionCount
+    ?? (analysis.streetAggressor[phase] === null ? 0 : 1)
 }
 
 function multiwayFactors(
@@ -1864,6 +1899,16 @@ function cbetDefenseCandidateScale(context: DecisionContext, allowBlockerAir: bo
     : 0
 }
 
+function cbetDefenseRaiseCandidateScale(context: DecisionContext): number {
+  const hand = context.handAssessment
+  if (hand.drawTypes.length > 0) return 1
+  if (hand.category === 'air') return cbetDefenseCandidateScale(context, true)
+  if (hand.category === 'weak') return hand.made ? 0.55 : 0.65
+  if (hand.category === 'marginal') return 0.7
+  if (hand.category === 'medium') return 0.6
+  return 0
+}
+
 function isFacingContinuationBet(context: DecisionContext): boolean {
   const analysis = context.streetAnalysis
   if (
@@ -1874,7 +1919,14 @@ function isFacingContinuationBet(context: DecisionContext): boolean {
   ) return false
 
   const preflopAggressor = analysis.streetAggressor.preflop
-  return preflopAggressor !== null && analysis.streetAggressor.flop === preflopAggressor
+  const flopAggression = analysis.streetAggression?.flop
+  if (!flopAggression) {
+    return preflopAggressor !== null && analysis.streetAggressor.flop === preflopAggressor
+  }
+  return preflopAggressor !== null
+    && flopAggression.aggressiveActionCount === 1
+    && flopAggression.openingAggressor === preflopAggressor
+    && flopAggression.lastAggressor === preflopAggressor
 }
 
 function scoringArchetypeId(context: DecisionContext): 'tag' | 'nit' | 'lag' | 'calling-station' {

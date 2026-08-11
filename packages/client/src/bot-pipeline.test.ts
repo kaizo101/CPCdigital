@@ -7,7 +7,9 @@ import { applySkillPerception } from './bot-skill-perception'
 import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
 import { getNlheScores, NLHE_CATEGORY_SCORES } from './bot-category-scores'
 import type { OpponentLine, StreetAnalysis } from './bot-street-analysis'
+import { estimateRangeFromLine } from './bot-range-estimation'
 import { params } from './bot-params'
+import { assessHand } from './nlhe-hand-evaluation'
 
 const cards: [Card, Card] = [
   { rank: 'A', suit: 'spades' },
@@ -1071,6 +1073,35 @@ describe('bot utility candidates', () => {
     expect(result.action.type).not.toBe('all-in')
   })
 
+  it('canonicalizes a stack-sized raise into the single explicitly scored all-in candidate', () => {
+    const decisionContext = context({
+      fold: true,
+      check: false,
+      callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 100 },
+      allInAmount: 100,
+    }, {
+      playerStack: 100,
+      effectiveStack: 100,
+      spr: 0.7,
+    })
+    decisionContext.preferredRaiseTo = 100
+    decisionContext.gameView.currentBet = 20
+    decisionContext.gameView.maxRaiseTo = 100
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'weak',
+      made: true,
+      drawTypes: [],
+    }
+
+    const result = decideAction(decisionContext, { random: () => 0.99 })
+    expect(result.allActions.filter(candidate => candidate.action.type === 'raise')).toHaveLength(0)
+    expect(result.allActions.filter(candidate => candidate.action.type === 'all-in')).toHaveLength(1)
+    expect(result.allActions.find(candidate => candidate.candidateId === result.chosenCandidateId)).toBeTruthy()
+    if (result.action.type === 'all-in') expect(result.chosenCandidateId).toBe('all-in')
+  })
+
   it('records an aggressive all-in as a bet and a short all-in as a call', () => {
     const aggressiveActions: LegalActions = {
       fold: false,
@@ -1902,6 +1933,85 @@ describe('bot utility candidates', () => {
     const actual = lowSkill.handAssessment.relativeStrength
 
     expect(Math.abs(high - actual)).toBeLessThan(Math.abs(low - actual))
+  })
+
+  it('reveals position, board fit, and card removal continuously at their exact skill boundaries', () => {
+    const spot = (skill: number) => {
+      const result = context({ fold: false, check: true, callAmount: null, raise: null, allInAmount: null })
+      result.botState.skill.level = skill
+      result.gameView.board = [
+        { rank: 'K', suit: 'diamonds' },
+        { rank: '6', suit: 'clubs' },
+        { rank: '6', suit: 'diamonds' },
+      ]
+      result.gameView.myCards = [
+        { rank: '6', suit: 'hearts' },
+        { rank: 'A', suit: 'clubs' },
+      ]
+      result.opponentRanges = [estimateRangeFromLine({
+        playerId: 'villain',
+        preflop: 'raised',
+        preflopRole: 'open-raiser',
+        position: { positionsFromDealer: 3, category: 'early' },
+        flop: null,
+        turn: null,
+        river: null,
+        aggressivePotFractions: { preflop: null, flop: null, turn: null, river: null },
+      }, {
+        variantId: 'texas-holdem',
+        board: result.gameView.board,
+        ownCards: result.gameView.myCards,
+        activeOpponents: 1,
+      })]
+      return applySkillPerception(result, { random: () => 0.5 }).context.opponentRanges![0]
+    }
+
+    const positionAt = spot(40)
+    const positionAbove = spot(41)
+    expect(positionAt.positionAdjustment).toBe(0)
+    expect(positionAbove.positionAdjustment).toBeGreaterThan(0)
+
+    const boardAt = spot(50)
+    const boardAbove = spot(51)
+    expect(boardAt.boardFitAdjustment).toBe(0)
+    expect(Math.abs(boardAbove.boardFitAdjustment)).toBeGreaterThan(0)
+
+    const removalAt = spot(65)
+    const removalAbove = spot(66)
+    expect(removalAt.tripsRepresentation).toBe(removalAt.baseTripsRepresentation)
+    expect(removalAbove.tripsRepresentation).toBeLessThan(removalAbove.baseTripsRepresentation!)
+  })
+
+  it('adds no paired-board strategic weight at the exact gate and then increases continuously', () => {
+    const cards: [Card, Card] = [
+      { rank: 'A', suit: 'clubs' },
+      { rank: 'A', suit: 'diamonds' },
+    ]
+    const board: Card[] = [
+      { rank: 'K', suit: 'diamonds' },
+      { rank: '6', suit: 'clubs' },
+      { rank: '6', suit: 'diamonds' },
+      { rank: '7', suit: 'clubs' },
+      { rank: 'J', suit: 'hearts' },
+    ]
+    const spot = (skill: number) => {
+      const result = context({ fold: false, check: true, callAmount: null, raise: null, allInAmount: null })
+      result.botState.skill.level = skill
+      result.gameView.board = board
+      result.gameView.myCards = cards
+      result.handAssessment = assessHand(cards, board)
+      return applySkillPerception(result, { random: () => 0.25 }).context.handAssessment
+    }
+
+    const atGate = spot(30)
+    const justAbove = spot(31)
+    const perfect = spot(100)
+    expect(atGate.relativeStrength).toBe(50)
+    expect(atGate.showdownValue).toBe(50)
+    expect(atGate.strength).toBe(50)
+    expect(justAbove.relativeStrength).toBeGreaterThan(atGate.relativeStrength)
+    expect(justAbove.relativeStrength).toBeLessThan(perfect.relativeStrength)
+    expect(perfect).toEqual(assessHand(cards, board))
   })
 
   it('gates advanced PLO analysis while preserving the raw out-count signal', () => {

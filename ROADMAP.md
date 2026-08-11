@@ -884,6 +884,33 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 glaubwürdige emotionale Reaktionen — ohne in Solver-Bots oder berechenbare
 Muster zu verfallen.
 
+### Entscheidungsgrundlage & Diagnose
+
+- [x] objektive Hand-, Board-, Positions- und Gegnerinformationen getrennt von
+  der skillabhängig wahrgenommenen Sicht bis zur Auswahl und Diagnose
+  durchreichen; Wahrnehmung verändert den öffentlichen Spielzustand nicht
+- [x] Preflop-Rolle und öffentliche Position je Gegner sowie die echte
+  Aggressionsfolge pro Street bewahren; eine Opening-Bet ist keine Reraise und
+  eine C-Bet-Gelegenheit beziehungsweise C-Bet-Defense gilt nur beim ersten
+  passenden Flop-Angriff
+- [x] NLHE-Handhierarchie auf einfach gepaarten Boards präzisieren: Board-Play,
+  Pocket-Pair, Top Pair/Kicker und Trips getrennt bewerten; gegnerische
+  6x-Repräsentation auf K-6-6 nach Preflop-Rolle, Position, Board-Interaktion,
+  Card Removal und Multiway-Feld schätzen
+- [x] neue Analysefähigkeiten über
+  `clamp((Skill - Schwelle) / (100 - Schwelle), 0, 1)` stetig einblenden:
+  exakt null an der Schwelle, ohne vorzeitige Rundung, exakt voll bei Skill 100
+- [x] stabile Kandidaten-IDs und eine einzige kanonische All-in-Aktion
+  einführen; Auswahlgrenze unverändert bei 85% lassen und Zahl plausibler
+  Kandidaten, Utility-Abstand und erzwungene Einzelauswahl instrumentieren
+- [x] Session-Debugexport v3 auf die vollständige aktuelle Session erweitern:
+  alle Aktionskandidaten und Contributions, gewählte Kandidaten-ID,
+  objektive/wahrgenommene Analyse, Ranges und Street-Aggression; normaler
+  Sessionexport bietet eine eindeutige Wahl zwischen Handhistory und Debug-JSON
+- [x] Regressionen für Skill-Grenzen, C-Bet-Once-Semantik, echte
+  Aggressionsstufen, Paired-Board-Hierarchie, K-6-6-Ranges, AA-Valuebet,
+  Kandidatenkanonisierung und exakte 85%-Grenze ergänzen
+
 ### Adaptive Reads & Ranges
 
 - [ ] Range-Präferenzen und Selection-Gates für 4-Bet-/5-Bet-Ketten so
@@ -947,9 +974,6 @@ großen UI-Release abschließen.
 - [ ] Bet-Level aktionsbasiert modellieren: Preflop `unopened`, Open, 3-Bet,
   4-Bet+ aus der tatsächlichen Raise-Anzahl statt aus einer 4-BB-Sizinggrenze
   ableiten; ungewöhnlich große Opens und kleine 3-Bets korrekt unterscheiden
-- [ ] Postflop pro Street die echte Bet-/Raise-/Reraise-Stufe zählen und
-  steigende Vorsicht für 3-Bet/4-Bet-Pots anwenden; die bisherige binäre
-  Reraise-Erkennung und Check-Raise-Sonderbehandlung darin zusammenführen
 - [ ] Ruhendes `server`-Paket klar vom v1-Buildpfad getrennt halten und v2-Schnittstellenannahmen dokumentieren
 - [ ] Prettier-Konfiguration als separaten mechanischen Commit einführen
 - [ ] Dokumentierte Format- und Lint-Befehle ergänzen

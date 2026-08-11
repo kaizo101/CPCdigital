@@ -335,6 +335,13 @@ interface SimulationStats {
   actionErrors: number
   durationMs: number
   decisionTrace?: Record<string, Record<string, Record<string, number>>>
+  selectionTrace?: Record<string, {
+    samples: number
+    plausibleCandidates: number
+    utilityGapTotal: number
+    utilityGapSamples: number
+    forcedSingleCandidate: number
+  }>
   showdownDiagnostics: CalibrationShowdownDiagnostics
 }
 
@@ -406,6 +413,7 @@ function createStats(): SimulationStats {
     actionErrors: 0,
     durationMs: 0,
     decisionTrace: {},
+    selectionTrace: {},
     showdownDiagnostics: new CalibrationShowdownDiagnostics(),
   }
 }
@@ -504,6 +512,8 @@ function simulateFormat(
       let handCategory: HandStrengthCategory | null = null
       let decisionMetrics: DecisionMetrics | null = null
       let nutPotential: string | null = null
+      let selection: ReturnType<typeof decideBotDecision>['decisionResult']['selectionDiagnostics'] | null = null
+      let aggressionDepth = 0
       try {
         const botContext = createBotContext(botId, botView, game.getPublicHandHistory(), profile.archetypeId)
         const decision = decideBotDecision(botContext, botState, decisionRandom)
@@ -511,6 +521,10 @@ function simulateFormat(
         handCategory = decision.evaluation.handAssessment.category
         nutPotential = decision.evaluation.handAssessment.nutPotential
         decisionMetrics = decision.metrics
+        selection = decision.decisionResult.selectionDiagnostics
+        const analyzedStreet = decision.decisionResult.objectiveStreetAnalysis
+        const decisionStreet = state.phase as 'preflop' | 'flop' | 'turn' | 'river'
+        aggressionDepth = analyzedStreet?.streetAggression?.[decisionStreet]?.aggressiveActionCount ?? 0
         game.applyAction(botId, action)
       } catch {
         stats.actionErrors++
@@ -583,6 +597,31 @@ function simulateFormat(
         const byCat = stats.decisionTrace![streetKey] ?? (stats.decisionTrace![streetKey] = {})
         const byAct = byCat[catKey] ?? (byCat[catKey] = {})
         byAct[actKey] = (byAct[actKey] ?? 0) + 1
+
+        if (selection) {
+          const selectionKey = [
+            state.variantId,
+            profile.archetypeId,
+            resolveTableFormat(format.playerCount),
+            state.phase,
+            handCategory ?? 'unknown',
+            `depth-${aggressionDepth}`,
+          ].join(':')
+          const trace = stats.selectionTrace![selectionKey] ?? (stats.selectionTrace![selectionKey] = {
+            samples: 0,
+            plausibleCandidates: 0,
+            utilityGapTotal: 0,
+            utilityGapSamples: 0,
+            forcedSingleCandidate: 0,
+          })
+          trace.samples++
+          trace.plausibleCandidates += selection.plausibleCandidateCount
+          if (selection.utilityGap != null) {
+            trace.utilityGapTotal += selection.utilityGap
+            trace.utilityGapSamples++
+          }
+          if (selection.plausibleCandidateCount <= 1) trace.forcedSingleCandidate++
+        }
       }
 
       // Postflop tracking
@@ -945,6 +984,20 @@ function printStats(
           .map(([a, c]) => `${a} ${(c / total * 100).toFixed(0)}%`)
           .join(' · ')
         console.log(`    ${catKey.padEnd(9)} n=${total}  ${parts}`)
+      }
+    }
+    if (stats.selectionTrace && Object.keys(stats.selectionTrace).length > 0) {
+      console.log('\n  Selection plausibility (85% window):')
+      for (const [key, trace] of Object.entries(stats.selectionTrace)) {
+        const averagePlausible = trace.plausibleCandidates / Math.max(1, trace.samples)
+        const averageGap = trace.utilityGapSamples > 0
+          ? trace.utilityGapTotal / trace.utilityGapSamples
+          : 0
+        const forcedRate = trace.forcedSingleCandidate / Math.max(1, trace.samples) * 100
+        console.log(
+          `    ${key} n=${trace.samples} · plausible ${averagePlausible.toFixed(2)} · `
+          + `gap ${averageGap.toFixed(2)} · single ${forcedRate.toFixed(1)}%`,
+        )
       }
     }
   }

@@ -1,26 +1,57 @@
+import type { Card } from '@cpc/shared'
 import type { OpponentLine, StreetAnalysis } from './bot-street-analysis'
+
+export interface OpponentRangeContext {
+  variantId: string
+  board: readonly Card[]
+  ownCards: readonly Card[]
+  activeOpponents: number
+}
 
 export interface PerceivedOpponentRange {
   playerId: string
   strength: 'very-strong' | 'strong' | 'moderate' | 'weak' | 'very-weak' | 'unknown'
   summary: string
+  score: number
+  lineScore: number
+  positionAdjustment: number
+  roleAdjustment: number
+  boardFitAdjustment: number
+  pairedBoardRank?: number
+  tripsRepresentation?: number
+  baseTripsRepresentation?: number
+  cardRemovalScale?: number
+  multiwayScale?: number
 }
 
 export function estimateOpponentRanges(
   analysis: StreetAnalysis,
+  context?: OpponentRangeContext,
 ): PerceivedOpponentRange[] {
   const ranges: PerceivedOpponentRange[] = []
 
   for (const line of analysis.opponentLines.values()) {
-    ranges.push(estimateRangeFromLine(line))
+    ranges.push(estimateRangeFromLine(line, context))
   }
 
   return ranges
 }
 
-export function estimateRangeFromLine(line: OpponentLine): PerceivedOpponentRange {
+export function estimateRangeFromLine(
+  line: OpponentLine,
+  context?: OpponentRangeContext,
+): PerceivedOpponentRange {
   if (line.preflop === 'folded') {
-    return { playerId: line.playerId, strength: 'unknown', summary: 'folded preflop' }
+    return {
+      playerId: line.playerId,
+      strength: 'unknown',
+      summary: 'folded preflop',
+      score: 0,
+      lineScore: 0,
+      positionAdjustment: 0,
+      roleAdjustment: 0,
+      boardFitAdjustment: 0,
+    }
   }
 
   let score = 50
@@ -45,6 +76,34 @@ export function estimateRangeFromLine(line: OpponentLine): PerceivedOpponentRang
   if (lastAction === 'check-call') score -= 5
   if (lastAction === 'check') score -= 3
 
+  const lineScore = score
+  const positionAdjustment = positionRangeAdjustment(line)
+  const roleAdjustment = preflopRoleAdjustment(line)
+  const pairedBoard = context?.variantId === 'texas-holdem'
+    ? pairedBoardEvidence(line, context)
+    : null
+  const boardFitAdjustment = pairedBoard?.adjustment ?? 0
+  score += positionAdjustment + roleAdjustment + boardFitAdjustment
+
+  return rangeFromScore({
+    playerId: line.playerId,
+    score,
+    lineScore,
+    positionAdjustment,
+    roleAdjustment,
+    boardFitAdjustment,
+    pairedBoardRank: pairedBoard?.rank,
+    tripsRepresentation: pairedBoard?.representation,
+    baseTripsRepresentation: pairedBoard?.baseRepresentation,
+    cardRemovalScale: pairedBoard?.cardRemovalScale,
+    multiwayScale: pairedBoard?.multiwayScale,
+  })
+}
+
+export function rangeFromScore(
+  range: Omit<PerceivedOpponentRange, 'strength' | 'summary'>,
+): PerceivedOpponentRange {
+  const score = range.score
   let strength: PerceivedOpponentRange['strength']
   let summary: string
 
@@ -65,7 +124,85 @@ export function estimateRangeFromLine(line: OpponentLine): PerceivedOpponentRang
     summary = 'very passive, likely air or missed draw'
   }
 
-  return { playerId: line.playerId, strength, summary }
+  return { ...range, strength, summary }
+}
+
+function positionRangeAdjustment(line: OpponentLine): number {
+  if (line.preflopRole !== 'open-raiser') return 0
+  if (line.position?.category === 'early') return 8
+  if (line.position?.category === 'middle') return 3
+  if (line.position?.category === 'late') return -5
+  if (line.position?.category === 'blinds') return -2
+  return 0
+}
+
+function preflopRoleAdjustment(line: OpponentLine): number {
+  switch (line.preflopRole) {
+    case 'three-bettor': return 10
+    case 'four-bettor-plus': return 18
+    case 'limper': return -5
+    case 'blind-checker': return -6
+    case 'caller': return -2
+    default: return 0
+  }
+}
+
+function pairedBoardEvidence(
+  line: OpponentLine,
+  context: OpponentRangeContext,
+): {
+  rank: number
+  representation: number
+  baseRepresentation: number
+  cardRemovalScale: number
+  multiwayScale: number
+  adjustment: number
+} | null {
+  const counts = new Map<number, number>()
+  for (const card of context.board) {
+    const rank = rankValue(card.rank)
+    counts.set(rank, (counts.get(rank) ?? 0) + 1)
+  }
+  const pairedRank = [...counts.entries()].find(([, count]) => count === 2)?.[0]
+  if (!pairedRank) return null
+
+  const broadway = pairedRank >= 10
+  const category = line.position?.category
+  let baseRepresentation: number
+  switch (line.preflopRole) {
+    case 'three-bettor': baseRepresentation = broadway ? 0.50 : 0.08; break
+    case 'four-bettor-plus': baseRepresentation = broadway ? 0.45 : 0.03; break
+    case 'limper': baseRepresentation = broadway ? 0.55 : 0.75; break
+    case 'blind-checker': baseRepresentation = broadway ? 0.45 : 0.80; break
+    case 'caller': baseRepresentation = broadway ? 0.60 : 0.55; break
+    default:
+      if (category === 'early') baseRepresentation = broadway ? 0.55 : 0.18
+      else if (category === 'middle') baseRepresentation = broadway ? 0.65 : 0.35
+      else if (category === 'late') baseRepresentation = broadway ? 0.75 : 0.65
+      else baseRepresentation = broadway ? 0.65 : 0.50
+  }
+
+  const heldCopies = context.ownCards.filter(card => rankValue(card.rank) === pairedRank).length
+  const cardRemovalScale = Math.max(0, 2 - heldCopies) / 2
+  const multiwayScale = Math.min(1.25, 1 + Math.max(0, context.activeOpponents - 1) * 0.08)
+  const representation = Math.max(0, Math.min(1, baseRepresentation * cardRemovalScale * multiwayScale))
+  return {
+    rank: pairedRank,
+    representation,
+    baseRepresentation,
+    cardRemovalScale,
+    multiwayScale,
+    adjustment: (representation - 0.4) * 12,
+  }
+}
+
+function rankValue(rank: Card['rank']): number {
+  if (rank === 'A') return 14
+  if (rank === 'K') return 13
+  if (rank === 'Q') return 12
+  if (rank === 'J') return 11
+  if (rank === 'T') return 10
+  return Number(rank)
 }
 
 export function rangeStrengthModifier(strength: PerceivedOpponentRange['strength']): { fold: number; call: number; raise: number } {

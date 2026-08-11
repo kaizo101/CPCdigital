@@ -221,7 +221,7 @@ function DecisionDetails({ debug, currency }: { debug: BotDebugDecision; currenc
         <div style={{ display: 'grid', gap: 6 }}>
           {decision.allActions.map((action, index) => (
             <details
-              key={`${action.action.type}-${index}`}
+              key={action.candidateId}
               open={index === chosenIndex}
               style={{
                 border: `1px solid ${index === chosenIndex ? 'rgba(251,191,36,0.55)' : borderColor}`,
@@ -385,19 +385,9 @@ function MetricGrid({ entries }: { entries: Array<[string, string]> }) {
 }
 
 function findChosenIndex(debug: BotDebugDecision): number {
-  const { action, chosenUtility, allActions } = debug.decision
-  const compatible = allActions.findIndex(candidate =>
-    Math.abs(candidate.utility - chosenUtility) < 0.000_001
-    && (candidate.action.type === action.type
-      || (isAggressive(candidate.action) && isAggressive(action))),
-  )
-  return compatible >= 0
-    ? compatible
-    : allActions.findIndex(candidate => Math.abs(candidate.utility - chosenUtility) < 0.000_001)
-}
-
-function isAggressive(action: PlayerAction): boolean {
-  return action.type === 'raise' || action.type === 'all-in'
+  return debug.decision.allActions.findIndex(candidate => (
+    candidate.candidateId === debug.decision.chosenCandidateId
+  ))
 }
 
 function formatAction(action: PlayerAction, debug: BotDebugDecision, currency: DisplayCurrency): string {
