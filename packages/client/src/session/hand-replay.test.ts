@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { HandEvent, HandResult } from '@cpc/shared'
-import { buildReplayFromSession, formatHandHistory } from './hand-replay'
+import {
+  buildReplayFromSession,
+  createHandHistoryFilename,
+  createSessionHandHistoryFilename,
+  formatBotDecisionAppendix,
+  formatHandHistory,
+  formatSessionHandHistory,
+  type BotDecisionInfo,
+  type HandReplayMetadata,
+} from './hand-replay'
 
 const players = [
   { playerId: 'hero', seatIndex: 0, startingChips: 1000 },
@@ -18,13 +27,20 @@ function start(): Extract<HandEvent, { type: 'HandStarted' }> {
   }
 }
 
-function build(events: HandEvent[], results: HandResult[]) {
+function build(
+  events: HandEvent[],
+  results: HandResult[],
+  botDecisions?: BotDecisionInfo[],
+  metadata?: HandReplayMetadata,
+) {
   return buildReplayFromSession(
     1,
     events.map(event => ({ event })),
     {},
     results,
     new Map([['hero', 'You'], ['villain', 'Villain']]),
+    botDecisions,
+    metadata,
   )!
 }
 
@@ -99,5 +115,95 @@ describe('client hand replay', () => {
     ])
     expect(formatHandHistory(replay)).toContain('You collected (80.00)')
     expect(formatHandHistory(replay)).toContain('Villain collected (60.00)')
+  })
+
+  it('uses hand-start local time, session reference, and bot names in human exports', () => {
+    const replay = build(
+      [start(), { type: 'HandEnded', reason: 'uncontested', totalPot: 0, results: [] }],
+      [],
+      [{
+        playerId: 'villain',
+        playerName: 'David',
+        sequence: 7,
+        phase: 'flop',
+        archetype: 'TAG',
+        skill: 78.4,
+        action: 'call',
+        handCategory: 'weak',
+        handProfile: 'weak, Q High',
+        scores: [
+          { action: 'fold', utility: 47 },
+          { action: 'call', utility: 100 },
+        ],
+        topContributions: ['Pot odds: +7.179541137956944'],
+      }],
+      {
+        sessionId: 'S20260812T124201511Z',
+        startedAt: '2026-08-12T12:42:01.511Z',
+        timeZone: 'Europe/Berlin',
+        utcOffsetMinutes: 120,
+      },
+    )
+
+    expect(formatHandHistory(replay)).toContain(
+      'Hand #1 [S20260812T124201511Z/H0001]'
+    )
+    expect(formatHandHistory(replay)).toContain(
+      '2026-08-12 14:42:01 Europe/Berlin (UTC+02:00)'
+    )
+    const appendix = formatBotDecisionAppendix(replay, 'full')
+    expect(appendix).toContain('#7 FLOP · David [TAG · Skill 78] (weak, Q High): call')
+    expect(appendix).toContain('Pot odds: +7.2')
+    expect(appendix).not.toContain('villain (')
+    expect(createHandHistoryFilename(replay))
+      .toBe('cpcdigital-hand_S20260812T124201511Z-H0001.txt')
+  })
+
+  it('labels one session and a multi-session archive with distinct IDs', () => {
+    const first = build(
+      [start(), { type: 'HandEnded', reason: 'uncontested', totalPot: 0, results: [] }],
+      [],
+      undefined,
+      { sessionId: 'S20260812T120000000Z', startedAt: '2026-08-12T12:00:00.000Z' },
+    )
+    const second = {
+      ...first,
+      handNumber: 1,
+      sessionId: 'S20260812T130000000Z',
+      date: '2026-08-12T13:00:00.000Z',
+    }
+
+    expect(formatSessionHandHistory([first])).toContain(
+      'CPCdigital Session S20260812T120000000Z — 1 hands'
+    )
+    expect(createSessionHandHistoryFilename([first]))
+      .toBe('cpcdigital-session_S20260812T120000000Z.txt')
+
+    const archive = formatSessionHandHistory([first, second], {
+      exportedAt: '2026-08-12T14:00:00.000Z',
+    })
+    expect(archive).toContain('CPCdigital Hand Archive A20260812T140000000Z')
+    expect(archive).toContain('Sessions: 2 · Hands: 2')
+    expect(createSessionHandHistoryFilename(
+      [first, second],
+      '2026-08-12T14:00:00.000Z',
+    )).toBe('cpcdigital-hand-archive_A20260812T140000000Z.txt')
+  })
+
+  it('keeps legacy replays without a session ID readable as an archive', () => {
+    const legacy = build(
+      [start(), { type: 'HandEnded', reason: 'uncontested', totalPot: 0, results: [] }],
+      [],
+    )
+
+    const history = formatSessionHandHistory([legacy], {
+      exportedAt: '2026-08-12T14:00:00.000Z',
+    })
+    expect(history).toContain('CPCdigital Hand Archive A20260812T140000000Z')
+    expect(history).toContain('=== Session Legacy-1 · 1 hands ===')
+    expect(createSessionHandHistoryFilename(
+      [legacy],
+      '2026-08-12T14:00:00.000Z',
+    )).toBe('cpcdigital-hand-archive_A20260812T140000000Z.txt')
   })
 })

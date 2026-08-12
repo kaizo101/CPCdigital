@@ -1,8 +1,19 @@
 // CPCdigital hand history formatter and replay data.
 import type { Card, HandEvent, HandResult, Player } from '@cpc/shared'
+import {
+  createArchiveId,
+  formatLocalTimestamp,
+  handReference,
+  safeIdSegment,
+} from './session-export-metadata'
 
 export interface BotDecisionInfo {
   playerId: string
+  playerName?: string
+  sequence?: number
+  phase?: string
+  archetype?: string
+  skill?: number
   action: string
   handCategory: string
   handProfile?: string
@@ -32,7 +43,14 @@ export interface ReplayFrame {
 
 export interface HandReplay {
   handNumber: number
+  sessionId?: string
+  sessionStartedAt?: string
+  sessionTimeZone?: string
+  sessionUtcOffsetMinutes?: number
+  /** Canonical UTC timestamp for the start of the hand. */
   date: string
+  timeZone?: string
+  utcOffsetMinutes?: number
   variant: string
   blinds: { small: number; big: number }
   players: { id: string; name: string; seat: number; chips: number }[]
@@ -43,6 +61,22 @@ export interface HandReplay {
   totalPot: number
   pots?: Array<{ potIndex: number; potType: 'main' | 'side'; amount: number }>
   botDecisions: BotDecisionInfo[]
+}
+
+export interface HandReplayMetadata {
+  sessionId?: string
+  sessionStartedAt?: string
+  sessionTimeZone?: string
+  sessionUtcOffsetMinutes?: number
+  startedAt?: string
+  timeZone?: string
+  utcOffsetMinutes?: number
+}
+
+export interface SessionHandHistoryOptions {
+  includeDecisions?: boolean
+  summaryLines?: readonly string[]
+  exportedAt?: string
 }
 
 const HAND_REPLAY_ARCHIVE_KEY = 'cpcdigital-hand-history'
@@ -109,8 +143,12 @@ export function formatHandHistory(replay: HandReplay): string {
   const sb = replay.blinds.small
 
   lines.push(
-    `CPCdigital Hand #${replay.handNumber}: ${replay.variant} `
-    + `(${formatAmount(sb)}/${formatAmount(bb)}) - ${replay.date}`
+    `CPCdigital Hand #${replay.handNumber} [${handReference(replay.sessionId, replay.handNumber)}]: ${replay.variant} `
+    + `(${formatAmount(sb)}/${formatAmount(bb)}) - ${formatLocalTimestamp(
+      replay.date,
+      replay.timeZone,
+      replay.utcOffsetMinutes,
+    )}`
   )
   const dealer = replay.players.find(player => player.id === replay.dealerId)
   lines.push(`Table 'CPCdigital' ${replay.players.length}-max Seat #${(dealer?.seat ?? 0) + 1} is the button`)
@@ -231,6 +269,172 @@ export function formatHandHistory(replay: HandReplay): string {
   return lines.join('\n')
 }
 
+export function formatBotDecisionAppendix(
+  replay: HandReplay,
+  detail: 'full' | 'compact',
+): string {
+  if (!replay.botDecisions?.length) return ''
+  const lines: string[] = [detail === 'full' ? '=== BOT DECISIONS ===' : '--- Bot Decisions ---']
+  replay.botDecisions.forEach((decision, index) => {
+    const playerName = decision.playerName
+      ?? replay.players.find(player => player.id === decision.playerId)?.name
+      ?? decision.playerId
+    const sequence = decision.sequence ?? index + 1
+    const phase = (decision.phase ?? 'unknown').toUpperCase()
+    const botMeta = decision.archetype
+      ? ` [${decision.archetype}${decision.skill == null ? '' : ` · Skill ${Math.round(decision.skill)}`}]`
+      : ''
+    const hand = decision.handProfile ?? decision.handCategory
+    const headline = `#${sequence} ${phase} · ${playerName}${botMeta} (${hand}): ${decision.action}`
+
+    if (detail === 'compact') {
+      const reasons = decision.topContributions.slice(0, 3).map(roundLegacyContribution).join(' | ')
+      lines.push(`${headline}${reasons ? ` | ${reasons}` : ''}`)
+      return
+    }
+
+    lines.push('', headline)
+    if (decision.scores.length > 0) {
+      lines.push(`  Scores: ${decision.scores.map(score => `${score.action}:${score.utility.toFixed(0)}`).join(' | ')}`)
+    }
+    if (decision.topContributions.length > 0) {
+      lines.push(`  Hauptgründe: ${decision.topContributions.map(roundLegacyContribution).join(', ')}`)
+    }
+  })
+  return lines.join('\n')
+}
+
+export function formatSessionHandHistory(
+  replays: readonly HandReplay[],
+  options: SessionHandHistoryOptions = {},
+): string {
+  const exportedAt = options.exportedAt ?? new Date().toISOString()
+  const groups = groupReplaysBySession(replays)
+  const archive = groups.length !== 1 || !groups[0]?.sessionId
+  const documentId = archive
+    ? createArchiveId(exportedAt)
+    : groups[0]?.sessionId ?? createArchiveId(exportedAt)
+  const lines: string[] = []
+
+  if (archive) {
+    lines.push(`CPCdigital Hand Archive ${documentId}`)
+    lines.push(`Sessions: ${groups.length} · Hands: ${replays.length}`)
+    lines.push(`Exported: ${exportedAt}`)
+  } else {
+    lines.push(`CPCdigital Session ${documentId} — ${replays.length} hands`)
+    const first = replays[0]
+    if (first) {
+      lines.push(`Started: ${formatLocalTimestamp(
+        first.sessionStartedAt ?? first.date,
+        first.sessionTimeZone ?? first.timeZone,
+        first.sessionUtcOffsetMinutes ?? first.utcOffsetMinutes,
+      )}`)
+      lines.push(`Variant: ${distinctLabel(replays.map(replay => replay.variant))}`)
+      lines.push(`Blinds: ${distinctLabel(replays.map(replay => (
+        `${formatAmount(replay.blinds.small)}/${formatAmount(replay.blinds.big)}`
+      )))}`)
+    }
+    lines.push(...(options.summaryLines ?? []))
+    lines.push(...formatBotRoster(replays))
+  }
+  lines.push('='.repeat(60), '')
+
+  for (const [groupIndex, group] of groups.entries()) {
+    if (archive) {
+      const first = group.replays[0]
+      lines.push(`=== Session ${group.sessionId ?? `Legacy-${groupIndex + 1}`} · ${group.replays.length} hands ===`)
+      if (first) lines.push(`Started: ${formatLocalTimestamp(first.date, first.timeZone, first.utcOffsetMinutes)}`)
+      lines.push(...formatBotRoster(group.replays), '')
+    }
+    for (const replay of group.replays) {
+      lines.push(formatHandHistory(replay))
+      if (options.includeDecisions) {
+        const appendix = formatBotDecisionAppendix(replay, 'compact')
+        if (appendix) lines.push(appendix, '')
+      }
+    }
+  }
+  return lines.join('\n').trimEnd() + '\n'
+}
+
+export function createHandHistoryFilename(replay: HandReplay): string {
+  return `cpcdigital-hand_${safeIdSegment(handReference(replay.sessionId, replay.handNumber))}.txt`
+}
+
+export function createSessionHandHistoryFilename(
+  replays: readonly HandReplay[],
+  exportedAt = new Date().toISOString(),
+): string {
+  const groups = groupReplaysBySession(replays)
+  if (groups.length === 1 && groups[0].sessionId) {
+    return `cpcdigital-session_${safeIdSegment(groups[0].sessionId)}.txt`
+  }
+  return `cpcdigital-hand-archive_${createArchiveId(exportedAt)}.txt`
+}
+
+interface ReplaySessionGroup {
+  sessionId?: string
+  replays: HandReplay[]
+}
+
+function groupReplaysBySession(replays: readonly HandReplay[]): ReplaySessionGroup[] {
+  const groups: ReplaySessionGroup[] = []
+  let previous: HandReplay | undefined
+  for (const replay of replays) {
+    const current = groups.at(-1)
+    const sameExplicitSession = replay.sessionId != null
+      && current?.sessionId === replay.sessionId
+    const sameLegacySession = replay.sessionId == null
+      && current?.sessionId == null
+      && previous != null
+      && replay.handNumber > previous.handNumber
+    if (!current || (!sameExplicitSession && !sameLegacySession)) {
+      groups.push({ sessionId: replay.sessionId, replays: [replay] })
+    } else {
+      current.replays.push(replay)
+    }
+    previous = replay
+  }
+  return groups
+}
+
+function formatBotRoster(replays: readonly HandReplay[]): string[] {
+  const bots = new Map<string, { name: string; archetype?: string; skill?: number }>()
+  for (const replay of replays) {
+    for (const decision of replay.botDecisions ?? []) {
+      if (bots.has(decision.playerId)) continue
+      bots.set(decision.playerId, {
+        name: decision.playerName
+          ?? replay.players.find(player => player.id === decision.playerId)?.name
+          ?? decision.playerId,
+        archetype: decision.archetype,
+        skill: decision.skill,
+      })
+    }
+  }
+  if (bots.size === 0) return []
+  return [
+    'Bots:',
+    ...[...bots.values()].map(bot => (
+      `  ${bot.name}${bot.archetype ? ` — ${bot.archetype}` : ''}${bot.skill == null ? '' : ` · Skill ${Math.round(bot.skill)}`}`
+    )),
+  ]
+}
+
+function distinctLabel(values: readonly string[]): string {
+  const unique = [...new Set(values)]
+  return unique.length === 1 ? unique[0] : `Mixed (${unique.join(', ')})`
+}
+
+function roundLegacyContribution(value: string): string {
+  return value.replace(/([+-]?\d+(?:\.\d+)?)$/, raw => {
+    const numeric = Number(raw)
+    if (!Number.isFinite(numeric)) return raw
+    const rounded = Number(numeric.toFixed(1))
+    return `${rounded > 0 ? '+' : ''}${rounded}`
+  })
+}
+
 /** Build a HandReplay from the raw hand history and decision snapshots */
 export function buildReplayFromSession(
   handNumber: number,
@@ -239,6 +443,7 @@ export function buildReplayFromSession(
   results: HandResult[],
   playerNames: Map<string, string>,
   botDecisions?: BotDecisionInfo[],
+  metadata: HandReplayMetadata = {},
 ): HandReplay | null {
   const handStart = handEvents.find(e => e.event.type === 'HandStarted')
   if (!handStart || handStart.event.type !== 'HandStarted') return null
@@ -404,7 +609,13 @@ export function buildReplayFromSession(
 
   return {
     handNumber,
-    date: new Date().toISOString(),
+    sessionId: metadata.sessionId,
+    sessionStartedAt: metadata.sessionStartedAt,
+    sessionTimeZone: metadata.sessionTimeZone,
+    sessionUtcOffsetMinutes: metadata.sessionUtcOffsetMinutes,
+    date: metadata.startedAt ?? new Date().toISOString(),
+    timeZone: metadata.timeZone,
+    utcOffsetMinutes: metadata.utcOffsetMinutes,
     variant: formatVariantName(handStart.event.variantId),
     blinds: { small: handStart.event.smallBlind, big: handStart.event.bigBlind },
     players,

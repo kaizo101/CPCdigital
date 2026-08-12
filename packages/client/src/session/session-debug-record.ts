@@ -12,6 +12,7 @@ import type {
   TableOptions,
 } from '@cpc/shared'
 import { requestTextFileExport } from '../utils/file-export'
+import { safeIdSegment } from './session-export-metadata'
 import type { BotDebugDecision, BotDebugProfile } from '../bot-debug'
 import type { BotIdentity } from '../bot-identities'
 import type { DecisionComplexity } from '../bot-decision-complexity'
@@ -49,7 +50,10 @@ export interface SessionDebugRecord {
   }
   exportedAt: string
   session: {
+    id?: string
     startedAt: string
+    timeZone?: string
+    utcOffsetMinutes?: number
     currentHandNumber: number
     displayCurrency: DisplayCurrency
     config: TableOptions
@@ -160,7 +164,10 @@ export interface SessionDebugRecordV2 {
   }
   exportedAt: string
   session: {
+    id?: string
     startedAt: string
+    timeZone?: string
+    utcOffsetMinutes?: number
     currentHandNumber: number
     displayCurrency: DisplayCurrency
     config: TableOptions
@@ -580,12 +587,14 @@ export function serializeSessionDebugRecord(record: SessionDebugRecord | Session
   return JSON.stringify(record, null, 2)
 }
 
-export function createSessionDebugFilename(exportedAt: string): string {
+export function createSessionDebugFilename(exportedAt: string, sessionId?: string): string {
+  if (sessionId) return `cpcdigital-session-debug_${safeIdSegment(sessionId)}.json`
   const timestamp = exportedAt.replace(/[:.]/g, '-').replace('T', '_').replace('Z', '')
   return `cpcdigital-session-debug_${timestamp}.json`
 }
 
-export function createSessionDebugJsonlFilename(exportedAt: string): string {
+export function createSessionDebugJsonlFilename(exportedAt: string, sessionId?: string): string {
+  if (sessionId) return `cpcdigital-session-debug_${safeIdSegment(sessionId)}.jsonl`
   const timestamp = exportedAt.replace(/[:.]/g, '-').replace('T', '_').replace('Z', '')
   return `cpcdigital-session-debug_${timestamp}.jsonl`
 }
@@ -593,7 +602,7 @@ export function createSessionDebugJsonlFilename(exportedAt: string): string {
 export function downloadSessionDebugRecord(record: SessionDebugRecord | SessionDebugRecordV2 | SessionDebugRecordV3): void {
   requestTextFileExport({
     data: serializeSessionDebugRecord(record),
-    filename: createSessionDebugFilename(record.exportedAt),
+    filename: createSessionDebugFilename(record.exportedAt, record.session.id),
     mimeType: 'application/json',
     title: 'CPCdigital Debug-Session',
     dialogTitle: 'Debug-Session exportieren',
@@ -603,7 +612,10 @@ export function downloadSessionDebugRecord(record: SessionDebugRecord | SessionD
 export function downloadSessionDebugExport(debugExport: SessionDebugExportV4): Promise<void> {
   return requestTextFileExport({
     data: serializeSessionDebugJsonlParts(debugExport),
-    filename: createSessionDebugJsonlFilename(debugExport.header.exportedAt),
+    filename: createSessionDebugJsonlFilename(
+      debugExport.header.exportedAt,
+      debugExport.header.session.id,
+    ),
     mimeType: 'application/x-ndjson',
     title: 'CPCdigital Debug-Session',
     dialogTitle: 'Debug-Session exportieren',

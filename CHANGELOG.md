@@ -32,6 +32,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   den bewusst spielwirksamen Kontext- und Kandidatenänderungen eine eigene
   0.8.2-Foundation-Baseline. Die 0.8.1-Datei bleibt unverändert als historischer
   Vergleich erhalten; strukturelle Invarianten gelten weiterhin unverändert.
+- **Eindeutige Session- und Handreferenzen**: Neue Sessions erhalten eine
+  stabile Session-ID, die im Handhistory-Header, in jeder Handreferenz und in
+  den Dateinamen von Handhistory und Debug-JSONL wiederkehrt. Mehrere
+  gespeicherte Sessions werden als separates Archiv mit eigener Archiv-ID
+  exportiert; bestehende Replays ohne ID bleiben lesbar.
 
 ### Changed
 
@@ -51,6 +56,12 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   beziehungsweise auf Android sequenziell in ungefähr 256-KB-Blöcken
   geschrieben. Doppelte Score-Strings und sessionweit duplizierte Decision
   Snapshots entfallen; erneutes Antippen ist während des Exports gesperrt.
+- **Lesbare Handhistory-Diagnose**: Handzeitstempel beziehen sich auf den
+  tatsächlichen Handstart und werden im menschlichen Export mit lokaler
+  Zeitzone sowie explizitem UTC-Offset ausgegeben; maschinenlesbare Daten
+  behalten den UTC-Zeitstempel. Entscheidungsblöcke nennen Botname, Street,
+  Archetyp, Skill und Reihenfolge statt nur interner Bot-ID und runden lange
+  Contribution-Werte ausschließlich in der Textdarstellung.
 
 - **C-Bet-Defense mit schwachem Made Hand**: Aggressive Bots dürfen gegen eine
   C-Bet weiterhin Druck ausüben, erhalten aber nicht mehr denselben Raise-Schub

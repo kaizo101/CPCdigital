@@ -1,5 +1,5 @@
 import type { HandReplay } from './hand-replay'
-import { formatHandHistory } from './hand-replay'
+import { formatSessionHandHistory } from './hand-replay'
 import type { HandEvent, PlayerAction } from '@cpc/shared'
 
 export interface PlayerSessionStats {
@@ -122,19 +122,11 @@ export function getBBPer100(stats: SessionStatsData): number {
 }
 
 export function exportSessionLog(stats: SessionStatsData, replays: HandReplay[]): string {
-  const lines: string[] = []
-  lines.push(`CPCdigital Session — ${replays.length} hands`)
-  lines.push(`Variant: ${stats.variantId === 'omaha-high' ? 'Omaha Pot Limit' : 'Hold\'em No Limit'}`)
-  lines.push(`Result: ${stats.heroBBWon >= 0 ? '+' : ''}${stats.heroBBWon.toFixed(2)} BB · ${getBBPer100(stats).toFixed(1)} BB/100`)
-  lines.push('='.repeat(50))
-  lines.push('')
-
-  for (const replay of replays) {
-    lines.push(formatHandHistory(replay))
-    lines.push('')
-  }
-
-  return lines.join('\n')
+  return formatSessionHandHistory(replays, {
+    summaryLines: [
+      `Result: ${stats.heroBBWon >= 0 ? '+' : ''}${stats.heroBBWon.toFixed(2)} BB · ${getBBPer100(stats).toFixed(1)} BB/100`,
+    ],
+  })
 }
 
 function ensurePlayer(stats: SessionStatsData, playerId: string): PlayerSessionStats {

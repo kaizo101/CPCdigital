@@ -2,7 +2,13 @@ import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import type { Card, Player } from '@cpc/shared'
 import type { HandReplay, ReplayFrame } from '../session/hand-replay'
-import { formatHandHistory } from '../session/hand-replay'
+import {
+  createHandHistoryFilename,
+  createSessionHandHistoryFilename,
+  formatBotDecisionAppendix,
+  formatHandHistory,
+  formatSessionHandHistory,
+} from '../session/hand-replay'
 import { PokerTable, TablePot, CommunityCards, BetStack, TablePositionButtons } from './PokerTable'
 import { PlayerSeat } from './PlayerSeat'
 import { formatChips, type DisplayCurrency } from '../utils/format'
@@ -181,30 +187,15 @@ export function HandReplayer({ replays, startIndex, currency, debugMode, onClose
   function exportCurrentHand(withDecisions: boolean): void {
     let text = formatHandHistory(replay)
     if (withDecisions && replay.botDecisions?.length) {
-      text += '\n\n=== BOT DECISIONS ===\n'
-      for (const d of replay.botDecisions) {
-        text += `\n${d.playerId} (${d.handProfile ?? d.handCategory}): ${d.action}\n`
-        text += `  Scores: ${d.scores.map(s => `${s.action}:${s.utility.toFixed(0)}`).join(' | ')}\n`
-        text += `  Beiträge: ${d.topContributions.join(', ')}\n`
-      }
+      text += `\n${formatBotDecisionAppendix(replay, 'full')}\n`
     }
-    exportText(text, `hand-${replay.handNumber}.txt`)
+    exportText(text, createHandHistoryFilename(replay))
   }
 
   function exportSession(withDecisions: boolean): void {
-    const all = replays.sort((a, b) => a.handNumber - b.handNumber)
-    let text = `CPCdigital Session — ${all.length} hands\n${'='.repeat(50)}\n\n`
-    for (const r of all) {
-      text += formatHandHistory(r)
-      if (withDecisions && r.botDecisions?.length) {
-        text += '\n--- Bot Decisions ---\n'
-        for (const d of r.botDecisions) {
-          text += `${d.playerId} (${d.handProfile ?? d.handCategory}): ${d.action} | ${d.topContributions.slice(0, 3).join(' | ')}\n`
-        }
-      }
-      text += '\n'
-    }
-    exportText(text, `session-hands-${replays.length}.txt`)
+    const exportedAt = new Date().toISOString()
+    const text = formatSessionHandHistory(replays, { includeDecisions: withDecisions, exportedAt })
+    exportText(text, createSessionHandHistoryFilename(replays, exportedAt))
   }
 
   return (

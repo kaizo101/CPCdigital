@@ -38,6 +38,9 @@ describe('session debug JSONL export', () => {
     expect(parsed.header.schema).toBe(SESSION_DEBUG_SCHEMA)
     expect(parsed.header.schemaVersion).toBe(SESSION_DEBUG_SCHEMA_VERSION_V4)
     expect(parsed.header.app).toEqual({ name: 'CPCdigital', version: '0.8.2-dev' })
+    expect(parsed.header.session.id).toMatch(/^S\d{8}T\d{9}Z$/)
+    expect(parsed.header.session.timeZone).toBeTruthy()
+    expect(parsed.header.session.utcOffsetMinutes).toEqual(expect.any(Number))
     expect(parsed.header.session.config).toEqual(expect.objectContaining({ maxPlayers: 5, seed: 'debug-record' }))
     expect(parsed.header.session.players).toHaveLength(5)
     expect(parsed.hands).toHaveLength(1)
@@ -64,6 +67,10 @@ describe('session debug JSONL export', () => {
   it('creates a filesystem-safe JSONL filename', () => {
     expect(createSessionDebugJsonlFilename('2026-07-19T20:15:30.123Z'))
       .toBe('cpcdigital-session-debug_2026-07-19_20-15-30-123.jsonl')
+    expect(createSessionDebugJsonlFilename(
+      '2026-07-19T20:15:30.123Z',
+      'S20260719T180000000Z',
+    )).toBe('cpcdigital-session-debug_S20260719T180000000Z.jsonl')
   })
 
   it('keeps the beginning of a long current session instead of truncating hands', () => {

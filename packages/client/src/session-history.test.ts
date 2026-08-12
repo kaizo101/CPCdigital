@@ -29,6 +29,43 @@ describe('LocalGameRunner session history', () => {
     runner.cleanup()
   })
 
+  it('stores session and hand start timestamps instead of the post-hand capture time', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-12T12:00:00.000Z'))
+    const runner = new LocalGameRunner()
+    runner.setupTable({
+      smallBlind: 10,
+      bigBlind: 20,
+      startingChips: 1000,
+      maxPlayers: 2,
+      seed: 'timestamp-session',
+    }, 1)
+
+    vi.setSystemTime(new Date('2026-08-12T12:05:00.000Z'))
+    runner.startHand()
+    vi.setSystemTime(new Date('2026-08-12T12:10:00.000Z'))
+
+    for (let step = 0; step < 10 && runner.state.handReplays.length === 0; step++) {
+      const gameState = runner.state.gameState
+      if (!gameState) throw new Error('Expected game state')
+      if (runner.state.isMyTurn) {
+        const legal = gameState.bettingContext?.legalActions
+        if (!legal) throw new Error('Expected hero legal actions')
+        runner.playerAction(legal.fold ? { type: 'fold' } : { type: 'check' })
+      } else {
+        vi.advanceTimersByTime(6000)
+      }
+    }
+
+    const replay = runner.state.handReplays[0]
+    expect(replay).toBeDefined()
+    expect(replay.sessionId).toBe('S20260812T120000000Z')
+    expect(replay.sessionStartedAt).toBe('2026-08-12T12:00:00.000Z')
+    expect(replay.date).toBe('2026-08-12T12:05:00.000Z')
+    expect(replay.date).not.toBe('2026-08-12T12:10:00.000Z')
+    runner.cleanup()
+  })
+
   it('selects a reproducible but non-fixed dealer for the first hand', () => {
     const firstDealers = new Set<string>()
     const dealerForSeed = (seed: string): string => {

@@ -81,6 +81,11 @@ import {
 import type { HandReplay } from './hand-replay'
 import { BotRebuyManager } from './bot-rebuy-manager'
 import type { RebuyRequestStatus } from './bot-rebuy-manager'
+import {
+  captureTimestamp,
+  createSessionId,
+  type CapturedTimestamp,
+} from './session-export-metadata'
 
 export type { SessionDecisionSnapshot, SessionHistoryEvent } from './session-debug-record'
 
@@ -157,6 +162,10 @@ export class LocalGameRunner {
   private timingRandom: RandomSource = Math.random
   private sessionOptions: TableOptions | null = null
   private sessionStartedAt: string | null = null
+  private sessionId: string | null = null
+  private sessionTimeZone: string | null = null
+  private sessionUtcOffsetMinutes: number | null = null
+  private currentHandStartedAt: CapturedTimestamp | null = null
 
   get state(): LocalGameState {
     if (!this.game) {
@@ -216,6 +225,10 @@ export class LocalGameRunner {
     return this.botDebugDecisions.slice(-50)
   }
 
+  getSessionId(): string | null {
+    return this.sessionId
+  }
+
   createSessionDebugRecord(appVersion: string, displayCurrency: DisplayCurrency): SessionDebugExportV4 {
     if (!this.sessionOptions || !this.sessionStartedAt) {
       throw new Error('Cannot export a debug record before a session has started')
@@ -234,7 +247,10 @@ export class LocalGameRunner {
       app: { name: 'CPCdigital', version: appVersion },
       exportedAt,
       session: {
+        id: this.sessionId ?? undefined,
         startedAt: this.sessionStartedAt,
+        timeZone: this.sessionTimeZone ?? undefined,
+        utcOffsetMinutes: this.sessionUtcOffsetMinutes ?? undefined,
         currentHandNumber: this.currentHandNumber,
         displayCurrency,
         config: { ...this.sessionOptions },
@@ -341,7 +357,12 @@ export class LocalGameRunner {
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0
     this.sessionOptions = { ...options }
-    this.sessionStartedAt = new Date().toISOString()
+    const sessionTimestamp = captureTimestamp()
+    this.sessionStartedAt = sessionTimestamp.iso
+    this.sessionId = createSessionId(sessionTimestamp.iso)
+    this.sessionTimeZone = sessionTimestamp.timeZone
+    this.sessionUtcOffsetMinutes = sessionTimestamp.utcOffsetMinutes
+    this.currentHandStartedAt = null
 
     const { roster, sessionLog } = loadPersistentRoster()
     const sessionIdentities = selectReturningSessionIdentities(
@@ -469,6 +490,7 @@ export class LocalGameRunner {
     this.sessionDecisionSnapshots = []
     this.previousSnapshotActionCountPerHand.clear()
     this.currentHandBotDebugDecisions = []
+    this.currentHandStartedAt = captureTimestamp()
     this.game.startHand()
     this.debugHands.push({
       recordType: 'hand',
@@ -778,13 +800,18 @@ export class LocalGameRunner {
     const botInfos = this.currentHandBotDebugDecisions
       .map(d => ({
         playerId: d.playerId,
-        action: d.decision.action.type === 'raise' ? `raise ${d.decision.action.amount}` : d.decision.action.type,
+        playerName: d.playerName,
+        sequence: d.sequence,
+        phase: d.context.publicState.phase,
+        archetype: d.profile.archetype,
+        skill: d.profile.skill.level,
+        action: formatDecisionAction(d.decision.action),
         handCategory: d.evaluation.handAssessment.category,
         handProfile: formatHandProfile(d),
         chosenCandidateId: d.decision.chosenCandidateId,
         scores: d.decision.allActions.map(a => ({
           candidateId: a.candidateId,
-          action: a.action.type === 'raise' ? `raise ${a.action.amount}` : a.action.type,
+          action: formatDecisionAction(a.action),
           utility: a.utility,
         })),
         topContributions: (d.decision.allActions.find(a => (
@@ -792,7 +819,7 @@ export class LocalGameRunner {
         ))?.contributions ?? [])
           .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
           .slice(0, 5)
-          .map(c => `${c.label}: ${c.value > 0 ? '+' : ''}${c.value}`),
+          .map(c => `${c.label}: ${formatSignedDiagnostic(c.value)}`),
       }))
 
     const replay = buildReplayFromSession(
@@ -802,6 +829,15 @@ export class LocalGameRunner {
       this.game.getLastHandResults(),
       this.playerNames,
       botInfos,
+      {
+        sessionId: this.sessionId ?? undefined,
+        sessionStartedAt: this.sessionStartedAt ?? undefined,
+        sessionTimeZone: this.sessionTimeZone ?? undefined,
+        sessionUtcOffsetMinutes: this.sessionUtcOffsetMinutes ?? undefined,
+        startedAt: this.currentHandStartedAt?.iso,
+        timeZone: this.currentHandStartedAt?.timeZone,
+        utcOffsetMinutes: this.currentHandStartedAt?.utcOffsetMinutes,
+      },
     )
     if (replay) {
       this.handReplays.push(replay)
@@ -892,6 +928,10 @@ export class LocalGameRunner {
     this.timingRandom = Math.random
     this.sessionOptions = null
     this.sessionStartedAt = null
+    this.sessionId = null
+    this.sessionTimeZone = null
+    this.sessionUtcOffsetMinutes = null
+    this.currentHandStartedAt = null
   }
 
   setSittingOut(sittingOut: boolean): void {
@@ -969,6 +1009,15 @@ function createBotDebugProfile(botState: BotState): BotDebugProfile {
 
 function monotonicNow(): number {
   return globalThis.performance?.now() ?? Date.now()
+}
+
+function formatDecisionAction(action: PlayerAction): string {
+  return action.type === 'raise' ? `raise ${action.amount.toFixed(2)}` : action.type
+}
+
+function formatSignedDiagnostic(value: number): string {
+  const rounded = Number(value.toFixed(1))
+  return `${rounded > 0 ? '+' : ''}${rounded}`
 }
 
 function formatHandProfile(debug: BotDebugDecision): string {

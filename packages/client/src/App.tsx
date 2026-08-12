@@ -8,7 +8,7 @@ import type { DisplayCurrency } from './utils/format'
 import { APP_VERSION } from './app-version'
 import { downloadSessionDebugExport } from './session/session-debug-record'
 import { HandReplayer } from './components/HandReplayer'
-import type { HandReplay } from './session/hand-replay'
+import { createSessionHandHistoryFilename, type HandReplay } from './session/hand-replay'
 import { applyAndroidSystemUi, isAndroidRuntime } from './native-runtime'
 import { requestTextFileExport } from './utils/file-export'
 
@@ -242,7 +242,7 @@ export default function App() {
         const log = runner.exportSessionLog()
         requestTextFileExport({
           data: log,
-          filename: `CPCdigital-session-${new Date().toISOString().slice(0, 10)}.txt`,
+          filename: createSessionHandHistoryFilename(localState.handReplays),
           mimeType: 'text/plain',
           title: 'CPCdigital Session',
           dialogTitle: 'Session exportieren',
