@@ -39,6 +39,14 @@ Kalibrierungsmetriken gehören künftig vier Prüfstufen zum jeweiligen Release:
    Session-Debug-Export; strukturelle Fehler werden nicht durch breitere
    Zielkorridore kaschiert
 
+## Leseregel für Versionsblöcke
+
+Die Roadmap beschreibt pro Version Ziel, Kernumfang und Release-Gate. Konkrete
+Formeln, Dateigrenzen, Rohwerte und abgeschlossene Diagnoseverläufe stehen in
+verlinkten Scope-, Kalibrierungs- oder Releaseberichten beziehungsweise im
+Changelog. So bleibt hier auf einen Blick erkennbar, was abgeschlossen ist und
+was für die nächste Freigabe tatsächlich noch fehlt.
+
 ---
 
 # Phase 1 — Spielbares Fundament
@@ -673,82 +681,32 @@ stabilisieren, ohne Zielkorridore zur Fehlerkaschierung zu verbreitern.
 belastbares Fundament stellen, bevor neue Strategiepfade und dynamische Gegner
 darauf aufbauen.
 
-### PLO-Handbewertung & Rekalibrierung
+### Ergebnis
 
-- [x] PLO-Nut-Potential handrelativ: Flush-Top-Card, FH-Trips-Rank, Straight-Position, Set-Rank, Two-Pair-Ranks
-- [x] PLO-Dirty-Outs: Board-Pair-Filter, Straight-Domination via Gegner-Simulation, Flush-Dominanz via Board/Hole-Vergleich
-- [x] PLO-Board-Change handrelativ: Pair hilft Sets/TwoPair/FH, Flush-Card ungefährlich für Flush-Halter
-- [x] PLO-Score-Tabellen rekalibriert: LAG-Raise zurück auf v0.7.8, TAG-Raise erhöht, Nit-Fold erhöht, Protection-Boni auf Original
-- [x] NLHE/PLO-Targets nach Realismus-Kriterien aktualisiert (C-Bet, AF-Caps, WTSD für PLO)
-- [x] Neue Kalibrierungsmetriken: Fold-to-CBet und Turn C-Bet mit Target-Korridoren
-- [x] **PLO-Nut-Erkennung `'second-nuts'`**: Zwischenstufe zwischen `'near-nuts'`
-  und `'strong'` (Quads-K-vs-A, FH-KKKAA-vs-AAA, K-high-Flush-vs-A-high).
-  `secondNutPotential:4` dämpft Aggression bei zweitbesten Händen.
-- [x] **`findStraightTop`**: O(10)-Enumeration aller 10 Straight-Runs für NLHE
-  und PLO — ersetzt defekte Heuristiken, korrekte Nut-Straight-Erkennung.
-- [x] **Code-Review**: 30 Module, 22 Bugs gefixt, 19 bugfrei; 368 Tests
-  ([REVIEW.md](REVIEW.md))
+- [x] PLO-Nut-Potential, Dirty Outs, Board-Changes und Second-Nut-Erkennung
+  handrelativ korrigiert; gemeinsame Straight-Erkennung für NLHE und PLO
+  abgesichert.
+- [x] Kalibrierungsmetriken um Fold-to-CBet und Turn C-Bet erweitert sowie
+  Targetkorridore und Score-Tabellen nachvollziehbar neu bewertet.
+- [x] Festes Tischformat von der Zahl aktiver Spieler getrennt und
+  Heads-up-Strategie explizit von 6-max isoliert.
+- [x] Pot-Commitment, Fold-Schwellen und Multiway-Dynamik als strukturelle
+  Ursachen statt über einzelne Zielzellen korrigiert.
+- [x] 19 randomisierte Engine-Invarianten für NLHE und PLO etabliert und ein
+  Review von 30 Modulen abgeschlossen ([REVIEW.md](REVIEW.md)).
+- [x] Versionierte 10k-NLHE-/3k-PLO-Baselines für alle Archetypen und Formate
+  erzeugt; die noch geplanten Regressionsebenen wurden in 0.8.1 umgesetzt.
 
-### Test-Infrastruktur
+Die vollständige Begründung, Rohwerte, bekannte Abweichungen und
+Reproduktionsbefehle stehen im
+[0.8.0-Kalibrierungsbericht](calibration/v0.8.0.md).
 
-- [x] **Layer 1 — Invariant-Based Smoke Suite** ([Details](#layer-1--invariant-based-smoke-suite-ci-jeder-commit)):
-  Chip-Konservierung, Dealer-Rotation, kein negativer Stack, Pot-Konsistenz, Queue-Integrität —
-  19 randomisierte NLHE-/PLO-Szenarien mit je 1.000 Händen
-- [x] **0.8.1 / Layer 2 — Kalibrierungs-Regression**: 300-Hand-Smoke mit
-  Baseline-Vergleich, Abweichung > 2 %p → Warnung, > 5 %p → Build-Fehler
-- [x] **0.8.1 / Layer 3 — Parameter-Validierung**: Score-Tabellen-Konsistenz,
-  Clamp-Gültigkeit, Skill-Tier-Sortierung, All-in-Strafen negativ
+### Release-Status
 
-### Strukturelle Score-Lücken
-
-#### 🔴 Priority 1 — Direkter Kalibrierungs-Impact
-
-- [x] **Pot-Commitment-Logik**: Ab callCommitment ≥ 0.4 Fold-Scores überschreiben.
-  Behebt LAG FR WTSD 11.8% vs Target 28–34%. Höchster Einzeleffekt auf Kalibrierung.
-- [x] **Dynamische Fold-Thresholds**: Fold-Scores als Funktion von Street, SPR und
-  Gegner-Aggression. Behebt Nit AF-Explosion (AF 6.6 statt 3.5) und universell
-  zu hohes Fold-to-CBet (78-84% vs. 30-68%).
-- [x] **Multiway-Dynamik**: `activeOpponents` graduell statt binär ≥3. Multiway-Penalty
-  für C-Bet, 3-Bet, Value-Raises. Senkt PLO-C-Bet-Überaggression und verbessert
-  Fold-to-CBet in Multiway-Pots. Preflop-Ranges nach Gegnerzahl skalieren.
-- [x] **TAG 6m AF-Tuning**: AF stabil bei 3.65 (Target 1.5–3.5). Nur Parameter — kein
-  Algorithmus-Aufwand.
-
-### HU-Kalibrierung
-
-HU ist spielbar, besitzt eigene Targets und wird nicht mehr aus 6-max-
-Entscheidungstabellen abgeleitet. Die exakte Postflop-Kalibrierung folgt nach
-den Strategieänderungen von 0.8.1, die adaptive Validierung nach 0.8.2.
-
-- [x] HU-spezifische Preflop-Ranges validieren und nachjustieren (Anker in `preflop-ranges.ts` vorhanden)
-- [x] NLHE Calling Station: 3-Bet-Frequenz und Target nach korrigiertem
-  Opportunity-Nenner prüfen (v0.7.8-Baseline: 1,79%, 63/3512 bei 10k)
-- [x] Postflop-Linien für HU-Dynamik (C-Bet-Frequenz, Float-Resistenz, Bluff-Rate)
-- [x] HU-Kalibrierung: bestehende Targets in `simulation.ts` schärfen (alle 4 Archetypen, NLHE + PLO)
-- [x] Integrationstests für Format-Isolation und explizite HU-Tabellenauswahl
-- [x] Strukturelle Baseline: NLHE 10k und PLO 3k für alle vier Archetypen
-- [x] 0.8.1: finale 10k-Postflop-Validierung für NLHE und PLO durchgeführt;
-  Rohwerte und verbleibende Ausreißer stehen im
-  [0.8.1-Release-Gate-Report](calibration/v0.8.1-release-gate.md)
-
-### Release-Gate
-
-- [x] Code-Review abgeschlossen: 30 Module, 22 Bugs gefixt, 19 bugfrei ([REVIEW.md](REVIEW.md))
-- [x] Festes Tabellenformat (`tableSize`) von aktiven Spielern im Pot getrennt;
-  ein Full-Ring-Pot kann nach Folds keine 6-max-/HU-Boni mehr erhalten
-- [x] PLO-HU-Score- und Preflop-Tabellen explizit von 6-max entkoppelt
-- [x] Kalibrierungsreport mit Rohnennern sowie AF nach Street, Rolle und Drucksituation
-- [x] Vorher-Baseline vollständig dokumentiert: 20 NLHE- und 42 PLO-Zielabweichungen
-- [x] Post-Isolation-Baseline: NLHE 10k und PLO 3k, jeweils alle Archetypen und Formate
-- [x] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves und
-  0 uncommitted Deep-Shoves
-- [x] Layer 1-Invarianten-Tests grün für NLHE und PLO (19 Tests)
-
-Das frühere All-green-Gate wird nicht durch weichere Targets ersetzt. Exaktes
-Postflop-Tuning wird bewusst nach den SPR-, Board-, River-, Float- und
-Barrel-Änderungen von 0.8.1 durchgeführt. Finale adaptive Preflop-/HU-
-Validierung folgt nach 0.8.2. So werden keine 0.8.0-Konstanten auf
-Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
+**Abgeschlossen.** Format-Isolation, Diagnose, Invarianten und sämtliche 24
+Archetyp-/Formatkombinationen wurden freigegeben. Verbleibendes
+Postflop-Tuning wurde bewusst nach 0.8.1 verschoben, statt Zielkorridore an
+vorübergehende Entscheidungspfade anzupassen.
 
 ---
 
@@ -762,119 +720,31 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 > Rohwerte und Invarianten stehen im
 > [Release-Gate-Report](calibration/v0.8.1-release-gate.md).
 
-### PLO-Strategie
+### Umgesetzter Kernumfang
 
-- [x] **SPR-Zonen (PLO)**: Graduelle SPR-Skalierung statt binär ≤3. SPR 1-3 →
-  Nut-or-Fold, SPR 4-8 → Protection-heavy, SPR 8-15 → Draw-heavy. Fundamentale
-  PLO-Strategie-Variable, aktuell nur +12/−8 bei SPR≤3.
-- [x] **PLO-Board-Dynamics**: `boardGotWorse` boolean → Equity-Collapse-Multiplikator.
-  Gepaarter River bricht Flush/Straight-Value drastisch, Monotone-Board kollabiert
-  Non-Flush-Hände. Jede Turn-/River-Karte in PLO verändert die Equity-Landschaft;
-  die Scorewirkung ist druck- und risikotoleranzabhängig, damit ungeöffnete
-  Turn-Barrels und Calling Stations nicht pauschal überkorrigiert werden.
-- [x] **PLO-River-Disziplin**: PLO-spezifische Call-Down-Verstärkung. Kein Bluff-Catch
-  ohne Blocker am River, Board-Pair oder 3rd-Flush → drastischer Fold-Malus.
-  PLO-River-Calling-Range muss enger sein als NLHE. Nut-, Near-Nut- und
-  Second-Nut-Value bleibt geschützt; Blocker, Mehrstreet-Druck,
-  Risikotoleranz und bereits verrechneter Equity Collapse skalieren den Effekt.
-- [x] **PLO-Positionshebel**: IP-Checkbonus, OOP-Fold-Malus, Freerolling-Modell.
-  In PLO realisiert IP dünne Redraws kostenlos, OOP wird auf Completern ausgeblufft.
-  Die tatsächliche Postflop-Aktionsreihenfolge berücksichtigt gefoldete Spieler;
-  realisierbare OOP-Equity wird fold-resistenter und Made-Hand-plus-Nut-Redraw-
-  Freerolls bevorzugen aggressive Fortsetzungen vor dem River.
-- [x] **PLO-Wrap-Kombinatorik**: Bottom-Wrap vs. Nut-Wrap unterscheiden. `wrap-8+`/`wrap-13+`
-  erkannt, aber kein Unterschied zwischen Nut-Outs und 2nd/3rd-Outs. Bottom-Wrap-Player
-  wird von jedem höheren Wrap gefreerollt. Nut-, Mixed-, Second- und Bottom-Wraps
-  klassifizieren nun jede physische Out-Karte gegen die höchstmögliche
-  gegnerische Straight; dominierte Outs zählen nicht als `cleanOuts`. Skill <30
-  überschätzt die rohe Out-Zahl weiterhin, höhere Skills nutzen die Dominanzinfo.
+- [x] PLO-Strategie über graduelle SPR-Zonen, Board-Equity-Collapse,
+  positionsabhängige Equity-Realisierung und strengere River-Disziplin
+  vertieft.
+- [x] Nut-, Mixed-, Second- und Bottom-Wraps samt dominierter Outs sowie
+  Blocker-, Freeroll- und Reverse-Implied-Odds-Effekten skillabhängig
+  differenziert.
+- [x] NLHE-Linien um echte Check-Raises, Turn-Double-Barrels, Float-Defense,
+  4-Bet-/5-Bet-Stufen und geplante River-Bet-Folds erweitert.
+- [x] Freiwilliges Pot-Commitment vom Forced-All-in-Risiko getrennt und beide
+  Größen mit expliziten Skill- und Preisgrenzen diagnostizierbar gemacht.
+- [x] Deterministische Kalibrierungsregression und Parameter-Validierung als
+  zweite und dritte Testebene eingeführt.
 
-### NLHE-Verfeinerung & Infrastruktur
+Die fachlichen Einzelregeln sind im [Changelog](CHANGELOG.md) beschrieben;
+Rohwerte, Grenztests und Freigabeentscheidung stehen im
+[0.8.1-Release-Gate-Report](calibration/v0.8.1-release-gate.md).
 
-- [x] **Layer 2 — Kalibrierungs-Regression**: deterministischer 300-Hand-Smoke,
-  Abweichung > 2 %p als Warnung und > 5 %p als Fehler
-- [x] **Layer 3 — Parameter-Validierung**: Score-Tabellen, Clamps,
-  Skill-Tier-Reihenfolge und All-in-Strafen prüfen
+### Release-Status
 
-- [x] **Skill-Gating**: Neue Analyse-Tiefe als Feature-Flags mit `skillGate`-Schwellen.
-  Skill-20-Nit: nur Outs-Zahl. Skill-90-TAG: Nut-Wrap vs. Bottom-Wrap. Bestehendes
-  Muster: `sizingTell.skillGate: 30`. Zentrale Gates schalten Board Dynamics
-  ab 30, River Discipline ab 40, Nut-Potential ab 50, Freerolls ab 60,
-  Blocker ab 65 und Wrap-Dominanz ab 70 frei. Niedrige Skills sehen bei Wraps
-  weiterhin die rohe Out-Zahl statt der tatsächlichen Dominanz.
-- [x] **Blocker-Logik**: `blockerValue` wird postflop über River Discipline hinaus
-  für Bluff-Catches, selektive Bluffs und Value-Pressure genutzt. Nut-/Second-Nut-
-  Flush- sowie vollständige/partielle Nut-Straight-Blocker skalieren nach
-  Blockerqualität, Skill und Archetyp. Niedrige Skills bleiben unter dem zentralen
-  Blocker-Gate; NLHE behält seinen getrennten, bestehenden All-in-Blockerpfad.
-- [x] **Implied Odds**: Der statische +7-Callbonus skaliert nun mit effektivem
-  Gegnerstack, wahrgenommenem Draw-Nut-Potential und aktiven Gegnern. Nut-nahe
-  Draws gewinnen in tiefen Multiway-Pots zusätzlichen Wert; dominierbare Draws
-  werden dort wegen Reverse Implied Odds kontrolliert abgewertet. Preflop bleibt
-  von diesem Postflop-Faktor ausgenommen.
-- [x] **Check-Raise-Respekt**: Klassische Check-Raises werden spieler- und
-  streetgenau erkannt. Ungeschützte Ranges folden häufiger und callen/reraisen
-  seltener abhängig von Preis, Skill, Risikotoleranz und Variante; Premium-/Nut-
-  Value bleibt geschützt. OOP-Heads-up-Spots können für beide Varianten als
-  Value-Trap oder Nut-Draw-Semi-Bluff geplant und nach dem gegnerischen Bet
-  tatsächlich als Check-Raise ausgeführt werden.
-- [x] **NLHE Turn-Double-Barrel**: Bestehende Three-Barrel-Identitäten erhalten
-  deterministisch eine Turn-Vorstufe, ohne den Roster neu auszulosen. Das Habit
-  feuert Heads-up nach eigener Flop-Aggression auf ungefährlichen Turns mit
-  geeigneten Value-, Draw- oder Bluff-Kandidaten; Skill, Habit-Konsistenz und
-  Entscheidungsauswahl erhalten individuelle Varianz. PLO und Multiway-Pots
-  bleiben ausgeschlossen.
-- [x] **NLHE Float-Defense**: Die Ereignissequenz erkennt gegnerspezifisch eigene
-  Flop-C-Bet → gegnerischen Call → eigenen Turn-Check → gegnerischen Turn-Bet,
-  ohne normale Turn-Aggression als Float fehlzuklassifizieren. Made-Hand-Bluff-
-  Catcher, brauchbare Draws, Value und aggressive Blocker-Rebluffs verteidigen
-  abhängig von Preis, Board-Transition, Skill, Archetyp und Gegnerread; Air ohne
-  Blocker und PLO bleiben ausgenommen.
-- [x] **Preflop 4-Bet/5-Bet**: Eigene Eskalationsstufen trennen 4-Bet-Value,
-  seltene skill- und aggressionsgebundene NLHE-A5s/A4s-Polarisierung,
-  commitment-abhängige 5-Bets und Fold-to-5-Bet-Ranges. Nach einer 5-Bet
-  bleibt nur der stackabhängige Value-Core aktiv; PLO verwendet bewusst keine
-  NLHE-Blockerbluffs. Selection-Gates und bestehende Deep-Stack-Sicherungen
-  verhindern, dass generische Boni ausgeschlossene Raises oder Shoves wiederbeleben.
-- [x] **Pot-Commitment vs. Forced-All-in**: Freiwillig investierte Chips werden
-  relativ zum Stack zu Handbeginn und ohne Blinds erfasst. Nur dieses Signal
-  kann bei anfälligen Bots eine begrenzte Sunk-Cost-Tendenz auslösen; der
-  geforderte Call relativ zum Reststack wirkt bei schwachen, teuren Calls als
-  separates Varianzrisiko. Gute/starke Hände und Pot Odds bis 10% bleiben
-  geschützt; beide Rohwerte erscheinen in Debug-Ansicht und Session-Export.
-- [x] **NLHE Bet-Fold-Lines**: Geeignete Heads-up-River-Spots mit mittlerem oder
-  gutem, aber nicht geschütztem Showdown-Value speichern beim Bet eine konkrete
-  Bet-Fold-Absicht in der Hand-Memory. Nur die exakte Sequenz eigene Opening-Bet
-  → gegnerischer Raise aktiviert den Fold-Plan; Calls werden nach Preis und
-  Archetyp diszipliniert abgewertet, Reraises und Shoves ausgeschlossen. Starke/
-  nut-nahe Hände, Multiway-Pots, PLO und Low-Skill-Bots bleiben ausgenommen, und
-  der aktive Plan ist im Bot-Debug sichtbar.
-
-### Release-Gate
-
-- [x] 3k-Entwicklungsläufe + 10k-Release-Läufe für alle vier Archetypen in NLHE
-  und PLO, Full Ring und 6-max abgeschlossen; die deterministische v2-Baseline
-  wurde nach den Score-Änderungen neu erzeugt und ohne Driftfehler validiert.
-- [x] Full-Ring-/6-max-Kalibrierung vollständig innerhalb der unveränderten
-  Zielranges; finale Bestätigung mit 10.000 Händen je Archetyp und Format.
-- [x] HU-Kalibrierung für alle acht Varianten-/Archetypkombinationen innerhalb
-  der geschärften Targets; finale Bestätigung mit 3.000 Händen je Archetyp.
-- [x] 0 Invalid-Action-Fallbacks, 0 Deep-Stack-Open-Shoves und
-  0 Uncommitted-Deep-Shoves in allen 3k-/10k-Gate-Läufen.
-- [x] Skill-Gating-Smoke: Low-Skill-Bot (20) und High-Skill-Bot (90) zeigen messbar
-  unterschiedliches Entscheidungsverhalten in denselben Szenarien
-- [x] Die nach dem dokumentierten Cut freigegebene Commitment-Korrektur wurde
-  mit identischen Seeds auf 300/3k sowie für PLO LAG und Calling Station Full
-  Ring auf 10k geprüft. Der falsche Must-call-Hebel ist entfernt; die getrennte
-  WTSD-Pfaddiagnostik führte zu begrenzten, formatgenauen Strategiehebeln.
-- [x] **Commitment-Boundary-Suite nach Cut**: Die ungerundeten Interpolationen
-  exakt bei Pot-Commitment 25%, Skill 20/70, Forced-All-in 40%/100% und Pot
-  Odds 10%/40% sowie jeweils unmittelbar darunter/darüber testen. Insbesondere
-  muss die multiplikative Verknüpfung bei Hand #36 trotz 100% Reststack-Risiko
-  wegen 4,8% Pot Odds exakt null ergeben.
-- [x] **WTSD-Pfaddiagnostik**: Showdowns nach All-in, Call-down, Aggressor und
-  Check-down sowie nach Rolle, Gegnerfeld und Preisband getrennt; Fold-Exits
-  und Erhaltungsinvarianten verhindern pauschales Matrix-Tuning.
+**Abgeschlossen am 11.08.2026.** Alle statischen Zielranges sind in den
+10k-Läufen für Full Ring und 6-max sowie den 3k-Heads-up-Läufen grün. Die
+technischen Gates, exakten Commitment-Grenzen, WTSD-Pfaddiagnostik und
+Skill-Differenzierung wurden mit unveränderten Zielkorridoren freigegeben.
 
 ---
 
@@ -884,90 +754,54 @@ Entscheidungspfade kalibriert, die in den beiden Folgereleases ersetzt werden.
 glaubwürdige emotionale Reaktionen — ohne in Solver-Bots oder berechenbare
 Muster zu verfallen.
 
-### Entscheidungsgrundlage & Diagnose
+### Abgeschlossene Foundation
 
-- [x] objektive Hand-, Board-, Positions- und Gegnerinformationen getrennt von
-  der skillabhängig wahrgenommenen Sicht bis zur Auswahl und Diagnose
-  durchreichen; Wahrnehmung verändert den öffentlichen Spielzustand nicht
-- [x] Preflop-Rolle und öffentliche Position je Gegner sowie die echte
-  Aggressionsfolge pro Street bewahren; eine Opening-Bet ist keine Reraise und
-  eine C-Bet-Gelegenheit beziehungsweise C-Bet-Defense gilt nur beim ersten
-  passenden Flop-Angriff
-- [x] NLHE-Handhierarchie auf einfach gepaarten Boards präzisieren: Board-Play,
-  Pocket-Pair, Top Pair/Kicker und Trips getrennt bewerten; gegnerische
-  6x-Repräsentation auf K-6-6 nach Preflop-Rolle, Position, Board-Interaktion,
-  Card Removal und Multiway-Feld schätzen
-- [x] neue Analysefähigkeiten über
-  `clamp((Skill - Schwelle) / (100 - Schwelle), 0, 1)` stetig einblenden:
-  exakt null an der Schwelle, ohne vorzeitige Rundung, exakt voll bei Skill 100
-- [x] stabile Kandidaten-IDs und eine einzige kanonische All-in-Aktion
-  einführen; Auswahlgrenze unverändert bei 85% lassen und Zahl plausibler
-  Kandidaten, Utility-Abstand und erzwungene Einzelauswahl instrumentieren
-- [x] Session-Debugexport v4 auf die vollständige aktuelle Session erweitern:
-  alle Aktionskandidaten und Contributions, gewählte Kandidaten-ID,
-  objektive/wahrgenommene Analyse, Ranges und Street-Aggression; normaler
-  Sessionexport bietet eine eindeutige Wahl zwischen Handhistory und Debug-JSONL;
-  Rich-Puffer auf 50 Entscheidungen begrenzen und die vollständige Session als
-  eine kompakte Zeile pro Hand mit prüfbarem Footer sowie Android-Append-Streaming
-  exportieren
-- [x] Regressionen für Skill-Grenzen, C-Bet-Once-Semantik, echte
-  Aggressionsstufen, Paired-Board-Hierarchie, K-6-6-Ranges, AA-Valuebet,
-  Kandidatenkanonisierung und exakte 85%-Grenze ergänzen
-- [x] auffällige Session-Shoves und Multiway-C-Bet-Defense absichern:
-  uncommitted Open-/Single-Raise-Shoves nach Stacktiefe sperren und den
-  Calling-Station-Sonderbonus mit drawloser High-Card-Hand nur in Vierer-Pots
-  beziehungsweise bei einem Call um den gesamten Reststack gezielt dämpfen
-- [x] Stake-Invarianz auf Decision- und kurzem Simulationsniveau absichern:
-  dieselbe Identität und Skillstufe entscheidet in proportional identischen
-  100-BB-Situationen unabhängig von der nominalen Blindhöhe gleich
+- [x] Objektiven Hand-, Board-, Positions- und Gegnerkontext bis zur Auswahl
+  erhalten und davon eine stetig skillgewichtete Wahrnehmung ableiten.
+- [x] Preflop-Rollen, echte Aggressionsstufen, C-Bet-Once-Semantik und
+  Paired-Board-Hierarchie samt kontextabhängiger gegnerischer Range
+  regressionsgetestet.
+- [x] Aktionskandidaten kanonisiert, Auswahlgrenzen instrumentiert und
+  auffällige uncommitted Shoves sowie extreme Calling-Station-Defense gezielt
+  abgesichert.
+- [x] Session-Debugexport v4, kompakte Android-Ausgabe, lesbare Handhistory
+  mit stabilen Session-/Handreferenzen und Stake-Invarianz fertiggestellt.
 
-### Adaptive Reads & Ranges
+Details stehen im [Changelog](CHANGELOG.md) und im
+[0.8.2-Sessiondiagnosebericht](calibration/v0.8.2-session-diagnostics-2026-08-12.md).
 
-- [ ] Range-Präferenzen und Selection-Gates für 4-Bet-/5-Bet-Ketten so
-  staffeln, dass generische `strong`-, Positions- und SPR-Boni eine klare
-  Fold-Präferenz nicht mit marginalen Händen strukturell überstimmen
-- [ ] Button-/Cutoff-Opens, Steal-Gelegenheiten und Blind-Defense nach Gegner
-  und Position mit Stichprobe sowie Konfidenz beobachten
-- [ ] strategische Skill-Anpassung von emotionaler Überreaktion trennen:
-  skillige Bots verteidigen kontrolliert, schwächere Bots können Druck spät,
-  falsch oder gegnerspezifisch frustriert beantworten
+### Verbleibender Releaseumfang
 
-### Skill-Modell
+- [ ] Tiefe 4-Bet-/5-Bet-Ketten nach tatsächlicher Aggressionsstufe absichern,
+  damit generische Boni keine klare Fold-Präferenz strukturell überstimmen.
+- [ ] Button-/Cutoff-Steals und Blind-Defense gegner-, positions-, stichproben-
+  und konfidenzabhängig beobachten und beantworten.
+- [ ] Strategische Anpassung klar von emotionaler Überreaktion trennen;
+  Skill steuert Erkennung, Qualität, Regulation und Erholung, ohne Archetypen
+  zu Solver-Bots zu glätten.
+- [ ] `generalSkill` und deterministisch korrelierte
+  `variantProficiency` als Grundlage für spätere Variantenfamilien
+  vorbereiten.
+- [ ] `params.mental` tatsächlich verwenden und Bad Beat, Cooler, erkannte
+  Bluffs, erfolgreiche Bluffs und Suckouts als gewichtete Mental Events
+  anschließen.
+- [ ] Frustration, Momentum, Tilt und Confidence begrenzen und mit
+  Hysterese/Decay zuverlässig zur archetypischen Grundlinie zurückführen.
 
-- [ ] Skill als Richtung für Erkennung, Anpassungsqualität, Tilt-Regulation
-  und Erholungsdauer verwenden, ohne Archetypen in Solver-Bots zu verwandeln
-- [ ] Skillmodell für spätere Variantenfamilien vorbereiten: stabiler
-  `generalSkill` für übertragbare Fähigkeiten plus deterministisch korrelierte
-  `variantProficiency` für NLHE, PLO, Draw und Stud
-
-### Mental Events & Zustände
-
-- [ ] `params.mental` an `bot-mental.ts` anschließen (Werte hartkodiert, Params definiert aber nie gelesen)
-- [ ] reale Mental Events für Bad Beat, Cooler, Bluff caught, erfolgreichen
-  Bluff und Suckout erkennen; Event-Schwere und Decay fachlich testen
-- [ ] gegnerspezifische Frustration und Momentum als begrenzte, abklingende
-  Scoring-Evidenz anschließen statt nur Debugzustand zu bleiben
-- [ ] temporäre Zustände mit Hysterese/Decay zur archetypischen Grundlinie
-  zurückführen; keine permanenten Range-Umschaltungen nach Einzelereignissen
-
-### Feature-Tests
-
-- [ ] Szenariotests für großes Open versus echte kleine 3-Bet sowie
-  postflop Bet/Raise/3-Bet/4-Bet mit getrennten Range-, Sizing- und
-  Commitment-Reaktionen
-- [ ] Sequenztests für wiederholte Steals: High-Skill-Defense versus
-  Low-Skill-Überreaktion, gegnerspezifischer Frust und Rückkehr zur Grundlinie
-- [ ] Sessiontests für sichtbare, aber nicht permanente Tilt-/Confidence-
-  Phasen sowie Invarianten gegen neue marginale Deep-Stack-Eskalationen
+Das fachliche Zielbild und die Reihenfolge sind ausführlich unter
+[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/bot-dynamics-roster-and-notes.md)
+dokumentiert.
 
 ### Kalibrierungs-Gate
 
-- [ ] **Baseline-Modus:** Archetypen ohne adaptive Reads, Frust und Momentum
-  bleiben innerhalb der festen VPIP/PFR/3-Bet/Postflop-Zielranges
-- [ ] **Adaptiver Modus:** Sequenz- und Sessiontests prüfen gerichtete,
-  begrenzte Deltas statt jede dynamische Sitzung gegen dieselben statischen
-  Korridore zu zwingen
-- [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up
+- [ ] Szenario-, Sequenz- und Sessiontests trennen Betstufen, wiederholte
+  Steals, High-Skill-Defense, Low-Skill-Überreaktion und Rückkehr zur
+  Grundlinie; marginale Deep-Stack-Eskalationen bleiben ausgeschlossen.
+- [ ] Im Baseline-Modus bleiben Archetypen ohne adaptive Reads und Mental
+  Events innerhalb der festen Zielranges.
+- [ ] Im adaptiven Modus werden gerichtete, begrenzte Deltas statt statischer
+  Einzelwerte geprüft.
+- [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up.
 
 ---
 
@@ -978,68 +812,41 @@ großen UI-Release abschließen.
 
 ### Refactoring
 
-- [ ] `game.ts` splitten: Showdown-Logik, Player-Management und Betting-Round jeweils in eigene Dateien
-- [ ] `bot-action-scoring.ts` als kleine öffentliche Fassade erhalten und die
-  derzeit vermischten Verantwortlichkeiten in Preflop-, NLHE-Postflop-,
-  PLO-Postflop-, Risiko-/Candidate-Gate- und gemeinsame Scoring-Module
-  aufteilen; Parameter, Auswahlgrenzen und Verhalten dabei nicht verändern
-- [ ] `LocalGameRunner.ts` splitten: verbleibende Zuständigkeiten nach v0.8.0 entflechten
-- [ ] `session-debug-record.ts` nach Schema, Komprimierung, JSONL-Codec und
-  plattformspezifischem Download/Streaming trennen; Exportformat v4 und
-  Abwärtskompatibilität unverändert halten
-- [ ] `simulation.ts` in Kalibrierungsziele/-profile, Simulationslauf,
-  Statistik/Invarianten und Reporting gliedern, damit Release-Gates nicht mit
-  der eigentlichen Botstrategie gekoppelt bleiben
-- [ ] `TableScreen.tsx` auf reine Tisch-Orchestrierung reduzieren und Replay-,
-  Export- sowie Overlay-Steuerung in klar abgegrenzte Hooks/Komponenten
-  auslagern; anschließend `ActionButtons.tsx` nur entlang seiner bestehenden
-  Darstellungs-, Betrags- und Aktionsgrenzen teilen
-- [ ] große Bot-Tests entlang der neuen fachlichen Module aufteilen,
-  insbesondere `bot-pipeline.test.ts` und `bot-action-scoring.test.ts`; keine
-  Regression lediglich verschieben oder durch breitere Assertions ersetzen
-- [ ] NLHE-/PLO-Handevaluation auf gemeinsam nutzbare Board-, Draw- und
-  Made-Hand-Helfer prüfen, aber nur tatsächlich identische Regeln extrahieren;
-  `bot-params.ts` nicht allein wegen seiner Größe zerlegen, solange es eine
-  überwiegend deklarative Konfigurationsdatei bleibt
-- [ ] alle strukturellen Refactorings als verhaltensneutrale, getrennte
-  Commits durchführen: Workspace-Tests, Build und Stake-Invarianz müssen grün
-  bleiben; der deterministische Kalibrierungs-Snapshot muss exakt identisch
-  sein und darf nicht nur innerhalb der Warn-/Fehlertoleranzen liegen
-- [ ] Veraltete Bot-Dateien aufräumen (`bot.ts`, doppelte Helfer)
-- [ ] Bet-Level aktionsbasiert modellieren: Preflop `unopened`, Open, 3-Bet,
-  4-Bet+ aus der tatsächlichen Raise-Anzahl statt aus einer 4-BB-Sizinggrenze
-  ableiten; ungewöhnlich große Opens und kleine 3-Bets korrekt unterscheiden
-- [ ] Ruhendes `server`-Paket klar vom v1-Buildpfad getrennt halten und v2-Schnittstellenannahmen dokumentieren
-- [ ] Prettier-Konfiguration als separaten mechanischen Commit einführen
-- [ ] Dokumentierte Format- und Lint-Befehle ergänzen
+- [ ] Engine, Bot-Scoring, Sessionrunner/-export und Simulation entlang klarer
+  fachlicher Modulgrenzen teilen; bestehende öffentliche Fassaden und Formate
+  bleiben kompatibel.
+- [ ] Tisch-, Replay-, Export- und Overlay-Orchestrierung aus den großen
+  UI-Komponenten lösen, ohne vor 0.9 sichtbare Geometrieänderungen einzuführen.
+- [ ] Gemeinsame Handanalyse-Helfer nur für tatsächlich identische NLHE-/PLO-
+  Regeln extrahieren und veraltete Bot-Dateien sowie doppelte Helfer entfernen.
+- [ ] Bet-Level aus der tatsächlichen Raise-Folge statt einer Sizinggrenze
+  ableiten und damit große Opens von kleinen 3-Bets korrekt unterscheiden.
+- [ ] Buildpfade und Entwicklerwerkzeuge bereinigen: ruhendes Serverpaket von
+  v1 trennen sowie Format- und Lintkonfiguration dokumentiert einführen.
+
+Die vorgesehenen Datei- und Schnittstellengrenzen sind im
+[0.8.3-Refactoring-Scope](docs/refactoring-v0.8.3.md) festgehalten.
 
 ### Integrationstests
 
-- [ ] Integrationstests: Engine + LocalGameRunner als durchgehende Pipeline (Hand von Blinds bis Showdown)
-- [ ] Randfall-Tests: Empty-State (0 Spieler), Bust-zu-Ende, schnelle Neustarts
+- [ ] Engine und `LocalGameRunner` als Pipeline von Blinds bis Showdown sowie
+  Empty-State, Bust-zu-Ende und schnelle Neustarts testen.
+- [ ] Große Bot-Tests nach den neuen Modulgrenzen teilen, ohne Regressionen zu
+  verbreitern oder lediglich zu verschieben.
+- [ ] Jeden Umbau als getrennten, verhaltensneutralen Commit absichern:
+  Workspace-Tests, Build und Stake-Invarianz grün; Kalibrierungs-Snapshot exakt
+  identisch statt nur innerhalb der Toleranzen.
 
 ### Lizenzklarheit & Herkunftsnachweis
 
-- [ ] Zentrale Bot- und Engine-Dateien mit maschinenlesbaren
-  `SPDX-FileCopyrightText`- und `SPDX-License-Identifier`-Hinweisen versehen
-- [ ] Zukünftige Release-Tags kryptografisch signieren und die lokale
-  Verifikation knapp dokumentieren; den veröffentlichten Tag `v0.7.7` nicht
-  nachträglich umschreiben
-- [ ] Pro Release ein leichtgewichtiges Bot-Provenance-Manifest aus exakten
-  Dateihashes und normalisierten Token-/AST-Fingerprints erzeugen, damit auch
-  umbenannte oder umformatierte Teilkopien lokal vergleichbar bleiben
-- [ ] Veröffentlichte Releases unabhängig bei Software Heritage archivieren
-  und den jeweiligen inhaltsbasierten SWHID dokumentieren
-- [ ] Kurzen Monitoring- und Beweissicherungsleitfaden für charakteristische
-  öffentliche Codefragmente, verdächtige Repositories und
-  AGPL-Compliance-Fälle festhalten
+- [ ] SPDX-Hinweise für zentrale Bot-/Engine-Dateien und signierte zukünftige
+  Release-Tags samt lokaler Verifikation einführen.
+- [ ] Leichtgewichtiges Provenance-Manifest, Software-Heritage-Archivierung
+  und einen proportionalen AGPL-Beweissicherungsleitfaden etablieren – ohne
+  Telemetrie, Obfuskation oder Laufzeit-Wasserzeichen.
 
-> Diese Maßnahmen richten sich nicht gegen transparente Forks oder
-> AGPL-konforme kommerzielle Nutzung. Es entstehen weder Telemetrie noch
-> Phone-home-Logik, Obfuskation, absichtlicher Dead Code oder ein verstecktes
-> Laufzeit-Wasserzeichen. Ziel ist ein proportionaler Herkunftsnachweis gegen
-> automatisierte, unattribuierte Übernahmen, keine lückenlose Überwachung des
-> Internets.
+Abgrenzung und genaue Artefakte stehen ebenfalls im
+[0.8.3-Refactoring-Scope](docs/refactoring-v0.8.3.md#public-readiness-und-herkunftsnachweis).
 
 ---
 
@@ -1047,68 +854,46 @@ großen UI-Release abschließen.
 
 **Ziel:** Mehr Kontrolle über die Session.
 
-- [ ] Hero-Name im Setup wählbar (statt immer „You“)
-- [ ] Individuelle Starting-Stacks pro Bot
-- [ ] Konfigurierbare Buy-in-Grenzen (40–250 BB)
-- [ ] Session-Setup mit Variante + Schwierigkeitsmix
-- [ ] zentrale `pendingHeroAction`-Pipeline für vorgewählte Aktionen einführen;
-  bei Zugbeginn immer erneut gegen den aktuellen Betting Context validieren
-- [ ] sichere Pre-Selections `Check`, `Check/Fold`, `Fold` und
-  betragsgebundenes `Call` anbieten; ungültig gewordene Auswahlen löschen und
-  zunächst weder `Call any` noch automatische Raises zulassen
-- [ ] optionale Clock-Profile `Entspannt`, `Standard` und `Schnell` technisch
-  vorbereiten; Timeout checkt kostenlos oder foldet, investiert aber niemals
-  automatisch Chips
-- [ ] Clock bei Hintergrund, Gerätesperre und kontrollierter App-Pause
-  anhalten; Warnungen, Timebank und Timeout-Quelle replayfähig erfassen
-- [ ] **All-in-Equityanzeige**: Sobald alle verbleibenden Spieler all-in sind
-  und keine weitere Aktion aussteht, Gewinn- und Split-Wahrscheinlichkeiten
-  vor dem Board-Runout anzeigen; NLHE- und PLO-Regeln korrekt behandeln und
-  die Berechnung mit deterministischen Referenzhänden absichern
-- [ ] **Aktuelle Made Hand anzeigen**: Optional die momentan beste Hand des
-  Heros am Tisch und im Replayer benennen, etwa `Top Pair`, `Two Pair` oder
-  `King-high Flush`; bei NLHE die beste Fünf-Karten-Kombination und bei PLO
-  zwingend exakt zwei Hole Cards plus drei Board Cards auswerten. Die Anzeige
-  bleibt rein beschreibend und enthält weder Draw-/Equitywerte noch eine
-  Handlungsempfehlung
-- [ ] **Diagnosefähige Hand-ID**: Jede Hand erhält zusätzlich zur
-  sessionlokalen Nummer eine sessionsübergreifend eindeutige, seed-neutrale
-  ID, die am Tisch, im Replayer und in Exporten sichtbar und kopierbar ist.
-  Nach Handabschluss verknüpft der Debugexport sie mit Variante,
-  Tischkonfiguration, Bot-Identitäten, Startzuständen und einem geschützten
-  Reproduktionsschlüssel beziehungsweise kanonischen Snapshot; die sichtbare
-  ID darf keine noch unbekannte Kartenfolge ableitbar machen
-- [ ] **Glatte Bot-Rebuys**: Den aus der persönlichen BB-Policy abgeleiteten
-  Zielstack auf eine sinnvolle, zur Chip-Unit passende Geldstufe aufrunden,
-  ohne den eigentlichen Rebuy-Trigger abzusenken; Beträge wie `$1,14`
-  vermeiden und Rundung in Replay sowie Sessionstatistik konsistent erfassen
-- [ ] **Bot-Stack-Lifecycle vereinheitlichen**: Die bereits vorhandene
-  `rebuyWhenShortBb`-Policy für Short-Stack-Rebuys gemeinsam mit dem
-  Deep-Stack-Cash-out zwischen Händen modellieren, im Debugexport sichtbar
-  machen und mit deterministischen Schwellen-, Rebuy-Limit- und
-  Ersatzspieler-Sequenztests absichern; beim Aussetzen wegen zu vieler BB den
-  tatsächlich ausgecashten Stack anzeigen statt den Sitz fälschlich mit
-  `0,00` zu beschriften
-- [ ] Integrationstests für Session-Flow (Setup → mehrere Hände → Rebuy)
-- [ ] Sequenztests für Pre-Selection nach Check, Bet und Reraise sowie für
-  Clock-/Resume-Randfälle auf Desktop und Android
+### Session-Setup und Aktionen
 
-### Fortlaufend: Bot-Identitäten
+- [ ] Hero-Name, individuelle Bot-Stacks, Buy-in-Grenzen von 40–250 BB sowie
+  Variante und Schwierigkeitsmix im Setup konfigurierbar machen.
+- [ ] Sichere Pre-Selections über eine zentral validierte
+  `pendingHeroAction`-Pipeline anbieten; zunächst keine automatischen Raises
+  oder ungebundenen Calls.
+- [ ] Optionale Clock-Profile mit sicherem Check/Fold-Timeout sowie Pause bei
+  Hintergrund, Gerätesperre und kontrolliertem App-Resume einführen.
 
-- Neue Identitäten nur ergänzen, wenn Namen, Avatare, Traits und Wiedererkennbarkeit gemeinsam geprüft sind.
-- Keine feste Quote pro Minor-Version; Session-Abwechslung und Wiederholungsrate bestimmen den Bedarf.
-- Global zunächst ungefähr 64 Identitäten anstreben; pro 6-max-Session in der
-  Regel ein bis zwei bekannte und drei bis vier neue oder länger nicht
-  gesehene Gegner auswählen.
-- Wiederholungs-Cooldown und stakeübergreifende Pool-Überlappung vorbereiten;
-  Ersatzspieler bevorzugt aus in der Session noch nicht gesehenen Identitäten ziehen.
-- Einen gemeinsamen variantenübergreifenden Roster behalten und daraus
-  überlappende Varianten-Pools nach persönlicher Affinität und Kompetenz
-  bilden; keine vollständig getrennten Identitätswelten erzeugen.
-- Dieselbe Identität nie gleichzeitig an mehreren offenen Tischen einsetzen;
-  spätere Spezialisten dürfen Haupt- und Nebenvarianten mit unterschiedlichen,
-  aber korrelierten Skillwerten besitzen.
-- Persistenzmigrationen und deterministische Seeds bleiben Release-Gates für Roster-Änderungen.
+### Tisch-QoL und Diagnose
+
+- [ ] All-in-Gewinn-/Splitwahrscheinlichkeiten und die aktuelle Made Hand für
+  NLHE und PLO regelkonform, deterministisch getestet und ohne
+  Handlungsempfehlung anzeigen.
+- [ ] Eine sessionsübergreifend eindeutige, seed-neutrale Hand-ID am Tisch, im
+  Replayer und in Exporten mit einem geschützten Reproduktionsbezug verbinden.
+
+### Bot-Stack-Lifecycle
+
+- [ ] Rebuy-Zielstacks auf sinnvolle Geldstufen runden und Short-Stack-Rebuy,
+  Deep-Stack-Cash-out, Limits sowie Ersatzspieler als gemeinsamen
+  Zwischen-Hand-Flow modellieren.
+- [ ] Beim Cash-out den tatsächlichen Stack statt `0,00` anzeigen und alle
+  Übergänge in Replay, Sessionstatistik und Debugexport konsistent erfassen.
+
+### Release-Gate
+
+- [ ] Setup → mehrere Hände → Rebuy/Cash-out und Ersatzspieler als
+  durchgehenden Sessionflow testen.
+- [ ] Pre-Selection- sowie Clock-/Resume-Sequenzen auf Desktop und Android
+  absichern.
+- [ ] Informationsanzeigen verändern weder Enginezustand noch Botentscheidung
+  oder deterministisches Replay.
+
+Der vollständige Funktionsumfang steht im
+[0.8.4-Scopedokument](docs/session-flexibility-v0.8.4.md). Fortlaufende
+Roster-, Wiederholungs- und Variantenregeln bleiben zentral unter
+[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/bot-dynamics-roster-and-notes.md)
+dokumentiert.
 
 ---
 
