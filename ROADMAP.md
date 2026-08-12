@@ -913,6 +913,10 @@ Muster zu verfallen.
 - [x] Regressionen für Skill-Grenzen, C-Bet-Once-Semantik, echte
   Aggressionsstufen, Paired-Board-Hierarchie, K-6-6-Ranges, AA-Valuebet,
   Kandidatenkanonisierung und exakte 85%-Grenze ergänzen
+- [x] auffällige Session-Shoves und Multiway-C-Bet-Defense absichern:
+  uncommitted Open-/Single-Raise-Shoves nach Stacktiefe sperren und den
+  Calling-Station-Sonderbonus mit drawloser High-Card-Hand nur in Vierer-Pots
+  beziehungsweise bei einem Call um den gesamten Reststack gezielt dämpfen
 - [x] Stake-Invarianz auf Decision- und kurzem Simulationsniveau absichern:
   dieselbe Identität und Skillstufe entscheidet in proportional identischen
   100-BB-Situationen unabhängig von der nominalen Blindhöhe gleich
@@ -975,7 +979,32 @@ großen UI-Release abschließen.
 ### Refactoring
 
 - [ ] `game.ts` splitten: Showdown-Logik, Player-Management und Betting-Round jeweils in eigene Dateien
+- [ ] `bot-action-scoring.ts` als kleine öffentliche Fassade erhalten und die
+  derzeit vermischten Verantwortlichkeiten in Preflop-, NLHE-Postflop-,
+  PLO-Postflop-, Risiko-/Candidate-Gate- und gemeinsame Scoring-Module
+  aufteilen; Parameter, Auswahlgrenzen und Verhalten dabei nicht verändern
 - [ ] `LocalGameRunner.ts` splitten: verbleibende Zuständigkeiten nach v0.8.0 entflechten
+- [ ] `session-debug-record.ts` nach Schema, Komprimierung, JSONL-Codec und
+  plattformspezifischem Download/Streaming trennen; Exportformat v4 und
+  Abwärtskompatibilität unverändert halten
+- [ ] `simulation.ts` in Kalibrierungsziele/-profile, Simulationslauf,
+  Statistik/Invarianten und Reporting gliedern, damit Release-Gates nicht mit
+  der eigentlichen Botstrategie gekoppelt bleiben
+- [ ] `TableScreen.tsx` auf reine Tisch-Orchestrierung reduzieren und Replay-,
+  Export- sowie Overlay-Steuerung in klar abgegrenzte Hooks/Komponenten
+  auslagern; anschließend `ActionButtons.tsx` nur entlang seiner bestehenden
+  Darstellungs-, Betrags- und Aktionsgrenzen teilen
+- [ ] große Bot-Tests entlang der neuen fachlichen Module aufteilen,
+  insbesondere `bot-pipeline.test.ts` und `bot-action-scoring.test.ts`; keine
+  Regression lediglich verschieben oder durch breitere Assertions ersetzen
+- [ ] NLHE-/PLO-Handevaluation auf gemeinsam nutzbare Board-, Draw- und
+  Made-Hand-Helfer prüfen, aber nur tatsächlich identische Regeln extrahieren;
+  `bot-params.ts` nicht allein wegen seiner Größe zerlegen, solange es eine
+  überwiegend deklarative Konfigurationsdatei bleibt
+- [ ] alle strukturellen Refactorings als verhaltensneutrale, getrennte
+  Commits durchführen: Workspace-Tests, Build und Stake-Invarianz müssen grün
+  bleiben; der deterministische Kalibrierungs-Snapshot muss exakt identisch
+  sein und darf nicht nur innerhalb der Warn-/Fehlertoleranzen liegen
 - [ ] Veraltete Bot-Dateien aufräumen (`bot.ts`, doppelte Helfer)
 - [ ] Bet-Level aktionsbasiert modellieren: Preflop `unopened`, Open, 3-Bet,
   4-Bet+ aus der tatsächlichen Raise-Anzahl statt aus einer 4-BB-Sizinggrenze

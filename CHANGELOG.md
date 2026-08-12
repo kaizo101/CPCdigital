@@ -35,6 +35,15 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Changed
 
+- **Gezielte All-in-Tiefensicherung**: Nicht-Premium-Open-Shoves sind ab 25 BB
+  keine auswählbaren Kandidaten mehr; ab 40 BB gilt die Sperre nach höchstens
+  einem gegnerischen Raise auch für Premiumhände, solange der Bot noch nicht
+  substanziell investiert hat. Normale Raises sowie kurze und bereits
+  committed 4-/5-Bet-All-ins bleiben verfügbar.
+- **Calling-Station-C-Bet-Defense**: Der zusätzliche Call-/Raise-Bonus für
+  drawlose, ungemachte Hände wird auf 25 Prozent gedämpft, wenn mindestens vier
+  Spieler den Flop sehen oder der geforderte Call den gesamten Reststack
+  kostet. Gewöhnliche Heads-up- und Drei-Spieler-Floats bleiben unverändert.
 - **Speichersicherer Debugexport**: Der laufende Rich-Debugpuffer ist auf die
   letzten 50 Entscheidungen begrenzt; nur die aktuelle Hand bleibt zusätzlich
   reichhaltig für Inspector und Replay erhalten. Der vollständige kompakte

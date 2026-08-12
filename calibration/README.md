@@ -93,6 +93,7 @@ dieses Projekts bleibt final.
 
 ## Berichte
 
+- [v0.8.2 — Sessiondiagnose: Shove-Tiefensicherung und Calling-Station-C-Bet-Defense](v0.8.2-session-diagnostics-2026-08-12.md)
 - [v0.8.2 — Foundation-Snapshot nach Kontext-, Auswahl- und Diagnostikumbau](v0.8.2-foundation-300-hand.json)
 - [v0.8.1 — bestandenes Release-Gate und finale Rohwerte](v0.8.1-release-gate.md)
 - [v0.8.0 — Format-Isolation und strukturelle NLHE-/PLO-Baseline](v0.8.0.md)
