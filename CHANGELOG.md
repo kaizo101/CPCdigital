@@ -20,18 +20,28 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   Kicker und Trips werden auf einfach gepaarten Boards getrennt bewertet.
   Gegnerische Trips-Repräsentation berücksichtigt Preflop-Rolle, Position,
   eigene Karten und Multiway-Felder.
-- **Auswahl- und Exportdiagnostik v3**: Aktionskandidaten besitzen stabile IDs,
+- **Auswahl- und Exportdiagnostik v4**: Aktionskandidaten besitzen stabile IDs,
   stackgroße Raises werden als genau ein All-in-Kandidat geführt und die
   unveränderte 85%-Plausibilitätsgrenze wird mit Kandidatenzahl und Utility-Gap
   sichtbar. Der vollständige Session-Debugexport enthält alle Entscheidungen,
   Contributions sowie objektive und wahrgenommene Analysewerte; der normale
-  Export lässt klar zwischen Handhistory und Debug-JSON wählen.
+  Export lässt klar zwischen Handhistory und Debug-JSONL wählen. Eine
+  Session-Kopfzeile, genau eine kompakte Zeile pro Hand und eine prüfbare
+  Abschlusszeile ersetzen das speicherintensive Pretty-JSON.
 - **Kalibrierungs-Snapshot**: Der deterministische 300-Hand-Smoke erhält nach
   den bewusst spielwirksamen Kontext- und Kandidatenänderungen eine eigene
   0.8.2-Foundation-Baseline. Die 0.8.1-Datei bleibt unverändert als historischer
   Vergleich erhalten; strukturelle Invarianten gelten weiterhin unverändert.
 
 ### Changed
+
+- **Speichersicherer Debugexport**: Der laufende Rich-Debugpuffer ist auf die
+  letzten 50 Entscheidungen begrenzt; nur die aktuelle Hand bleibt zusätzlich
+  reichhaltig für Inspector und Replay erhalten. Der vollständige kompakte
+  Handdatensatz wächst weiterhin ohne Handlimit und wird im Web als Blob-Teile
+  beziehungsweise auf Android sequenziell in ungefähr 256-KB-Blöcken
+  geschrieben. Doppelte Score-Strings und sessionweit duplizierte Decision
+  Snapshots entfallen; erneutes Antippen ist während des Exports gesperrt.
 
 - **C-Bet-Defense mit schwachem Made Hand**: Aggressive Bots dürfen gegen eine
   C-Bet weiterhin Druck ausüben, erhalten aber nicht mehr denselben Raise-Schub

@@ -302,20 +302,41 @@ Kalibrierungen, ersetzen deren Release-Gates aber nicht.
 - "Cards on" im Replay (alle Hole-Cards sichtbar)
 - Entscheidungs-Export im Replay
 
-Der Session-Debug-Export (JSON) enthält den kompletten Spielverlauf inkl. privater Bot-Karten und ist für die Offline-Analyse gedacht.
+Der Session-Debug-Export (`.jsonl`, Schema v4) enthält den kompletten
+Spielverlauf inklusive privater Bot-Karten und ist für die Offline-Analyse
+gedacht. Frühere v1-v3-JSON-Dateien bleiben historische Formate; es gibt keinen
+stillen Import oder eine Umschreibung alter Exporte.
 
-Seit Schema v3 umfasst er die vollständige aktuell laufende Session, nicht nur
-die letzten fünf abgeschlossenen Hände. Jede Botentscheidung enthält die stabile
-ID des gewählten Kandidaten, sämtliche legalen Kandidaten mit ungekürzten
-Contributions, die unveränderte 85%-Auswahldiagnostik sowie objektive und
-skillabhängig wahrgenommene Hand-/Range-Werte. Die Street-Analyse exportiert
-Preflop-Rollen, Positionen und die echte Aggressionsfolge. Das JSON enthält
-private Botkarten und ist daher nicht zum öffentlichen Teilen bestimmt.
+Die erste JSON-Zeile beschreibt Session, App-Version, Profile, Identitäten und
+die Legenden der kompakten Tupelfelder. Danach folgt genau eine Zeile pro Hand,
+auch für eine noch laufende Hand. Sie enthält unveränderte Spielereignisse,
+private Hole Cards einmal pro Spieler und alle Botentscheidungen. Die letzte
+Zeile ist ein Footer mit Hand- und Entscheidungszahl. Fehlt sie oder stimmen
+die Zähler nicht, gilt die Datei als unvollständig.
+
+Jede Botentscheidung enthält die stabile ID des gewählten Kandidaten, sämtliche
+legalen Kandidaten, alle von null verschiedenen Contributions, die unveränderte
+85%-Auswahldiagnostik, objektive Hand-/Range-Werte sowie Deltas der
+skillabhängig wahrgenommenen Sicht. Preflop-Rollen, Positionen und die echte
+Aggressionsfolge bleiben erhalten. Diagnostische Fließkommazahlen werden auf
+maximal sechs Nachkommastellen begrenzt; Chips und Spielereignisse bleiben
+unverändert. Doppelte formatierte Score-Strings und sessionweit duplizierte
+Decision Snapshots sind nicht Teil von v4.
+
+Zur Laufzeit bleiben die letzten 50 Rich-Entscheidungen für den Inspector und
+alle Rich-Entscheidungen der aktuellen Hand für den Replayer im Speicher. Der
+vollständige kompakte Handdatensatz hat kein Sessionlimit. Beim Export werden
+ungefähr 256 KB große Teile erzeugt: Android schreibt zuerst eine Cache-Datei
+und hängt die übrigen Teile an, bevor der Share-Dialog geöffnet wird; im Browser
+entsteht ein Blob aus denselben Teilen. Ein 100-Hand-Stresstest mit zehn
+vollständigen Botentscheidungen je Hand erzwingt höchstens 102 JSONL-Zeilen und
+weniger als 4 MB. Die Datei enthält private Karten und ist daher nicht zum
+öffentlichen Teilen bestimmt.
 
 Der Exportknopf in den Sessionstatistiken öffnet eine Auswahl:
 
 - PokerStars-Handhistory (`.txt`) für kompaktes Lesen und Teilen
-- vollständige Debug-Session (`.json`) für reproduzierbare Ursachenanalyse
+- kompakte vollständige Debug-Session (`.jsonl`) für reproduzierbare Ursachenanalyse
 
 ## Bug-Reproduktion
 

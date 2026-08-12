@@ -21,10 +21,12 @@ export function BotDebugInspector({
   decisions,
   currency,
   onExportDebugRecord,
+  debugExporting,
 }: {
   decisions: readonly BotDebugDecision[]
   currency: DisplayCurrency
-  onExportDebugRecord: () => void
+  onExportDebugRecord: () => void | Promise<void>
+  debugExporting: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [selectedSequence, setSelectedSequence] = useState<number | null>(null)
@@ -91,7 +93,8 @@ export function BotDebugInspector({
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <button
                 type="button"
-                onClick={onExportDebugRecord}
+                disabled={debugExporting}
+                onClick={() => { void onExportDebugRecord() }}
                 title="Enthält private Karten und vollständige Bot-Entscheidungen"
                 style={{
                   padding: '6px 8px',
@@ -102,10 +105,11 @@ export function BotDebugInspector({
                   fontFamily: 'inherit',
                   fontSize: 10,
                   fontWeight: 800,
-                  cursor: 'pointer',
+                  cursor: debugExporting ? 'wait' : 'pointer',
+                  opacity: debugExporting ? 0.6 : 1,
                 }}
               >
-                Session-JSON
+                {debugExporting ? 'Export läuft …' : 'Session-JSONL'}
               </button>
               {decisions.length > 0 && (
                 <>

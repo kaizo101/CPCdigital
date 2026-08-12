@@ -484,7 +484,7 @@ Browser-Demo bleibt mobil bewusst auf einen funktionalen Fallback begrenzt.
   Header-/Tisch-/Control-Zeilen, verfügbarkeitsbasierte Tischskalierung und
   844×390-Smoke-Coverage für Heads-up, 6-max und 9-max PLO; vollständige
   TableGeometry-/Touch-Migration bleibt in 0.9.1
-- [x] Session-Log und vollständiges Debug-JSON auf Android als Cache-Datei mit
+- [x] Session-Log und vollständiges Debug-JSONL auf Android als Cache-Datei mit
   Content-URI exportieren; nativen Chooser auf echter Hardware verifizieren
 - [x] verkürzten Kontrolllauf über NLHE/PLO sowie Heads-up/6-max/Full Ring,
   Zurück-Taste und Resume abschließen
@@ -631,7 +631,7 @@ stabilisieren, ohne Zielkorridore zur Fehlerkaschierung zu verbreitern.
 - Android-Bot-Debug per fünf schnellen Berührungen der Versionsanzeige
   touchfähig und persistent schaltbar gemacht; `Strg+D` bleibt der
   Desktop-Shortcut
-- Android-Export für Session-Log, Replayer-Text und vollständiges Debug-JSON
+- Android-Export für Session-Log, Replayer-Text und vollständiges Debug-JSONL
   über Cache-Datei und natives Teilen-/Speichern-Menü ergänzt; Capacitor-App-,
   Filesystem- und Share-Plugins im Workspace explizit registriert
 - 40 der 44 stabilen Bot-Identitäten mit eigenen Porträts ausgestattet und
@@ -903,10 +903,13 @@ Muster zu verfallen.
 - [x] stabile Kandidaten-IDs und eine einzige kanonische All-in-Aktion
   einführen; Auswahlgrenze unverändert bei 85% lassen und Zahl plausibler
   Kandidaten, Utility-Abstand und erzwungene Einzelauswahl instrumentieren
-- [x] Session-Debugexport v3 auf die vollständige aktuelle Session erweitern:
+- [x] Session-Debugexport v4 auf die vollständige aktuelle Session erweitern:
   alle Aktionskandidaten und Contributions, gewählte Kandidaten-ID,
   objektive/wahrgenommene Analyse, Ranges und Street-Aggression; normaler
-  Sessionexport bietet eine eindeutige Wahl zwischen Handhistory und Debug-JSON
+  Sessionexport bietet eine eindeutige Wahl zwischen Handhistory und Debug-JSONL;
+  Rich-Puffer auf 50 Entscheidungen begrenzen und die vollständige Session als
+  eine kompakte Zeile pro Hand mit prüfbarem Footer sowie Android-Append-Streaming
+  exportieren
 - [x] Regressionen für Skill-Grenzen, C-Bet-Once-Semantik, echte
   Aggressionsstufen, Paired-Board-Hierarchie, K-6-6-Ranges, AA-Valuebet,
   Kandidatenkanonisierung und exakte 85%-Grenze ergänzen

@@ -83,6 +83,7 @@ export function TableScreen({
   currency,
   onRebuy,
   onExportDebugRecord,
+  debugExporting,
   handReplays,
   archivedHandReplays,
   sessionStats,
@@ -107,7 +108,8 @@ export function TableScreen({
   options: TableOptions
   currency: DisplayCurrency
   onRebuy: (playerId: string) => void
-  onExportDebugRecord: () => void
+  onExportDebugRecord: () => void | Promise<void>
+  debugExporting: boolean
   handReplays: readonly HandReplay[]
   archivedHandReplays: readonly HandReplay[]
   sessionStats: any
@@ -971,8 +973,13 @@ export function TableScreen({
                 <button type="button" onClick={() => { setExportDialogOpen(false); onExportSessionLog() }} style={actionButtonStyle('#334155')}>
                   PokerStars-Handhistory (.txt)
                 </button>
-                <button type="button" onClick={() => { setExportDialogOpen(false); onExportDebugRecord() }} style={actionButtonStyle('#075985')}>
-                  Vollständige Debug-Session (.json)
+                <button
+                  type="button"
+                  disabled={debugExporting}
+                  onClick={() => { setExportDialogOpen(false); void onExportDebugRecord() }}
+                  style={actionButtonStyle('#075985', debugExporting)}
+                >
+                  {debugExporting ? 'Debug-Export läuft …' : 'Kompakte Debug-Session (.jsonl)'}
                 </button>
                 <button type="button" onClick={() => setExportDialogOpen(false)} style={actionButtonStyle('#30343c')}>
                   Abbrechen
@@ -987,6 +994,7 @@ export function TableScreen({
             decisions={botDebugDecisions}
             currency={currency}
             onExportDebugRecord={onExportDebugRecord}
+            debugExporting={debugExporting}
           />
         </div>
         )}

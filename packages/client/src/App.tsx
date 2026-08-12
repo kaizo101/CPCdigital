@@ -6,7 +6,7 @@ import { SetupScreen } from './screens/SetupScreen'
 import { TableScreen } from './screens/TableScreen'
 import type { DisplayCurrency } from './utils/format'
 import { APP_VERSION } from './app-version'
-import { downloadSessionDebugRecord } from './session/session-debug-record'
+import { downloadSessionDebugExport } from './session/session-debug-record'
 import { HandReplayer } from './components/HandReplayer'
 import type { HandReplay } from './session/hand-replay'
 import { applyAndroidSystemUi, isAndroidRuntime } from './native-runtime'
@@ -38,6 +38,7 @@ export default function App() {
   const [rebuyEnabled, setRebuyEnabled] = useState(true)
   const [variantId, setVariantId] = useState('texas-holdem')
   const [debugMode, setDebugModeState] = useState(readStoredDebugMode)
+  const [debugExporting, setDebugExporting] = useState(false)
 
   function setDebugMode(enabled: boolean) {
     setDebugModeState(enabled)
@@ -159,8 +160,14 @@ export default function App() {
     }
   }, [screen])
 
-  function handleExportDebugRecord() {
-    downloadSessionDebugRecord(runner.createSessionDebugRecord(APP_VERSION, currency))
+  async function handleExportDebugRecord() {
+    if (debugExporting) return
+    setDebugExporting(true)
+    try {
+      await downloadSessionDebugExport(runner.createSessionDebugRecord(APP_VERSION, currency))
+    } finally {
+      setDebugExporting(false)
+    }
   }
 
   if (replayMode) {
@@ -224,6 +231,7 @@ export default function App() {
       currency={currency}
       onRebuy={playerId => runner.requestRebuy(playerId)}
       onExportDebugRecord={handleExportDebugRecord}
+      debugExporting={debugExporting}
       handReplays={localState.handReplays}
       archivedHandReplays={localState.archivedHandReplays}
       sessionStats={localState.sessionStats}

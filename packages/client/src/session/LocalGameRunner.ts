@@ -35,7 +35,6 @@ import { createBotContext } from '../bot-context'
 import { planBotDecisionTiming, sampleTargetReactionMs, getBotTiming } from '../bot-timing'
 import { assessDecisionComplexity } from '../bot-decision-complexity'
 import type { DecisionComplexity } from '../bot-decision-complexity'
-import type { ScoredAction } from '../bot-decision-types'
 import type { BotContext } from '../bot-context'
 import type { BotDecision } from '../bot-tag'
 import type { BotDebugDecision, BotDebugProfile } from '../bot-debug'
@@ -63,10 +62,15 @@ function identityArchetypeId(botState: BotState): BotArchetypeId {
 }
 import type {
   CompactDecisionSnapshot,
-  SessionDebugRecordV3,
+  SessionDebugExportV4,
+  SessionDebugHandV4,
   SessionHistoryEvent,
 } from './session-debug-record'
-import { SESSION_DEBUG_SCHEMA_VERSION_V3 } from './session-debug-record'
+import {
+  SESSION_DEBUG_SCHEMA_VERSION_V4,
+  compactBotDebugDecisionV4,
+  createSessionDebugEncodingV4,
+} from './session-debug-record'
 import type { DisplayCurrency } from '../utils/format'
 import {
   appendHandReplayToArchive,
@@ -84,6 +88,18 @@ export type Listener = () => void
 
 export const SHOWDOWN_DISPLAY_MS = 6000
 const UNCONTESTED_RESULT_DISPLAY_MS = 3000
+export const BOT_DEBUG_DECISION_LIMIT = 50
+
+export function retainRecentBotDebugDecision(
+  decisions: BotDebugDecision[],
+  decision: BotDebugDecision,
+): void {
+  decisions.push(decision)
+  if (decisions.length > BOT_DEBUG_DECISION_LIMIT) decisions.splice(
+    0,
+    decisions.length - BOT_DEBUG_DECISION_LIMIT,
+  )
+}
 
 export interface LocalGameState {
   gameState: PublicGameState | null
@@ -121,6 +137,8 @@ export class LocalGameRunner {
   private sessionStats: SessionStatsData = createSessionStats('texas-holdem', 20)
   private sessionDecisionSnapshots: CompactDecisionSnapshot[] = []
   private botDebugDecisions: BotDebugDecision[] = []
+  private currentHandBotDebugDecisions: BotDebugDecision[] = []
+  private debugHands: SessionDebugHandV4[] = []
   private previousSnapshotActionCountPerHand = new Map<number, number>()
   private nextBotDebugSequence = 1
   private rebuyManager: BotRebuyManager = new BotRebuyManager(
@@ -198,63 +216,21 @@ export class LocalGameRunner {
     return this.botDebugDecisions.slice(-50)
   }
 
-  createSessionDebugRecord(appVersion: string, displayCurrency: DisplayCurrency): SessionDebugRecordV3 {
+  createSessionDebugRecord(appVersion: string, displayCurrency: DisplayCurrency): SessionDebugExportV4 {
     if (!this.sessionOptions || !this.sessionStartedAt) {
       throw new Error('Cannot export a debug record before a session has started')
     }
     const exportedAt = new Date().toISOString()
+    const hands = this.debugHands.map(hand => ({
+      ...hand,
+      events: [...hand.events],
+      botDecisions: [...hand.botDecisions],
+    }))
 
-    const compactBotDecisions = this.botDebugDecisions
-      .map(d => ({
-        sequence: d.sequence,
-        handNumber: d.handNumber,
-        playerId: d.playerId,
-        playerName: d.playerName,
-        snapshot: {
-          phase: d.context.publicState.phase,
-          hand: d.context.ownCards.map(card => `${card.rank}${card.suit[0]}`).join(' '),
-          board: d.context.publicState.communityCards.map(c => `${c.rank}${c.suit[0]}`).join(' ') || '-',
-          potOdds: Math.round(d.metrics.potOdds * 100),
-          spr: Math.round(d.metrics.spr * 10) / 10,
-          potCommitment: Math.round(d.metrics.potCommitment * 1000) / 1000,
-          forcedAllInRatio: Math.round(d.metrics.forcedAllInRatio * 1000) / 1000,
-          tilt: d.profile.mentalState.tilt,
-          confidence: d.profile.mentalState.confidence,
-        },
-        action: d.decision.action,
-        chosenCandidateId: d.decision.chosenCandidateId,
-        scores: flattenContributions(d.decision.allActions),
-        candidates: d.decision.allActions.map(candidate => ({
-          candidateId: candidate.candidateId,
-          action: candidate.action,
-          intent: candidate.intent,
-          utility: candidate.utility,
-          selectionEligible: candidate.selectionEligible !== false,
-          contributions: candidate.contributions,
-        })),
-        selectionDiagnostics: d.decision.selectionDiagnostics,
-        analysis: {
-          objectiveHandAssessment: d.decision.objectiveHandAssessment,
-          perceivedHandAssessment: d.decision.perceivedHandAssessment,
-          objectiveOpponentRanges: d.decision.objectiveOpponentRanges,
-          perceivedOpponentRanges: d.decision.perceivedOpponentRanges,
-          street: d.decision.objectiveStreetAnalysis ? {
-            preflopAggressor: d.decision.objectiveStreetAnalysis.preflopAggressor,
-            preflopRaiseCount: d.decision.objectiveStreetAnalysis.preflopRaiseCount,
-            streetAggression: d.decision.objectiveStreetAnalysis.streetAggression,
-            opponentLines: [...d.decision.objectiveStreetAnalysis.opponentLines.values()],
-          } : null,
-        },
-        perceptionErrors: d.decision.perceptionErrors.map(e =>
-          `${e.label}: ${typeof e.actual === 'number' ? e.actual.toFixed(1) : e.actual} → ${typeof e.perceived === 'number' ? e.perceived.toFixed(1) : e.perceived}`,
-        ),
-        complexity: d.complexity,
-        timing: d.timing,
-      }))
-
-    const record: SessionDebugRecordV3 = {
+    const header: SessionDebugExportV4['header'] = {
+      recordType: 'session',
       schema: 'cpcdigital.session-debug',
-      schemaVersion: SESSION_DEBUG_SCHEMA_VERSION_V3,
+      schemaVersion: SESSION_DEBUG_SCHEMA_VERSION_V4,
       app: { name: 'CPCdigital', version: appVersion },
       exportedAt,
       session: {
@@ -278,11 +254,17 @@ export class LocalGameRunner {
           rebuysRemaining: (identity.rebuyPolicy?.maxRebuys ?? 0) - (this.rebuyManager.rebuysUsed.get(playerId) ?? 0),
         },
       })),
-      history: this.sessionHistory,
-      decisionSnapshots: this.sessionDecisionSnapshots,
-      botDecisions: compactBotDecisions,
+      encoding: createSessionDebugEncodingV4(),
     }
-    return structuredClone(record)
+    return {
+      header,
+      hands,
+      end: {
+        recordType: 'end',
+        handCount: hands.length,
+        decisionCount: hands.reduce((sum, hand) => sum + hand.botDecisions.length, 0),
+      },
+    }
   }
 
   private notify(): void {
@@ -345,6 +327,8 @@ export class LocalGameRunner {
     this.sessionHistory = []
     this.sessionDecisionSnapshots = []
     this.botDebugDecisions = []
+    this.currentHandBotDebugDecisions = []
+    this.debugHands = []
     this.previousSnapshotActionCountPerHand.clear()
     this.nextBotDebugSequence = 1
     this.handReplays = []
@@ -482,7 +466,21 @@ export class LocalGameRunner {
     this.currentHandNumber++
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0
+    this.sessionDecisionSnapshots = []
+    this.previousSnapshotActionCountPerHand.clear()
+    this.currentHandBotDebugDecisions = []
     this.game.startHand()
+    this.debugHands.push({
+      recordType: 'hand',
+      handNumber: this.currentHandNumber,
+      privateCards: Object.fromEntries(
+        this.players
+          .filter(player => player.chips > 0 && !player.isSittingOut)
+          .map(player => [player.id, [...(this.game?.getPlayerView(player.id).ownCards ?? [])]]),
+      ),
+      events: [],
+      botDecisions: [],
+    })
     this.captureSessionHistory()
     this.notify()
     this.scheduleBotAction()
@@ -544,7 +542,7 @@ export class LocalGameRunner {
     const timingPolicy = getBotTiming(botContext.publicState.variantId)
     const targetReactionMs = sampleTargetReactionMs(this.timingRandom, complexity, timingPolicy)
     const timing = planBotDecisionTiming(targetReactionMs, monotonicNow() - decisionStartedAt)
-    this.botDebugDecisions.push({
+    const debugDecision: BotDebugDecision = {
       sequence: this.nextBotDebugSequence++,
       handNumber: this.currentHandNumber,
       playerId: botId,
@@ -556,7 +554,10 @@ export class LocalGameRunner {
       decision: decision.decisionResult,
       complexity,
       timing,
-    })
+    }
+    retainRecentBotDebugDecision(this.botDebugDecisions, debugDecision)
+    this.currentHandBotDebugDecisions.push(debugDecision)
+    this.debugHands.at(-1)?.botDecisions.push(compactBotDebugDecisionV4(debugDecision))
     this.notify()
     this.botTimer = setTimeout(() => {
       if (!this.game) return
@@ -768,14 +769,13 @@ export class LocalGameRunner {
       holeCards[this.heroId] = heroView.ownCards
     }
     // Include bot hole cards from debug decisions
-    for (const d of this.botDebugDecisions) {
-      if (d.handNumber === this.currentHandNumber && d.context.ownCards) {
+    for (const d of this.currentHandBotDebugDecisions) {
+      if (d.context.ownCards) {
         holeCards[d.playerId] = d.context.ownCards
       }
     }
 
-    const botInfos = this.botDebugDecisions
-      .filter(d => d.handNumber === this.currentHandNumber)
+    const botInfos = this.currentHandBotDebugDecisions
       .map(d => ({
         playerId: d.playerId,
         action: d.decision.action.type === 'raise' ? `raise ${d.decision.action.amount}` : d.decision.action.type,
@@ -814,6 +814,7 @@ export class LocalGameRunner {
     const handEvents = this.game.getPublicHandHistory()
     for (const event of handEvents.slice(this.capturedHandEventCount)) {
       this.sessionHistory.push({ handNumber: this.currentHandNumber, event })
+      this.debugHands.at(-1)?.events.push(event)
     }
     this.capturedHandEventCount = handEvents.length
   }
@@ -871,6 +872,8 @@ export class LocalGameRunner {
     this.sessionHistory = []
     this.sessionDecisionSnapshots = []
     this.botDebugDecisions = []
+    this.currentHandBotDebugDecisions = []
+    this.debugHands = []
     this.previousSnapshotActionCountPerHand.clear()
     this.nextBotDebugSequence = 1
     this.rebuyManager.reset()
@@ -966,19 +969,6 @@ function createBotDebugProfile(botState: BotState): BotDebugProfile {
 
 function monotonicNow(): number {
   return globalThis.performance?.now() ?? Date.now()
-}
-
-function flattenContributions(allActions: ScoredAction[]): string[] {
-  return allActions.map(action => {
-    const actionLabel = action.action.type === 'raise'
-      ? `raise ${action.action.amount}`
-      : action.action.type
-    const contribs = action.contributions
-      .filter(c => c.value !== 0)
-      .map(c => `${c.label} (${c.value >= 0 ? '+' : ''}${Math.round(c.value)})`)
-      .join(', ')
-    return `[${actionLabel} u=${Math.round(action.utility)}] ${contribs}`
-  })
 }
 
 function formatHandProfile(debug: BotDebugDecision): string {

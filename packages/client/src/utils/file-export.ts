@@ -3,7 +3,7 @@ import { Share } from '@capacitor/share'
 import { getAppRuntime, type AppRuntime } from '../native-runtime'
 
 export interface TextFileExport {
-  data: string
+  data: string | Iterable<string>
   filename: string
   mimeType: string
   title?: string
@@ -12,6 +12,7 @@ export interface TextFileExport {
 
 interface NativeExportAdapter {
   writeCacheFile(options: { path: string; data: string }): Promise<{ uri: string }>
+  appendCacheFile(options: { path: string; data: string }): Promise<void>
   shareFile(options: { uri: string; title: string; dialogTitle: string }): Promise<void>
 }
 
@@ -23,6 +24,14 @@ const capacitorExportAdapter: NativeExportAdapter = {
     encoding: Encoding.UTF8,
     recursive: true,
   }),
+  appendCacheFile: async ({ path, data }) => {
+    await Filesystem.appendFile({
+      path,
+      data,
+      directory: Directory.Cache,
+      encoding: Encoding.UTF8,
+    })
+  },
   shareFile: async ({ uri, title, dialogTitle }) => {
     const supported = await Share.canShare()
     if (!supported.value) throw new Error('Android-Dateifreigabe wird auf diesem Gerät nicht unterstützt.')
@@ -47,10 +56,16 @@ export async function exportTextFile(
   const filename = safeExportFilename(file.filename)
 
   if (runtime === 'android') {
+    const parts = textParts(file.data)
+    const first = parts.next()
+    if (first.done) throw new Error('Cannot export an empty file')
     const result = await nativeAdapter.writeCacheFile({
       path: `exports/${filename}`,
-      data: file.data,
+      data: first.value,
     })
+    for (let part = parts.next(); !part.done; part = parts.next()) {
+      await nativeAdapter.appendCacheFile({ path: `exports/${filename}`, data: part.value })
+    }
     await nativeAdapter.shareFile({
       uri: result.uri,
       title: file.title ?? filename,
@@ -59,7 +74,7 @@ export async function exportTextFile(
     return
   }
 
-  const blob = new Blob([file.data], { type: file.mimeType })
+  const blob = new Blob(Array.from(textParts(file.data)), { type: file.mimeType })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -68,9 +83,14 @@ export async function exportTextFile(
   URL.revokeObjectURL(url)
 }
 
-export function requestTextFileExport(file: TextFileExport): void {
-  void exportTextFile(file).catch(error => {
+export function requestTextFileExport(file: TextFileExport): Promise<void> {
+  return exportTextFile(file).catch(error => {
     console.error('[export] Datei konnte nicht exportiert werden.', error)
     window.alert('Die Datei konnte nicht exportiert werden. Bitte versuche es erneut.')
   })
+}
+
+function *textParts(data: TextFileExport['data']): Generator<string> {
+  if (typeof data === 'string') yield data
+  else yield *data
 }
