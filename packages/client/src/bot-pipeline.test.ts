@@ -991,7 +991,7 @@ describe('bot utility candidates', () => {
     ]))
   })
 
-  it('keeps an uncommitted premium shove below the exact 100 BB boundary eligible', () => {
+  it('blocks an uncommitted premium shove below 100 BB after a single open', () => {
     const legalActions: LegalActions = {
       fold: true,
       check: false,
@@ -1017,7 +1017,10 @@ describe('bot utility candidates', () => {
     expect(shove.contributions.some(
       contribution => contribution.label.includes('Deep stack not committed'),
     )).toBe(false)
-    expect(shove.selectionEligible).not.toBe(false)
+    expect(shove.selectionEligible).toBe(false)
+    expect(shove.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: expect.stringContaining('single raise') }),
+    ]))
   })
 
   it('still permits a premium preflop shove once the stack is meaningfully committed', () => {

@@ -539,15 +539,37 @@ function simulateFormat(
         && state.phase === 'preflop'
         && state.currentBet <= state.bigBlind
         && (state.bettingContext?.legalActions.allInAmount ?? 0) > state.currentBet
-        && (decisionMetrics?.playerStartingStackBb ?? 0) >= 40
+        && (
+          (decisionMetrics?.playerStartingStackBb ?? 0) >= 40
+          || (
+            (decisionMetrics?.playerStartingStackBb ?? 0) >= 25
+            && handCategory !== 'premium'
+          )
+        )
       ) {
         stats.deepOpenShoves++
       }
       const aggressiveAllIn = action.type === 'all-in'
         && (state.bettingContext?.legalActions.allInAmount ?? 0) > state.currentBet
       if (aggressiveAllIn && decisionMetrics) {
+        const unopenedOrLimped = state.currentBet <= state.bigBlind
+        const nonShortOpenShove = unopenedOrLimped
+          && decisionMetrics.potCommitment < 0.25
+          && (
+            decisionMetrics.playerStartingStackBb >= 40
+            || (
+              decisionMetrics.playerStartingStackBb >= 25
+              && handCategory !== 'premium'
+            )
+          )
+        const uncommittedSingleRaiseShove = !unopenedOrLimped
+          && aggressionDepth <= 1
+          && decisionMetrics.playerStartingStackBb >= 40
+          && decisionMetrics.potCommitment < (handCategory === 'premium' ? 0.2 : 0.25)
         const uncommittedPreflop = state.phase === 'preflop' && (
-          (decisionMetrics.playerStartingStackBb >= 100 && decisionMetrics.potCommitment < 0.2)
+          nonShortOpenShove
+          || uncommittedSingleRaiseShove
+          || (decisionMetrics.playerStartingStackBb >= 100 && decisionMetrics.potCommitment < 0.2)
           || (
             decisionMetrics.playerStartingStackBb >= 40
             && handCategory !== 'premium'
@@ -901,7 +923,7 @@ function printStats(
     .map(([action, count]) => `${action} ${calibrationPercentage(count, totalActions).toFixed(1)}%`)
     .join(' · ')
   console.log(`Actions: ${actionSummary}`)
-  console.log(`Deep open shoves >40 BB: ${stats.deepOpenShoves}`)
+  console.log(`Non-short open shoves: ${stats.deepOpenShoves}`)
   console.log(`Uncommitted deep shoves: ${stats.uncommittedDeepShoves}`)
 
   // Postflop metrics

@@ -269,6 +269,120 @@ describe('river board-play discipline', () => {
   })
 })
 
+describe('preflop shove depth guards', () => {
+  function shoveContext(options: {
+    startingStackBb: number
+    currentBetBb: number
+    preflopRaiseCount: number
+    category: DecisionContext['handAssessment']['category']
+  }): DecisionContext {
+    const stack = options.startingStackBb * 10
+    const currentBet = options.currentBetBb * 10
+    return makeCtx({
+      gameView: {
+        ...makeCtx().gameView,
+        currentBet,
+        minRaiseTo: currentBet + 20,
+        maxRaiseTo: stack,
+      },
+      handAssessment: {
+        ...makeCtx().handAssessment,
+        category: options.category,
+      },
+      metrics: {
+        ...makeCtx().metrics,
+        playerStack: stack,
+        effectiveStack: stack,
+        effectiveStackBb: options.startingStackBb,
+        playerStartingStackBb: options.startingStackBb,
+        potCommitment: 0,
+      },
+      legalActions: {
+        fold: currentBet > 0,
+        check: false,
+        callAmount: currentBet,
+        raise: { minAmount: currentBet + 20, maxAmount: stack },
+        allInAmount: stack,
+      },
+      streetAnalysis: {
+        preflopAggressor: options.preflopRaiseCount > 0 ? 'opp' : null,
+        preflopRaiseCount: options.preflopRaiseCount,
+        streetAggressor: { preflop: options.preflopRaiseCount > 0 ? 'opp' : null, flop: null, turn: null, river: null },
+        iAmPreflopAggressor: false,
+        opponentLines: new Map(),
+        activeOpponents: 1,
+        opponentShowedWeakness: false,
+        opponentCheckRaised: false,
+        street: 'preflop',
+        actionCountThisStreet: options.preflopRaiseCount,
+      },
+    })
+  }
+
+  it('blocks an uncommitted premium shove at 88.5 BB after a single open', () => {
+    const actions = scoreActions(shoveContext({
+      startingStackBb: 88.5,
+      currentBetBb: 3,
+      preflopRaiseCount: 1,
+      category: 'premium',
+    }))
+    const shove = actions.find(candidate => candidate.action.type === 'all-in')!
+    const raise = actions.find(candidate => candidate.action.type === 'raise')!
+
+    expect(shove.selectionEligible).toBe(false)
+    expect(shove.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: expect.stringContaining('single raise') }),
+    ]))
+    expect(raise.selectionEligible).not.toBe(false)
+  })
+
+  it('uses an inclusive 40 BB boundary after a single open', () => {
+    const atBoundary = scoreActions(shoveContext({
+      startingStackBb: 40,
+      currentBetBb: 3,
+      preflopRaiseCount: 1,
+      category: 'premium',
+    })).find(candidate => candidate.action.type === 'all-in')!
+    const belowBoundary = scoreActions(shoveContext({
+      startingStackBb: 39.99,
+      currentBetBb: 3,
+      preflopRaiseCount: 1,
+      category: 'premium',
+    })).find(candidate => candidate.action.type === 'all-in')!
+
+    expect(atBoundary.selectionEligible).toBe(false)
+    expect(belowBoundary.selectionEligible).not.toBe(false)
+  })
+
+  it('blocks a non-premium open shove at the exact 25 BB boundary', () => {
+    const shove = scoreActions(shoveContext({
+      startingStackBb: 25,
+      currentBetBb: 1,
+      preflopRaiseCount: 0,
+      category: 'strong',
+    })).find(candidate => candidate.action.type === 'all-in')!
+
+    expect(shove.selectionEligible).toBe(false)
+    expect(shove.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: expect.stringContaining('Non-short open shove') }),
+    ]))
+  })
+
+  it('leaves a non-premium open shove below 25 BB available', () => {
+    const shove = scoreActions(shoveContext({
+      startingStackBb: 24.99,
+      currentBetBb: 1,
+      preflopRaiseCount: 0,
+      category: 'strong',
+    })).find(candidate => candidate.action.type === 'all-in')!
+
+    expect(shove.selectionEligible).not.toBe(false)
+    expect(shove.contributions.some(
+      contribution => contribution.label.includes('open shove'),
+    )).toBe(false)
+  })
+})
+
 describe('pot commitment versus forced all-in risk', () => {
   function commitmentContext(options: {
     archetype: typeof CALLING_STATION_PERSONALITY | typeof TAG_PERSONALITY
@@ -664,6 +778,99 @@ describe('continuation-bet defense calibration', () => {
       diagnostics.plausibleCandidateCount,
       actions.map(candidate => `${candidate.candidateId}:${candidate.utility}`).join(', '),
     ).toBeGreaterThanOrEqual(2)
+  })
+
+  it('dampens Calling Station c-bet bonuses for drawless unmade hands multiway', () => {
+    const multiwayHighCard = defenseContext('opp')
+    multiwayHighCard.tableSize = 6
+    multiwayHighCard.handAssessment = {
+      ...multiwayHighCard.handAssessment,
+      category: 'weak',
+      made: false,
+      drawTypes: [],
+      cleanOuts: 0,
+      blockerValue: 0,
+    }
+    multiwayHighCard.streetAnalysis = {
+      ...multiwayHighCard.streetAnalysis!,
+      activeOpponents: 2,
+    }
+    multiwayHighCard.metrics = {
+      ...multiwayHighCard.metrics,
+      forcedAllInRatio: 1,
+    }
+    multiwayHighCard.botState = {
+      ...multiwayHighCard.botState,
+      personality: {
+        ...multiwayHighCard.botState.personality,
+        archetype: { name: 'Calling Station' } as any,
+      },
+    }
+
+    const actions = scoreActions(multiwayHighCard)
+    const call = actions.find(candidate => candidate.action.type === 'call')!
+    const raise = actions.find(candidate => candidate.action.type === 'raise')!
+    const callBonus = call.contributions.find(contribution => (
+      contribution.label === 'C-Bet defense — continue with realizable equity'
+    ))!
+    const raiseBonus = raise.contributions.find(contribution => (
+      contribution.label === 'Defend C-Bet with a raise — apply pressure back'
+    ))!
+
+    expect(callBonus.value).toBe(Math.round(
+      params.scoring.cbetDefenseCallBonus.nlhe['calling-station']['six-max'] * 0.25,
+    ))
+    expect(raiseBonus.value).toBeLessThan(
+      params.scoring.cbetDefenseRaiseBase.nlhe['calling-station']['six-max'],
+    )
+  })
+
+  it('keeps ordinary three-way and PLO Calling Station mixes unchanged', () => {
+    const ordinaryMultiway = defenseContext('opp')
+    ordinaryMultiway.tableSize = 6
+    ordinaryMultiway.handAssessment = {
+      ...ordinaryMultiway.handAssessment,
+      category: 'weak',
+      made: false,
+      drawTypes: [],
+      cleanOuts: 0,
+      blockerValue: 0,
+    }
+    ordinaryMultiway.streetAnalysis = {
+      ...ordinaryMultiway.streetAnalysis!,
+      activeOpponents: 2,
+    }
+    ordinaryMultiway.botState = {
+      ...ordinaryMultiway.botState,
+      personality: {
+        ...ordinaryMultiway.botState.personality,
+        archetype: { name: 'Calling Station' } as any,
+      },
+    }
+
+    const call = scoreActions(ordinaryMultiway)
+      .find(candidate => candidate.action.type === 'call')!
+    expect(call.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        label: 'C-Bet defense — continue with realizable equity',
+        value: params.scoring.cbetDefenseCallBonus.nlhe['calling-station']['six-max'],
+      }),
+    ]))
+
+    const ploMultiway = {
+      ...ordinaryMultiway,
+      variantId: 'omaha-high' as const,
+      metrics: { ...ordinaryMultiway.metrics, forcedAllInRatio: 1 },
+      streetAnalysis: { ...ordinaryMultiway.streetAnalysis!, activeOpponents: 3 },
+    }
+    const ploCall = scoreActions(ploMultiway)
+      .find(candidate => candidate.action.type === 'call')!
+    expect(ploCall.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        label: 'C-Bet defense — continue with realizable equity',
+        value: params.scoring.cbetDefenseCallBonus.plo['calling-station']['six-max'],
+      }),
+    ]))
   })
 })
 

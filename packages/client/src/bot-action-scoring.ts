@@ -321,6 +321,23 @@ function aggressiveAllInRiskFactors(context: DecisionContext): ScoreContribution
       )]
     }
     const unopenedOrLimped = gameView.currentBet <= gameView.bigBlind
+    const raiseCount = context.streetAnalysis?.preflopRaiseCount ?? 0
+    const uncommitted = metrics.potCommitment < 0.25
+    const uncommittedForSingleRaise = metrics.potCommitment < (
+      hand.category === 'premium' ? 0.2 : 0.25
+    )
+    if (
+      unopenedOrLimped
+      && metrics.playerStartingStackBb >= 25
+      && hand.category !== 'premium'
+      && uncommitted
+    ) {
+      return [factor(
+        'betting-context',
+        `Non-short open shove ${metrics.playerStartingStackBb.toFixed(0)} BB starting stack`,
+        params.scoring.allInMods.deepOpenShove,
+      )]
+    }
     if (unopenedOrLimped && metrics.playerStartingStackBb >= 40) {
       return [factor(
         'betting-context',
@@ -332,6 +349,13 @@ function aggressiveAllInRiskFactors(context: DecisionContext): ScoreContribution
       return [factor(
         'betting-context',
         `Deep stack not committed (${metrics.playerStartingStackBb.toFixed(0)} BB starting stack)`,
+        params.scoring.allInMods.uncommittedDeep,
+      )]
+    }
+    if (raiseCount <= 1 && metrics.playerStartingStackBb >= 40 && uncommittedForSingleRaise) {
+      return [factor(
+        'betting-context',
+        `Uncommitted shove after a single raise (${metrics.playerStartingStackBb.toFixed(0)} BB starting stack)`,
         params.scoring.allInMods.uncommittedDeep,
       )]
     }
@@ -1877,8 +1901,10 @@ function nlheFlopDefenseFactors(
 
 function cbetDefenseCandidateScale(context: DecisionContext, allowBlockerAir: boolean): number {
   const hand = context.handAssessment
+  const multiwayScale = drawlessUnmadeMultiwayScale(context)
+
   if (hand.category === 'air') {
-    if (hand.drawTypes.length > 0 || (allowBlockerAir && hand.blockerValue >= 20)) return 1
+    if (hand.drawTypes.length > 0 || (allowBlockerAir && hand.blockerValue >= 20)) return multiwayScale
 
     const format = resolveTableFormat(context.tableSize)
     if (
@@ -1886,27 +1912,40 @@ function cbetDefenseCandidateScale(context: DecisionContext, allowBlockerAir: bo
       && format === 'six-max'
       && context.streetAnalysis?.activeOpponents === 1
       && scoringArchetypeId(context) === 'calling-station'
-    ) return 1
+    ) return multiwayScale
     if (context.variantId !== 'texas-holdem' || format !== 'heads-up') return 0
 
     const archetype = scoringArchetypeId(context)
-    if (archetype === 'lag') return 0.75
-    if (archetype === 'calling-station') return 1
+    if (archetype === 'lag') return 0.75 * multiwayScale
+    if (archetype === 'calling-station') return multiwayScale
     return 0
   }
   return hand.category === 'weak' || hand.category === 'marginal' || hand.category === 'medium'
-    ? 1
+    ? multiwayScale
     : 0
 }
 
 function cbetDefenseRaiseCandidateScale(context: DecisionContext): number {
   const hand = context.handAssessment
+  const multiwayScale = drawlessUnmadeMultiwayScale(context)
   if (hand.drawTypes.length > 0) return 1
   if (hand.category === 'air') return cbetDefenseCandidateScale(context, true)
-  if (hand.category === 'weak') return hand.made ? 0.55 : 0.65
-  if (hand.category === 'marginal') return 0.7
-  if (hand.category === 'medium') return 0.6
+  if (hand.category === 'weak') return (hand.made ? 0.55 : 0.65) * multiwayScale
+  if (hand.category === 'marginal') return 0.7 * multiwayScale
+  if (hand.category === 'medium') return 0.6 * multiwayScale
   return 0
+}
+
+function drawlessUnmadeMultiwayScale(context: DecisionContext): number {
+  const hand = context.handAssessment
+  const activeOpponents = context.streetAnalysis?.activeOpponents ?? 1
+  const forcedAllIn = context.metrics.forcedAllInRatio >= 1
+  const dampCallingStationDefense = context.variantId === 'texas-holdem'
+    && !hand.made
+    && hand.drawTypes.length === 0
+    && (activeOpponents >= 3 || forcedAllIn)
+    && scoringArchetypeId(context) === 'calling-station'
+  return dampCallingStationDefense ? 0.25 : 1
 }
 
 function isFacingContinuationBet(context: DecisionContext): boolean {
