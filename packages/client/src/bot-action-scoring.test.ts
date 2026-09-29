@@ -5,6 +5,7 @@ import { params } from './bot-params'
 import type { DecisionContext } from './bot-decision-types'
 import { createBotState } from './bot-state'
 import { CALLING_STATION_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
+import { getNlheScores } from './bot-category-scores'
 import { assessHand } from './nlhe-hand-evaluation'
 import { selectionDiagnostics } from './bot-action-selection'
 
@@ -186,9 +187,93 @@ describe('river board-play discipline', () => {
 
     expect(call.contributions).toEqual(expect.arrayContaining([
       expect.objectContaining({ label: 'No made hand at showdown' }),
+      expect.objectContaining({ label: 'No made hand against a strong river range', value: -12 }),
       expect.objectContaining({ label: '3-street pressure against weak showdown value' }),
     ]))
     expect(fold.utility).toBeGreaterThan(call.utility)
+  })
+
+  it('makes the Hand #44 Q-high call a fold without suppressing weak-range hero calls', () => {
+    const hand44Board: Card[] = [
+      { rank: '4', suit: 'diamonds' },
+      { rank: '2', suit: 'clubs' },
+      { rank: '5', suit: 'hearts' },
+      { rank: '7', suit: 'clubs' },
+      { rank: '9', suit: 'hearts' },
+    ]
+    const holeCards: [Card, Card] = [
+      { rank: 'Q', suit: 'diamonds' },
+      { rank: 'T', suit: 'spades' },
+    ]
+    const base = makeCtx({
+      gameView: {
+        ...makeCtx().gameView,
+        myCards: holeCards,
+        board: hand44Board,
+        pot: 30,
+        currentBet: 16,
+        phase: 'river',
+      },
+      botState: createBotState(CALLING_STATION_PERSONALITY, 31, () => 0.5),
+      categoryScores: getNlheScores('calling-station'),
+      handAssessment: assessHand(holeCards, hand44Board),
+      metrics: {
+        ...makeCtx().metrics,
+        totalPot: 30,
+        callAmount: 16,
+        potOdds: 16 / 46,
+        toCallPotRatio: 16 / 30,
+        forcedAllInRatio: 16 / 197,
+      },
+      legalActions: {
+        fold: true,
+        check: false,
+        callAmount: 16,
+        raise: null,
+        allInAmount: null,
+      },
+      streetAnalysis: {
+        preflopAggressor: 'opp',
+        preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'opp', flop: 'opp', turn: null, river: 'opp' },
+        iAmPreflopAggressor: false,
+        opponentLines: new Map([['opp', {
+          playerId: 'opp',
+          preflop: 'raised',
+          flop: 'bet',
+          turn: null,
+          river: 'bet',
+          aggressivePotFractions: { preflop: null, flop: 0.5, turn: null, river: 16 / 30 },
+        }]]),
+        activeOpponents: 1,
+        opponentShowedWeakness: false,
+        opponentCheckRaised: false,
+        street: 'river',
+        actionCountThisStreet: 1,
+      },
+    })
+
+    const strongRangeActions = scoreActions({
+      ...base,
+      opponentRanges: [{
+        playerId: 'opp', strength: 'very-strong', summary: 'strong river line', score: 80,
+        lineScore: 80, positionAdjustment: 0, roleAdjustment: 0, boardFitAdjustment: 0,
+      }],
+    })
+    const strongFold = strongRangeActions.find(candidate => candidate.action.type === 'fold')!
+    const strongCall = strongRangeActions.find(candidate => candidate.action.type === 'call')!
+    expect(strongFold.utility).toBeGreaterThan(strongCall.utility)
+
+    const weakRangeCall = scoreActions({
+      ...base,
+      opponentRanges: [{
+        playerId: 'opp', strength: 'weak', summary: 'missed draws likely', score: 35,
+        lineScore: 35, positionAdjustment: 0, roleAdjustment: 0, boardFitAdjustment: 0,
+      }],
+    }).find(candidate => candidate.action.type === 'call')!
+    expect(weakRangeCall.contributions.some(contribution => (
+      contribution.label === 'No made hand against a strong river range'
+    ))).toBe(false)
   })
 
   it('reduces call preference with bet size and increases it only for real hand improvements', () => {
@@ -207,6 +292,8 @@ describe('river board-play discipline', () => {
     expect(callOverFold(boardPlay, 75)).toBeLessThan(callOverFold(kingKicker, 75))
     expect(callOverFold(kingKicker, 75)).toBeLessThan(callOverFold(fullHouse, 75))
   })
+
+  it.todo('makes the H0006 paired-board bottom-pair bluffcatcher fold only with post-fix evidence')
 
   it('recognizes pocket aces on K-6-6-7-J as a high-skill river value bet', () => {
     const pairedBoard: Card[] = [
@@ -266,6 +353,63 @@ describe('river board-play discipline', () => {
     const raise = actions.find(candidate => candidate.action.type === 'raise')!
 
     expect(raise.utility).toBeGreaterThan(check.utility)
+  })
+})
+
+describe('NLHE pair-relative raise scoring', () => {
+  function raiseContributions(holeCards: [Card, Card], board: Card[]) {
+    const base = makeCtx()
+    const context = makeCtx({
+      gameView: {
+        ...base.gameView,
+        myCards: holeCards,
+        board,
+        phase: 'flop',
+      },
+      handAssessment: assessHand(holeCards, board),
+      legalActions: {
+        fold: false,
+        check: true,
+        callAmount: null,
+        raise: { minAmount: 40, maxAmount: 100 },
+        allInAmount: null,
+      },
+    })
+    return scoreActions(context)
+      .find(candidate => candidate.action.type === 'raise')!
+      .contributions
+  }
+
+  it('removes false high-strength pressure from the two reproduced underpairs', () => {
+    const deuces = raiseContributions(
+      [{ rank: '2', suit: 'clubs' }, { rank: '2', suit: 'spades' }],
+      [{ rank: 'K', suit: 'hearts' }, { rank: '9', suit: 'diamonds' }, { rank: '3', suit: 'clubs' }],
+    )
+    const eights = raiseContributions(
+      [{ rank: '8', suit: 'clubs' }, { rank: '8', suit: 'diamonds' }],
+      [{ rank: 'K', suit: 'diamonds' }, { rank: 'J', suit: 'diamonds' }, { rank: '2', suit: 'clubs' }],
+    )
+
+    expect(deuces).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'High relative strength' }),
+    ]))
+    expect(deuces).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Low relative strength' }),
+    ]))
+    expect(eights).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'High relative strength' }),
+    ]))
+  })
+
+  it('preserves the high-strength pressure contribution for a real overpair', () => {
+    const jacks = raiseContributions(
+      [{ rank: 'J', suit: 'hearts' }, { rank: 'J', suit: 'spades' }],
+      [{ rank: 'T', suit: 'diamonds' }, { rank: '9', suit: 'diamonds' }, { rank: '3', suit: 'diamonds' }],
+    )
+
+    expect(jacks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'High relative strength' }),
+    ]))
   })
 })
 
@@ -1240,6 +1384,42 @@ describe('variant-specific board transition scoring', () => {
     expect(raiseContributions({ ...base, variantId: 'omaha-high' })).toEqual(expect.not.arrayContaining([
       expect.objectContaining({ label: 'Board got more dangerous — protect harder' }),
     ]))
+  })
+
+  it('never awards future-street protection after the river card is dealt', () => {
+    const river = makeCtx({
+      gameView: {
+        ...makeCtx().gameView,
+        phase: 'river',
+        board: [
+          { rank: 'K', suit: 'clubs' },
+          { rank: '9', suit: 'diamonds' },
+          { rank: '2', suit: 'spades' },
+          { rank: '4', suit: 'hearts' },
+          { rank: 'T', suit: 'clubs' },
+        ],
+      },
+      legalActions: {
+        fold: false,
+        check: true,
+        callAmount: null,
+        raise: { minAmount: 10, maxAmount: 100 },
+        allInAmount: null,
+      },
+      handAssessment: {
+        ...makeCtx().handAssessment,
+        category: 'good',
+        vulnerability: 80,
+        boardGotWorse: true,
+      },
+    })
+
+    const labels = scoreActions(river)
+      .find(action => action.action.type === 'raise')!
+      .contributions.map(contribution => contribution.label)
+
+    expect(labels).not.toContain('Protection against draws')
+    expect(labels).not.toContain('Board got more dangerous — protect harder')
   })
 })
 

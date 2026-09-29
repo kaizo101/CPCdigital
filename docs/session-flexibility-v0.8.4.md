@@ -9,6 +9,12 @@ Dieses Dokument konkretisiert den Funktionsumfang der in der
 - Individuelle Starting-Stacks pro Bot unterstützen.
 - Buy-in-Grenzen zwischen 40 und 250 BB konfigurierbar machen.
 - Variante und Schwierigkeitsmix gemeinsam im Session-Setup wählen.
+- Die Blindwahl auf die gepflegten Presets begrenzen. Den Eintrag
+  `Freie Eingabe` und die separaten Zahlenfelder für Small und Big Blind auf
+  Desktop und Android entfernen; der Starting-Stack beziehungsweise spätere
+  Buy-in bleibt davon getrennt konfigurierbar. Auswahl, Validierung und
+  gespeicherte Optionen dürfen danach keinen unerreichbaren Custom-Blind-
+  Zustand mehr voraussetzen.
 
 ## Vorgewählte Aktionen und Clock
 

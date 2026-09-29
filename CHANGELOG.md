@@ -40,6 +40,22 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Changed
 
+- **Caller-berechtigter Pot als Entscheidungsgrundlage**: Pot Odds,
+  Call/Pot-Verhältnis und SPR verwenden bei Shortstack-Calls nur noch den Pot,
+  den der handelnde Spieler tatsächlich gewinnen kann. Nicht callbare
+  Overbet-Anteile und fremde Side-Pot-Beiträge verbilligen Entscheidungen nicht
+  mehr; Live-Pot und Pot-Limit-Raisegrenzen bleiben separat erhalten.
+- **Tiefe Preflop-Eskalationen**: In klaren Fold-to-5-Bet-Bereichen ersetzt das
+  konkrete Eskalationsmodell die gröberen Handstärke- und Archetyp-Boni.
+  Value-Cores sowie committed Ace-Blocker-Linien behalten ihre Sonderpfade.
+- **Gezielte River-Disziplin**: Draw-Protection endet auf dem Turn. NLHE-Calls
+  ohne Made Hand erhalten nur gegen eine tatsächlich stark eingeschätzte
+  River-Range eine zusätzliche Bremse; Calling-Station-Hero-Calls gegen
+  schwache Ranges bleiben möglich.
+- **Kalibrierungs-Snapshot**: Die 0.8.2-Foundation-Baseline wurde nach den
+  bewusst spielwirksamen Engine- und Scoringkorrekturen aktualisiert. Die
+  Zielkorridore selbst bleiben unverändert.
+
 - **Gezielte All-in-Tiefensicherung**: Nicht-Premium-Open-Shoves sind ab 25 BB
   keine auswählbaren Kandidaten mehr; ab 40 BB gilt die Sperre nach höchstens
   einem gegnerischen Raise auch für Premiumhände, solange der Bot noch nicht
@@ -68,6 +84,23 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   wie ein echter Draw. Im reproduzierten Alva-artigen Spot bleiben Call und
   Raise innerhalb der bestehenden Auswahlstreuung, statt den Shove-Pfad
   strukturell zu erzwingen.
+
+### Fixed
+
+- **NLHE-Flushdraw-Provenienz**: Vier gleichfarbige Boardkarten erzeugen ohne
+  eigene Karte dieser Farbe keinen persönlichen Flushdraw mehr. Echte Draws
+  zählen nur unbekannte Karten als Outs und unterscheiden Nut- von Non-Nut-
+  Draws anhand der höchsten verfügbaren privaten Karte.
+- **NLHE-Pocket-Pair-Stärke**: Pocket Pairs unter Boardkarten erhalten nicht
+  länger pauschal `High relative strength`. Overpairs bleiben stark; ein, zwei
+  oder mindestens drei Overcards stufen die relative Stärke gezielt ab.
+- **Rebuy-Bilanz des Hero**: Das Handergebnis wird vor Ergebnisanimation und
+  zwischenzeitlichem Rebuy verbucht. Ein Bust mit anschließendem 100-BB-Rebuy
+  bleibt damit als `-100 BB` erhalten, statt auf `+0.0 BB` zurückzuspringen;
+  sofortige und vorgemerkte Rebuys werden weiterhin nicht als Gewinn gezählt.
+- **River-Protection**: `Protection against draws` und
+  `Board got more dangerous — protect harder` werden nicht mehr am River
+  vergeben, an dem keine zukünftige Karte mehr geschützt werden kann.
 
 ## [0.8.1] — 2026-08-11
 

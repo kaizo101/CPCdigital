@@ -439,9 +439,16 @@ function isBottomEndStraight(holeCards: [Card, Card], communityCards: Card[]): b
 
 // Calculate relative strength (0-100)
 function calculateRelativeStrength(evalResult: EvalResult, communityCards: Card[], holeCards: [Card, Card]): number {
-  let strength = 50
-
   const rank = getHandRank(evalResult)
+
+  // A pair needs board-relative treatment. The generic rank comparison cannot
+  // do this before the river because there is no five-card board hand yet, and
+  // the old unconditional pocket-pair bonus rated 22 on K-9-3 like an overpair.
+  if (rank === 2) {
+    return calculatePairRelativeStrength(holeCards, communityCards)
+  }
+
+  let strength = 50
   const boardRank = getBoardRank(communityCards)
 
   if (rank > boardRank) {
@@ -450,17 +457,24 @@ function calculateRelativeStrength(evalResult: EvalResult, communityCards: Card[
     strength -= (boardRank - rank) * 10
   }
 
-  // Adjust for pair type
-  if (rank === 2) {
-    const pairType = determinePairType(holeCards, communityCards)
-    if (pairType === 'pocket') strength += 25  // Pocket pair is strong
-    else if (pairType === 'top') strength += 20
-    else if (pairType === 'middle') strength += 5
-    else if (pairType === 'bottom') strength -= 15
-    else if (pairType === 'under') strength -= 25
+  return Math.max(0, Math.min(100, strength))
+}
+
+function calculatePairRelativeStrength(holeCards: [Card, Card], communityCards: Card[]): number {
+  if (holeCards[0].rank === holeCards[1].rank) {
+    const pocketRank = rankValue(holeCards[0].rank)
+    const overcardCount = communityCards.filter(card => rankValue(card.rank) > pocketRank).length
+    if (overcardCount === 0) return 85
+    if (overcardCount === 1) return 55
+    if (overcardCount === 2) return 40
+    return 25
   }
 
-  return Math.max(0, Math.min(100, strength))
+  const pairType = determinePairType(holeCards, communityCards)
+  if (pairType === 'top' || pairType === 'over') return 80
+  if (pairType === 'middle') return 55
+  if (pairType === 'bottom') return 35
+  return 25
 }
 
 // Get best possible hand from board alone
@@ -647,29 +661,25 @@ function calculateCleanOuts(holeCards: [Card, Card], communityCards: Card[], eva
   }
 
   const draws = identifyDrawTypes(holeCards, communityCards, evalResult)
-  let outs = 0
-
   // Track which cards are outs to avoid double counting
   const outCards = new Set<string>()
+  const flushDraw = getFlushDrawProfile(holeCards, communityCards)
 
   if (draws.includes('nut-flush-draw')) {
-    const flushSuit = getDrawFlushSuit(holeCards, communityCards)
-    if (flushSuit) {
+    if (flushDraw) {
       for (let i = 2; i <= 14; i++) {
-        const cardKey = `${i}-${flushSuit}`
-        if (!communityCards.some(c => rankValue(c.rank) === i && c.suit === flushSuit)) {
+        const cardKey = `${i}-${flushDraw.suit}`
+        if (![...holeCards, ...communityCards].some(
+          card => rankValue(card.rank) === i && card.suit === flushDraw.suit,
+        )) {
           outCards.add(cardKey)
         }
       }
     }
   } else if (draws.includes('flush-draw')) {
-    const flushSuit = getDrawFlushSuit(holeCards, communityCards)
-    if (flushSuit) {
-      // Count cards of this suit that aren't on board
-      const boardSuitCount = communityCards.filter(c => c.suit === flushSuit).length
-      const outs = 13 - boardSuitCount - 2  // 13 per suit, minus board, minus our hole cards
-      for (let i = 0; i < Math.max(0, outs); i++) {
-        outCards.add(`flush-${flushSuit}-${i}`)
+    if (flushDraw) {
+      for (let i = 0; i < flushDraw.rawOuts; i++) {
+        outCards.add(`flush-${flushDraw.suit}-${i}`)
       }
     }
   }
@@ -695,13 +705,40 @@ function calculateCleanOuts(holeCards: [Card, Card], communityCards: Card[], eva
   return outCards.size
 }
 
-// Get flush suit for draw detection
-function getDrawFlushSuit(holeCards: [Card, Card], communityCards: Card[]): string | null {
+interface FlushDrawProfile {
+  suit: Card['suit']
+  isNut: boolean
+  rawOuts: number
+}
+
+// A Hold'em flush draw must include at least one private card. Four cards of a
+// suit on the board alone can only produce a shared river flush, not a player-
+// specific draw that should encourage a call or raise.
+function getFlushDrawProfile(
+  holeCards: [Card, Card],
+  communityCards: Card[],
+): FlushDrawProfile | null {
+  if (communityCards.length < 3 || communityCards.length >= 5) return null
+
   const allCards = [...holeCards, ...communityCards]
   const suitCounts = countSuits(allCards)
 
-  for (const [suit, count] of Object.entries(suitCounts)) {
-    if (count === 4) return suit
+  for (const suit of ['hearts', 'diamonds', 'clubs', 'spades'] as const) {
+    if (suitCounts[suit] !== 4) continue
+    const suitedHoleCards = holeCards.filter(card => card.suit === suit)
+    if (suitedHoleCards.length === 0) continue
+
+    const boardRanks = new Set(
+      communityCards.filter(card => card.suit === suit).map(card => rankValue(card.rank)),
+    )
+    let highestAvailableRank = 14
+    while (boardRanks.has(highestAvailableRank)) highestAvailableRank--
+
+    return {
+      suit,
+      isNut: suitedHoleCards.some(card => rankValue(card.rank) === highestAvailableRank),
+      rawOuts: 13 - 4,
+    }
   }
 
   return null
@@ -741,14 +778,10 @@ function identifyDrawTypes(holeCards: [Card, Card], communityCards: Card[], eval
   }
 
   // Flush draw
-  const suitCounts = countSuits(allCards)
-  const hasFlushDraw = []
-  for (const [suit, count] of Object.entries(suitCounts)) {
-    if (count === 4) {
-      const hasAce = allCards.some(c => c.suit === suit && c.rank === 'A')
-      hasFlushDraw.push(hasAce ? 'nut-flush-draw' : 'flush-draw')
-    }
-  }
+  const flushDraw = getFlushDrawProfile(holeCards, communityCards)
+  const hasFlushDraw = flushDraw
+    ? [flushDraw.isNut ? 'nut-flush-draw' : 'flush-draw']
+    : []
   draws.push(...hasFlushDraw)
 
   // Straight draw

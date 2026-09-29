@@ -61,6 +61,8 @@ export interface BettingContext {
   playerId: PlayerId
   /** Pot including all chips currently in front of players. */
   totalPot: number
+  /** Portion of the live pot the acting player can win after paying the capped call. */
+  eligiblePot: number
   /** Chips required to fully match the current bet. */
   toCall: number
   /** Actual payable call amount, capped by the remaining stack. */

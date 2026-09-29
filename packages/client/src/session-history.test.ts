@@ -208,4 +208,29 @@ describe('LocalGameRunner session history', () => {
     expect(runner.state.pendingRebuyPlayerIds).toEqual([])
     runner.cleanup()
   })
+
+  it('records the hero loss before an immediate between-hands rebuy', () => {
+    vi.useFakeTimers()
+    const runner = new LocalGameRunner()
+    runner.setupTable({
+      smallBlind: 10,
+      bigBlind: 20,
+      startingChips: 1000,
+      maxPlayers: 2,
+      seed: 'hero-rebuy-result',
+    }, 1)
+    ;(runner as any).game.initialDealerIndex = 0
+    runner.startHand()
+
+    expect(runner.state.isMyTurn).toBe(true)
+    runner.playerAction({ type: 'fold' })
+    expect(runner.state.sessionStats.heroBBWon).toBe(-0.5)
+
+    expect(runner.requestRebuy('hero')).toBe('applied')
+    expect(runner.state.sessionStats.heroBBWon).toBe(-0.5)
+
+    vi.advanceTimersByTime(SHOWDOWN_DISPLAY_MS)
+    expect(runner.state.sessionStats.heroBBWon).toBe(-0.5)
+    runner.cleanup()
+  })
 })

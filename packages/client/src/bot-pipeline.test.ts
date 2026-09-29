@@ -23,6 +23,7 @@ function context(
   const bettingContext: BettingContext = {
     playerId: 'bot',
     totalPot: 100,
+    eligiblePot: 100,
     toCall: legalActions.callAmount ?? 0,
     callAmount: legalActions.callAmount ?? 0,
     potOdds: legalActions.callAmount ? legalActions.callAmount / (100 + legalActions.callAmount) : 0,
@@ -358,6 +359,14 @@ describe('bot utility candidates', () => {
     expect(escalationValue(nonCore, 'raise')).toBeLessThan(0)
     expect(nonCoreActions.find(candidate => candidate.action.type === 'raise')?.selectionEligible).toBe(false)
     expect(nonCoreActions.find(candidate => candidate.action.type === 'all-in')?.selectionEligible).toBe(false)
+
+    nonCore.preflopRangeAction = 'raise'
+    const rangeConflictActions = scoreActions(nonCore)
+    const rangeConflictFold = rangeConflictActions.find(candidate => candidate.action.type === 'fold')!
+    const rangeConflictCall = rangeConflictActions.find(candidate => candidate.action.type === 'call')!
+    expect(rangeConflictFold.utility).toBeGreaterThan(rangeConflictCall.utility)
+    expect(rangeConflictFold.contributions.some(contribution => contribution.label === 'Fold with strong')).toBe(false)
+    expect(rangeConflictFold.contributions.some(contribution => contribution.label.includes('Archetype preflop range'))).toBe(false)
 
     const committedBlocker = preflopEscalationContext({
       raiseCount: 3,
@@ -1716,7 +1725,7 @@ describe('bot utility candidates', () => {
           allInAmount: 1000,
         }
         planned.metrics = deriveDecisionMetrics({
-          playerId: 'bot', totalPot: 100, toCall: 25, callAmount: 25,
+          playerId: 'bot', totalPot: 100, eligiblePot: 100, toCall: 25, callAmount: 25,
           potOdds: 0.2, toCallPotRatio: 0.25, potRaiseTo: 300,
           minRaiseTo: 75, maxRaiseTo: 1000, playerStack: 1000,
           effectiveStack: 1000, spr: 10, legalActions: planned.legalActions,

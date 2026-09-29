@@ -766,13 +766,15 @@ Muster zu verfallen.
   abgesichert.
 - [x] Session-Debugexport v4, kompakte Android-Ausgabe, lesbare Handhistory
   mit stabilen Session-/Handreferenzen und Stake-Invarianz fertiggestellt.
+- [x] Caller-berechtigten Pot für Pot Odds, SPR und Call/Pot-Verhältnis
+  eingeführt; River-Protection und Hero-Rebuy-Bilanz regressionsgetestet.
 
 Details stehen im [Changelog](CHANGELOG.md) und im
 [0.8.2-Sessiondiagnosebericht](calibration/v0.8.2-session-diagnostics-2026-08-12.md).
 
 ### Verbleibender Releaseumfang
 
-- [ ] Tiefe 4-Bet-/5-Bet-Ketten nach tatsächlicher Aggressionsstufe absichern,
+- [x] Tiefe 4-Bet-/5-Bet-Ketten nach tatsächlicher Aggressionsstufe absichern,
   damit generische Boni keine klare Fold-Präferenz strukturell überstimmen.
 - [ ] Button-/Cutoff-Steals und Blind-Defense gegner-, positions-, stichproben-
   und konfidenzabhängig beobachten und beantworten.
@@ -857,7 +859,8 @@ Abgrenzung und genaue Artefakte stehen ebenfalls im
 ### Session-Setup und Aktionen
 
 - [ ] Hero-Name, individuelle Bot-Stacks, Buy-in-Grenzen von 40–250 BB sowie
-  Variante und Schwierigkeitsmix im Setup konfigurierbar machen.
+  Variante und Schwierigkeitsmix im Setup konfigurierbar machen; Blinds nur
+  noch über gepflegte Presets statt `Freie Eingabe` wählen.
 - [ ] Sichere Pre-Selections über eine zentral validierte
   `pendingHeroAction`-Pipeline anbieten; zunächst keine automatischen Raises
   oder ungebundenen Calls.

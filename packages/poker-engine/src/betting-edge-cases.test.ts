@@ -38,6 +38,41 @@ function finishPassively(game: PokerGame): void {
 }
 
 describe('central betting edge cases', () => {
+  it('prices a short call from the pot the caller can actually win', () => {
+    const players = makePlayers([200, 40])
+    const game = new PokerGame(players, { ...config, seed: 'eligible-pot-overbet' })
+    const internal = game as any
+
+    internal.state = {
+      ...internal.getPublicState(),
+      phase: 'river',
+      pot: 100,
+      currentPlayerId: 'p2',
+      players: [
+        { ...players[0], chips: 100, roundBet: 100, status: 'active' },
+        { ...players[1], chips: 40, roundBet: 0, status: 'active' },
+      ],
+    }
+    internal.currentBet = 100
+    internal.minRaise = 100
+    internal.roundBets = new Map([['p1', 100], ['p2', 0]])
+    internal.totalHandBets = new Map([['p1', 150], ['p2', 50]])
+    internal.bettingQueue = ['p2']
+    internal.syncCurrentPlayer()
+
+    const context = game.getPublicState().bettingContext
+    expect(context).toEqual(expect.objectContaining({
+      playerId: 'p2',
+      totalPot: 200,
+      eligiblePot: 140,
+      callAmount: 40,
+      toCall: 100,
+    }))
+    expect(context?.potOdds).toBeCloseTo(40 / 180)
+    expect(context?.toCallPotRatio).toBeCloseTo(40 / 140)
+    expect(context?.spr).toBeCloseTo(40 / 140)
+  })
+
   it('uses heads-up blind and action order before and after the flop, then rotates the dealer', () => {
     const game = new PokerGame(makePlayers([1000, 1000]), { ...config, seed: 'heads-up-order' })
     game.startHand()

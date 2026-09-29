@@ -8,14 +8,14 @@
       "format": "full-ring",
       "hands": 300,
       "metrics": {
-        "vpip": 20.037037037037038,
-        "pfr": 14.592592592592593,
-        "threeBet": 10.9475620975161,
-        "cBet": 67.08860759493672,
-        "foldToCBet": 55.55555555555556,
-        "turnCBet": 36.36363636363637,
-        "wtsd": 30.29045643153527,
-        "aggressionFactor": 2.7906976744186047
+        "vpip": 19.962962962962962,
+        "pfr": 14.555555555555555,
+        "threeBet": 10.835629017447198,
+        "cBet": 64.17910447761194,
+        "foldToCBet": 53.84615384615385,
+        "turnCBet": 42.10526315789473,
+        "wtsd": 32.55813953488372,
+        "aggressionFactor": 2.3191489361702127
       },
       "invariants": {
         "invalidActions": 0,
@@ -33,11 +33,11 @@
         "vpip": 25.61111111111111,
         "pfr": 19.333333333333332,
         "threeBet": 11.492734478203435,
-        "cBet": 80.64516129032258,
-        "foldToCBet": 32.25806451612903,
-        "turnCBet": 27.586206896551722,
-        "wtsd": 34.69387755102041,
-        "aggressionFactor": 2.1311475409836067
+        "cBet": 72.41379310344827,
+        "foldToCBet": 30.76923076923077,
+        "turnCBet": 29.629629629629626,
+        "wtsd": 37.83783783783784,
+        "aggressionFactor": 2.1296296296296298
       },
       "invariants": {
         "invalidActions": 0,
@@ -52,14 +52,14 @@
       "format": "heads-up",
       "hands": 300,
       "metrics": {
-        "vpip": 59.5,
+        "vpip": 59.66666666666667,
         "pfr": 41.5,
         "threeBet": 20.87378640776699,
-        "cBet": 78.75,
-        "foldToCBet": 55.072463768115945,
-        "turnCBet": 53.57142857142857,
-        "wtsd": 37.28813559322034,
-        "aggressionFactor": 2.933333333333333
+        "cBet": 73.75,
+        "foldToCBet": 55.38461538461539,
+        "turnCBet": 51.85185185185185,
+        "wtsd": 38.655462184873954,
+        "aggressionFactor": 3
       },
       "invariants": {
         "invalidActions": 0,
@@ -77,11 +77,11 @@
         "vpip": 12.555555555555555,
         "pfr": 10.814814814814815,
         "threeBet": 6.871794871794871,
-        "cBet": 60,
-        "foldToCBet": 44.44444444444444,
+        "cBet": 52.94117647058824,
+        "foldToCBet": 46.666666666666664,
         "turnCBet": 100,
-        "wtsd": 37.5,
-        "aggressionFactor": 2.8421052631578947
+        "wtsd": 40.54054054054054,
+        "aggressionFactor": 2.823529411764706
       },
       "invariants": {
         "invalidActions": 0,
@@ -99,11 +99,11 @@
         "vpip": 17.11111111111111,
         "pfr": 13.944444444444445,
         "threeBet": 7.540983606557377,
-        "cBet": 57.14285714285714,
-        "foldToCBet": 47.82608695652174,
-        "turnCBet": 50,
-        "wtsd": 37.5,
-        "aggressionFactor": 3.7142857142857144
+        "cBet": 50,
+        "foldToCBet": 52.63157894736842,
+        "turnCBet": 57.14285714285714,
+        "wtsd": 37,
+        "aggressionFactor": 4
       },
       "invariants": {
         "invalidActions": 0,
@@ -121,11 +121,11 @@
         "vpip": 31.666666666666664,
         "pfr": 23.5,
         "threeBet": 3.6764705882352944,
-        "cBet": 51.61290322580645,
-        "foldToCBet": 41.17647058823529,
-        "turnCBet": 37.5,
-        "wtsd": 48,
-        "aggressionFactor": 3
+        "cBet": 43.333333333333336,
+        "foldToCBet": 35.714285714285715,
+        "turnCBet": 42.857142857142854,
+        "wtsd": 46.93877551020408,
+        "aggressionFactor": 3.4285714285714284
       },
       "invariants": {
         "invalidActions": 0,
@@ -140,14 +140,14 @@
       "format": "full-ring",
       "hands": 300,
       "metrics": {
-        "vpip": 26.77777777777778,
+        "vpip": 26.740740740740744,
         "pfr": 17.814814814814813,
         "threeBet": 14.093959731543624,
-        "cBet": 78.80794701986756,
-        "foldToCBet": 60.37735849056604,
-        "turnCBet": 35.714285714285715,
-        "wtsd": 33.11827956989247,
-        "aggressionFactor": 2.1478260869565218
+        "cBet": 78.50467289719626,
+        "foldToCBet": 67.54385964912281,
+        "turnCBet": 38.095238095238095,
+        "wtsd": 27.73109243697479,
+        "aggressionFactor": 2.4473684210526314
       },
       "invariants": {
         "invalidActions": 0,
@@ -165,11 +165,11 @@
         "vpip": 36.388888888888886,
         "pfr": 22.944444444444446,
         "threeBet": 14.319809069212411,
-        "cBet": 82.14285714285714,
-        "foldToCBet": 51.35135135135135,
-        "turnCBet": 53.65853658536586,
-        "wtsd": 28.960396039603957,
-        "aggressionFactor": 2.2589285714285716
+        "cBet": 76.72413793103449,
+        "foldToCBet": 54.23728813559322,
+        "turnCBet": 53.125,
+        "wtsd": 26.571428571428573,
+        "aggressionFactor": 2.4285714285714284
       },
       "invariants": {
         "invalidActions": 0,
@@ -185,13 +185,13 @@
       "hands": 300,
       "metrics": {
         "vpip": 84.83333333333334,
-        "pfr": 53.5,
-        "threeBet": 18.88888888888889,
-        "cBet": 92.07317073170732,
-        "foldToCBet": 27.27272727272727,
-        "turnCBet": 56.09756097560976,
-        "wtsd": 30.24390243902439,
-        "aggressionFactor": 3.3297872340425534
+        "pfr": 53.333333333333336,
+        "threeBet": 18.51851851851852,
+        "cBet": 89.171974522293,
+        "foldToCBet": 32.16783216783217,
+        "turnCBet": 54.285714285714285,
+        "wtsd": 29.292929292929294,
+        "aggressionFactor": 3.4642857142857144
       },
       "invariants": {
         "invalidActions": 0,
@@ -209,11 +209,11 @@
         "vpip": 35.51851851851852,
         "pfr": 8.296296296296296,
         "threeBet": 2.769230769230769,
-        "cBet": 50.33557046979866,
-        "foldToCBet": 41.94528875379939,
+        "cBet": 50,
+        "foldToCBet": 41.66666666666667,
         "turnCBet": 41.66666666666667,
-        "wtsd": 53.333333333333336,
-        "aggressionFactor": 0.738819320214669
+        "wtsd": 54.26515930113053,
+        "aggressionFactor": 0.7339449541284404
       },
       "invariants": {
         "invalidActions": 0,
@@ -231,11 +231,11 @@
         "vpip": 44.05555555555555,
         "pfr": 9.333333333333334,
         "threeBet": 2.4208566108007448,
-        "cBet": 46.61016949152542,
-        "foldToCBet": 40.856031128404666,
-        "turnCBet": 46.15384615384615,
-        "wtsd": 51.88571428571429,
-        "aggressionFactor": 0.888631090487239
+        "cBet": 44.34782608695652,
+        "foldToCBet": 40.7563025210084,
+        "turnCBet": 47.91666666666667,
+        "wtsd": 54.26267281105991,
+        "aggressionFactor": 0.863961813842482
       },
       "invariants": {
         "invalidActions": 0,
@@ -253,11 +253,11 @@
         "vpip": 68,
         "pfr": 23,
         "threeBet": 5.343511450381679,
-        "cBet": 35,
-        "foldToCBet": 36.666666666666664,
-        "turnCBet": 52,
-        "wtsd": 65.87301587301587,
-        "aggressionFactor": 2.0568181818181817
+        "cBet": 32.91139240506329,
+        "foldToCBet": 35.714285714285715,
+        "turnCBet": 56.52173913043478,
+        "wtsd": 67.33067729083665,
+        "aggressionFactor": 2
       },
       "invariants": {
         "invalidActions": 0,
@@ -272,14 +272,14 @@
       "format": "full-ring",
       "hands": 300,
       "metrics": {
-        "vpip": 32.22222222222222,
+        "vpip": 32.370370370370374,
         "pfr": 13.962962962962964,
         "threeBet": 9.901873327386262,
-        "cBet": 50,
-        "foldToCBet": 46.97674418604651,
+        "cBet": 50.476190476190474,
+        "foldToCBet": 47.706422018348626,
         "turnCBet": 35.84905660377358,
-        "wtsd": 30.47735618115055,
-        "aggressionFactor": 1.7587939698492463
+        "wtsd": 30.665024630541872,
+        "aggressionFactor": 1.7424242424242424
       },
       "invariants": {
         "invalidActions": 0,
@@ -294,14 +294,14 @@
       "format": "six-max",
       "hands": 300,
       "metrics": {
-        "vpip": 29.777777777777775,
+        "vpip": 29.72222222222222,
         "pfr": 16.5,
         "threeBet": 11.736334405144696,
-        "cBet": 39.88095238095239,
-        "foldToCBet": 46.36363636363636,
+        "cBet": 40.119760479041915,
+        "foldToCBet": 45.87155963302752,
         "turnCBet": 44,
-        "wtsd": 31.960784313725487,
-        "aggressionFactor": 2.484536082474227
+        "wtsd": 33.00395256916996,
+        "aggressionFactor": 2.3979591836734695
       },
       "invariants": {
         "invalidActions": 0,
@@ -319,11 +319,11 @@
         "vpip": 60.16666666666667,
         "pfr": 33.5,
         "threeBet": 28.846153846153843,
-        "cBet": 50.43478260869565,
+        "cBet": 52.25225225225225,
         "foldToCBet": 51.94805194805194,
         "turnCBet": 51.61290322580645,
-        "wtsd": 27.860696517412936,
-        "aggressionFactor": 4.520833333333333
+        "wtsd": 27.411167512690355,
+        "aggressionFactor": 4.4375
       },
       "invariants": {
         "invalidActions": 0,
@@ -341,11 +341,11 @@
         "vpip": 21.962962962962962,
         "pfr": 13.518518518518519,
         "threeBet": 7.450980392156863,
-        "cBet": 51,
+        "cBet": 52.04081632653062,
         "foldToCBet": 61.33333333333333,
         "turnCBet": 46.15384615384615,
-        "wtsd": 27.874564459930312,
-        "aggressionFactor": 3.611111111111111
+        "wtsd": 27.56183745583039,
+        "aggressionFactor": 3.5833333333333335
       },
       "invariants": {
         "invalidActions": 0,
@@ -363,11 +363,11 @@
         "vpip": 26,
         "pfr": 16.27777777777778,
         "threeBet": 9.226190476190476,
-        "cBet": 40.54054054054054,
-        "foldToCBet": 62.7906976744186,
+        "cBet": 37.68115942028986,
+        "foldToCBet": 58.97435897435898,
         "turnCBet": 80,
-        "wtsd": 27.697841726618705,
-        "aggressionFactor": 4.321428571428571
+        "wtsd": 27.611940298507463,
+        "aggressionFactor": 4.142857142857143
       },
       "invariants": {
         "invalidActions": 0,
@@ -404,14 +404,14 @@
       "format": "full-ring",
       "hands": 300,
       "metrics": {
-        "vpip": 34.40740740740741,
-        "pfr": 19.962962962962962,
+        "vpip": 34.48148148148148,
+        "pfr": 20,
         "threeBet": 18.017241379310345,
-        "cBet": 44.827586206896555,
-        "foldToCBet": 40.51724137931034,
-        "turnCBet": 23.809523809523807,
-        "wtsd": 30.36053130929791,
-        "aggressionFactor": 1.8085106382978724
+        "cBet": 49.09090909090909,
+        "foldToCBet": 32.038834951456316,
+        "turnCBet": 40,
+        "wtsd": 29.295154185022028,
+        "aggressionFactor": 1.574468085106383
       },
       "invariants": {
         "invalidActions": 0,
@@ -426,14 +426,14 @@
       "format": "six-max",
       "hands": 300,
       "metrics": {
-        "vpip": 44.94444444444444,
+        "vpip": 45.05555555555556,
         "pfr": 25.166666666666664,
         "threeBet": 15.292841648590022,
-        "cBet": 50,
-        "foldToCBet": 41.53846153846154,
-        "turnCBet": 61.904761904761905,
-        "wtsd": 24.564183835182252,
-        "aggressionFactor": 2.6742424242424243
+        "cBet": 48.53801169590643,
+        "foldToCBet": 40.49586776859504,
+        "turnCBet": 61.111111111111114,
+        "wtsd": 24.713584288052374,
+        "aggressionFactor": 2.7016129032258065
       },
       "invariants": {
         "invalidActions": 0,
@@ -448,14 +448,14 @@
       "format": "heads-up",
       "hands": 300,
       "metrics": {
-        "vpip": 51.5,
-        "pfr": 35.5,
-        "threeBet": 17.67955801104972,
+        "vpip": 51.83333333333333,
+        "pfr": 35.66666666666667,
+        "threeBet": 17.582417582417584,
         "cBet": 43.47826086956522,
         "foldToCBet": 52.38095238095239,
         "turnCBet": 50,
-        "wtsd": 26,
-        "aggressionFactor": 5.125
+        "wtsd": 28.28282828282828,
+        "aggressionFactor": 5.217391304347826
       },
       "invariants": {
         "invalidActions": 0,
@@ -476,8 +476,8 @@
         "cBet": 36.09022556390977,
         "foldToCBet": 40.53156146179402,
         "turnCBet": 25,
-        "wtsd": 34.16095890410959,
-        "aggressionFactor": 0.7629310344827587
+        "wtsd": 36.55821917808219,
+        "aggressionFactor": 0.7259100642398287
       },
       "invariants": {
         "invalidActions": 0,
@@ -498,8 +498,8 @@
         "cBet": 34.710743801652896,
         "foldToCBet": 33.84615384615385,
         "turnCBet": 29.411764705882355,
-        "wtsd": 35.528942115768466,
-        "aggressionFactor": 1.323404255319149
+        "wtsd": 35.82834331337325,
+        "aggressionFactor": 1.3106382978723403
       },
       "invariants": {
         "invalidActions": 0,
@@ -520,8 +520,8 @@
         "cBet": 26.865671641791046,
         "foldToCBet": 29.166666666666668,
         "turnCBet": 16,
-        "wtsd": 42.857142857142854,
-        "aggressionFactor": 2.319327731092437
+        "wtsd": 43.956043956043956,
+        "aggressionFactor": 2.302521008403361
       },
       "invariants": {
         "invalidActions": 0,

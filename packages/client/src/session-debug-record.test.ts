@@ -122,6 +122,8 @@ describe('session debug JSONL export', () => {
     expect(decision.snapshot.hand.split(' ')).toHaveLength(4)
     expect(decision.snapshot.potCommitment).toBeGreaterThanOrEqual(0)
     expect(decision.snapshot.forcedAllInRatio).toBeGreaterThanOrEqual(0)
+    expect(decision.snapshot.totalPot).toBeGreaterThanOrEqual(decision.snapshot.eligiblePot)
+    expect(decision.snapshot.callAmount).toBeGreaterThanOrEqual(0)
     expect(decision.candidates).not.toHaveLength(0)
     expect(decision.candidates.some(candidate => candidate[0] === decision.chosenCandidateId)).toBe(true)
     expect(decision.selection[4]).toBeGreaterThanOrEqual(1)

@@ -167,6 +167,7 @@ export interface ScoringParams {
     weakTurnPressure: number
     weakRiverPressure: number
     riverNoMadeHand: number
+    riverNoMadeHandStrongRange: number
   }
   ploSprZones: {
     commitmentStart: number
@@ -743,6 +744,7 @@ export const DEFAULT_PARAMS: BotParams = {
       weakTurnPressure: -10,
       weakRiverPressure: -18,
       riverNoMadeHand: -8,
+      riverNoMadeHandStrongRange: -12,
     },
     ploSprZones: {
       commitmentStart: 1,

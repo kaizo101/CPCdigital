@@ -78,6 +78,7 @@ function withBotBettingContext(state: GameState): GameState {
     bettingContext: {
       playerId: bot.id,
       totalPot,
+      eligiblePot: totalPot,
       toCall,
       callAmount,
       potOdds: callAmount > 0 ? callAmount / (totalPot + callAmount) : 0,
@@ -113,6 +114,111 @@ describe('NLHE bot hand assessment', () => {
     expect(assessment.rank).toBe(7)
     expect(assessment.category).toBe('strong')
     expect(assessment.made).toBe(true)
+  })
+
+  it('does not invent a private flush draw from four suited board cards', () => {
+    const board = [
+      card('T', 'diamonds'), card('9', 'diamonds'), card('3', 'diamonds'), card('5', 'diamonds'),
+    ]
+
+    const jacks = assessHand(
+      [card('J', 'hearts'), card('J', 'spades')],
+      board,
+    )
+    const topPair = assessHand(
+      [card('T', 'clubs'), card('7', 'spades')],
+      board,
+    )
+
+    expect(jacks.drawTypes).not.toContain('flush-draw')
+    expect(jacks.drawTypes).not.toContain('nut-flush-draw')
+    expect(topPair.drawTypes).not.toContain('flush-draw')
+    expect(topPair.drawTypes).not.toContain('nut-flush-draw')
+  })
+
+  it('keeps genuine flush draws, exact outs and nut provenance distinct', () => {
+    const twoHoleCards = assessHand(
+      [card('A', 'diamonds'), card('7', 'diamonds')],
+      [card('K', 'diamonds'), card('2', 'diamonds'), card('9', 'clubs')],
+    )
+    const boardAceNutDraw = assessHand(
+      [card('K', 'diamonds'), card('8', 'clubs')],
+      [
+        card('A', 'diamonds'), card('7', 'diamonds'),
+        card('2', 'diamonds'), card('9', 'clubs'),
+      ],
+    )
+    const boardAceNonNutDraw = assessHand(
+      [card('Q', 'diamonds'), card('8', 'clubs')],
+      [
+        card('A', 'diamonds'), card('7', 'diamonds'),
+        card('2', 'diamonds'), card('9', 'clubs'),
+      ],
+    )
+
+    expect(twoHoleCards).toMatchObject({ drawTypes: expect.arrayContaining(['nut-flush-draw']), cleanOuts: 9 })
+    expect(boardAceNutDraw).toMatchObject({ drawTypes: expect.arrayContaining(['nut-flush-draw']), cleanOuts: 9 })
+    expect(boardAceNonNutDraw).toMatchObject({ drawTypes: expect.arrayContaining(['flush-draw']), cleanOuts: 7 })
+    expect(boardAceNonNutDraw.drawTypes).not.toContain('nut-flush-draw')
+  })
+
+  it('rates pocket pairs by overcards instead of granting every pocket pair high strength', () => {
+    const scenarios: Array<{
+      holeCards: [Card, Card]
+      board: Card[]
+      expected: number
+    }> = [
+      {
+        holeCards: [card('2', 'clubs'), card('2', 'spades')],
+        board: [card('K', 'hearts'), card('9', 'diamonds'), card('3', 'clubs')],
+        expected: 25,
+      },
+      {
+        holeCards: [card('8', 'clubs'), card('8', 'diamonds')],
+        board: [card('K', 'diamonds'), card('J', 'diamonds'), card('2', 'clubs')],
+        expected: 40,
+      },
+      {
+        holeCards: [card('Q', 'clubs'), card('Q', 'spades')],
+        board: [card('K', 'hearts'), card('6', 'diamonds'), card('2', 'clubs')],
+        expected: 55,
+      },
+      {
+        holeCards: [card('J', 'hearts'), card('J', 'spades')],
+        board: [card('T', 'diamonds'), card('9', 'diamonds'), card('3', 'diamonds')],
+        expected: 85,
+      },
+    ]
+
+    for (const scenario of scenarios) {
+      expect(assessHand(scenario.holeCards, scenario.board).relativeStrength).toBe(scenario.expected)
+    }
+  })
+
+  it('keeps top, middle and bottom pair strength ordered', () => {
+    const board = [card('K', 'hearts'), card('T', 'diamonds'), card('3', 'clubs')]
+
+    expect(assessHand([card('K', 'clubs'), card('7', 'spades')], board).relativeStrength).toBe(80)
+    expect(assessHand([card('T', 'clubs'), card('7', 'spades')], board).relativeStrength).toBe(55)
+    expect(assessHand([card('3', 'diamonds'), card('7', 'spades')], board).relativeStrength).toBe(35)
+  })
+
+  it('characterizes the H0006 paired-board bottom-pair bluffcatcher without reclassifying it', () => {
+    const assessment = assessHand(
+      [card('J', 'clubs'), card('4', 'hearts')],
+      [
+        card('6', 'spades'), card('T', 'diamonds'), card('9', 'clubs'),
+        card('4', 'diamonds'), card('6', 'clubs'),
+      ],
+    )
+
+    expect(assessment).toMatchObject({
+      rank: 3,
+      category: 'marginal',
+      made: true,
+      pairType: 'bottom',
+      showdownValue: 46,
+    })
   })
 
   it('does not overvalue a hole card that merely duplicates a double-paired board kicker', () => {

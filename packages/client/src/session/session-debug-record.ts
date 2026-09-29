@@ -91,6 +91,7 @@ export interface CompactDecisionSnapshot {
       allInAmount: number | null
     }
     totalPot: number
+    eligiblePot: number
     playerStack?: number
     playerStartingStack?: number
     voluntaryHandContribution?: number
@@ -227,6 +228,9 @@ export interface CompactBotDebugDecisionV4 {
     phase: string
     hand: string
     board: string
+    totalPot: number
+    eligiblePot: number
+    callAmount: number
     potOdds: number
     spr: number
     potCommitment: number
@@ -378,6 +382,9 @@ export function compactBotDebugDecisionV4(decision: BotDebugDecision): CompactBo
       phase: decision.context.publicState.phase,
       hand: decision.context.ownCards.map(card => `${card.rank}${card.suit[0]}`).join(' '),
       board: decision.context.publicState.communityCards.map(card => `${card.rank}${card.suit[0]}`).join(' ') || '-',
+      totalPot: roundDiagnostic(decision.context.bettingContext.totalPot),
+      eligiblePot: roundDiagnostic(decision.context.bettingContext.eligiblePot),
+      callAmount: roundDiagnostic(decision.context.bettingContext.callAmount),
       potOdds: roundDiagnostic(decision.metrics.potOdds * 100),
       spr: roundDiagnostic(decision.metrics.spr),
       potCommitment: roundDiagnostic(decision.metrics.potCommitment),

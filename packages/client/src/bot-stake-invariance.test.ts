@@ -25,6 +25,7 @@ function stakeContext(
   const bettingContext: BettingContext = {
     playerId: 'bot',
     totalPot: amount(10),
+    eligiblePot: amount(10),
     toCall: amount(2),
     callAmount: amount(2),
     potOdds: amount(2) / amount(12),

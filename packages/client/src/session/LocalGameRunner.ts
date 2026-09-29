@@ -441,7 +441,16 @@ export class LocalGameRunner {
     if (!this.game) return
     if (this.game.getPublicState().phase !== 'waiting') return
 
+    const heroChipsBeforePendingRebuy = this.players.find(player => player.id === this.heroId)?.chips
     this.rebuyManager.applyPendingRebuys()
+    const heroChipsAfterPendingRebuy = this.players.find(player => player.id === this.heroId)?.chips
+    if (
+      heroChipsBeforePendingRebuy != null
+      && heroChipsAfterPendingRebuy != null
+      && heroChipsAfterPendingRebuy > heroChipsBeforePendingRebuy
+    ) {
+      this.sessionStats.heroPrevChips = heroChipsAfterPendingRebuy
+    }
 
     const eligible = this.players.filter(p => p.chips > 0 && !p.isSittingOut)
     if (eligible.length < 2) {
@@ -651,6 +660,13 @@ export class LocalGameRunner {
     this.showdownCards = { ...this.game.getRevealedCards() }
     const bigBlind = this.game?.getPublicState().bigBlind ?? 20
 
+    recordHand(
+      this.sessionStats,
+      this.heroId,
+      gs.players.find(player => player.id === this.heroId)?.chips ?? 0,
+      this.game.getPublicHandHistory(),
+    )
+
     const revealStages = this.runoutStartCardCount == null
       ? []
       : getRunoutRevealStages(this.runoutStartCardCount, gs.communityCards.length)
@@ -744,16 +760,6 @@ export class LocalGameRunner {
     this.runoutStartCardCount = null
     this._lastResults = results
     this.syncChips()
-
-    const gs = this.game?.getPublicState()
-    if (gs) {
-      recordHand(
-        this.sessionStats,
-        this.heroId,
-        gs.players.find(p => p.id === this.heroId)?.chips ?? 0,
-        this.game!.getPublicHandHistory(),
-      )
-    }
 
     this.notify()
 

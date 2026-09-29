@@ -40,12 +40,15 @@ export function scoreActions(context: DecisionContext): ScoredAction[] {
 
 function scoreFold(context: DecisionContext): ScoredAction {
   const { gameView, handAssessment: hand, metrics } = context
+  const escalationOverridesGenericScoring = preflopEscalationOverridesGenericScoring(context)
   const contributions: ScoreContribution[] = [
     baseContribution(),
-    factor('hand-strength', `Fold with ${hand.category}`, context.categoryScores.fold[hand.category]),
-    factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('fold', hand.strength)),
+    ...(escalationOverridesGenericScoring ? [] : [
+      factor('hand-strength', `Fold with ${hand.category}`, context.categoryScores.fold[hand.category]),
+      factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('fold', hand.strength)),
+    ]),
     ...bettingFactors('fold', context),
-    ...preflopStrategyFactors('fold', context),
+    ...(escalationOverridesGenericScoring ? [] : preflopStrategyFactors('fold', context)),
     ...preflopEscalationFactors('fold', context),
   ]
 
@@ -124,6 +127,7 @@ function scoreCheck(context: DecisionContext): ScoredAction {
 
 function scoreCall(context: DecisionContext): ScoredAction {
   const { gameView, handAssessment: hand, metrics } = context
+  const escalationOverridesGenericScoring = preflopEscalationOverridesGenericScoring(context)
   const isRiver = gameView.phase === 'river'
   const outOfPosition = context.position === 'early' || context.position === 'blinds'
   const intent: ActionIntent = hand.drawTypes.length > 0
@@ -138,9 +142,11 @@ function scoreCall(context: DecisionContext): ScoredAction {
     : context.categoryScores.call[hand.category]
   const contributions: ScoreContribution[] = [
     baseContribution(),
-    factor('hand-strength', `Call with ${hand.category}`, handValue + strengthScore('call', hand.strength)),
+    ...(escalationOverridesGenericScoring ? [] : [
+      factor('hand-strength', `Call with ${hand.category}`, handValue + strengthScore('call', hand.strength)),
+    ]),
     ...bettingFactors('call', context),
-    ...preflopStrategyFactors('call', context),
+    ...(escalationOverridesGenericScoring ? [] : preflopStrategyFactors('call', context)),
     ...preflopEscalationFactors('call', context),
   ]
 
@@ -195,7 +201,9 @@ function scoreRaise(context: DecisionContext): ScoredAction {
   if (hand.nutPotential === 'nuts') contributions.push(factor('hand-strength', 'Nut potential', params.scoring.raiseBonus.nutPotential))
   else if (hand.nutPotential === 'near-nuts') contributions.push(factor('hand-strength', 'Near-nut potential', params.scoring.raiseBonus.nearNutPotential))
   else if (hand.nutPotential === 'second-nuts') contributions.push(factor('hand-strength', 'Second-nut potential', params.scoring.raiseBonus.secondNutPotential))
-  if (hand.vulnerability > 60) contributions.push(factor('hand-strength', 'Protection against draws', params.scoring.raiseBonus.vulnerability))
+  if (context.gameView.board.length < 5 && hand.vulnerability > 60) {
+    contributions.push(factor('hand-strength', 'Protection against draws', params.scoring.raiseBonus.vulnerability))
+  }
   const vulnerablePloMadeHand = context.variantId === 'omaha-high'
     && context.gameView.board.length < 5
     && hand.made
@@ -211,6 +219,7 @@ function scoreRaise(context: DecisionContext): ScoredAction {
   }
   if (
     context.variantId !== 'omaha-high'
+    && context.gameView.board.length < 5
     && hand.boardGotWorse
     && (hand.category === 'medium' || hand.category === 'good' || hand.category === 'strong')
   ) {
@@ -413,6 +422,15 @@ function weakCallDownFactors(context: DecisionContext): ScoreContribution[] {
       'No made hand at showdown',
       params.scoring.callDownMods.riverNoMadeHand,
     ))
+
+    const ranges = context.opponentRanges ?? estimateOpponentRanges(streetAnalysis)
+    if (ranges.some(range => range.strength === 'strong' || range.strength === 'very-strong')) {
+      contributions.push(factor(
+        'opponent-read',
+        'No made hand against a strong river range',
+        params.scoring.callDownMods.riverNoMadeHandStrongRange,
+      ))
+    }
   }
 
   return contributions
@@ -973,6 +991,12 @@ function preflopEscalationProfile(context: DecisionContext): {
     && context.metrics.effectiveStackBb <= config.maxPolarizedStackBb
 
   return { raiseCount, coreValue, polarizedBluff, committed }
+}
+
+function preflopEscalationOverridesGenericScoring(context: DecisionContext): boolean {
+  const profile = preflopEscalationProfile(context)
+  if (!profile || profile.raiseCount < 3 || profile.coreValue) return false
+  return !(profile.raiseCount === 3 && profile.polarizedBluff && profile.committed)
 }
 
 function preflopEscalationFactors(

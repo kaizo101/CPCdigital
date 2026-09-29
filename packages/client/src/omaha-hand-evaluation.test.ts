@@ -37,6 +37,7 @@ function makeContext(communityCards: BotContext['publicState']['communityCards']
     bettingContext: {
       playerId: 'bot',
       totalPot: 0.5,
+      eligiblePot: 0.5,
       toCall: 0,
       callAmount: 0,
       potOdds: 0,

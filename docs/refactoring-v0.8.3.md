@@ -51,6 +51,13 @@ durchgeführt.
   v2-Schnittstellenannahmen dokumentieren.
 - Prettier-Konfiguration in einem separaten mechanischen Commit einführen und
   dokumentierte Format- sowie Lint-Befehle ergänzen.
+- Den Produktions-Bundle beim 0.8.3-Cut erneut messen. Ausgangswert ist ein
+  Hauptchunk von **517,2 KB minifiziert beziehungsweise 143,4 KB gzip** bei
+  einer allgemeinen Vite-Warnschwelle von 500 KB. Nur entlang ohnehin
+  entstehender fachlicher Grenzen dynamisch aufteilen und Start-/Replaypfad
+  danach in Electron sowie Android prüfen. Die Warnschwelle nicht lediglich
+  erhöhen; unter 500 KB zu kommen ist ohne messbaren Laufzeitnutzen kein
+  eigenes Release-Gate.
 
 ## Verhaltensneutrales Gate
 

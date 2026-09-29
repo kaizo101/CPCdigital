@@ -11,6 +11,7 @@ function bettingContext(overrides: Partial<BettingContext> = {}): BettingContext
   return {
     playerId: 'bot',
     totalPot: 100,
+    eligiblePot: 100,
     toCall: 25,
     callAmount: 25,
     potOdds: 0.2,
@@ -33,6 +34,23 @@ function bettingContext(overrides: Partial<BettingContext> = {}): BettingContext
 }
 
 describe('bot decision metrics', () => {
+  it('preserves the H0006 effective river price instead of the uncallable overbet', () => {
+    const callAmount = 2.53
+    const eligiblePot = 6.75
+    const metrics = deriveDecisionMetrics(bettingContext({
+      totalPot: 7.17,
+      eligiblePot,
+      callAmount,
+      potOdds: callAmount / (eligiblePot + callAmount),
+      toCallPotRatio: callAmount / eligiblePot,
+    }), 0.02)
+
+    expect(metrics.totalPot).toBe(7.17)
+    expect(metrics.callAmount).toBe(2.53)
+    expect(metrics.potOdds).toBeCloseTo(2.53 / 9.28)
+    expect(metrics.toCallPotRatio).toBeCloseTo(2.53 / 6.75)
+  })
+
   it('separates voluntary pot commitment from the forced-all-in ratio', () => {
     const metrics = deriveDecisionMetrics(bettingContext({
       callAmount: 300,

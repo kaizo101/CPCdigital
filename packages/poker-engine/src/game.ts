@@ -964,6 +964,13 @@ export class PokerGame {
     )
     const toCall = this.roundCents(Math.max(0, this.currentBet - currentRoundBet))
     const callAmount = this.roundCents(Math.min(toCall, currentPlayer.chips))
+    const eligibleContributionCap = this.roundCents(
+      (this.totalHandBets.get(currentPlayer.id) ?? 0) + callAmount,
+    )
+    const eligiblePot = this.roundCents([...this.totalHandBets.values()].reduce(
+      (sum, contribution) => sum + Math.min(contribution, eligibleContributionCap),
+      0,
+    ))
     const minRaiseTo = this.roundCents(this.currentBet + this.minRaise)
     const stackRaiseTo = this.roundCents(currentRoundBet + currentPlayer.chips)
     const potRaiseTo = this.roundCents(currentRoundBet + totalPot + (2 * callAmount))
@@ -996,10 +1003,11 @@ export class PokerGame {
     return {
       playerId: currentPlayer.id,
       totalPot,
+      eligiblePot,
       toCall,
       callAmount,
-      potOdds: callAmount > 0 ? callAmount / (totalPot + callAmount) : 0,
-      toCallPotRatio: toCall > 0 && totalPot > 0 ? toCall / totalPot : 0,
+      potOdds: callAmount > 0 ? callAmount / (eligiblePot + callAmount) : 0,
+      toCallPotRatio: callAmount > 0 && eligiblePot > 0 ? callAmount / eligiblePot : 0,
       potRaiseTo,
       minRaiseTo,
       maxRaiseTo,
@@ -1007,7 +1015,7 @@ export class PokerGame {
       playerStartingStack,
       voluntaryHandContribution,
       effectiveStack,
-      spr: totalPot > 0 ? effectiveStack / totalPot : 0,
+      spr: eligiblePot > 0 ? effectiveStack / eligiblePot : 0,
       legalActions: {
         fold: toCall > 0,
         check: toCall === 0,
