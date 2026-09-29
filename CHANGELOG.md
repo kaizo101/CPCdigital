@@ -102,6 +102,14 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   `Board got more dangerous — protect harder` werden nicht mehr am River
   vergeben, an dem keine zukünftige Karte mehr geschützt werden kann.
 
+### Security
+
+- **High-Severity-Abhängigkeiten geschlossen**: Electron wurde auf `41.10.7`,
+  `@xmldom/xmldom` auf `0.9.12` und `nanoid` auf `3.3.19` aktualisiert. Der
+  Workspace-Audit meldet damit keine kritischen oder hoch eingestuften
+  Schwachstellen mehr; verbleibende Findings sind separat zu bewertende
+  Moderate-/Low-Funde.
+
 ## [0.8.1] — 2026-08-11
 
 ### Added
