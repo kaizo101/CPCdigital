@@ -109,6 +109,9 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   Workspace-Audit meldet damit keine kritischen oder hoch eingestuften
   Schwachstellen mehr; verbleibende Findings sind separat zu bewertende
   Moderate-/Low-Funde.
+- **Electron-Download-Abhängigkeit abgesichert**: Das transitive `undici` wurde
+  auf `7.30.0` aktualisiert. Damit wird auch der von GitHub als hoch eingestufte
+  TLS-Zertifikatsprüfungs-Alert für Versionen unter `7.29.1` geschlossen.
 
 ## [0.8.1] — 2026-08-11
 
