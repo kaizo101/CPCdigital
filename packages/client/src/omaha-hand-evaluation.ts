@@ -235,11 +235,7 @@ function assessOmahaNutPotential(
   }
 
   if (rank >= 9) {
-    const sfSuit = handCards[0].suit
-    const boardSfRanks = communityCards
-      .filter(c => cardSuitChar(c) === sfSuit)
-      .map(rankValue)
-    const nutTop = findStraightTop(boardSfRanks, 3)
+    const nutTop = highestOpponentStraightFlushTop(communityCards, ownCards)
     const myTop = findStraightTop(handCards.map(c => c.rank), 5)
     if (myTop >= nutTop) return 'nuts'
     if (nutTop - myTop === 1) return 'second-nuts'
@@ -256,7 +252,7 @@ function assessOmahaNutPotential(
       r > myQuadRank && (boardCount === 2 || boardCount === 3)
       && (ourRankCounts.get(r) ?? 0) === 0
     ).length
-    if (opponentCanMakeStraightFlush(communityCards, ownCards)) return 'near-nuts'
+    if (highestOpponentStraightFlushTop(communityCards, ownCards) > 0) return 'near-nuts'
     if (higherQuadCount === 0) return 'nuts'
     if (higherQuadCount === 1) return 'second-nuts'
     return 'near-nuts'
@@ -373,9 +369,10 @@ export function findStraightTop(visibleRanks: number[], minRequired: number): nu
   return 0
 }
 
-function opponentCanMakeStraightFlush(communityCards: Card[], ownCards: Card[]): boolean {
+function highestOpponentStraightFlushTop(communityCards: Card[], ownCards: Card[]): number {
   const known = new Set([...communityCards, ...ownCards].map(cardKey))
   const available = createDeck().filter(card => !known.has(cardKey(card)))
+  let best = 0
   for (const suit of ['hearts', 'diamonds', 'clubs', 'spades'] as const) {
     const boardOfSuit = communityCards.filter(card => card.suit === suit)
     if (boardOfSuit.length < 3) continue
@@ -385,11 +382,13 @@ function opponentCanMakeStraightFlush(communityCards: Card[], ownCards: Card[]):
       for (const run of OMAHA_STRAIGHT_RUNS) {
         if (!boardTrio.every(card => run.ranks.includes(rankValue(card)))) continue
         const holeRanks = run.ranks.filter(rank => !boardRanks.has(rank))
-        if (holeRanks.length === 2 && holeRanks.every(rank => availableRanks.has(rank))) return true
+        if (holeRanks.length === 2 && holeRanks.every(rank => availableRanks.has(rank))) {
+          best = Math.max(best, run.top)
+        }
       }
     }
   }
-  return false
+  return best
 }
 
 /** Nut-combination blockers relevant to PLO river bluff-catching (0-100). */

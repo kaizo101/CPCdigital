@@ -582,6 +582,40 @@ describe('omaha quads nut potential', () => {
   })
 })
 
+describe('omaha straight-flush nut potential', () => {
+  const board = [
+    { rank: 'Q', suit: 'spades' },
+    { rank: 'J', suit: 'spades' },
+    { rank: 'T', suit: 'spades' },
+  ] as BotContext['publicState']['communityCards']
+
+  it('recognizes the nuts when the private cards block every higher straight flush', () => {
+    const context = makeContext(board)
+    context.ownCards = [
+      { rank: 'A', suit: 'spades' },
+      { rank: '9', suit: 'spades' },
+      { rank: '8', suit: 'spades' },
+      { rank: '2', suit: 'diamonds' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(9)
+    expect(assessment.nutPotential).toBe('nuts')
+  })
+
+  it('keeps an unblocked higher straight flush as a threat', () => {
+    const context = makeContext(board)
+    context.ownCards = [
+      { rank: '9', suit: 'spades' },
+      { rank: '8', suit: 'spades' },
+      { rank: '2', suit: 'diamonds' },
+      { rank: '3', suit: 'clubs' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(9)
+    expect(assessment.nutPotential).toBe('near-nuts')
+  })
+})
+
 describe('PLO board equity collapse', () => {
   it('treats a paired final card as severe for straights and flushes but harmless for boats', () => {
     const pairedRiver = [

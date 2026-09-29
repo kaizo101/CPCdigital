@@ -87,6 +87,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Fixed
 
+- **PLO-Straight-Flush-Nuts**: Die höchste gegnerisch mögliche Straight
+  Flush wird jetzt aus genau drei Boardkarten und zwei ungesehenen Karten
+  ermittelt. Eigene Blocker verhindern falsch-positive höhere Kombinationen;
+  ein [reproduzierter Q-high-Nuts-Fall](docs/plo-straight-flush-nut-review-2026-09-29.md)
+  ist regressionsgetestet.
 - **PLO-Vierlings-Nut-Potential**: Höhere Vierlinge werden nur bei passender
   Boardstruktur und verfügbaren Karten als gegnerische Möglichkeit gewertet.
   Ein tatsächlich möglicher Straight Flush verhindert die Einstufung als
