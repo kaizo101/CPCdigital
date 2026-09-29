@@ -33,6 +33,12 @@ function byRankDesc(a: Card, b: Card): number {
   return (RANK_VALUE[b.rank] ?? 0) - (RANK_VALUE[a.rank] ?? 0)
 }
 
+function hasWholeCents(amount: number): boolean {
+  const cents = amount * 100
+  return Number.isSafeInteger(Math.round(cents))
+    && Math.abs(cents - Math.round(cents)) < 1e-7
+}
+
 export interface GameConfig {
   bigBlind: number
   smallBlind: number
@@ -74,18 +80,30 @@ export class PokerGame {
   private lastActionMinRaise = new Map<PlayerId, number>()
   private bettingQueue: PlayerId[] = []              // ordered queue: next to act = [0]
   private random: RandomSource
+  private config: GameConfig
   private variant: GameVariant
   private initialDealerIndex: number | null
   private fullRaisesThisRound = 0
 
   private state: PublicGameState
 
-  constructor(players: Player[], private config: GameConfig) {
+  constructor(players: Player[], config: GameConfig) {
     if (!Number.isFinite(config.bigBlind) || config.bigBlind <= 0) throw new Error('Big blind must be positive')
     if (!Number.isFinite(config.smallBlind) || config.smallBlind <= 0) throw new Error('Small blind must be positive')
     if (config.smallBlind > config.bigBlind) throw new Error('Small blind cannot exceed big blind')
+    if (!hasWholeCents(config.smallBlind) || !hasWholeCents(config.bigBlind)) {
+      throw new Error('Blinds must be whole cents')
+    }
     if (players.some(player => !Number.isFinite(player.chips) || player.chips < 0)) {
       throw new Error('Player chips must be finite and non-negative')
+    }
+    if (players.some(player => !hasWholeCents(player.chips))) {
+      throw new Error('Player chips must be whole cents')
+    }
+    if (players.some(player => !Number.isInteger(player.seatIndex) || player.seatIndex < 0)
+      || new Set(players.map(player => player.seatIndex)).size !== players.length
+      || new Set(players.map(player => player.id)).size !== players.length) {
+      throw new Error('Players must have unique ids and non-negative, unique seat indices')
     }
     if (config.seed !== undefined && config.random !== undefined) {
       throw new Error('GameConfig cannot specify both seed and random')
@@ -100,22 +118,29 @@ export class PokerGame {
     ) {
       throw new Error('Initial dealer index must reference an existing player')
     }
+    this.config = { ...config }
     this.variant = cloneGameVariant(config.variant ?? TEXAS_HOLDEM)
     validateGameVariant(this.variant)
     if (this.variant.holeCardsPerPlayer !== 2 && this.variant.holeCardsPerPlayer !== 4) {
       throw new Error('PokerGame currently supports variants with 2 or 4 hole cards')
     }
+    const initialDealerId = config.initialDealerIndex == null
+      ? null
+      : players[config.initialDealerIndex].id
+    const orderedPlayers = [...players].sort((left, right) => left.seatIndex - right.seatIndex)
     this.random = config.random ?? (config.seed !== undefined ? createSeededRandom(config.seed) : secureRandom)
-    this.initialDealerIndex = config.initialDealerIndex ?? null
+    this.initialDealerIndex = initialDealerId == null
+      ? null
+      : orderedPlayers.findIndex(player => player.id === initialDealerId)
     this.state = {
       variantId: this.variant.id,
       phase: 'waiting',
-      players: players.map(p => ({ ...p, status: 'waiting', roundBet: 0 })),
+      players: orderedPlayers.map(p => ({ ...p, status: 'waiting', roundBet: 0 })),
       communityCards: [],
       pot: 0,
       sidePots: [],
       currentPlayerId: null,
-      dealerIndex: config.initialDealerIndex ?? 0,
+      dealerIndex: this.initialDealerIndex ?? 0,
       bigBlind: config.bigBlind,
       smallBlind: config.smallBlind,
       currentBet: 0,
@@ -210,6 +235,7 @@ export class PokerGame {
   setPlayerChips(playerId: PlayerId, chips: number): void {
     if (this.state.phase !== 'waiting') throw new Error('Cannot change chips during a hand')
     if (!Number.isFinite(chips) || chips < 0) throw new Error('Chips must be finite and non-negative')
+    if (!hasWholeCents(chips)) throw new Error('Chips must be whole cents')
     this.mutatePlayer(playerId, p => ({ ...p, chips }))
   }
 
@@ -219,24 +245,65 @@ export class PokerGame {
 
   upsertPlayer(player: Player): void {
     if (this.state.phase !== 'waiting') throw new Error('Cannot modify players during a hand')
+    if (!Number.isFinite(player.chips) || player.chips < 0) throw new Error('Chips must be finite and non-negative')
+    if (!hasWholeCents(player.chips)) throw new Error('Chips must be whole cents')
+    if (!Number.isInteger(player.seatIndex) || player.seatIndex < 0) {
+      throw new Error('Seat index must be a non-negative integer')
+    }
+    if (this.state.players.some(existing => existing.id !== player.id && existing.seatIndex === player.seatIndex)) {
+      throw new Error('Seat index must be unique')
+    }
+    const dealerId = this.state.players[this.state.dealerIndex]?.id
+    const initialDealerId = this.initialDealerIndex == null
+      ? null
+      : this.state.players[this.initialDealerIndex]?.id
     const exists = this.state.players.some(p => p.id === player.id)
+    const players = (exists
+      ? this.state.players.map(p => p.id === player.id ? { ...player, status: 'waiting' as const, roundBet: 0 } : p)
+      : [...this.state.players, { ...player, status: 'waiting' as const, roundBet: 0 }]
+    ).sort((left, right) => left.seatIndex - right.seatIndex)
+    if (initialDealerId != null) {
+      this.initialDealerIndex = players.findIndex(candidate => candidate.id === initialDealerId)
+    }
     this.state = {
       ...this.state,
-      players: exists
-        ? this.state.players.map(p => p.id === player.id ? { ...player, status: 'waiting', roundBet: 0 } : p)
-        : [...this.state.players, { ...player, status: 'waiting', roundBet: 0 }],
+      players,
+      dealerIndex: dealerId == null ? 0 : players.findIndex(candidate => candidate.id === dealerId),
     }
   }
 
   removePlayer(playerId: PlayerId): void {
     if (this.state.phase !== 'waiting') throw new Error('Cannot remove players during a hand')
-    this.state = { ...this.state, players: this.state.players.filter(p => p.id !== playerId) }
+    const priorPlayers = this.state.players
+    const removed = priorPlayers.find(player => player.id === playerId)
+    if (!removed) return
+    const dealerId = priorPlayers[this.state.dealerIndex]?.id
+    const initialDealerId = this.initialDealerIndex == null
+      ? null
+      : priorPlayers[this.initialDealerIndex]?.id
+    const players = priorPlayers.filter(player => player.id !== playerId)
+    const nextSeat = players.findIndex(player => player.seatIndex > removed.seatIndex)
+    const successorIndex = nextSeat >= 0 ? nextSeat : 0
+    const dealerIndex = players.length === 0 ? 0 : dealerId === playerId
+      ? (successorIndex - 1 + players.length) % players.length
+      : players.findIndex(player => player.id === dealerId)
+    if (initialDealerId === playerId) {
+      this.initialDealerIndex = players.length === 0 ? null : successorIndex
+    } else if (initialDealerId != null) {
+      this.initialDealerIndex = players.findIndex(player => player.id === initialDealerId)
+    }
+    this.state = { ...this.state, players, dealerIndex }
   }
 
   startHand(): void {
     if (this.state.phase !== 'waiting') throw new Error('Hand already in progress')
     const eligible = this.state.players.filter(p => p.chips > 0 && !p.isSittingOut)
     if (eligible.length < 2) throw new Error('Need at least 2 players with chips')
+    const communityCardCount = this.variant.phases.reduce((count, phase) =>
+      count + (phase.kind === 'betting' ? phase.dealBefore?.count ?? 0 : 0), 0)
+    if (eligible.length * this.variant.holeCardsPerPlayer + communityCardCount > 52) {
+      throw new Error('Deck has insufficient cards for all players and community cards')
+    }
 
     this.deck = shuffleDeck(createDeck(), this.random)
     this.holeCards.clear()
@@ -308,6 +375,9 @@ export class PokerGame {
       throw new Error('No active betting round')
     }
     if (this.state.currentPlayerId !== playerId) throw new Error('Not your turn')
+    if (!action || !['fold', 'check', 'call', 'raise', 'all-in'].includes(action.type)) {
+      throw new Error('Invalid action type')
+    }
     const phase = this.state.phase
 
     const player = this.findPlayer(playerId)
@@ -601,15 +671,7 @@ export class PokerGame {
   private showdown(): void {
     this.state = { ...this.state, phase: 'showdown', currentPlayerId: null, bettingContext: null }
 
-    const sidePots = calculateSidePots(
-      this.state.players
-        .filter(p => p.status !== 'waiting')
-        .map(p => ({
-          playerId: p.id,
-          totalBet: this.totalHandBets.get(p.id) ?? 0,
-          inHand: !this.foldedPlayers.has(p.id),
-        }))
-    )
+    const sidePots = this.calculateHandSidePots()
 
     for (const player of this.getInHandPlayers()) {
       const cards = this.holeCards.get(player.id)
@@ -689,25 +751,53 @@ export class PokerGame {
   }
 
   private awardUncontestedPot(): void {
+    this.returnUncalledBet()
     this.collectBetsIntoPot()
-    const winner = this.getInHandPlayers()[0]
-    this.mutatePlayer(winner.id, p => ({ ...p, chips: this.roundCents(p.chips + this.state.pot) }))
-    const award = { playerId: winner.id, amount: this.state.pot, handName: '' }
-    this.handHistory.push({
-      type: 'PotAwarded',
-      potIndex: 0,
-      potType: 'main',
-      ...award,
-      isSplit: false,
-    })
-    this.lastHandResults = [award]
+    const awards: HandResult[] = []
+    for (const [potIndex, pot] of this.calculateHandSidePots().entries()) {
+      if (pot.eligiblePlayerIds.length !== 1) {
+        throw new Error('Uncontested pot must have exactly one winner')
+      }
+      const playerId = pot.eligiblePlayerIds[0]
+      const award = { playerId, amount: pot.amount, handName: '' }
+      this.mutatePlayer(playerId, player => ({
+        ...player,
+        chips: this.roundCents(player.chips + pot.amount),
+      }))
+      awards.push(award)
+      this.handHistory.push({
+        type: 'PotAwarded',
+        potIndex,
+        potType: potIndex === 0 ? 'main' : 'side',
+        ...award,
+        isSplit: false,
+      })
+    }
+    this.lastHandResults = awards
     this.handHistory.push({
       type: 'HandEnded',
       reason: 'uncontested',
-      totalPot: this.state.pot,
-      results: [{ ...award }],
+      totalPot: this.roundCents(awards.reduce((sum, award) => sum + award.amount, 0)),
+      results: awards.map(award => ({ ...award })),
     })
     this.endHand()
+  }
+
+  private calculateHandSidePots(): ReturnType<typeof calculateSidePots> {
+    const foldOrder = new Map<PlayerId, number>()
+    this.handHistory.forEach((event, index) => {
+      if (event.type === 'PlayerActed' && event.action.type === 'fold') {
+        foldOrder.set(event.playerId, index)
+      }
+    })
+    return calculateSidePots(this.state.players
+      .filter(player => player.status !== 'waiting')
+      .map(player => ({
+        playerId: player.id,
+        totalBet: this.totalHandBets.get(player.id) ?? 0,
+        inHand: !this.foldedPlayers.has(player.id),
+        foldOrder: foldOrder.get(player.id),
+      })))
   }
 
   private endHand(): void {

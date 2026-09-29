@@ -78,7 +78,7 @@ const card = (rank: Card['rank'], suit: Card['suit']): Card => ({ rank, suit })
 
 describe('startHand', () => {
   it('requires at least 2 players with chips', () => {
-    const game = new PokerGame([makePlayer('p1', 0), makePlayer('p2', 0)], config)
+    const game = new PokerGame([makePlayer('p1', 0, 0), makePlayer('p2', 0, 1)], config)
     expect(() => game.startHand()).toThrow()
   })
 

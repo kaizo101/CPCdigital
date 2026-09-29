@@ -155,6 +155,7 @@ export class LocalGameRunner {
   private runoutStartCardCount: number | null = null
   private visibleCommunityCardCount: number | null = null
   private currentHandNumber = 0
+  private processedHandEndNumber = 0
   private capturedHandEventCount = 0
   private capturedDecisionSnapshotCount = 0
   private botRandom: RandomSource = Math.random
@@ -354,6 +355,7 @@ export class LocalGameRunner {
     this.runoutStartCardCount = null
     this.visibleCommunityCardCount = null
     this.currentHandNumber = 0
+    this.processedHandEndNumber = 0
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0
     this.sessionOptions = { ...options }
@@ -655,6 +657,8 @@ export class LocalGameRunner {
     if (!this.game) return
     const gs = this.game.getPublicState()
     if (gs.phase !== 'waiting') return
+    if (this.processedHandEndNumber === this.currentHandNumber) return
+    this.processedHandEndNumber = this.currentHandNumber
 
     const results = this.game.getLastHandResults()
     this.showdownCards = { ...this.game.getRevealedCards() }
@@ -922,6 +926,7 @@ export class LocalGameRunner {
     this.runoutStartCardCount = null
     this.visibleCommunityCardCount = null
     this.currentHandNumber = 0
+    this.processedHandEndNumber = 0
     this.capturedHandEventCount = 0
     this.capturedDecisionSnapshotCount = 0
     this.botStates.clear()

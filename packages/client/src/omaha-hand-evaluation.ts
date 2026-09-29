@@ -250,10 +250,13 @@ function assessOmahaNutPotential(
     const handRankCounts = new Map<number, number>()
     for (const c of handCards) handRankCounts.set(c.rank, (handRankCounts.get(c.rank) ?? 0) + 1)
     for (const [r, c] of handRankCounts) if (c >= 4) myQuadRank = r
-    let higherQuadCount = 0
-    for (let r = 14; r > myQuadRank; r--) {
-      if ((ourRankCounts.get(r) ?? 0) === 0) higherQuadCount++
-    }
+    // Exactly two hole cards must play: an opposing quad needs two or three
+    // copies on the board and every remaining copy available in the deck.
+    const higherQuadCount = [...boardRankCounts.entries()].filter(([r, boardCount]) =>
+      r > myQuadRank && (boardCount === 2 || boardCount === 3)
+      && (ourRankCounts.get(r) ?? 0) === 0
+    ).length
+    if (opponentCanMakeStraightFlush(communityCards, ownCards)) return 'near-nuts'
     if (higherQuadCount === 0) return 'nuts'
     if (higherQuadCount === 1) return 'second-nuts'
     return 'near-nuts'
@@ -368,6 +371,25 @@ export function findStraightTop(visibleRanks: number[], minRequired: number): nu
     if (run.ranks.filter(rank => present.has(rank)).length >= minRequired) return run.top
   }
   return 0
+}
+
+function opponentCanMakeStraightFlush(communityCards: Card[], ownCards: Card[]): boolean {
+  const known = new Set([...communityCards, ...ownCards].map(cardKey))
+  const available = createDeck().filter(card => !known.has(cardKey(card)))
+  for (const suit of ['hearts', 'diamonds', 'clubs', 'spades'] as const) {
+    const boardOfSuit = communityCards.filter(card => card.suit === suit)
+    if (boardOfSuit.length < 3) continue
+    const availableRanks = new Set(available.filter(card => card.suit === suit).map(rankValue))
+    for (const boardTrio of combinations(boardOfSuit, 3)) {
+      const boardRanks = new Set(boardTrio.map(rankValue))
+      for (const run of OMAHA_STRAIGHT_RUNS) {
+        if (!boardTrio.every(card => run.ranks.includes(rankValue(card)))) continue
+        const holeRanks = run.ranks.filter(rank => !boardRanks.has(rank))
+        if (holeRanks.length === 2 && holeRanks.every(rank => availableRanks.has(rank))) return true
+      }
+    }
+  }
+  return false
 }
 
 /** Nut-combination blockers relevant to PLO river bluff-catching (0-100). */

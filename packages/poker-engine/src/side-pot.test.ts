@@ -2,6 +2,17 @@ import { describe, it, expect } from 'vitest'
 import { calculateSidePots } from './side-pot'
 
 describe('calculateSidePots', () => {
+  it('assigns an orphaned side-pot layer to its last live contributor', () => {
+    expect(calculateSidePots([
+      { playerId: 'short', totalBet: 50, inHand: true },
+      { playerId: 'first-folder', totalBet: 100, inHand: false, foldOrder: 1 },
+      { playerId: 'last-folder', totalBet: 100, inHand: false, foldOrder: 2 },
+    ])).toEqual([
+      { amount: 150, eligiblePlayerIds: ['short'] },
+      { amount: 100, eligiblePlayerIds: ['last-folder'] },
+    ])
+  })
+
   it('returns no pots without contributions', () => {
     expect(calculateSidePots([
       { playerId: 'A', totalBet: 0, inHand: true },

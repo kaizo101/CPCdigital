@@ -771,6 +771,9 @@ Muster zu verfallen.
 
 Details stehen im [Changelog](CHANGELOG.md) und im
 [0.8.2-Sessiondiagnosebericht](calibration/v0.8.2-session-diagnostics-2026-08-12.md).
+Der nachträgliche Offline-Engine-Korrektheitsblock ist im
+[Review-Nachtrag vom 29.09.2026](docs/offline-core-review-2026-09-29.md)
+getrennt dokumentiert; der Server bleibt ausgeklammert.
 
 ### Verbleibender Releaseumfang
 

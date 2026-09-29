@@ -3,7 +3,9 @@ import type { PlayerId, SidePot } from '@cpc/shared'
 interface Contribution {
   playerId: PlayerId
   totalBet: number  // total chips put in this hand
-  inHand: boolean   // false = folded (can't win)
+  inHand: boolean   // false = folded (can't contest a live pot)
+  /** Order of a fold, used only when a pot layer became uncontested before showdown. */
+  foldOrder?: number
 }
 
 /**
@@ -11,7 +13,9 @@ interface Contribution {
  *
  * Algorithm: for each unique bet level (lowest to highest), compute the sub-pot
  * for that increment and determine who is eligible to win it.
- * Folded players contribute chips but can't win any pot.
+ * Folded players contribute chips but cannot contest a live pot. If everyone
+ * who contributed to a layer has since folded, the last folder had already
+ * won that layer uncontested while their hand was still live.
  */
 export function calculateSidePots(contributions: Contribution[]): SidePot[] {
   const withBets = contributions
@@ -31,7 +35,18 @@ export function calculateSidePots(contributions: Contribution[]): SidePot[] {
     const potAmountCents = increment * atLevel.length
 
     if (potAmountCents > 0) {
-      const eligible = atLevel.filter(c => c.inHand).map(c => c.playerId)
+      const liveEligible = atLevel.filter(c => c.inHand).map(c => c.playerId)
+      const lastLiveContributor = liveEligible.length === 0
+        ? atLevel.reduce<(typeof atLevel)[number] | null>((latest, contributor) =>
+          contributor.foldOrder != null
+          && (latest?.foldOrder == null || contributor.foldOrder > latest.foldOrder)
+            ? contributor
+            : latest,
+        null)
+        : null
+      const eligible = liveEligible.length > 0
+        ? liveEligible
+        : lastLiveContributor ? [lastLiveContributor.playerId] : []
       const previousPot = pots[pots.length - 1]
       const sameEligibility = previousPot != null
         && previousPot.eligiblePlayerIds.length === eligible.length

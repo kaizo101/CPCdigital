@@ -87,6 +87,20 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Fixed
 
+- **PLO-Vierlings-Nut-Potential**: Höhere Vierlinge werden nur bei passender
+  Boardstruktur und verfügbaren Karten als gegnerische Möglichkeit gewertet.
+  Ein tatsächlich möglicher Straight Flush verhindert die Einstufung als
+  absolute Nuts; eigene Karten können diese Möglichkeit blockieren. Vier
+  reproduzierbare Fälle sind im [PLO-Nachtrag](docs/plo-quads-nut-review-2026-09-29.md)
+  beschrieben.
+- **Offline-Engine-Korrektheit**: Ungecallte Einsätze werden vor einem
+  Uncontested-Pot-Award zurückgegeben; verwaiste Side-Pot-Layer werden nach
+  ihrer Fold-Reihenfolge statt an einen unberechtigten Shortstack vergeben.
+  Ungültige Actions, Bruchteile von Cents und nicht vollständig dealbare
+  Tische werden vor Zustandsänderungen abgewiesen. Physische Sitzfolge und
+  Dealer-Anker bleiben bei Sitzwechseln stabil. Der lokale Runner verbucht
+  ein verschachtelt erreichtes Handende nur einmal. Reproduktionen und
+  Grenzen stehen im [Offline-Kern-Nachtrag](docs/offline-core-review-2026-09-29.md).
 - **NLHE-Flushdraw-Provenienz**: Vier gleichfarbige Boardkarten erzeugen ohne
   eigene Karte dieser Farbe keinen persönlichen Flushdraw mehr. Echte Draws
   zählen nur unbekannte Karten als Outs und unterscheiden Nut- von Non-Nut-

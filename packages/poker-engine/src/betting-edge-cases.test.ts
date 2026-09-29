@@ -3,6 +3,7 @@ import type { Player, PlayerAction } from '@cpc/shared'
 import { PokerGame } from './game'
 import type { GameVariant } from './game-variant'
 import { TEXAS_HOLDEM } from './variants/texas-holdem'
+import { OMAHA_HIGH } from './variants/omaha-high'
 
 const config = { smallBlind: 10, bigBlind: 20 }
 
@@ -38,6 +39,196 @@ function finishPassively(game: PokerGame): void {
 }
 
 describe('central betting edge cases', () => {
+  it('rejects an unknown action without consuming the turn', () => {
+    const game = new PokerGame(makePlayers([2, 2]), { ...config, seed: 'invalid-action' })
+    game.startHand()
+    const beforeState = game.getPublicState()
+    const beforeHistory = game.getPublicHandHistory()
+    expect(() => game.applyAction(beforeState.currentPlayerId!, { type: 'unknown' } as unknown as PlayerAction))
+      .toThrow(/invalid action type/i)
+    expect(game.getPublicState()).toEqual(beforeState)
+    expect(game.getPublicHandHistory()).toEqual(beforeHistory)
+  })
+
+  it('rejects fractional-cent stacks and blinds at every game ingress', () => {
+    expect(() => new PokerGame(makePlayers([1.005, 2]), {
+      smallBlind: 0.01, bigBlind: 0.02,
+    })).toThrow(/whole cents/i)
+    expect(() => new PokerGame(makePlayers([2, 2]), {
+      smallBlind: 0.005, bigBlind: 0.02,
+    })).toThrow(/whole cents/i)
+
+    const game = new PokerGame(makePlayers([2, 2]), { smallBlind: 0.01, bigBlind: 0.02 })
+    expect(() => game.setPlayerChips('p1', 1.005)).toThrow(/whole cents/i)
+    expect(() => game.upsertPlayer({ ...makePlayers([2])[0], chips: 1.005 }))
+      .toThrow(/whole cents/i)
+  })
+
+  it('does not let a caller mutate the blinds after constructing the game', () => {
+    const settings = { smallBlind: 0.01, bigBlind: 0.02, initialDealerIndex: 0 }
+    const game = new PokerGame(makePlayers([2, 2]), settings)
+    settings.smallBlind = 0.10
+    settings.bigBlind = 0.20
+    game.startHand()
+    const blinds = game.getPublicHandHistory().filter(event => event.type === 'BlindPosted')
+    expect(blinds.map(event => event.amount)).toEqual([0.01, 0.02])
+    expect(game.getPublicState().bigBlind).toBe(0.02)
+  })
+
+  it('rejects a PLO table that cannot be dealt a complete board', () => {
+    const game = new PokerGame(makePlayers(Array(12).fill(2)), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      variant: OMAHA_HIGH,
+    })
+    expect(() => game.startHand()).toThrow(/deck.*cards/i)
+    expect(game.getPublicState().phase).toBe('waiting')
+    expect(game.getPublicHandHistory()).toHaveLength(0)
+  })
+
+  it('uses physical seat order even if input players are unsorted', () => {
+    const [p1, p2, p3] = makePlayers([2, 2, 2])
+    const game = new PokerGame([p1, p3, p2], {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 0,
+    })
+    game.startHand()
+    const blinds = game.getPublicHandHistory().filter(event => event.type === 'BlindPosted')
+    expect(blinds.map(event => event.playerId)).toEqual(['p2', 'p3'])
+    expect(game.getPublicState().players.map(player => player.seatIndex)).toEqual([0, 1, 2])
+  })
+
+  it('keeps the dealer anchor when a lower seat is removed between hands', () => {
+    const game = new PokerGame(makePlayers([2, 2, 2, 2]), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 2,
+    })
+    game.startHand()
+    while (game.getPublicState().phase !== 'waiting') {
+      game.forceFold(game.getPublicState().currentPlayerId!)
+    }
+    game.removePlayer('p2')
+    game.startHand()
+    const start = game.getPublicHandHistory().find(event => event.type === 'HandStarted')
+    expect(start).toEqual(expect.objectContaining({ dealerId: 'p4' }))
+  })
+
+  it('remaps the preferred first dealer when another seat is removed before the first hand', () => {
+    const game = new PokerGame(makePlayers([2, 2, 2, 2]), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 2,
+    })
+    game.removePlayer('p2')
+    game.startHand()
+    expect(game.getPublicHandHistory().find(event => event.type === 'HandStarted'))
+      .toEqual(expect.objectContaining({ dealerId: 'p3' }))
+  })
+
+  it('advances to the physical successor when the dealer leaves between hands', () => {
+    const game = new PokerGame(makePlayers([2, 2, 2, 2]), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 2,
+    })
+    game.startHand()
+    while (game.getPublicState().phase !== 'waiting') {
+      game.forceFold(game.getPublicState().currentPlayerId!)
+    }
+    game.removePlayer('p3')
+    game.startHand()
+    expect(game.getPublicHandHistory().find(event => event.type === 'HandStarted'))
+      .toEqual(expect.objectContaining({ dealerId: 'p4' }))
+  })
+
+  it('remaps the dealer anchor when a player is moved to another free seat', () => {
+    const game = new PokerGame(makePlayers([2, 2, 2]), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 1,
+    })
+    game.upsertPlayer({ ...makePlayers([2, 2, 2])[0], seatIndex: 3 })
+    game.startHand()
+    expect(game.getPublicHandHistory().find(event => event.type === 'HandStarted'))
+      .toEqual(expect.objectContaining({ dealerId: 'p2' }))
+    expect(game.getPublicState().players.map(player => player.id)).toEqual(['p2', 'p3', 'p1'])
+  })
+
+  it('returns an uncalled raise before awarding an uncontested pot', () => {
+    const game = new PokerGame(makePlayers([2, 2]), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 0,
+      seed: 'uncontested-raise-refund',
+    })
+    game.startHand()
+    game.applyAction('p1', { type: 'raise', amount: 0.10 })
+    game.applyAction('p2', { type: 'fold' })
+
+    expect(game.getPublicHandHistory()).toContainEqual(expect.objectContaining({
+      type: 'UncalledBetReturned',
+      playerId: 'p1',
+      amount: 0.08,
+    }))
+    expect(game.getLastHandResults()).toEqual([{ playerId: 'p1', amount: 0.04, handName: '' }])
+    expect(game.getPublicState().players.map(player => player.chips)).toEqual([2.02, 1.98])
+  })
+
+  it('keeps a short all-in out of a side pot after both side-pot players force-fold', () => {
+    const game = new PokerGame(makePlayers([0.50, 1.50, 1.50]), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 0,
+      seed: 'orphan-side-pot-uncontested',
+    })
+    game.startHand()
+    game.applyAction('p1', { type: 'all-in' })
+    game.applyAction('p2', { type: 'raise', amount: 1.00 })
+    game.applyAction('p3', { type: 'call' })
+    game.forceFold('p2')
+    game.forceFold('p3')
+
+    expect(game.getPublicState().phase).toBe('waiting')
+    expect(game.getLastHandResults()).toEqual([
+      { playerId: 'p1', amount: 1.50, handName: '' },
+      { playerId: 'p3', amount: 1.00, handName: '' },
+    ])
+    expect(game.getPublicState().players.map(player => player.chips)).toEqual([1.50, 0.50, 1.50])
+  })
+
+  it('settles an orphaned upper side pot without stalling the showdown', () => {
+    const game = new PokerGame(makePlayers([0.50, 0.70, 1.50, 1.50]), {
+      smallBlind: 0.01,
+      bigBlind: 0.02,
+      initialDealerIndex: 0,
+      seed: 'orphan-side-pot-showdown',
+    })
+    game.startHand()
+    game.applyAction('p4', { type: 'raise', amount: 1.00 })
+    game.applyAction('p1', { type: 'call' })
+    game.applyAction('p2', { type: 'call' })
+    game.applyAction('p3', { type: 'call' })
+    game.forceFold('p3')
+    game.forceFold('p4')
+
+    const awards = game.getPublicHandHistory().filter(event => event.type === 'PotAwarded')
+    expect(game.getPublicState().phase).toBe('waiting')
+    expect(awards).toContainEqual(expect.objectContaining({
+      potIndex: 1,
+      playerId: 'p2',
+      amount: 0.60,
+    }))
+    expect(awards).toContainEqual(expect.objectContaining({
+      potIndex: 2,
+      playerId: 'p4',
+      amount: 0.60,
+    }))
+    expect(awards.reduce((sum, event) => sum + event.amount, 0)).toBeCloseTo(3.20, 8)
+    expect(game.getPublicState().players.reduce((sum, player) => sum + player.chips, 0)).toBeCloseTo(4.20, 8)
+  })
+
   it('prices a short call from the pot the caller can actually win', () => {
     const players = makePlayers([200, 40])
     const game = new PokerGame(players, { ...config, seed: 'eligible-pot-overbet' })

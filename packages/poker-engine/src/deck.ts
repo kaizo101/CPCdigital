@@ -22,5 +22,8 @@ export function shuffleDeck(deck: Card[], random: RandomSource = secureRandom): 
 }
 
 export function dealCards(deck: Card[], count: number): [dealt: Card[], remaining: Card[]] {
+  if (!Number.isInteger(count) || count < 0 || count > deck.length) {
+    throw new Error('Deck has insufficient cards for deal')
+  }
   return [deck.slice(0, count), deck.slice(count)]
 }

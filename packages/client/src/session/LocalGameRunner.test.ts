@@ -18,6 +18,31 @@ function stubRunner(): LocalGameRunner {
 // Fund 1: Bot-Decision-Fehler → forceFold-Recovery
 // ---------------------------------------------------------------------------
 describe('bot decision pipeline failure', () => {
+  it('records a hand only once when bot recovery finishes it inside the hero action', () => {
+    vi.useFakeTimers()
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const runner = stubRunner()
+    try {
+      runner.setupTable(
+        { smallBlind: 0.01, bigBlind: 0.02, startingChips: 2, maxPlayers: 2, seed: 'dup-0' },
+        1, false, 'texas-holdem',
+      )
+      runner.startHand()
+      expect(runner.state.gameState?.currentPlayerId).toBe('hero')
+
+      ;(runner as any).botRandom = () => { throw new Error('SIMULATED BOT FAILURE') }
+      runner.playerAction({ type: 'call' })
+
+      expect(runner.state.gameState?.phase).toBe('waiting')
+      expect(runner.state.sessionStats.totalHands).toBe(1)
+      expect(runner.state.handReplays).toHaveLength(1)
+    } finally {
+      runner.cleanup()
+      consoleSpy.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
   it('force-folds a bot whose decideBotDecision throws and continues the game', () => {
     vi.useFakeTimers()
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

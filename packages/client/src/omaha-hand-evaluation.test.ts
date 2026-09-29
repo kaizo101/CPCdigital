@@ -507,6 +507,81 @@ describe('omaha draw detection', () => {
   })
 })
 
+describe('omaha quads nut potential', () => {
+  const quadsNine = [
+    { rank: '9', suit: 'hearts' },
+    { rank: '9', suit: 'clubs' },
+    { rank: 'Q', suit: 'diamonds' },
+    { rank: 'J', suit: 'diamonds' },
+  ] as BotContext['ownCards']
+
+  it('does not invent higher quads from ranks absent on the board', () => {
+    const context = makeContext([
+      { rank: '9', suit: 'spades' },
+      { rank: '9', suit: 'diamonds' },
+      { rank: 'A', suit: 'clubs' },
+      { rank: 'K', suit: 'hearts' },
+      { rank: '2', suit: 'spades' },
+    ])
+    context.ownCards = quadsNine
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(8)
+    expect(assessment.nutPotential).toBe('nuts')
+  })
+
+  it('recognizes a higher quad only when the board and unseen cards permit it', () => {
+    const context = makeContext([
+      { rank: '9', suit: 'spades' },
+      { rank: '9', suit: 'diamonds' },
+      { rank: 'A', suit: 'clubs' },
+      { rank: 'A', suit: 'hearts' },
+      { rank: '2', suit: 'spades' },
+    ])
+    context.ownCards = quadsNine
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(8)
+    expect(assessment.nutPotential).toBe('second-nuts')
+  })
+
+  it('does not call quads the nuts when an opponent can make a straight flush', () => {
+    const context = makeContext([
+      { rank: '9', suit: 'spades' },
+      { rank: '9', suit: 'diamonds' },
+      { rank: 'T', suit: 'spades' },
+      { rank: 'J', suit: 'spades' },
+      { rank: 'Q', suit: 'spades' },
+    ])
+    context.ownCards = [
+      { rank: '9', suit: 'hearts' },
+      { rank: '9', suit: 'clubs' },
+      { rank: '2', suit: 'hearts' },
+      { rank: '3', suit: 'hearts' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(8)
+    expect(assessment.nutPotential).toBe('near-nuts')
+  })
+
+  it('respects private blockers when checking an opposing straight flush', () => {
+    const context = makeContext([
+      { rank: '9', suit: 'spades' },
+      { rank: '9', suit: 'diamonds' },
+      { rank: 'T', suit: 'spades' },
+      { rank: 'J', suit: 'spades' },
+      { rank: 'Q', suit: 'spades' },
+    ])
+    context.ownCards = [
+      { rank: '9', suit: 'hearts' },
+      { rank: '9', suit: 'clubs' },
+      { rank: '8', suit: 'spades' },
+      { rank: 'K', suit: 'spades' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(8)
+    expect(assessment.nutPotential).toBe('nuts')
+  })
+})
+
 describe('PLO board equity collapse', () => {
   it('treats a paired final card as severe for straights and flushes but harmless for boats', () => {
     const pairedRiver = [
