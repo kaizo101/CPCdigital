@@ -54,7 +54,9 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   schwache Ranges bleiben möglich.
 - **Kalibrierungs-Snapshot**: Die 0.8.2-Foundation-Baseline wurde nach den
   bewusst spielwirksamen Engine- und Scoringkorrekturen aktualisiert. Die
-  Zielkorridore selbst bleiben unverändert.
+  Zielkorridore selbst bleiben unverändert. Nach der PLO-Wrap-Out-Korrektur
+  wurde nur der PLO-Teil anhand einer dokumentierten 3k-A/B-Gegenprobe erneut
+  auf den neuen Verhaltensstand gesetzt.
 
 - **Gezielte All-in-Tiefensicherung**: Nicht-Premium-Open-Shoves sind ab 25 BB
   keine auswählbaren Kandidaten mehr; ab 40 BB gilt die Sperre nach höchstens
@@ -87,6 +89,12 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Fixed
 
+- **PLO-Wrap-Qualität**: Straight-Outs, die zugleich einen gegnerischen
+  Flush ermöglichen, zählen ohne eigene stärkere Hand nicht mehr als
+  saubere Outs; teilweise dominierte Wraps heißen nicht länger
+  `nut-wrap`. Bereits gemachte Flushes sammeln keine schwächeren
+  Straight-Outs. [Konkrete Hände und Grenzen](docs/plo-wrap-outs-review-2026-09-30.md)
+  sind dokumentiert.
 - **PLO-Draw-Outs hinter Full House/Vierling**: Schwächere Straight- und
   Flush-Treffer werden nicht mehr als saubere Verbesserungen oder
   Semi-Bluff-Draws angezeigt. Echte Nut-Straight-Flush-Redraws bleiben als

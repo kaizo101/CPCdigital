@@ -23,9 +23,9 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const evalResult = evaluateOmahaHand(ownCards, communityCards)
     const rank = evalResult.rank
 
-    // A straight or ordinary flush cannot improve a full house or quads.
-    // Keep only genuine nut straight-flush redraws for these made hands.
-    const drawAnalysis = rank >= 7 ? null : analyzeOmahaDraws(ownCards, communityCards)
+    // A straight cannot improve a made flush, full house or quads. Keep only
+    // genuine nut straight-flush redraws for these strong made hands.
+    const drawAnalysis = rank >= 6 ? null : analyzeOmahaDraws(ownCards, communityCards)
     const drawQuality = drawAnalysis ? calculateOmahaDrawQuality(drawAnalysis) : 0
     const cleanOuts = drawAnalysis
       ? calculateOmahaCleanOuts(drawAnalysis, rank, ownCards, communityCards)
@@ -495,6 +495,8 @@ function calculateOmahaCleanOuts(
 
   const filteredStraightOuts = draws.straightOutCards.filter(out => {
     if (boardHasPair && boardRanks.includes(rankValue(out))) return false
+    const nextBoard = [...communityCards, out]
+    if (isFlushDominatedStraightOut(ownCards, nextBoard)) return false
     return !isDominatedStraightOut(ownCards, communityCards, out)
   })
 
@@ -546,6 +548,20 @@ function isDominatedStraightOut(
   const boardRanks = newBoard.map(rankValue)
   const nutTop = findStraightTop(boardRanks, 3)
   return nutTop > myBestTop
+}
+
+function isFlushDominatedStraightOut(ownCards: Card[], newBoard: Card[]): boolean {
+  const flushOnBoard = ['hearts', 'diamonds', 'clubs', 'spades'].some(suit =>
+    newBoard.filter(card => card.suit === suit).length >= 3
+  )
+  if (!flushOnBoard) return false
+
+  // A straight alone loses to any legal flush. A private flush is scored by
+  // the separate flush-out path; only a nut straight flush remains a clean
+  // straight out.
+  const nextHand = evaluateOmahaHand(ownCards, newBoard)
+  return nextHand.rank !== 9
+    || assessOmahaNutPotential(nextHand, newBoard, ownCards) !== 'nuts'
 }
 
 function bestStraightTopForHoleCards(
@@ -760,6 +776,10 @@ function classifyOmahaWrap(
   let dominatedOuts = 0
   for (const out of straightOutCards) {
     const newBoard = [...communityCards, out]
+    if (isFlushDominatedStraightOut(ownCards, newBoard)) {
+      dominatedOuts++
+      continue
+    }
     const myTop = bestStraightTopForHoleCards(ownCards, newBoard, true)
     const nutTop = findStraightTop(newBoard.map(rankValue), 3)
     const gap = nutTop - myTop

@@ -655,6 +655,70 @@ describe('omaha draws behind strong made hands', () => {
   })
 })
 
+describe('omaha clean straight outs on suited boards', () => {
+  it('grades a partly flush-dominated wrap as mixed rather than nut', () => {
+    const context = makeContext([
+      { rank: '9', suit: 'spades' },
+      { rank: '6', suit: 'spades' },
+      { rank: '2', suit: 'clubs' },
+    ])
+    context.ownCards = [
+      { rank: 'T', suit: 'hearts' },
+      { rank: '8', suit: 'clubs' },
+      { rank: '7', suit: 'diamonds' },
+      { rank: 'K', suit: 'hearts' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.drawTypes).toContain('wrap-13+')
+    expect(assessment.drawTypes).toContain('mixed-wrap')
+    expect(assessment.drawTypes).not.toContain('nut-wrap')
+    expect(assessment.cleanOuts).toBe(9)
+  })
+
+  it('does not count flush-completing straight outs without a private flush', () => {
+    const context = makeContext([
+      { rank: 'K', suit: 'spades' },
+      { rank: 'Q', suit: 'spades' },
+      { rank: '2', suit: 'diamonds' },
+    ])
+    context.ownCards = [
+      { rank: 'J', suit: 'hearts' },
+      { rank: 'T', suit: 'clubs' },
+      { rank: '9', suit: 'diamonds' },
+      { rank: '8', suit: 'clubs' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    const rainbow = makeContext([
+      { rank: 'K', suit: 'hearts' },
+      { rank: 'Q', suit: 'spades' },
+      { rank: '2', suit: 'diamonds' },
+    ])
+    rainbow.ownCards = context.ownCards
+    const rainbowAssessment = omahaVariantEvaluator.evaluate(rainbow).handAssessment
+    expect(assessment.drawTypes).toContain('wrap-13+')
+    expect(rainbowAssessment.cleanOuts).toBe(7)
+    expect(assessment.cleanOuts).toBe(5) // A♠ and 9♠ complete an opposing flush
+  })
+
+  it('does not treat a lower straight as an improvement over a made flush', () => {
+    const context = makeContext([
+      { rank: 'Q', suit: 'spades' },
+      { rank: 'J', suit: 'spades' },
+      { rank: '9', suit: 'spades' },
+    ])
+    context.ownCards = [
+      { rank: 'A', suit: 'spades' },
+      { rank: 'K', suit: 'spades' },
+      { rank: '8', suit: 'hearts' },
+      { rank: '7', suit: 'hearts' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(6)
+    expect(assessment.cleanOuts).toBe(1) // T♠ makes a royal straight flush
+    expect(assessment.drawTypes).toEqual([])
+  })
+})
+
 describe('omaha one-card draw oracle', () => {
   it.each([3, 4])('matches independent straight completion on %i-card boards', boardSize => {
     let seed = 0x29a1b7 + boardSize
