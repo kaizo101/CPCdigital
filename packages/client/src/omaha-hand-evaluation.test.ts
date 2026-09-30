@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DecisionActionHistoryEvent } from '@cpc/shared'
+import { createDeck, evaluateOmahaHand } from '@cpc/poker-engine'
 import type { BotContext } from './bot-context'
 import {
   calculateOmahaBlockerValue,
@@ -613,6 +614,122 @@ describe('omaha straight-flush nut potential', () => {
     const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
     expect(assessment.rank).toBe(9)
     expect(assessment.nutPotential).toBe('near-nuts')
+  })
+})
+
+describe('omaha draws behind strong made hands', () => {
+  it('does not count a weaker flush as a clean draw behind a full house', () => {
+    const context = makeContext([
+      { rank: 'A', suit: 'spades' },
+      { rank: 'A', suit: 'diamonds' },
+      { rank: '2', suit: 'spades' },
+    ])
+    context.ownCards = [
+      { rank: 'A', suit: 'hearts' },
+      { rank: '2', suit: 'hearts' },
+      { rank: 'K', suit: 'spades' },
+      { rank: 'J', suit: 'spades' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(7)
+    expect(assessment.cleanOuts).toBe(0)
+    expect(assessment.drawTypes).toEqual([])
+  })
+
+  it('retains a real straight-flush redraw above a full house', () => {
+    const context = makeContext([
+      { rank: 'A', suit: 'spades' },
+      { rank: 'A', suit: 'diamonds' },
+      { rank: 'K', suit: 'spades' },
+    ])
+    context.ownCards = [
+      { rank: 'A', suit: 'hearts' },
+      { rank: 'K', suit: 'hearts' },
+      { rank: 'Q', suit: 'spades' },
+      { rank: 'J', suit: 'spades' },
+    ]
+    const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(assessment.rank).toBe(7)
+    expect(assessment.cleanOuts).toBe(1)
+    expect(assessment.drawTypes).toEqual([]) // made-hand redraw, not a semi-bluff draw
+  })
+})
+
+describe('omaha one-card draw oracle', () => {
+  it.each([3, 4])('matches independent straight completion on %i-card boards', boardSize => {
+    let seed = 0x29a1b7 + boardSize
+    const next = (limit: number) => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed % limit
+    }
+    let checked = 0
+    for (let sample = 0; sample < 100 && checked < 25; sample++) {
+      const deck = createDeck()
+      for (let index = deck.length - 1; index > 0; index--) {
+        const other = next(index + 1)
+        ;[deck[index], deck[other]] = [deck[other], deck[index]]
+      }
+      const ownCards = deck.slice(0, 4)
+      const board = deck.slice(4, 4 + boardSize)
+      if (evaluateOmahaHand(ownCards, board).rank >= 5) continue
+      const possibleFlush = ['hearts', 'diamonds', 'clubs', 'spades'].some(suit =>
+        ownCards.filter(card => card.suit === suit).length >= 2
+        && board.filter(card => card.suit === suit).length >= 2
+      )
+      if (possibleFlush) continue
+
+      const oracleHasStraightOut = deck.slice(4 + boardSize).some(out =>
+        evaluateOmahaHand(ownCards, [...board, out]).rank === 5
+      )
+      const context = makeContext(board)
+      context.ownCards = ownCards
+      const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+      const reportedStraightDraw = assessment.drawTypes.some(type =>
+        type.startsWith('wrap-') || type === 'oesd' || type === 'gutshot'
+      )
+      expect(reportedStraightDraw).toBe(oracleHasStraightOut)
+      checked++
+    }
+    expect(checked).toBe(25)
+  })
+
+  it.each([3, 4])('matches independent flush completion on %i-card boards', boardSize => {
+    let seed = 0x64f3a9 + boardSize
+    const next = (limit: number) => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed % limit
+    }
+    let checked = 0
+    let positives = 0
+    for (let sample = 0; sample < 100 && checked < 25; sample++) {
+      const deck = createDeck()
+      for (let index = deck.length - 1; index > 0; index--) {
+        const other = next(index + 1)
+        const held = deck[index]
+        deck[index] = deck[other]
+        deck[other] = held
+      }
+      const ownCards = deck.slice(0, 4)
+      const board = deck.slice(4, 4 + boardSize)
+      if (evaluateOmahaHand(ownCards, board).rank >= 6) continue
+
+      const oracleHasFlushOut = deck.slice(4 + boardSize).some(out =>
+        ['hearts', 'diamonds', 'clubs', 'spades'].some(suit =>
+          ownCards.filter(card => card.suit === suit).length >= 2
+          && [...board, out].filter(card => card.suit === suit).length >= 3
+        )
+      )
+      const context = makeContext(board)
+      context.ownCards = ownCards
+      const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+      const reportedFlushDraw = assessment.drawTypes.includes('flush-draw')
+        || assessment.drawTypes.includes('nut-flush-draw')
+      expect(reportedFlushDraw).toBe(oracleHasFlushOut)
+      if (oracleHasFlushOut) positives++
+      checked++
+    }
+    expect(checked).toBe(25)
+    expect(positives).toBeGreaterThan(0)
   })
 })
 

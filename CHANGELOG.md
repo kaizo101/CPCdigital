@@ -87,6 +87,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Fixed
 
+- **PLO-Draw-Outs hinter Full House/Vierling**: Schwächere Straight- und
+  Flush-Treffer werden nicht mehr als saubere Verbesserungen oder
+  Semi-Bluff-Draws angezeigt. Echte Nut-Straight-Flush-Redraws bleiben als
+  Clean Outs erhalten; [Reproduktionen und Oracle-Checks](docs/plo-made-hand-redraw-review-2026-09-30.md)
+  dokumentieren die Abgrenzung.
 - **PLO-Straight-Flush-Nuts**: Die höchste gegnerisch mögliche Straight
   Flush wird jetzt aus genau drei Boardkarten und zwei ungesehenen Karten
   ermittelt. Eigene Blocker verhindern falsch-positive höhere Kombinationen;

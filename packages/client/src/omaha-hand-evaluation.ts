@@ -23,15 +23,19 @@ export const omahaVariantEvaluator: VariantEvaluator = {
     const evalResult = evaluateOmahaHand(ownCards, communityCards)
     const rank = evalResult.rank
 
-    const drawAnalysis = analyzeOmahaDraws(ownCards, communityCards)
-    const drawQuality = calculateOmahaDrawQuality(drawAnalysis)
-    const cleanOuts = calculateOmahaCleanOuts(drawAnalysis, rank, ownCards, communityCards)
-    const nutPotential = assessOmahaNutPotential(evalResult, communityCards, ownCards, cleanOuts)
+    // A straight or ordinary flush cannot improve a full house or quads.
+    // Keep only genuine nut straight-flush redraws for these made hands.
+    const drawAnalysis = rank >= 7 ? null : analyzeOmahaDraws(ownCards, communityCards)
+    const drawQuality = drawAnalysis ? calculateOmahaDrawQuality(drawAnalysis) : 0
+    const cleanOuts = drawAnalysis
+      ? calculateOmahaCleanOuts(drawAnalysis, rank, ownCards, communityCards)
+      : countNutStraightFlushRedraws(ownCards, communityCards, rank)
+    const nutPotential = assessOmahaNutPotential(evalResult, communityCards, ownCards)
     const vulnerability = calculateOmahaVulnerability(rank, cleanOuts, communityCards.length)
     const showdownValue = calculateOmahaShowdownValue(rank, drawQuality)
     const relativeStrength = calculateOmahaRelativeStrength(rank, cleanOuts)
     const isRiver = communityCards.length === 5
-    const drawTypes = isRiver ? [] : identifyOmahaDrawTypes(drawAnalysis)
+    const drawTypes = isRiver || !drawAnalysis ? [] : identifyOmahaDrawTypes(drawAnalysis)
     const equityCollapse = calculateOmahaEquityCollapse(communityCards, rank, nutPotential)
     const boardGotWorse = equityCollapse > 0
     const blockerValue = calculateOmahaBlockerValue(ownCards, communityCards)
@@ -219,7 +223,6 @@ function assessOmahaNutPotential(
   evalResult: { rank: number; cards: string[] },
   communityCards: Card[],
   ownCards: Card[],
-  cleanOuts: number,
 ): NutPotential {
   const { rank, cards } = evalResult
   const handCards = parsePokerSolverCards(cards)
@@ -499,6 +502,34 @@ function calculateOmahaCleanOuts(
     [...filteredFlushOuts, ...filteredStraightOuts].map(cardKey),
   )
   return Math.min(25, uniqueOuts.size)
+}
+
+function countNutStraightFlushRedraws(
+  ownCards: Card[],
+  communityCards: Card[],
+  rank: number,
+): number {
+  if (rank >= 9 || communityCards.length >= 5) return 0
+  const usableSuits = new Set(
+    ['hearts', 'diamonds', 'clubs', 'spades'].filter(suit =>
+      ownCards.filter(card => card.suit === suit).length >= 2
+      && communityCards.filter(card => card.suit === suit).length >= 2
+    ),
+  )
+  if (usableSuits.size === 0) return 0
+
+  const knownCards = new Set([...ownCards, ...communityCards].map(cardKey))
+  let cleanOuts = 0
+  for (const out of createDeck()) {
+    if (!usableSuits.has(out.suit) || knownCards.has(cardKey(out))) continue
+    const nextBoard = [...communityCards, out]
+    const nextHand = evaluateOmahaHand(ownCards, nextBoard)
+    if (nextHand.rank === 9
+      && assessOmahaNutPotential(nextHand, nextBoard, ownCards) === 'nuts') {
+      cleanOuts++
+    }
+  }
+  return cleanOuts
 }
 
 function isDominatedStraightOut(
