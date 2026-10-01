@@ -20,7 +20,7 @@ export function observeOpponentHistory(
   const observationSkill = botState.skill.observation
 
   for (const event of actionHistory.slice(cursor.eventCount)) {
-    if (event.type !== 'PlayerActed' || event.playerId === botId) continue
+    if (event.type !== 'PlayerActed' || event.playerId === botId || event.source === 'forced') continue
 
     const opponentId = event.playerId
     const action = event.action
@@ -49,10 +49,14 @@ export function observeOpponentHistory(
       updateOpponentRead(botState.reads, opponentId, 'no-aggression', observationSkill, archetypeId)
     }
 
-    if (action.type === 'fold') {
-      updateOpponentRead(botState.reads, opponentId, 'foldToBet', observationSkill, archetypeId)
-    } else if (action.type === 'call' || aggressiveAction || passiveAllIn) {
-      updateOpponentRead(botState.reads, opponentId, 'no-fold', observationSkill, archetypeId)
+    // Fold-to-bet is conditional on facing a wager. An open bet/raise is not
+    // evidence that the opponent would continue against somebody else's bet.
+    if (event.toCall > 0) {
+      if (action.type === 'fold') {
+        updateOpponentRead(botState.reads, opponentId, 'foldToBet', observationSkill, archetypeId)
+      } else if (action.type === 'call' || aggressiveAction || passiveAllIn) {
+        updateOpponentRead(botState.reads, opponentId, 'no-fold', observationSkill, archetypeId)
+      }
     }
 
     const potFraction = aggressiveActionPotFraction(event)

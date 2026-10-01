@@ -1,6 +1,6 @@
 # CPCdigital — Tester-Formulare
 
-Stand: 30.07.2026
+Stand: 01.10.2026 (Einleitung präzisiert; Testfragen unverändert)
 
 Diese Vorlagen können als Markdown, E-Mail oder Grundlage für ein
 Online-Formular verwendet werden. Es werden keine Klarnamen oder Kontaktdaten
@@ -8,13 +8,13 @@ benötigt. Vor jedem Test wird nur der zur Rolle passende Bogen ausgegeben.
 
 Direkt verwendbare, vollständig lokale Umsetzungen mit Autosave,
 Textdatei-Export und optionalem Smartphone-Teilen liegen unter
-[`testing/forms/`](testing/forms/README.md). Sie laden keine externen
+[`testing/forms/`](forms/README.md). Sie laden keine externen
 Ressourcen und übertragen keine Antworten.
 
 ## Gemeinsamer Testkopf
 
-> CPCdigital ist eine Entwicklungsversion eines nichtkommerziellen
-> Open-Source-Pokerspiels ohne Echtgeld. Dieser Test prüft einen klar
+> CPCdigital ist eine Entwicklungsversion eines Open-Source-Pokerspiels ohne
+> Echtgeld oder eigene Monetarisierung. Dieser Test prüft einen klar
 > abgegrenzten Teil des Projekts und ist keine Bewertung eines fertigen
 > Produkts. Es werden keine Nutzungsdaten automatisch übertragen.
 
@@ -203,7 +203,7 @@ Dieser Test bewertet nicht dein Pokerwissen.
   ☐ Screenshot ☐ Video ☐ Hand-History ☐ Replay ☐ Debug-Export
 
 Sicherheitsprobleme, Secrets und Zugangsdaten bitte nicht öffentlich eintragen,
-sondern gemäß [SECURITY.md](SECURITY.md) vertraulich melden.
+sondern gemäß [SECURITY.md](../SECURITY.md) vertraulich melden.
 
 ---
 
@@ -249,7 +249,7 @@ Dieser Block wird getrennt von konkreten UI-Problemen ausgewertet:
 - einzelne visuelle Änderung mit dem größten erwarteten Effekt
 
 Die direkt verwendbare Umsetzung liegt in
-[`testing/forms/ui-evaluation.html`](testing/forms/ui-evaluation.html).
+[`testing/forms/ui-evaluation.html`](forms/ui-evaluation.html).
 
 ---
 

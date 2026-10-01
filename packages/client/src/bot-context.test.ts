@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PokerGame } from '@cpc/poker-engine'
+import { OMAHA_HIGH, PokerGame } from '@cpc/poker-engine'
 import type { Player } from '@cpc/shared'
 import { createBotContext, getPositionCategory } from './bot-context'
 
@@ -58,6 +58,30 @@ describe('BotContext fair-information boundary', () => {
       expect(Object.keys(player)).not.toContain('cards')
       expect(Object.keys(player)).not.toContain('ownCards')
     }
+  })
+
+  it('keeps four-card PLO opponent hands private while retaining own cards and public actions', () => {
+    const game = new PokerGame(makePlayers(3), {
+      smallBlind: 10, bigBlind: 20, seed: 'plo-private-boundary', variant: OMAHA_HIGH,
+    })
+    game.startHand()
+    const first = currentContext(game)
+
+    expect(first.ownCards).toHaveLength(4)
+    expect(first.publicState.variantId).toBe('omaha-high')
+    expect(first.actionHistory.every(event => event.type !== 'PlayerActed')).toBe(true)
+    for (const opponent of first.publicState.players.filter(player => player.id !== first.playerId)) {
+      expect(Object.keys(opponent)).not.toContain('cards')
+      expect(Object.keys(opponent)).not.toContain('ownCards')
+    }
+
+    game.applyAction(first.playerId, { type: 'fold' })
+    const next = currentContext(game)
+    expect(next.ownCards).toHaveLength(4)
+    expect(next.actionHistory.at(-1)).toEqual(expect.objectContaining({
+      type: 'PlayerActed', playerId: first.playerId, action: { type: 'fold' },
+    }))
+    expect(JSON.stringify(next.actionHistory)).not.toContain('CardsRevealed')
   })
 
   it('defensively clones the player view and action events', () => {

@@ -971,7 +971,7 @@ export function TableScreen({
               </div>
               <div style={{ display: 'grid', gap: 9, marginTop: 15 }}>
                 <button type="button" onClick={() => { setExportDialogOpen(false); onExportSessionLog() }} style={actionButtonStyle('#334155')}>
-                  PokerStars-Handhistory (.txt)
+                  Hand-History als Text (.txt)
                 </button>
                 <button
                   type="button"

@@ -1,7 +1,9 @@
 # v0.8.4 — Session-Flexibilität und Tisch-QoL
 
+Status: Planungsstand unter der bisherigen Versionsnummer; Neuzuschnitt offen.
+
 Dieses Dokument konkretisiert den Funktionsumfang der in der
-[Roadmap](../ROADMAP.md) zusammengefassten Version 0.8.4.
+[Roadmap](../../ROADMAP.md) zusammengefassten Version 0.8.4.
 
 ## Session-Setup
 
@@ -64,7 +66,7 @@ Dieses Dokument konkretisiert den Funktionsumfang der in der
 
 Neue Identitäten, Wiederholungssteuerung, stakeübergreifende Pools,
 Variantenkompetenz und spätere Spielernotizen folgen dem zentralen Dokument
-[Bot-Dynamik, Stake-Roster und Spielernotizen](bot-dynamics-roster-and-notes.md).
+[Bot-Dynamik, Stake-Roster und Spielernotizen](../concepts/bot-dynamics-roster-and-notes.md).
 0.8.4 implementiert keine starre Quote und keinen separaten Roster pro
 Variante.
 

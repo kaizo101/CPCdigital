@@ -114,4 +114,32 @@ describe('range estimation', () => {
     expect(blocked.tripsRepresentation).toBeLessThan(headsUp.tripsRepresentation!)
     expect(multiway.tripsRepresentation).toBeGreaterThan(headsUp.tripsRepresentation!)
   })
+
+  it('does not transfer the NLHE paired-board range heuristic into four-card PLO', () => {
+    const opponent = line({
+      preflop: 'raised',
+      preflopRole: 'open-raiser',
+      position: { positionsFromDealer: 3, category: 'early' },
+    })
+    const board = [card('K', 'diamonds'), card('6', 'clubs'), card('6', 'diamonds')]
+    const nlhe = estimateRangeFromLine(opponent, {
+      variantId: 'texas-holdem',
+      board,
+      ownCards: [card('A', 'hearts'), card('A', 'clubs')],
+      activeOpponents: 1,
+    })
+    const plo = estimateRangeFromLine(opponent, {
+      variantId: 'omaha-high',
+      board,
+      ownCards: [card('A', 'hearts'), card('A', 'clubs'), card('T', 'spades'), card('9', 'hearts')],
+      activeOpponents: 1,
+    })
+
+    expect(nlhe.pairedBoardRank).toBe(6)
+    expect(nlhe.boardFitAdjustment).not.toBe(0)
+    expect(plo.pairedBoardRank).toBeUndefined()
+    expect(plo.tripsRepresentation).toBeUndefined()
+    expect(plo.boardFitAdjustment).toBe(0)
+    expect(plo.score).toBe(plo.lineScore + plo.positionAdjustment + plo.roleAdjustment)
+  })
 })

@@ -1,5 +1,7 @@
 # Bot-Dynamik, Stake-Roster und Spielernotizen
 
+Status: fachliches Zielbild; verbindliche Versionszuordnung steht in der Roadmap.
+
 ## Zielbild
 
 Bot-Identitäten sollen langfristig wiedererkennbar sein, ohne nach wenigen
@@ -85,6 +87,15 @@ verwandeln.
 Hoher Skill verhindert Tilt nicht vollständig. Tilt-Sensitivität,
 Emotionalität und Archetyp bestimmen weiterhin, ob und wie stark ein Spieler
 reagiert; Skill beeinflusst besonders Einordnung, Handlungsqualität und Dauer.
+
+Öffentlich gezeigte Showdownkarten sind nicht automatisch ein Gegner-Read:
+Niedrig geskillte Bots sollen sie gegebenenfalls gar nicht in spätere
+Entscheidungen einbeziehen. Für höhere Skills braucht die Ableitung aus
+gezeigter Hand **und** vorheriger Aktionslinie eine separat geprüfte,
+stichprobenabhängige Wirkung. NLHE und PLO bleiben dabei getrennt; Schwelle,
+Einflusskurve und konkrete Scorewirkung sind noch offen. Der
+[Informationsfluss-Audit](../reviews/gegner-reads-informationsfluss-audit-2026-09-30.md#showdown-karten-skill-grenze-für-einen-späteren-ausbau)
+beschreibt die vorgezogenen Grenzen und Tests.
 
 Als Zustandsfolge gilt:
 

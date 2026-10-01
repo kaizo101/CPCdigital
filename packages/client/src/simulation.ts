@@ -21,17 +21,15 @@ import {
   CalibrationHandAccumulator,
   calibrationPercentage,
   calibrationInvariantViolations,
-  isWithinCalibrationTarget,
   summarizeShowdown,
 } from './calibration-metrics'
+import { assessCalibrationRelease, type CalibrationObservations, type CalibrationReleaseAssessment, type CalibrationRunEntry, type CalibrationRunSnapshot } from './calibration-release-assessment'
 import type { HandStrengthCategory } from './bot-variant-evaluation'
 import { observeOpponentHistory, type OpponentObservationCursor } from './bot-opponent-observation'
 import type { DecisionMetrics } from './bot-decision-metrics'
 import { resolveTableFormat } from './bot-table-format'
 import {
   CALIBRATION_SNAPSHOT_MARKER,
-  type CalibrationRegressionEntry,
-  type CalibrationRegressionSnapshot,
 } from './calibration-regression'
 import { calibrationDealerIndex, calibrationHandSeeds } from './calibration-seeding'
 import {
@@ -40,7 +38,7 @@ import {
 } from './calibration-showdown-diagnostics'
 
 const HANDS_PER_FORMAT = Number(process.env.CALIB_HANDS) || 10_000
-const EXIT_ON_FAIL = !process.env.CALIB_NO_EXIT
+const SEED_SALT = process.env.CALIB_SEED_SALT ?? ''
 const BIG_BLIND = Number(process.env.CALIB_BIG_BLIND) || 20
 const SMALL_BLIND = Number(process.env.CALIB_SMALL_BLIND) || BIG_BLIND / 2
 const STARTING_CHIPS = Number(process.env.CALIB_STARTING_CHIPS) || BIG_BLIND * 100
@@ -428,7 +426,7 @@ function simulateFormat(
   numHands = HANDS_PER_FORMAT,
 ): SimulationStats {
   const players = createPlayers(format.playerCount)
-  const seedNamespace = `${profile.seed}:${format.name}`
+  const seedNamespace = `${profile.seed}:${format.name}${SEED_SALT ? `:${SEED_SALT}` : ''}`
   const identities = DEFAULT_BOT_ROSTER.identities
     .filter(identity => identity.archetypeId === profile.archetypeId && !identity.maniac)
   const botStates = new Map<string, BotState>(
@@ -785,17 +783,26 @@ function getPosition(state: Readonly<PublicGameState>, playerId: string): Positi
   return getPositionCategory(positionsFromDealer, playerCount)
 }
 
-function targetLabel(value: number, target: [number, number]): string {
+function targetLabel(value: number, target: [number, number], denominator: number): string {
+  if (denominator === 0) return 'not evaluable'
   if (value < target[0]) return 'too tight'
   if (value > target[1]) return 'too loose'
   return 'in range'
+}
+
+function measured(value: number, denominator: number, digits: number): string {
+  return denominator === 0 ? 'n/a' : value.toFixed(digits)
+}
+
+function measuredPercent(value: number, denominator: number, digits: number): string {
+  return denominator === 0 ? 'n/a' : `${value.toFixed(digits)}%`
 }
 
 function createRegressionEntry(
   profile: CalibrationProfile,
   format: FormatConfig,
   stats: SimulationStats,
-): CalibrationRegressionEntry {
+): CalibrationRunEntry {
   let cBetOpportunities = 0
   let cBets = 0
   for (const position of ['early', 'middle', 'late', 'blinds'] as const) {
@@ -804,11 +811,23 @@ function createRegressionEntry(
   }
 
   const postflop = stats.postflop
+  const observations: CalibrationObservations = {
+    vpip: { numerator: stats.vpipHands, denominator: stats.playerHands },
+    pfr: { numerator: stats.pfrHands, denominator: stats.playerHands },
+    threeBet: { numerator: stats.threeBets, denominator: stats.threeBetOpportunities },
+    cBet: { numerator: cBets, denominator: cBetOpportunities },
+    foldToCBet: { numerator: postflop.foldToCBets, denominator: postflop.foldToCBetOpps },
+    turnCBet: { numerator: postflop.turnCBets, denominator: postflop.turnCBetOpps },
+    wtsd: { numerator: postflop.wentToShowdown, denominator: postflop.handsSeenFlop },
+    aggressionFactor: { numerator: postflop.betsAndRaises, denominator: postflop.calls },
+  }
   return {
     variant: CALIB_VARIANT === 'omaha-high' ? 'omaha-high' : 'texas-holdem',
     archetype: profile.archetypeId,
     format: resolveTableFormat(format.playerCount),
     hands: stats.handsPlayed,
+    observations,
+    targetRanges: format.target,
     metrics: {
       vpip: calibrationPercentage(stats.vpipHands, stats.playerHands),
       pfr: calibrationPercentage(stats.pfrHands, stats.playerHands),
@@ -848,8 +867,8 @@ function createRegressionEntry(
 function printStats(
   format: FormatConfig,
   stats: SimulationStats,
-  regressionEntry: CalibrationRegressionEntry,
-): boolean {
+  regressionEntry: CalibrationRunEntry,
+): CalibrationReleaseAssessment {
   const { vpip, pfr, threeBet } = regressionEntry.metrics
 
   console.log(`\n=== ${format.name} ===`)
@@ -861,11 +880,11 @@ function printStats(
     `Table format: ${resolveTableFormat(format.playerCount)} (${format.playerCount} seats) · `
     + `Avg active opponents/postflop decision: ${averageActiveOpponents.toFixed(2)}`,
   )
-  console.log(`VPIP: ${vpip.toFixed(2)}% (target ${format.target.vpip.join('–')}%, ${targetLabel(vpip, format.target.vpip)})`)
-  console.log(`PFR:  ${pfr.toFixed(2)}% (target ${format.target.pfr.join('–')}%, ${targetLabel(pfr, format.target.pfr)})`)
+  console.log(`VPIP: ${measuredPercent(vpip, stats.playerHands, 2)} (target ${format.target.vpip.join('–')}%, ${targetLabel(vpip, format.target.vpip, stats.playerHands)}; ${stats.vpipHands}/${stats.playerHands} player-hands)`)
+  console.log(`PFR:  ${measuredPercent(pfr, stats.playerHands, 2)} (target ${format.target.pfr.join('–')}%, ${targetLabel(pfr, format.target.pfr, stats.playerHands)}; ${stats.pfrHands}/${stats.playerHands} player-hands)`)
   console.log(
-    `3-bet: ${threeBet.toFixed(2)}% `
-    + `(target ${format.target.threeBet.join('–')}%, ${targetLabel(threeBet, format.target.threeBet)}; `
+    `3-bet: ${measuredPercent(threeBet, stats.threeBetOpportunities, 2)} `
+    + `(target ${format.target.threeBet.join('–')}%, ${targetLabel(threeBet, format.target.threeBet, stats.threeBetOpportunities)}; `
     + `${stats.threeBets}/${stats.threeBetOpportunities} opportunities)`,
   )
   if (PRINT_CALIBRATION_DETAIL) {
@@ -944,26 +963,25 @@ function printStats(
   const wssd = calibrationPercentage(pf.wonAtShowdown, pf.wentToShowdown)
   const invariantViolations = regressionEntry.invariants.metricViolations
 
-  let allWithin = true
   console.log(
-    `C-Bet: ${cBet.toFixed(1)}% (${totalCBets}/${totalCBetOpps} opportunities)`
-    + (format.target.cBet ? ` (target ${format.target.cBet.join('–')}%, ${targetLabel(cBet, format.target.cBet)})` : ''),
+    `C-Bet: ${measuredPercent(cBet, totalCBetOpps, 1)} (${totalCBets}/${totalCBetOpps} opportunities)`
+    + (format.target.cBet ? ` (target ${format.target.cBet.join('–')}%, ${targetLabel(cBet, format.target.cBet, totalCBetOpps)})` : ''),
   )
   console.log(
-    `Fold-to-CBet: ${foldToCBet.toFixed(1)}% (${pf.foldToCBets}/${pf.foldToCBetOpps} opportunities)`
-    + (format.target.foldToCBet ? ` (target ${format.target.foldToCBet.join('–')}%, ${targetLabel(foldToCBet, format.target.foldToCBet)})` : ''),
+    `Fold-to-CBet: ${measuredPercent(foldToCBet, pf.foldToCBetOpps, 1)} (${pf.foldToCBets}/${pf.foldToCBetOpps} opportunities)`
+    + (format.target.foldToCBet ? ` (target ${format.target.foldToCBet.join('–')}%, ${targetLabel(foldToCBet, format.target.foldToCBet, pf.foldToCBetOpps)})` : ''),
   )
   console.log(
-    `Turn C-Bet: ${turnCBet.toFixed(1)}% (${pf.turnCBets}/${pf.turnCBetOpps} opportunities)`
-    + (format.target.turnCBet ? ` (target ${format.target.turnCBet.join('–')}%, ${targetLabel(turnCBet, format.target.turnCBet)})` : ''),
+    `Turn C-Bet: ${measuredPercent(turnCBet, pf.turnCBetOpps, 1)} (${pf.turnCBets}/${pf.turnCBetOpps} opportunities)`
+    + (format.target.turnCBet ? ` (target ${format.target.turnCBet.join('–')}%, ${targetLabel(turnCBet, format.target.turnCBet, pf.turnCBetOpps)})` : ''),
   )
   console.log(
-    `AF: ${af.toFixed(2)} (${pf.betsAndRaises} aggressive/${pf.calls} calls)`
-    + (format.target.aggressionFactor ? ` (target ${format.target.aggressionFactor.join('–')}, ${targetLabel(af, format.target.aggressionFactor)})` : ''),
+    `AF: ${measured(af, pf.calls, 2)} (${pf.betsAndRaises} aggressive/${pf.calls} calls)`
+    + (format.target.aggressionFactor ? ` (target ${format.target.aggressionFactor.join('–')}, ${targetLabel(af, format.target.aggressionFactor, pf.calls)})` : ''),
   )
   console.log(
-    `WTSD: ${wtsd.toFixed(1)}% (${pf.wentToShowdown}/${pf.handsSeenFlop} flop-seen)`
-    + (format.target.wtsd ? ` (target ${format.target.wtsd.join('–')}%, ${targetLabel(wtsd, format.target.wtsd)})` : ''),
+    `WTSD: ${measuredPercent(wtsd, pf.handsSeenFlop, 1)} (${pf.wentToShowdown}/${pf.handsSeenFlop} flop-seen)`
+    + (format.target.wtsd ? ` (target ${format.target.wtsd.join('–')}%, ${targetLabel(wtsd, format.target.wtsd, pf.handsSeenFlop)})` : ''),
   )
   console.log(`W$SD: ${wssd.toFixed(1)}%`)
   console.log(`Invalid-action fallbacks: ${stats.actionErrors}`)
@@ -1024,23 +1042,22 @@ function printStats(
     }
   }
 
-  if (format.target.cBet) allWithin = allWithin && isWithinCalibrationTarget(cBet, format.target.cBet!)
-  if (format.target.aggressionFactor) allWithin = allWithin && isWithinCalibrationTarget(af, format.target.aggressionFactor!)
-  if (format.target.wtsd) allWithin = allWithin && isWithinCalibrationTarget(wtsd, format.target.wtsd!)
-  if (format.target.foldToCBet) allWithin = allWithin && isWithinCalibrationTarget(foldToCBet, format.target.foldToCBet!)
-  if (format.target.turnCBet) allWithin = allWithin && isWithinCalibrationTarget(turnCBet, format.target.turnCBet!)
-  return isWithinCalibrationTarget(vpip, format.target.vpip)
-    && isWithinCalibrationTarget(pfr, format.target.pfr)
-    && isWithinCalibrationTarget(threeBet, format.target.threeBet)
-    && allWithin
-    && invariantViolations.length === 0
-    && stats.deepOpenShoves === 0
-    && stats.uncommittedDeepShoves === 0
-    && stats.actionErrors === 0
+  const assessment = assessCalibrationRelease(regressionEntry, regressionEntry.targetRanges, regressionEntry.observations)
+  const outside = assessment.targetFindings.filter(finding => finding.status === 'outside')
+  const notEvaluable = assessment.targetFindings.filter(finding => finding.status === 'not-evaluable')
+  console.log(`Target corridor diagnostics: ${outside.length} outside, ${notEvaluable.length} not evaluable (non-blocking)`)
+  if (outside.length > 0) {
+    console.log(`  Outside: ${outside.map(finding => `${finding.metric} ${finding.value.toFixed(2)} vs ${finding.target.join('–')}`).join(' · ')}`)
+  }
+  if (notEvaluable.length > 0) console.log(`  Not evaluable: ${notEvaluable.map(finding => finding.metric).join(', ')}`)
+  if (assessment.structuralViolations.length > 0) {
+    console.log(`Structural violations (blocking): ${assessment.structuralViolations.join('; ')}`)
+  }
+  return assessment
 }
 
-let calibrationFailed = false
-const regressionEntries: CalibrationRegressionEntry[] = []
+let structurallyFailed = false
+const regressionEntries: CalibrationRunEntry[] = []
 console.log(`\n=== CPCdigital Calibration — ${CALIB_VARIANT === 'omaha-high' ? 'Omaha High (PLO)' : 'Texas Hold\'em (NLHE)'} · metric schema v${CALIBRATION_METRIC_SCHEMA_VERSION} ===`)
 for (const profile of CALIBRATION_PROFILES.filter(
   profile => !CALIB_PROFILE || profile.archetypeId === CALIB_PROFILE || profile.name.toLowerCase().includes(CALIB_PROFILE),
@@ -1051,18 +1068,23 @@ for (const profile of CALIBRATION_PROFILES.filter(
   )) {
     const stats = simulateFormat(profile, format)
     const regressionEntry = createRegressionEntry(profile, format, stats)
+    // Test-only CLI hook: verify that a real process exits nonzero on structural failures.
+    if (process.env.NODE_ENV === 'test' && process.env.CALIB_TEST_INJECT_STRUCTURAL === '1') {
+      regressionEntry.invariants.invalidActions++
+    }
     regressionEntries.push(regressionEntry)
-    if (!printStats(format, stats, regressionEntry)) calibrationFailed = true
+    if (printStats(format, stats, regressionEntry).structuralViolations.length > 0) structurallyFailed = true
   }
 }
 
 if (PRINT_CALIBRATION_SNAPSHOT) {
-  const snapshot: CalibrationRegressionSnapshot = {
+  const snapshot: CalibrationRunSnapshot = {
     metricSchemaVersion: CALIBRATION_METRIC_SCHEMA_VERSION,
     handsPerFormat: HANDS_PER_FORMAT,
+    seedSalt: SEED_SALT,
     entries: regressionEntries,
   }
   console.log(`${CALIBRATION_SNAPSHOT_MARKER}${JSON.stringify(snapshot)}`)
 }
 
-if (calibrationFailed && EXIT_ON_FAIL) throw new Error('Bot calibration missed at least one target range')
+if (structurallyFailed) throw new Error('Bot calibration has structural violations')

@@ -1,7 +1,9 @@
 # v0.8.3 — Refactoring-Scope
 
+Status: Planungsstand unter der bisherigen Versionsnummer; Neuzuschnitt offen.
+
 Dieses Dokument konkretisiert den technischen Umfang der in der
-[Roadmap](../ROADMAP.md) bewusst kompakt gehaltenen Version 0.8.3. Alle
+[Roadmap](../../ROADMAP.md) bewusst kompakt gehaltenen Version 0.8.3. Alle
 Umbauten bleiben verhaltensneutral und werden in getrennten Commits
 durchgeführt.
 
@@ -41,6 +43,21 @@ durchgeführt.
 - Empty-State, Bust-zu-Ende und schnelle Sessionneustarts als Randfälle
   absichern.
 
+## Architektur- und Konventionsdokumentation
+
+- Nach der Modultrennung den tatsächlichen Bot-Datenfluss für externe
+  Entwickler anhand einer konkreten Entscheidung dokumentieren: öffentliche
+  Engine-Sicht und Handverlauf, Variantenbewertung, objektiver Kontext,
+  skillabhängige Wahrnehmung, Scoring/Modifier und Kandidatenauswahl. Dabei
+  Datenbesitz, Informationsgrenzen und NLHE-/PLO-spezifische Annahmen benennen;
+  die Kurzskizze in `DEV.md` bleibt bis dahin nur ein Einstieg.
+- Die Betrags- und Zustandskonventionen der Engine an den neuen Modulgrenzen
+  knapp festhalten: Geldeinheit und Rundung, Street-Gesamtbetrag eines Raise
+  gegenüber zusätzlich zu zahlendem Call, live Pot gegenüber gewinnbarem Pot,
+  Main-/Side-Pot-Beiträge und Zuständigkeit für Aktionsreihenfolge. Die
+  Beschreibung gegen bestehende Typen und Grenzfalltests verifizieren, nicht
+  allein aus Bezeichnern ableiten.
+
 ## Fachlich notwendige Bereinigung
 
 - Bet-Level aktionsbasiert als `unopened`, Open, 3-Bet und 4-Bet+ aus der
@@ -52,7 +69,7 @@ durchgeführt.
 - Prettier-Konfiguration in einem separaten mechanischen Commit einführen und
   dokumentierte Format- sowie Lint-Befehle ergänzen.
 - Den Produktions-Bundle beim 0.8.3-Cut erneut messen. Ausgangswert ist ein
-  Hauptchunk von **517,2 KB minifiziert beziehungsweise 143,4 KB gzip** bei
+  Hauptchunk von **522,03 KB minifiziert beziehungsweise 144,55 KB gzip** bei
   einer allgemeinen Vite-Warnschwelle von 500 KB. Nur entlang ohnehin
   entstehender fachlicher Grenzen dynamisch aufteilen und Start-/Replaypfad
   danach in Electron sowie Android prüfen. Die Warnschwelle nicht lediglich

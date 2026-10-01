@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { BettingContext, Card, LegalActions, PlayerAction } from '@cpc/shared'
 import { createBotState } from './bot-state'
 import { deriveDecisionMetrics } from './bot-decision-metrics'
-import { decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
+import { applyPersonalityModifiers, decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
 import { applySkillPerception } from './bot-skill-perception'
 import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
 import { getNlheScores, NLHE_CATEGORY_SCORES } from './bot-category-scores'
@@ -269,6 +269,35 @@ describe('bot utility candidates', () => {
     expect(planValue(shove)).toBeLessThan(0)
     expect(decision.action.type).toBe('raise')
     expect(decision.stateUpdates.betFoldStreet).toBe('river')
+  })
+
+  it('stores the NLHE river bet-fold plan only when that value line was perceived', () => {
+    const opening = (skill: number) => {
+      const spot = riverBetFoldContext()
+      spot.botState.skill.level = skill
+      spot.handAssessment.relativeStrength = 55
+      spot.botHabits = [{
+        definition: { id: 'test-raise', name: 'Test raise', description: 'Forces the same legal action' },
+        fired: true,
+        modifier: action => [{
+          category: 'personality',
+          label: 'Test action control',
+          value: action.action.type === 'raise' ? 100 : -100,
+        }],
+      }]
+      return spot
+    }
+
+    const low = decideAction(opening(50), { random: () => 0.5 })
+    expect(low.action.type).toBe('raise')
+    expect(low.objectiveHandAssessment.relativeStrength).toBe(55)
+    expect(low.perceivedHandAssessment.relativeStrength).toBeLessThan(50)
+    expect(low.stateUpdates.betFoldStreet).toBeNull()
+
+    const perfect = decideAction(opening(100), { random: () => 0.5 })
+    expect(perfect.action.type).toBe('raise')
+    expect(perfect.perceivedHandAssessment.relativeStrength).toBe(55)
+    expect(perfect.stateUpdates.betFoldStreet).toBe('river')
   })
 
   it('executes the remembered fold after an opponent raises the thin river value-bet', () => {
@@ -1925,6 +1954,82 @@ describe('bot utility candidates', () => {
     expect(actual.metrics).toEqual(originalMetrics)
     expect(perception.context.legalActions).toBe(actual.legalActions)
     expect(perception.context.gameView).toBe(actual.gameView)
+  })
+
+  it('keeps a missed NLHE flush draw out of personality scoring', () => {
+    const legalActions: LegalActions = {
+      fold: true, check: false, callAmount: 20, raise: null, allInAmount: null,
+    }
+    const actual = context(legalActions)
+    actual.botState.skill.level = 0
+    actual.botState.personality.riskTolerance = 80
+    actual.gameView.board = [
+      { rank: 'Q', suit: 'spades' }, { rank: '7', suit: 'spades' },
+      { rank: '2', suit: 'diamonds' },
+    ]
+    actual.handAssessment = {
+      ...actual.handAssessment,
+      category: 'air', made: false, drawTypes: ['flush-draw'], drawQuality: 45,
+    }
+
+    const rng = { random: () => 0.2 }
+    const perceived = applySkillPerception(actual, rng)
+    expect(perceived.context.handAssessment.drawTypes).toEqual([])
+    const expected = applyPersonalityModifiers(scoreActions(perceived.context), perceived.context)
+      .find(candidate => candidate.action.type === 'call')!.contributions
+      .find(item => item.label === 'Risk tolerance affects calling')!.value
+    const result = decideAction(actual, { random: () => 0.2 })
+    const observed = result.allActions.find(candidate => candidate.action.type === 'call')!
+      .contributions.find(item => item.label === 'Risk tolerance affects calling')!.value
+
+    expect(result.perceptionErrors.some(error => error.field === 'draws')).toBe(true)
+    expect(result.objectiveHandAssessment.drawTypes).toEqual(['flush-draw'])
+    expect(result.perceivedHandAssessment.drawTypes).toEqual([])
+    expect(expected).toBeCloseTo(1.875)
+    expect(observed).toBeCloseTo(1.875)
+    expect(observed).toBe(expected)
+  })
+
+  it('keeps a missed PLO wrap out of personality scoring', () => {
+    const legalActions: LegalActions = {
+      fold: true, check: false, callAmount: 20, raise: null, allInAmount: null,
+    }
+    const actual = context(legalActions)
+    actual.variantId = 'omaha-high'
+    actual.gameView.myCards = [
+      { rank: 'J', suit: 'spades' }, { rank: 'T', suit: 'hearts' },
+      { rank: '8', suit: 'diamonds' }, { rank: '7', suit: 'clubs' },
+    ]
+    actual.gameView.board = [
+      { rank: '9', suit: 'spades' }, { rank: '6', suit: 'hearts' },
+      { rank: '2', suit: 'diamonds' },
+    ]
+    actual.botState.skill.level = 20
+    actual.botState.personality.riskTolerance = 80
+    actual.handAssessment = {
+      ...actual.handAssessment,
+      category: 'air', made: false, drawTypes: ['wrap-13+', 'bottom-wrap'],
+      drawQuality: 55, cleanOuts: 13, nutPotential: 'weak',
+    }
+
+    const rng = { random: () => 0.2 }
+    const perceived = applySkillPerception(actual, rng)
+    expect(perceived.context.handAssessment.drawTypes).toEqual([])
+    const expected = applyPersonalityModifiers(scoreActions(perceived.context), perceived.context)
+      .find(candidate => candidate.action.type === 'call')!.contributions
+      .find(item => item.label === 'Risk tolerance affects calling')!.value
+    const result = decideAction(actual, { random: () => 0.2 })
+    const observed = result.allActions.find(candidate => candidate.action.type === 'call')!
+      .contributions.find(item => item.label === 'Risk tolerance affects calling')!.value
+
+    expect(result.perceptionErrors.map(error => error.field)).toEqual(expect.arrayContaining([
+      'wrap-quality', 'draws',
+    ]))
+    expect(result.objectiveHandAssessment.drawTypes).toEqual(['wrap-13+', 'bottom-wrap'])
+    expect(result.perceivedHandAssessment.drawTypes).toEqual([])
+    expect(expected).toBeCloseTo(0.721153846)
+    expect(observed).toBeCloseTo(0.721153846)
+    expect(observed).toBe(expected)
   })
 
   it('makes perception errors smaller as skill rises', () => {

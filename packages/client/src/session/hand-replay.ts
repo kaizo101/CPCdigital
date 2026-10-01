@@ -136,7 +136,7 @@ function formatVariantName(variantId: string): string {
   }
 }
 
-/** Generate PokerStars-style text hand history */
+/** Generate the CPCdigital plain-text hand history. */
 export function formatHandHistory(replay: HandReplay): string {
   const lines: string[] = []
   const bb = replay.blinds.big

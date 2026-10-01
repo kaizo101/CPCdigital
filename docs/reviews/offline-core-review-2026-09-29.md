@@ -1,11 +1,13 @@
 # Offline-Kern: Review- und Korrektheitsnachtrag (29.09.2026)
 
+Status: historischer Diagnose- und Korrektheitsstand vom 29.09.2026.
+
 ## Geltungsbereich
 
 Dieser Nachtrag behandelt die lokale NLHE-/PLO-Engine und den
 `LocalGameRunner`. Das ruhende Serverpaket ist ausdrücklich nicht Teil der
 fachlichen Prüfung oder der Änderungen. Er ergänzt das historische
-[REVIEW.md](../REVIEW.md), ersetzt dessen damaligen Versionsstand aber nicht.
+[älteren Review](review-2026-08-07.md), ersetzt dessen damaligen Versionsstand aber nicht.
 
 Die Prüfung verwendete gezielte Reproduktionen, deterministische und
 randomisierte Handabläufe, unabhängige Showdown-Vergleiche sowie die

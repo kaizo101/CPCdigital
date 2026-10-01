@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import rootPackage from '../../package.json'
+import rootPackage from '../../package.json' with { type: 'json' }
 
 export default defineConfig({
   base: './',

@@ -1,5 +1,7 @@
 # Produktnamensfindung
 
+Status: Arbeitsnotizen; der endgültige Produktname ist noch nicht beschlossen.
+
 Stand: 9. August 2026
 
 `CPCdigital` ist ein interner Entwicklungs- und Projektname. Der endgültige

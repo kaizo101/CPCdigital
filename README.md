@@ -1,16 +1,18 @@
 # CPCdigital
 
 CPCdigital ist eine primär für den Desktop entwickelte Offline-Poker-App:
-Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto, Server oder
-Internetverbindung.
+Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto oder Server.
+Die Desktop-App benötigt zum Spielen keine Internetverbindung; die öffentliche
+Browser-Demo muss zunächst online geladen werden.
 
 Im Mittelpunkt steht menschlich wirkendes Casual-Poker statt vorgetäuschter
 Solver-Perfektion. Bots erhalten dabei nur Informationen, die auch ein realer
 Spieler kennen könnte.
 
-Der aktuelle Release ist **v0.8.1**. `CPCdigital` ist weiterhin der interne
-Arbeitstitel; der endgültige Produktname wird vor dem Release Candidate
-festgelegt.
+Der letzte veröffentlichte Stand ist **v0.8.1**; das Repository befindet sich
+in der Entwicklung von **v0.8.2** (`0.8.2-dev`). `CPCdigital` ist weiterhin
+der interne Arbeitstitel; der endgültige Produktname wird vor dem Release
+Candidate festgelegt.
 
 ## Highlights
 
@@ -22,11 +24,12 @@ festgelegt.
 - **Wiederkehrende Identitäten:** 44 Bots mit eigenem Verhalten; 40 besitzen
   individuelle Porträts
 - **Nachvollziehbare Hände:** Hand-Replay, lokales Archiv,
-  PokerStars-kompatible Hand-History und kompakter Debug-Export
-- **Vollständige Pokerregeln:** Side Pots, Split Pots, All-ins, Min-Raises und
-  schrittweise Runouts werden durch die gemeinsame Engine verwaltet
-- **Reproduzierbares Verhalten:** Seedbare Sessions, strukturierte Decision
-  Records und ein optionaler Debug Inspector für Botentscheidungen
+  lesbare Hand-History als Textdatei und kompakter Debug-Export
+- **Gemeinsame Regel-Engine:** Sie verwaltet Side Pots, Split Pots, All-ins,
+  Min-Raises und schrittweise Runouts
+- **Diagnose und Reproduktion:** Strukturierte Decision Records und ein
+  optionaler Debug Inspector; Session-Seeds sind für Tests und Simulationen
+  über die interne Schnittstelle verfügbar, nicht als Setup-Option
 - **Mehrere Entwicklungsplattformen:** Electron-Desktop-App, öffentliche
   Browser-Demo und nativer Android-Debug-Prototyp
 
@@ -52,6 +55,8 @@ Ausprobieren; Desktop bleibt die primäre Entwicklungsplattform.
   signierten Release-Pakete.
 - Bot-Balance und insbesondere komplexe PLO-/Heads-up-Postflop-Situationen
   werden weiter kalibriert.
+- Die Hand-History ist ein eigenes Textformat; gängige externe Replayer
+  unterstützen den Import derzeit nicht.
 - Android ist ein unsignierter Landscape-Debug-Prototyp. Ein begrenzter
   Zwischenfix hält den Hand-Replayer im kompakten Landscape lesbar; das
   vollständige responsive Replay- und Touch-Redesign folgt weiterhin mit der
@@ -99,14 +104,16 @@ Release-Gate; Reproduktion und Baselines stehen im
 
 ## Dokumentation
 
+- [Dokumentationsübersicht](docs/README.md) — Einstieg, Status und Ablage der
+  vertiefenden Dokumente
 - [Roadmap](ROADMAP.md) — Entwicklungsphasen und langfristige Vision
 - [Changelog](CHANGELOG.md) — veröffentlichte Änderungen je Version
 - [Entwicklerdokumentation](DEV.md) — Architektur, Android, Kalibrierung und
   Debugging
 - [Kalibrierungsberichte](calibration/README.md) — reproduzierbare Bot-Baselines
-- [Test- und Distributionsstrategie](TESTING_STRATEGY.md) — Teststufen,
+- [Test- und Distributionsstrategie](testing/TESTING_STRATEGY.md) — Teststufen,
   Rollen und Release-Kommunikation
-- [Tester-Formulare](TESTER_FORMS.md) — Vorlagen für Realismus-, Usability-,
+- [Tester-Formulare](testing/TESTER_FORMS.md) — Vorlagen für Realismus-, Usability-,
   UI- und Betatests
 - [Beitragsrichtlinien](CONTRIBUTING.md) — Beiträge, Rechte und Lizenzierung
 - [Sicherheitsrichtlinie](SECURITY.md) — unterstützte Stände und vertrauliche

@@ -1,5 +1,7 @@
 # Avatar-Workflow für ComfyUI
 
+Status: optionale, externe Asset-Erstellung; kein Teil des App-Builds.
+
 ## Setup (einmalig, ~15 Min)
 
 ### 1. ComfyUI installieren
@@ -25,14 +27,15 @@ Alternativ: ComfyUI Manager installieren → `Install Missing Custom Nodes` klic
 
 ### 4. Workflow laden
 
-- In ComfyUI: **Workflow → Open** → `avatar-workflow.json` aus diesem Projekt auswählen
+- In ComfyUI: **Workflow → Open** → [`avatar-workflow.json`](../../avatar-workflow.json) aus dem Projektverzeichnis auswählen
 - Oder einfach die JSON-Datei ins Browser-Fenster ziehen
 
 ## Nutzung
 
 ### Prompt einsetzen
 
-Die Prompts aus `avatar-prompts.json` verwenden. Jeder Prompt hat dieses Format:
+Die Prompts mit `npx tsx scripts/generate-avatar-prompts.ts` im Projektverzeichnis
+erzeugen; das Skript schreibt `avatar-prompts.json`. Jeder Prompt hat dieses Format:
 
 ```
 Mara, a woman in her early-to-mid-20s with thin face with sharp cheekbones,

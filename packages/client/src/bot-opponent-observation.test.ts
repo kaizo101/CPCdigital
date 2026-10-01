@@ -46,6 +46,46 @@ describe('opponent history observation', () => {
     expect(cursor.vpipPlayers).toContain('villain')
   })
 
+  it('ignores forced actions without losing the following voluntary action', () => {
+    const { botState, cursor } = setup()
+    const forcedFold = acted({ phase: 'preflop', action: { type: 'fold' }, source: 'forced' })
+    const voluntaryCall = acted({ phase: 'preflop', playerId: 'other-villain' })
+
+    observeOpponentHistory('hero', botState, [forcedFold], cursor, 'tag')
+    expect(botState.reads.opponents.has('villain')).toBe(false)
+    expect(cursor.eventCount).toBe(1)
+
+    observeOpponentHistory('hero', botState, [forcedFold, voluntaryCall], cursor, 'tag')
+    const read = botState.reads.opponents.get('other-villain')!
+    expect(read.handsSampled).toBe(1)
+    expect(read.vpipEstimate.successes).toBeGreaterThan(0)
+    const failures = read.foldToBetEstimate.failures
+    observeOpponentHistory('hero', botState, [forcedFold, voluntaryCall], cursor, 'tag')
+    expect(read.foldToBetEstimate.failures).toBe(failures)
+  })
+
+  it('counts fold-to-bet only when the player faced a wager', () => {
+    const { botState, cursor } = setup()
+    const check = acted({ action: { type: 'check' }, amount: 0, toCall: 0 })
+    const openBet = acted({ action: { type: 'raise', amount: 40 }, amount: 40, toCall: 0, currentBetBefore: 0 })
+    const facingCall = acted({ toCall: 40 })
+    const facingFold = acted({ action: { type: 'fold' }, amount: 0, toCall: 40 })
+
+    observeOpponentHistory('hero', botState, [check], cursor, 'tag')
+    const read = botState.reads.opponents.get('villain')!
+    const before = { ...read.foldToBetEstimate }
+
+    observeOpponentHistory('hero', botState, [check, openBet], cursor, 'tag')
+    expect(read.foldToBetEstimate).toEqual(before)
+
+    observeOpponentHistory('hero', botState, [check, openBet, facingCall], cursor, 'tag')
+    expect(read.foldToBetEstimate.failures).toBeGreaterThan(before.failures)
+    expect(read.foldToBetEstimate.successes).toBe(before.successes)
+
+    observeOpponentHistory('hero', botState, [check, openBet, facingCall, facingFold], cursor, 'tag')
+    expect(read.foldToBetEstimate.successes).toBeGreaterThan(before.successes)
+  })
+
   it('records canonical aggressive postflop sizing once', () => {
     const { botState, cursor } = setup()
     const call = acted()

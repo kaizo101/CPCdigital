@@ -52,7 +52,7 @@ export interface DecisionResult {
   }
 }
 
-/** Pure orchestration: score, modify perception, then select an action. */
+/** Pure orchestration: perceive, score, modify, then select an action. */
 export function decideAction(
   context: DecisionContext,
   rng: RandomSource = defaultRandom,
@@ -62,10 +62,10 @@ export function decideAction(
     scoreActions(perception.context),
     perception.errors,
   )
-  const personalityActions = applyPersonalityModifiers(scoredActions, context)
+  const personalityActions = applyPersonalityModifiers(scoredActions, perception.context)
   const chosenScored = weightedCandidateChoice(personalityActions, rng)
   const chosenAction = chosenScored.action
-  const stateUpdates = deriveStateUpdates(chosenAction, context)
+  const stateUpdates = deriveStateUpdates(chosenAction, perception.context)
 
   return {
     action: chosenAction,

@@ -40,6 +40,36 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Changed
 
+- **Vite-Konfiguration**: Der Import der Paketversion verwendet ein
+  JSON-Importattribut und bleibt damit auch mit der künftig nativen
+  Konfigurationsladung kompatibel. Die separate Chunkgrößen-Warnung bleibt
+  für die gezielte Prüfung im 0.8.3-Refactoring vorgemerkt.
+- **Projektdokumentation aufgeräumt**: Die Haupt-README bleibt ein kompakter
+  Projektüberblick; `docs/README.md` führt zu Konzepten, Plänen, Reviews und
+  Anleitungen. Teststrategie und Formulare liegen gebündelt unter `testing/`,
+  veraltete Pfade wurden angepasst. Die Roadmap trennt laufende und künftige
+  Planung vom archivierten Versionsrückblick und verlinkt ausführliche
+  Konzepte separat; ihre Überschriften sind ohne Status-Emojis vereinheitlicht.
+  Veröffentlichter Stand, aktueller Entwicklungsstand und historische Review-
+  Befunde sind klarer getrennt;
+  überholte Aussagen zu Session-Seeds und externer Hand-History-Kompatibilität
+  wurden korrigiert.
+- **Entwicklereinstieg präzisiert**: Die Varianten-Anleitung nennt die
+  tatsächlichen Engine-, Bot-, Runner- und Export-Einstiegspunkte sowie
+  aktuelle Erweiterungsgrenzen. `CONTRIBUTING.md` trennt lokale
+  Electron-Installation vom CI-Installationspfad und ordnet zusätzliche Tests
+  nach Änderungstyp zu; die ausführlichen Bot- und Engine-Konventionsguides
+  sind für 0.8.3 eingeplant.
+- **Kalibrierungs-Gate präzisiert**: Zielkorridore sind diagnostische
+  Leitplanken statt automatische Exit-Bedingungen. Release-Läufe und
+  begründete Ausreißer-Triage bleiben Pflicht; strukturelle Invarianten
+  stoppen den Lauf weiterhin. Null-Nenner werden als nicht auswertbar gezeigt.
+  Ein maschinenprüfbarer Releasebericht kontrolliert Metadaten, alle 24
+  Kombinationen und Rohnenner; auffällige oder seltene Metriken erhalten
+  einen unabhängigen Bestätigungs-Seed.
+- **Klarer Hand-History-Export**: Die Beschriftung nennt den eigenen
+  Text-Export ohne fremden Plattformnamen; externe Replayer-Kompatibilität
+  wird nicht behauptet.
 - **Caller-berechtigter Pot als Entscheidungsgrundlage**: Pot Odds,
   Call/Pot-Verhältnis und SPR verwenden bei Shortstack-Calls nur noch den Pot,
   den der handelnde Spieler tatsächlich gewinnen kann. Nicht callbare
@@ -93,23 +123,23 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   Flush ermöglichen, zählen ohne eigene stärkere Hand nicht mehr als
   saubere Outs; teilweise dominierte Wraps heißen nicht länger
   `nut-wrap`. Bereits gemachte Flushes sammeln keine schwächeren
-  Straight-Outs. [Konkrete Hände und Grenzen](docs/plo-wrap-outs-review-2026-09-30.md)
+  Straight-Outs. [Konkrete Hände und Grenzen](docs/reviews/plo-wrap-outs-review-2026-09-30.md)
   sind dokumentiert.
 - **PLO-Draw-Outs hinter Full House/Vierling**: Schwächere Straight- und
   Flush-Treffer werden nicht mehr als saubere Verbesserungen oder
   Semi-Bluff-Draws angezeigt. Echte Nut-Straight-Flush-Redraws bleiben als
-  Clean Outs erhalten; [Reproduktionen und Oracle-Checks](docs/plo-made-hand-redraw-review-2026-09-30.md)
+  Clean Outs erhalten; [Reproduktionen und Oracle-Checks](docs/reviews/plo-made-hand-redraw-review-2026-09-30.md)
   dokumentieren die Abgrenzung.
 - **PLO-Straight-Flush-Nuts**: Die höchste gegnerisch mögliche Straight
   Flush wird jetzt aus genau drei Boardkarten und zwei ungesehenen Karten
   ermittelt. Eigene Blocker verhindern falsch-positive höhere Kombinationen;
-  ein [reproduzierter Q-high-Nuts-Fall](docs/plo-straight-flush-nut-review-2026-09-29.md)
+  ein [reproduzierter Q-high-Nuts-Fall](docs/reviews/plo-straight-flush-nut-review-2026-09-29.md)
   ist regressionsgetestet.
 - **PLO-Vierlings-Nut-Potential**: Höhere Vierlinge werden nur bei passender
   Boardstruktur und verfügbaren Karten als gegnerische Möglichkeit gewertet.
   Ein tatsächlich möglicher Straight Flush verhindert die Einstufung als
   absolute Nuts; eigene Karten können diese Möglichkeit blockieren. Vier
-  reproduzierbare Fälle sind im [PLO-Nachtrag](docs/plo-quads-nut-review-2026-09-29.md)
+  reproduzierbare Fälle sind im [PLO-Nachtrag](docs/reviews/plo-quads-nut-review-2026-09-29.md)
   beschrieben.
 - **Offline-Engine-Korrektheit**: Ungecallte Einsätze werden vor einem
   Uncontested-Pot-Award zurückgegeben; verwaiste Side-Pot-Layer werden nach
@@ -118,7 +148,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   Tische werden vor Zustandsänderungen abgewiesen. Physische Sitzfolge und
   Dealer-Anker bleiben bei Sitzwechseln stabil. Der lokale Runner verbucht
   ein verschachtelt erreichtes Handende nur einmal. Reproduktionen und
-  Grenzen stehen im [Offline-Kern-Nachtrag](docs/offline-core-review-2026-09-29.md).
+  Grenzen stehen im [Offline-Kern-Nachtrag](docs/reviews/offline-core-review-2026-09-29.md).
 - **NLHE-Flushdraw-Provenienz**: Vier gleichfarbige Boardkarten erzeugen ohne
   eigene Karte dieser Farbe keinen persönlichen Flushdraw mehr. Echte Draws
   zählen nur unbekannte Karten als Outs und unterscheiden Nut- von Non-Nut-
@@ -291,7 +321,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 - **Code-Review**: Systematische Prüfung von 30 Modulen (Engine, Game-Loop,
   Scoring, Modifier, Support, Habits, Identities, Replay, Rebuy, NLHE/PLO-Handbewertung).
-  22 Bugs gefunden und behoben, 19 Module als bugfrei bestätigt ([REVIEW.md](REVIEW.md)).
+  22 Bugs gefunden und behoben, 19 Module als bugfrei bestätigt ([historischer Review](docs/reviews/review-2026-08-07.md)).
 - **PLO-Nut-Erkennung verfeinert**: `'second-nuts'`-Stufe zwischen `'near-nuts'`
   und `'strong'` für granulare PLO-Bewertung (Quads-K-vs-A, FH-KKKAA-vs-AAA,
   K-high-Flush-vs-A-high, Straight-Gap). Eigener Scoring-Parameter
@@ -330,11 +360,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **`three-barrel-bluff`**: Feuerte bei jedem River-Bluff ohne Prüfung auf Flop-/Turn-Aggression.
 - **Nit-Rebuy-Policy**: `rebuyThresholdBb` und `maxRebuys` unabhängig gewürfelt — 28% der Nits mit `null`-Threshold bei `maxRebuys:1`.
 - **`getCashOutPolicy`**: LAG nicht im Ternary-Chain — fiel durch auf Default-Fallback.
-- **Turn-Karte doppelt**: PokerStars-History zeigte Turn-Karte in Board-Segment UND als Einzelkarte.
+- **Turn-Karte doppelt**: Der Hand-History-Text zeigte die Turn-Karte im Board-Segment und erneut als Einzelkarte.
 - **`marginal`-Doppelstrafe**: Reraise-Penalties trafen `marginal` doppelt (−30) vs. `weak` (−18).
 - **`findStraightDraw` (NLHE)**: A-high-Wrap (J,Q,K,A) als OESD (8 Outs) statt Gutshot (4 Outs) klassifiziert.
 - **`calculateCleanOuts`**: JSDoc-Kommentar fehlplatziert im Funktionskörper, Klammern-Einrückung gebrochen.
-- Alle weiteren Bugs aus dem Code-Review (REVIEW.md).
+- Alle weiteren Bugs aus dem [historischen Code-Review](docs/reviews/review-2026-08-07.md).
 
 ## [0.7.9] — 2026-08-04
 
@@ -611,7 +641,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 - **Session-Statistiken**: Live-VPIP/PFR/3-Bet für alle Spieler in einklappbarem Panel (📊)
 - Session-Ergebnis in BB (grün/rot) und BB/100 in der Kopfleiste
-- Session-Log-Export als PokerStars-Text (Download-Button im Stats-Panel)
+- Session-Log-Export als lesbarer Poker-Text (Download-Button im Stats-Panel)
 - `session-stats.ts`: VPIP/PFR/3B-Tracking + BB/100-Berechnung + Session-Log-Generator
 - `SessionStats.tsx`: einklappbare Komponente mit Spieler-Tabelle und Export
 
@@ -675,7 +705,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Replay Pot-Anzeige**: Bet-Stacks akkumulierten zu viel (`totalBet` statt `amount`)
 - **Export-Menü**: per Portal zu `document.body` gerendert (kein Verdecken durch Footer)
 - **Debug-Mode im Replay**: `localStorage.replay-debug` für IPC-Fenster
-- **Hand-History-Header**: "PokerStars" → "CPCdigital"
+- **Hand-History-Header**: Fremde Plattformbezeichnung durch "CPCdigital" ersetzt
 
 ## [0.7.0] — 2026-07-22
 
@@ -710,7 +740,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **Setup-Toggle**: "Auto-Rebuy & Ersatz-Bots" in der Setup-Maske
 - **Hand-Replay**: deterministisches Replay aus Decision Snapshots, Tisch-Ansicht mit Step-Forward/Back, Autoplay
 - **Session-Navigation**: alle Hände der Session durchblätterbar (◀▶)
-- **PokerStars-Style Hand-History**: Text-Export pro Hand und ganze Session
+- **Hand-History im Poker-Textstil**: Export pro Hand und ganze Session
 - **Pot-Filter**: Replay nach Minimum-Pot-Größe filtern (≥ X BB)
 - **Session-übergreifende History**: localStorage, max 200 Hände
 - **Bot-Entscheidungsgründe**: Scores und Beiträge als Export-Option (debug-only)

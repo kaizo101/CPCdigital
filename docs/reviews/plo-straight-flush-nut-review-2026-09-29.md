@@ -1,5 +1,7 @@
 # PLO-Straight-Flush: Nut-Potential-Korrektur (29.09.2026)
 
+Status: historischer Review- und Korrektheitsstand vom 29.09.2026.
+
 ## Reproduzierter Fall
 
 Auf `Q♠ J♠ T♠` hält der Bot `A♠ 9♠ 8♠ 2♦`. Nach der PLO-Regel

@@ -1,5 +1,7 @@
 # PLO-Vierling: Nut-Potential-Korrektur (29.09.2026)
 
+Status: historischer Review- und Korrektheitsstand vom 29.09.2026.
+
 ## Reproduzierter Befund
 
 Die bisherige `assessOmahaNutPotential`-Prüfung stufte jeden theoretisch

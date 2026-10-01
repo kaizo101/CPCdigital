@@ -1,5 +1,7 @@
 # PLO-Draw-Outs hinter starken Made Hands (30.09.2026)
 
+Status: historischer Review- und Korrektheitsstand vom 30.09.2026.
+
 ## Reproduzierter Befund
 
 Die bisherige Draw-Analyse zählte Karten, die einen Straight oder Flush

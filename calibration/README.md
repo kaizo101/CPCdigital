@@ -2,6 +2,27 @@
 
 Kalibrierungsergebnisse pro Release als Vergleichsbasis.
 
+## Release-Gate: Pflichtmessung, keine Korridor-Pflicht
+
+Vor einem botrelevanten Release werden deterministische NLHE-/PLO-Läufe für
+alle betroffenen Archetypen und Formate durchgeführt und mit Version/Commit,
+Handzahl, Seed-Verfahren, Metrikdefinition sowie Rohzählern und Nennern
+dokumentiert. Zielkorridore sind **diagnostische Leitplanken**: Ein Wert
+außerhalb des Korridors beendet den Lauf nicht automatisch. Kleine Abweichungen
+werden begründet akzeptiert oder als Beobachtung notiert; große, systematische
+oder spielerisch auffällige Abweichungen erfordern eine Ursachenprüfung und
+eine explizite Release-Entscheidung. Korridore werden nicht passend zum Lauf
+geändert.
+
+**Blockierend** bleiben ungültige Aktionen, verletzte Metrik-/Showdown-
+Invarianten (einschließlich Widersprüchen zwischen Rate und Rohzählern),
+nicht endliche Messwerte und die gesicherten Deep-Shove-Fälle.
+Eine Rate ohne Gelegenheit (Nenner 0) ist `n/a`, nicht 0 % oder ein
+Korridorverstoß; AF ohne Calls ist ebenfalls nicht auswertbar. Der
+300-Hand-Snapshot ist ein separater Drift-Alarm: Nach beabsichtigten
+Strategieänderungen wird ein Fehler analysiert und die Baseline erst nach
+Review bewusst aktualisiert, nicht durch Aufweichen der Zielkorridore.
+
 Die Berichte enthalten je nach Release:
 
 - VPIP, PFR, 3-Bet, C-Bet, AF und WTSD für die kalibrierten Archetypen und Formate
@@ -32,6 +53,31 @@ bewusst freigegebenen strategischen Änderung kann er mit
 `npm run calibrate:baseline` neu erzeugt und anschließend im Diff geprüft
 werden.
 
+### Maschinenprüfbarer Releasebericht
+
+`npm run calibrate:release -- --output calibration/evidence/<eindeutiger-name>.json`
+führt standardmäßig 10.000 Hände je Kombination für NLHE und PLO aus. Die
+Ausgabedatei muss neu sein (kein Überschreiben). `--hands N` ist nur für
+Entwicklung und Smoke-Läufe vorgesehen. Ein vorhandener Bericht wird mit
+`npm run calibrate:release -- --validate <pfad>` erneut geprüft.
+
+Der Bericht enthält App-Version, Commit, Dirty-Worktree-Status, Zeitpunkt,
+Metrikschema, Handzahl, Seed-Salts sowie alle 24 Varianten-/Archetyp-/Format-
+Kombinationen mit Kennzahlen, Zielbereichen und Rohzählern/Nennern. Die
+Validierung verlangt genau diese 24 Kombinationen, plausible Rohwerte,
+strukturelle Invarianten und alle vorgesehenen Bestätigungsläufe. Der kurze
+300-Hand-Snapshot bleibt eine separate Regression und wird dadurch nicht
+ersetzt.
+
+Eine zweite, unabhängige Seed-Serie wird **nur** für Kombinationen gestartet,
+in denen mindestens eine Zielmetrik außerhalb des Korridors liegt oder eine
+Metrik weniger als 50 Gelegenheiten hat (einschließlich Nenner 0). Die
+Bestätigung verwendet dieselbe Handzahl und dokumentiert die betroffenen
+Metriken samt vollständigen Rohwerten. Sie entscheidet nicht automatisch über
+eine Freigabe: Persistenz, Stichprobengröße und Spielwirkung werden im
+Releasebericht fachlich triagiert. Ein Bericht aus einem schmutzigen Worktree
+ist als solcher markiert und vor einer Freigabe einem Commit zuzuordnen.
+
 Deck- und Entscheidungs-Seeds werden für jede Hand separat aus Profil, Format
 und Handnummer abgeleitet; der Dealer rotiert dabei explizit. Eine Änderung,
 die einen Runout früher oder später beendet, verändert deshalb nicht mehr die
@@ -40,6 +86,10 @@ bewusst erhalten, damit echte strategische Folgewirkungen weiterhin sichtbar
 sind.
 
 ## Herkunft und Status der Zielkorridore
+
+Forschungsarbeiten, Datengrundlagen und deren bisheriger Prüfstatus stehen im
+[Literatur- und Evidenzregister](../docs/concepts/literatur-und-evidenz.md). Dort
+aufgeführte Arbeiten ändern für sich genommen keinen Zielkorridor.
 
 Die hinterlegten Zielkorridore (VPIP, PFR, 3-Bet, C-Bet, AF, WTSD etc.) sind
 keine empirisch exakten Einzelwerte, sondern eine plausibilitätsgeprüfte

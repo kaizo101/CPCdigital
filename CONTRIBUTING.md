@@ -21,10 +21,27 @@ Vermutete Sicherheitslücken oder versehentlich veröffentlichte Zugangsdaten
 bitte nicht als öffentliches Issue melden, sondern gemäß
 [`SECURITY.md`](SECURITY.md) vertraulich einreichen.
 
+Für die lokale Electron-Entwicklung `npm ci` verwenden: So werden die
+freigegebenen Install-Skripte und das Electron-Binary eingerichtet. Das in der
+CI verwendete `npm ci --ignore-scripts` ist für Tests und Builds geeignet,
+installiert aber kein startfähiges Electron-Binary. Weitere Voraussetzungen
+und Startbefehle stehen in [DEV.md](DEV.md#quick-start).
+
 Vor einem Pull Request bitte mindestens folgende Prüfungen lokal ausführen:
 
 ```bash
-npm ci --ignore-scripts
 npm test
 npm run build
 ```
+
+Zusätzlich die vom Änderungstyp betroffenen Prüfungen ausführen:
+
+| Änderung | Zusätzliche Prüfung |
+|----------|---------------------|
+| Bot-Entscheidung, Ranges, Kalibrierung oder Engine-Beträge | `npm run test:calibration` und `npm run test:stakes`; bewusste Snapshot-Abweichungen begründen, nicht still aktualisieren |
+| Tisch, Setup, Replay oder responsive Darstellung | `npm run test:responsive` nach dem Client-Build; Chrome/Chromium nötig, bei Bedarf `CHROME_PATH` setzen |
+| Android-Runtime oder native Integration | `npm run android:check` in einer passenden Android-SDK-Umgebung und einen Gerätelauf, falls das Verhalten davon abhängt |
+
+`npm run calibrate:release` ist ein eigener Release-Prüflauf und keine
+Pflicht für jeden Pull Request. Die Testbefehle und ihre Voraussetzungen sind
+in [DEV.md](DEV.md#tests) beschrieben.

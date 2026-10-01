@@ -1,4 +1,5 @@
-// Auto-calibrator: random search with progressive narrowing.
+// Exploratory auto-calibrator: random search with progressive narrowing.
+// Not a release gate; structural simulation failures must still stop the search.
 // Passes params via PARAMS_OVERRIDES env var, spawns simulation, parses output.
 // Run: npx tsx scripts/calibrate.ts
 
@@ -40,7 +41,6 @@ function runSim(hands: number, overrides: Record<string, number>): { metrics: Me
       ...process.env,
       PARAMS_OVERRIDES: JSON.stringify(overrides),
       CALIB_HANDS: String(hands),
-      CALIB_NO_EXIT: '1',
     }
   try {
     const output = execSync(`npx tsx "${SIM_FILE}" 2>&1`, {
@@ -51,8 +51,9 @@ function runSim(hands: number, overrides: Record<string, number>): { metrics: Me
       stdio: ['pipe', 'pipe', 'pipe'],
     })
     return { metrics: parseOutput(output), output }
-  } catch (err: any) {
-    return { metrics: [], output: err.stdout ?? err.message ?? '' }
+  } catch (err: unknown) {
+    const failure = err as { stdout?: string; stderr?: string; message?: string }
+    throw new Error(`Calibration simulation failed: ${failure.message ?? ''}\n${failure.stdout ?? ''}\n${failure.stderr ?? ''}`)
   }
 }
 
@@ -109,7 +110,7 @@ const ITERATIONS = 8
 const ROUNDS = 2
 
 async function main() {
-  console.log(`Auto-Calibrator: ${ITERATIONS} iter × ${ROUNDS} rounds, ${HANDS} hands/eval\n`)
+  console.log(`Exploratory auto-calibrator (not a release gate): ${ITERATIONS} iter × ${ROUNDS} rounds, ${HANDS} hands/eval\n`)
 
   // Baseline
   console.log('Baseline (default params)...')
@@ -148,13 +149,16 @@ async function main() {
   const verify = runSim(10_000, bestOverrides)
   const bad = verify.metrics.filter(m => metricLoss(m.value, m.target) > 0)
   if (bad.length === 0) {
-    console.log(`All ${verify.metrics.length} metrics in range!`)
+    console.log(`Exploratory result: ${verify.metrics.length} measured metrics in range; review behavior before applying overrides.`)
     console.log(`\nOptimal overrides: ${JSON.stringify(bestOverrides)}`)
-    console.log('Save to params-overrides.json for persistent use.')
+    console.log('Apply overrides only after a separate behavior review.')
   } else {
     console.log(`${bad.length}/${verify.metrics.length} out of range:`)
     for (const m of bad) console.log(`  ${m.name}: ${m.value.toFixed(1)}% (target ${m.target[0]}–${m.target[1]}%)`)
   }
 }
 
-main().catch(console.error)
+main().catch(error => {
+  console.error(error)
+  process.exitCode = 1
+})

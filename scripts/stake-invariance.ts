@@ -29,7 +29,6 @@ function run(
       CALIB_BIG_BLIND: String(stake.bigBlind),
       CALIB_SMALL_BLIND: String(stake.smallBlind),
       CALIB_STARTING_CHIPS: String(stake.bigBlind * 100),
-      CALIB_NO_EXIT: '1',
       CALIB_JSON: '1',
       CALIB_DETAIL: '0',
       CALIB_TRACE: '0',

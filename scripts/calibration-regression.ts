@@ -26,7 +26,6 @@ function runVariant(variant: 'texas-holdem' | 'omaha-high'): CalibrationRegressi
       ...process.env,
       CALIB_VARIANT: variant,
       CALIB_HANDS: String(HANDS_PER_FORMAT),
-      CALIB_NO_EXIT: '1',
       CALIB_JSON: '1',
       CALIB_DETAIL: '0',
       CALIB_TRACE: '0',

@@ -1,10 +1,10 @@
 # CPCdigital — Test-, Feedback- und Distributionsstrategie
 
-Stand: 30.07.2026
+Stand: 01.10.2026 (Verfügbarkeit der Demo und Testphasen präzisiert)
 
 ## Zweck
 
-CPCdigital soll als nichtkommerzielles Open-Source-Projekt mit hohem
+CPCdigital soll als Open-Source-Projekt ohne eigene Monetarisierung mit hohem
 Qualitätsanspruch wachsen. Langfristiges Vorbild ist weniger ein klassisches
 kommerzielles Pokerspiel als eine offene, dauerhaft vertrauenswürdige Plattform
 im Geist von Lichess: frei zugänglich, ohne Echtgeld, Werbung, Tracking oder
@@ -52,7 +52,7 @@ wird er erst bei tatsächlichem Bedarf umgesetzt.
 | Stable Launch | 1.0.0 | breite Öffentlichkeit | belastbarer, klar dokumentierter Erstrelease |
 
 Die Stufen sind Qualitätsfilter, keine Marketingtermine. Ein Versionswechsel
-erfolgt nur, wenn das jeweilige Release-Gate der [Roadmap](ROADMAP.md) erfüllt
+erfolgt nur, wenn das jeweilige Release-Gate der [Roadmap](../ROADMAP.md) erfüllt
 ist.
 
 ### 1. Interne QA
@@ -88,15 +88,21 @@ Geeignete Rollen:
 
 ### 3. Öffentliche Browser-Beta
 
+Die Browser-Demo ist bereits öffentlich erreichbar. „Öffentliche Beta“ meint
+hier die geplante, ausdrücklich als Testphase kommunizierte Einladung an ein
+breiteres Publikum; sie ist nicht mit der bloßen Verfügbarkeit der Demo
+gleichzusetzen.
+
 Eine breitere Rückmeldung wird erst nach der gemeinsamen TableGeometry und der
 responsiven Übertragung auf Spiel und Replay sinnvoll. Zielpunkt ist daher
 0.9.1, nicht der aktuelle mobile Prototyp.
 
-Die GitHub-Pages-Demo wird dabei ausdrücklich als Beta bezeichnet. Ein
-möglicher Reddit- oder Forenbeitrag ist eine Einladung zu einem klar
+Die GitHub-Pages-Demo wird für diese Testphase ausdrücklich als Beta bezeichnet.
+Ein möglicher Reddit- oder Forenbeitrag ist eine Einladung zu einem klar
 beschriebenen Test, keine fertige Produkteinführung. Vor jedem Beitrag werden
 die jeweiligen Community-Regeln geprüft; pauschales Crossposting wird
-vermieden.
+vermieden. Vor einer englischsprachigen Vorstellung gilt außerdem der
+[Sprach- und Dokumentations-Checkpoint der Roadmap](../ROADMAP.md#sprach--und-dokumentations-checkpoint-vor-englischsprachiger-projektvorstellung).
 
 Die Browser-Beta darf den nativen Android-Prototyp nicht falsch versprechen:
 Browser-Mobile bleibt ein funktionaler Fallback, während die weitergehende
@@ -219,7 +225,7 @@ erhöhen sein Gewicht.
 - **Eindrücke und Ideen:** GitHub Discussions, sobald dieser Kanal bewusst
   aktiviert und moderiert wird
 - **Sicherheitsprobleme oder Zugangsdaten:** ausschließlich über die in
-  [SECURITY.md](SECURITY.md) beschriebene vertrauliche Meldung
+  [SECURITY.md](../SECURITY.md) beschriebene vertrauliche Meldung
 - **Geführte Alpha:** das jeweilige Formular direkt an die Entwicklung
   zurückgeben; ein GitHub-Konto ist dafür nicht erforderlich
 

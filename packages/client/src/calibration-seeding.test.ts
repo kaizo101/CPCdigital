@@ -25,6 +25,9 @@ describe('calibration hand isolation', () => {
     expect(calibrationHandSeeds('tag:six-max', 12)).not.toEqual(
       calibrationHandSeeds('tag:six-max', 13),
     )
+    expect(calibrationHandSeeds('tag:six-max:release-confirmation-v1', 12)).not.toEqual(
+      calibrationHandSeeds('tag:six-max', 12),
+    )
   })
 
   it('rotates the explicit dealer through every seat', () => {

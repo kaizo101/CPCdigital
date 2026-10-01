@@ -1,5 +1,7 @@
 # PLO-Wrap-Outs und Flush-Dominierung (30.09.2026)
 
+Status: historischer Review- und Korrektheitsstand vom 30.09.2026.
+
 ## Reproduzierte Fälle
 
 - `9♠ 6♠ 2♣` mit `T♥ 8♣ 7♦ K♥`: 13 physische Karten

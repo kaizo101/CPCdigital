@@ -97,33 +97,34 @@ gequetschte Tischgeometrie bleibt für v0.9.1 dokumentiert.
 
 ### Wichtige Dateien
 
-| Datei | Zeilen | Verantwortung |
-|-------|--------|---------------|
-| `session/LocalGameRunner.ts` | 980 | Game-Loop, Bot-Management, Event-Capture |
-| `session/bot-rebuy-manager.ts` | 243 | Rebuys, Replacements, Leave-on-Bust |
-| `session/hand-replay.ts` | 417 | Replay-Builder, Archiv, PokerStars-Formatierer |
-| `bot-action-scoring.ts` | 557 | Fold/Check/Call/Raise/All-In-Scoring |
-| `bot-action-modifiers.ts` | 306 | Persönlichkeit, Stack, Tilt-Modifier |
-| `bot-decision-metrics.ts` | 239 | SPR, Pot-Odds, Bet-Sizing |
-| `bot-params.ts` | 447 | Zentralisierte Tuning-Konstanten |
-| `bot-pipeline.ts` | 95 | Decision-Pipeline (Variant→Scoring→Auswahl) |
-| `nlhe-hand-evaluation.ts` | 752 | Hand-Kategorien, Draws, Vulnerability |
-| `omaha-hand-evaluation.ts` | 432 | PLO-Handbewertung, physische Draw-Outs |
-| `bot-identities.ts` | 252 | Identity-Generator, Rebuy-Policies |
-| `bot-habits.ts` | 271 | 12 Habits mit archetyp-spezifischen Präferenzen |
-| `poker-engine/src/game.ts` | 1059 | Engine: State Machine, Betting, Showdown |
+| Datei | Verantwortung |
+|-------|---------------|
+| `session/LocalGameRunner.ts` | Game-Loop, Bot-Management, Event-Capture |
+| `session/bot-rebuy-manager.ts` | Rebuys, Replacements, Leave-on-Bust |
+| `session/hand-replay.ts` | Replay-Builder, Archiv, lesbarer Hand-History-Textexport |
+| `bot-action-scoring.ts` | Fold/Check/Call/Raise/All-In-Scoring |
+| `bot-action-modifiers.ts` | Persönlichkeit, Stack, Tilt-Modifier |
+| `bot-decision-metrics.ts` | SPR, Pot-Odds, Bet-Sizing |
+| `bot-params.ts` | Zentralisierte Tuning-Konstanten |
+| `bot-pipeline.ts` | Decision-Pipeline (Variant→Scoring→Auswahl) |
+| `nlhe-hand-evaluation.ts` | Hand-Kategorien, Draws, Vulnerability |
+| `omaha-hand-evaluation.ts` | PLO-Handbewertung, physische Draw-Outs |
+| `bot-identities.ts` | Identity-Generator, Rebuy-Policies |
+| `bot-habits.ts` | Archetypspezifische Verhaltenspräferenzen |
+| `poker-engine/src/game.ts` | Engine: State Machine, Betting, Showdown |
 
 ### Entscheidungs-Flow (Bot)
 
 ```
 1. PokerEngine → getPlayerView(botId) → BotGameView
 2. BotGameView + HandHistory → BotContext
-3. BotContext → VariantEvaluator.evaluate() → HandAssessment
-4. HandAssessment + Context → scoreFold/Check/Call/Raise/AllIn
-5. ScoredAction[] → weightedSelection() → chosen action
+3. BotContext → VariantEvaluator.evaluate() → objektive VariantEvaluation
+4. Entscheidungs-Kontext → applySkillPerception() → wahrgenommener Kontext
+5. Wahrgenommener Kontext → Scoring + Persönlichkeits-Modifier
+6. ScoredAction[] → gewichtete Kandidatenauswahl → Aktion
 ```
 
-Jede der 5 Scoring-Funktionen durchläuft ~15 Modifier:
+Scoring und nachgelagerte Modifier kombinieren unter anderem:
 ```
 Base(Hand-Kategorie) + Position + Board-Texture + Gegner-Reads
 + Stack-Tiefe + SPR + Preflop-Strategy + Street-Initiative
@@ -133,14 +134,34 @@ Base(Hand-Kategorie) + Position + Board-Texture + Gegner-Reads
 
 ### Eine neue Variante hinzufügen
 
-1. `bot-variant-registry.ts`: Variant registrieren
-2. Neue Datei `omaha-hand-evaluation.ts`: `VariantEvaluator` implementieren
-   - `evaluate(context)` → `VariantEvaluation { handAssessment, boardTexture }`
-   - `handAssessment.category` + `relativeStrength` + `vulnerability` + `drawTypes`
-3. Variant-spezifische Phasen in `poker-engine/src/game-variant.ts` definieren
-4. UI: Setup-Screen um Variantenauswahl erweitern
+Die vorhandenen Varianten sind NLHE und PLO; `omaha-hand-evaluation.ts` ist
+bereits die PLO-Implementierung, keine Vorlage für eine neu anzulegende Datei.
+Eine weitere Variante benötigt mindestens die folgenden abgestimmten Schritte:
 
-Der Bot-Stack (Scoring, Habits, Mental State, Reads) arbeitet auf dem generischen `VariantHandAssessment`-Interface — keine Änderungen nötig.
+1. Engine-Regeln als `GameVariant` unter `packages/poker-engine/src/variants/`
+   definieren und über `packages/poker-engine/src/index.ts` exportieren. Die
+   Phasentypen stehen in `game-variant.ts`; Showdown-Ranking und Kartennutzung
+   in `hand-evaluator.ts` müssen für die neuen Regeln explizit geprüft werden.
+2. Einen variantenspezifischen `VariantEvaluator` im Client implementieren und
+   in `bot-variant-registry.ts` registrieren. `evaluate(context)` liefert eine
+   vollständige `VariantEvaluation`, einschließlich `handAssessment`,
+   `boardTexture` und `categoryScores` (optional `preferredRaiseTo`).
+3. Die Variantenauswahl in `session/LocalGameRunner.ts` und `screens/SetupScreen.tsx`
+   erweitern. Der Runner ordnet zurzeit nur `omaha-high` ausdrücklich zu und
+   fällt für andere IDs auf NLHE zurück; bloßes Registrieren des Evaluators
+   reicht also nicht. Replay-/Hand-History-Bezeichnungen in
+   `session/hand-replay.ts` und betroffene UI-Kartendarstellung mitprüfen.
+4. Engine-, Bot-, Session- und Replay-Tests für die Variante ergänzen.
+   Kalibrierungsprofile und Zielkorridore sind derzeit auf NLHE/PLO begrenzt;
+   eine neue Variante braucht einen eigenen, begründeten Prüfplan statt einer
+   stillen Aufnahme in den bestehenden 24-Kombinationen-Report.
+
+Die gemeinsame Bot-Pipeline nutzt `VariantHandAssessment`, aber
+variantenspezifische Scoring-Annahmen und Skill-Wahrnehmung müssen fachlich
+geprüft werden; unverändertes Verhalten ist nicht automatisch korrekt. Die
+Engine führt aktuell nur Community-Card-Varianten mit zwei oder vier Hole-Cards
+aus. Draw-Phasen sind im Typmodell reserviert, im `PokerGame` aber noch nicht
+implementiert; Draw-/Stud-Spiele erfordern deshalb mehr als neue Konfiguration.
 
 ### Ruhenden Server-Prototyp lokal starten
 
@@ -179,8 +200,9 @@ die Release-Stufe mit 10.000 Händen pro Format × 3 Formate × 4 Archetypen.
 Für PLO wird `CALIB_VARIANT=omaha-high` gesetzt. Seeds und Handzahl müssen bei
 A/B-Vergleichen identisch bleiben. `CALIB_DETAIL=1` ergänzt Rohnenner und die
 AF-Aufschlüsselung. `CALIB_PROFILE` und `CALIB_FORMAT` begrenzen gezielte
-Entwicklungsläufe. `CALIB_NO_EXIT=1` ist für vollständige Diagnoseberichte
-geeignet; ein Release-Gate darf Fehlschläge nicht damit ausblenden.
+Entwicklungsläufe. Korridor-Ausreißer werden berichtet, führen aber allein
+nicht mehr zu einem Exit-Code ungleich null. Strukturelle Verstöße bleiben
+auch bei einem Diagnose-Lauf blockierend; `CALIB_NO_EXIT` ist obsolet.
 
 Die Ergebnisse werden in `calibration/` versioniert abgelegt. Die
 formatisolierte Ausgangsbasis ist im [v0.8.0-Bericht](calibration/v0.8.0.md)
@@ -189,9 +211,15 @@ dokumentiert.
 Der veröffentlichte 0.8.1-Stand ist im
 [Release-Gate-Report](calibration/v0.8.1-release-gate.md) festgehalten. Tests,
 Build, Responsive-Smoke, Layer-2-Regression, strukturelle Invarianten und alle
-unveränderten Zielranges sind grün. Der versionierte 300-Hand-Snapshot gehört
-zu genau diesem Release und darf erst nach einer bewusst freigegebenen
-Verhaltensänderung erneut erzeugt werden.
+unveränderten Zielranges sind grün. Der damalige 300-Hand-Snapshot bleibt als
+historische Referenz erhalten. Die aktuell verwendete Regression referenziert
+den späteren [0.8.2-Foundation-Snapshot](calibration/v0.8.2-foundation-300-hand.json).
+
+Für neue Releases sind vollständige, versionierte Rohberichte Pflicht.
+Null-Nenner erscheinen als `n/a`; Ausreißer werden nach Größe, Wiederholbarkeit
+und Spielwirkung triagiert. Eine explizit begründete Akzeptanz ist möglich,
+ein struktureller Verstoß nicht. Details stehen in
+[calibration/README.md](calibration/README.md).
 
 Turn C-Bet bezeichnet seit Metrikschema v2 ausschließlich ein echtes Double
 Barrel: derselbe Spieler war Preflop-Aggressor und Flop-C-Bettor und eröffnet
@@ -200,11 +228,21 @@ nicht als Turn C-Bet.
 
 `npm run test:calibration` führt den deterministischen Layer-2-Smoke für alle
 24 Varianten-/Archetyp-/Formatkombinationen aus. Er vergleicht 300 Hände pro
-Kombination mit dem versionierten v0.8.1-Snapshot und läuft auch in der CI.
+Kombination mit dem versionierten 0.8.2-Foundation-Snapshot und läuft auch in der CI.
 Raten warnen bei mehr als 2 Prozentpunkten Drift und schlagen oberhalb von 5
 Prozentpunkten fehl; AF verwendet absolute Grenzen von 0,2 und 0,5.
 `npm run calibrate:baseline` aktualisiert die Referenz nur nach einer bewusst
 freigegebenen Verhaltensänderung.
+
+Für das botrelevante Release-Gate erzeugt
+`npm run calibrate:release -- --output calibration/evidence/<eindeutiger-name>.json`
+einen maschinenprüfbaren Rohbericht. Er prüft alle 24 Kombinationen auf
+Vollständigkeit und bestätigt Ausreißer sowie Metriken mit weniger als 50
+Gelegenheiten mit einem unabhängigen Seed. `--hands N` dient kurzen
+Entwicklungsläufen; der Standard sind 10.000 Hände pro Kombination. Mit
+`npm run calibrate:release -- --validate <pfad>` lässt sich ein Bericht erneut
+prüfen. Die Auswahlregel und Freigabe-Triage stehen in
+[calibration/README.md](calibration/README.md).
 
 Für faire A/B-Vergleiche besitzen einzelne Kalibrierungshände eigene Deck- und
 Entscheidungs-Seeds sowie einen explizit aus der Handnummer rotierten Dealer.
@@ -229,7 +267,7 @@ Ritual, sondern eine gezielte Bestätigung, wenn 10k keine klare Entscheidung er
 Beispiel für einen PLO-Smoke-Lauf:
 
 ```bash
-CALIB_VARIANT=omaha-high CALIB_HANDS=300 CALIB_NO_EXIT=1 npm run calibrate:bots
+CALIB_VARIANT=omaha-high CALIB_HANDS=300 npm run calibrate:bots
 ```
 
 ## Parameter-System
@@ -247,25 +285,14 @@ Der Auto-Kalibrierer (`scripts/calibrate.ts`) variiert nur die Archetype-Means. 
 
 ## Bot-Architektur
 
-```text
-DecisionContext → VariantEvaluation → HandAssessment
-                              → bet-scoring
-                              → bet-modifiers
-                              → preflop-strategy
-                              → street-initiative
-                              → range-estimation
-                              → habits
-                              → mental-state
-                              → reads
-                              → line-planning
-         → DecisionMetrics
-         → LegalActions
-         → Position
-
-ScoredAction[] → weighted selection → chosen action
-```
-
-Jeder Bot durchläuft pro Entscheidung ~15 Modifier-Funktionen, die additive Beiträge zum Utility-Score liefern. Die Aktion mit dem höchsten Score wird gewählt (gewichtete Zufallsauswahl unter plausiblen Alternativen).
+Der oben skizzierte Flow ist bewusst verkürzt: Variantenbewertung und weitere
+Analyse liefern den objektiven Entscheidungskontext. `bot-pipeline.ts` wendet
+darauf zuerst `applySkillPerception()` an, bewertet anschließend die legalen
+Aktionen und ihre Persönlichkeits-Modifier und wählt unter positiven,
+zulässigen Kandidaten mit mindestens 85 % des besten Utility-Scores gewichtet
+zufällig aus. Nur wenn kein positiver Kandidat vorliegt, greift der Fallback.
+Eine vollständige, beispielgestützte Beschreibung der Informationsgrenzen
+folgt mit der [0.8.3-Modultrennung](docs/plans/refactoring-v0.8.3.md).
 
 ## Tests
 
@@ -289,10 +316,10 @@ nicht der für 0.9.0 geplanten TableGeometry-SSOT vor.
 ### Externe Tests
 
 Externe Tests folgen der
-[Test- und Distributionsstrategie](TESTING_STRATEGY.md). Pokerrealismus,
+[Test- und Distributionsstrategie](testing/TESTING_STRATEGY.md). Pokerrealismus,
 Bedienbarkeit für Neulinge und technische Betatests sind getrennte
 Testaufträge mit jeweils eigenem Bogen aus
-[TESTER_FORMS.md](TESTER_FORMS.md). Sie ergänzen automatisierte Tests und
+[TESTER_FORMS.md](testing/TESTER_FORMS.md). Sie ergänzen automatisierte Tests und
 Kalibrierungen, ersetzen deren Release-Gates aber nicht.
 
 ## Debug-Modus
@@ -335,7 +362,8 @@ weniger als 4 MB. Die Datei enthält private Karten und ist daher nicht zum
 
 Der Exportknopf in den Sessionstatistiken öffnet eine Auswahl:
 
-- PokerStars-Handhistory (`.txt`) für kompaktes Lesen und Teilen
+- Hand-History im eigenen Textformat (`.txt`) für kompaktes Lesen und Teilen;
+  eine Kompatibilität mit externen Replayern wird nicht zugesagt
 - kompakte vollständige Debug-Session (`.jsonl`) für reproduzierbare Ursachenanalyse
 
 ## Bug-Reproduktion
