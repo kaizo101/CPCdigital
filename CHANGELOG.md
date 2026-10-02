@@ -63,7 +63,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   mögliche Full Houses und Flushes beim Nut-Potenzial. Der SPR-Commit-Bonus
   setzt für `good`-Hände jetzt tatsächlich starkes Nut-Potenzial voraus,
   ohne Low-Skill-Fehleinschätzungen künstlich zu entfernen. Der
-  [Session-Nachtrag](docs/reviews/plo-postflop-session-2026-10-01.md)
+  [Session-Nachtrag](docs/de/reviews/plo-postflop-session-2026-10-01.md)
   dokumentiert die Hände #10/#24/#26, Regressionstests und die bewusst
   geprüfte 0.8.2-Entwicklungsbaseline; Zielkorridore bleiben unverändert.
 - **PLO-Sessionfolgefix:** Gute Made Hands werden beim Betten als Value statt
@@ -73,7 +73,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   Bei gekappter
   Betsize bleibt für eine erkannte River-Straight auf sicherem Board eine
   kleinere Value-Bet als Alternative zum Check/All-in erhalten. Der
-  [Session-Nachtrag](docs/reviews/plo-postflop-session-2026-10-01.md)
+  [Session-Nachtrag](docs/de/reviews/plo-postflop-session-2026-10-01.md)
   hält auch den noch offenen 300-Hand-Kalibrierungsdrift fest.
 - **Vite-Konfiguration**: Der Import der Paketversion verwendet ein
   JSON-Importattribut und bleibt damit auch mit der künftig nativen
@@ -162,23 +162,23 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   Flush ermöglichen, zählen ohne eigene stärkere Hand nicht mehr als
   saubere Outs; teilweise dominierte Wraps heißen nicht länger
   `nut-wrap`. Bereits gemachte Flushes sammeln keine schwächeren
-  Straight-Outs. [Konkrete Hände und Grenzen](docs/reviews/plo-wrap-outs-review-2026-09-30.md)
+  Straight-Outs. [Konkrete Hände und Grenzen](docs/de/reviews/plo-wrap-outs-review-2026-09-30.md)
   sind dokumentiert.
 - **PLO-Draw-Outs hinter Full House/Vierling**: Schwächere Straight- und
   Flush-Treffer werden nicht mehr als saubere Verbesserungen oder
   Semi-Bluff-Draws angezeigt. Echte Nut-Straight-Flush-Redraws bleiben als
-  Clean Outs erhalten; [Reproduktionen und Oracle-Checks](docs/reviews/plo-made-hand-redraw-review-2026-09-30.md)
+  Clean Outs erhalten; [Reproduktionen und Oracle-Checks](docs/de/reviews/plo-made-hand-redraw-review-2026-09-30.md)
   dokumentieren die Abgrenzung.
 - **PLO-Straight-Flush-Nuts**: Die höchste gegnerisch mögliche Straight
   Flush wird jetzt aus genau drei Boardkarten und zwei ungesehenen Karten
   ermittelt. Eigene Blocker verhindern falsch-positive höhere Kombinationen;
-  ein [reproduzierter Q-high-Nuts-Fall](docs/reviews/plo-straight-flush-nut-review-2026-09-29.md)
+  ein [reproduzierter Q-high-Nuts-Fall](docs/de/reviews/plo-straight-flush-nut-review-2026-09-29.md)
   ist regressionsgetestet.
 - **PLO-Vierlings-Nut-Potential**: Höhere Vierlinge werden nur bei passender
   Boardstruktur und verfügbaren Karten als gegnerische Möglichkeit gewertet.
   Ein tatsächlich möglicher Straight Flush verhindert die Einstufung als
   absolute Nuts; eigene Karten können diese Möglichkeit blockieren. Vier
-  reproduzierbare Fälle sind im [PLO-Nachtrag](docs/reviews/plo-quads-nut-review-2026-09-29.md)
+  reproduzierbare Fälle sind im [PLO-Nachtrag](docs/de/reviews/plo-quads-nut-review-2026-09-29.md)
   beschrieben.
 - **Offline-Engine-Korrektheit**: Ungecallte Einsätze werden vor einem
   Uncontested-Pot-Award zurückgegeben; verwaiste Side-Pot-Layer werden nach
@@ -187,7 +187,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
   Tische werden vor Zustandsänderungen abgewiesen. Physische Sitzfolge und
   Dealer-Anker bleiben bei Sitzwechseln stabil. Der lokale Runner verbucht
   ein verschachtelt erreichtes Handende nur einmal. Reproduktionen und
-  Grenzen stehen im [Offline-Kern-Nachtrag](docs/reviews/offline-core-review-2026-09-29.md).
+  Grenzen stehen im [Offline-Kern-Nachtrag](docs/de/reviews/offline-core-review-2026-09-29.md).
 - **NLHE-Flushdraw-Provenienz**: Vier gleichfarbige Boardkarten erzeugen ohne
   eigene Karte dieser Farbe keinen persönlichen Flushdraw mehr. Echte Draws
   zählen nur unbekannte Karten als Outs und unterscheiden Nut- von Non-Nut-
@@ -360,7 +360,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 - **Code-Review**: Systematische Prüfung von 30 Modulen (Engine, Game-Loop,
   Scoring, Modifier, Support, Habits, Identities, Replay, Rebuy, NLHE/PLO-Handbewertung).
-  22 Bugs gefunden und behoben, 19 Module als bugfrei bestätigt ([historischer Review](docs/reviews/review-2026-08-07.md)).
+  22 Bugs gefunden und behoben, 19 Module als bugfrei bestätigt ([historischer Review](docs/de/reviews/review-2026-08-07.md)).
 - **PLO-Nut-Erkennung verfeinert**: `'second-nuts'`-Stufe zwischen `'near-nuts'`
   und `'strong'` für granulare PLO-Bewertung (Quads-K-vs-A, FH-KKKAA-vs-AAA,
   K-high-Flush-vs-A-high, Straight-Gap). Eigener Scoring-Parameter
@@ -403,7 +403,7 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 - **`marginal`-Doppelstrafe**: Reraise-Penalties trafen `marginal` doppelt (−30) vs. `weak` (−18).
 - **`findStraightDraw` (NLHE)**: A-high-Wrap (J,Q,K,A) als OESD (8 Outs) statt Gutshot (4 Outs) klassifiziert.
 - **`calculateCleanOuts`**: JSDoc-Kommentar fehlplatziert im Funktionskörper, Klammern-Einrückung gebrochen.
-- Alle weiteren Bugs aus dem [historischen Code-Review](docs/reviews/review-2026-08-07.md).
+- Alle weiteren Bugs aus dem [historischen Code-Review](docs/de/reviews/review-2026-08-07.md).
 
 ## [0.7.9] — 2026-08-04
 

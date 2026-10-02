@@ -1,8 +1,10 @@
 # Historisches Architektur-Zielbild
 
+> Englische Fassung: [Historical Architecture Target State](../../en/plans/architecture-target-state.md)
+
 Dieser ältere Strukturentwurf ist keine Beschreibung des aktuellen Dateibaums.
-Für den Ist-Zustand gilt die [Entwicklerdokumentation](../../DEV.md); für die
-Priorisierung die [Roadmap](../../ROADMAP.md).
+Für den Ist-Zustand gilt die [Entwicklerdokumentation](../../../DEV.md); für die
+Priorisierung die [Roadmap](../../../ROADMAP.md).
 
 ---
 

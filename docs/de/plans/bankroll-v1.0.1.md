@@ -1,7 +1,7 @@
 # Bankroll-System — Konzept für 1.0.1
 
 Die Werte und Regeln in diesem Dokument sind vorläufige Designannahmen.
-Die [Roadmap](../../ROADMAP.md) bestimmt die aktuelle Priorisierung.
+Die [Roadmap](../../../ROADMAP.md) bestimmt die aktuelle Priorisierung.
 
 ### Konzept
 

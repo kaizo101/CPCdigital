@@ -292,7 +292,7 @@ Aktionen und ihre Persönlichkeits-Modifier und wählt unter positiven,
 zulässigen Kandidaten mit mindestens 85 % des besten Utility-Scores gewichtet
 zufällig aus. Nur wenn kein positiver Kandidat vorliegt, greift der Fallback.
 Eine vollständige, beispielgestützte Beschreibung der Informationsgrenzen
-folgt mit der [0.8.3-Modultrennung](docs/plans/refactoring-v0.8.3.md).
+folgt mit der [0.8.3-Modultrennung](docs/de/plans/refactoring-v0.8.3.md).
 
 ## Tests
 

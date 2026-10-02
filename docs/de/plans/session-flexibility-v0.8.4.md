@@ -3,7 +3,7 @@
 Status: Planungsstand unter der bisherigen Versionsnummer; Neuzuschnitt offen.
 
 Dieses Dokument konkretisiert den Funktionsumfang der in der
-[Roadmap](../../ROADMAP.md) zusammengefassten Version 0.8.4.
+[Roadmap](../../../ROADMAP.md) zusammengefassten Version 0.8.4.
 
 ## Session-Setup
 

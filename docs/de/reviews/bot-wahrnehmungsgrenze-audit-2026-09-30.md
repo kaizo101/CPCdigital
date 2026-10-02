@@ -1,5 +1,7 @@
 # Audit: Wahrnehmungsgrenze der Botentscheidung
 
+> Englische Fassung: [Audit: Perception Limit of the Bot Decision](../../en/reviews/bot-perception-limit-audit-2026-09-30.md)
+
 Status: Diagnose vom 30.09.2026; Befunde gegen aktuellen Code prüfen.
 
 Stand: 30.09.2026 · Wahrnehmungsgrenze korrigiert, Regression geprüft

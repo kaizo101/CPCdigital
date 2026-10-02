@@ -1,5 +1,7 @@
 # Literatur und Evidenz für Botverhalten
 
+> Englische Fassung: [Literature and Evidence for Bot Behaviour](../../en/concepts/literature-and-evidence.md)
+
 Stand: 01.10.2026 · **Arbeitsregister; begrenzter PLO4-Preflop-Pilot, keine kalibrierte Strategie- oder Zielwertfreigabe**
 
 Dieses Register macht nachvollziehbar, welche externen Arbeiten eine

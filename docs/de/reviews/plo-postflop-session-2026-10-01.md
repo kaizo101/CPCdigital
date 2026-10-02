@@ -229,3 +229,48 @@ bleibt als separates Muster zur späteren Ursachenanalyse dokumentiert.
 Weder ein globaler Callbonus noch eine Korridor-/Baseline-Änderung wird
 aus diesen Aggregaten abgeleitet. Eine weitere manuelle Pflichtsession
 folgt daraus nicht automatisch.
+
+### Release-Preflight: Turn-C-Bet-Zusammensetzung (02.10.2026)
+
+Ein erneuter deterministischer 3.000-Hand-Lauf mit demselben unabhängigen
+Seed auf Checkpoint `701ac2f` plus rein diagnostischer Simulator-Ausgabe
+bestätigt unverändert **47/270 = 17,4 %**
+Turn-C-Bets und null strukturelle Verstöße. Eine rein diagnostische
+Aufschlüsselung der **tatsächlichen Turn-C-Bet-Gelegenheiten** nach objektiver
+Handkategorie ergibt:
+
+| Kategorie | Bets / Gelegenheiten |
+| --- | ---: |
+| Air | 0/2 |
+| Weak | 0/51 |
+| Marginal | 0/69 |
+| Medium | 5/35 |
+| Good | 19/89 |
+| Strong | 20/21 |
+| Premium | 3/3 |
+
+Fast die Hälfte der Gelegenheiten (122/270) entfällt auf Air/Weak/Marginal,
+wo das Auslassen des zweiten Barrels gut zum Calling-Station-Archetyp passt.
+Strong/Premium betten fast immer. Die verbleibende Frage betrifft Medium und
+Good: Der bestehende PLO-6-max-Turn-Barrel-Faktor der Calling Station beträgt
+pauschal `−15` für Nicht-Air und begünstigt dadurch den Check. `Good` ist
+in PLO aber keine Aussage über aktuelle Nuts oder sichere Value-Bets.
+
+Zwölf gezielt ausgegebene Check-Entscheidungen aus den ersten 1.000 Händen
+des identischen Seeds zeigen beides: Vorsicht auf gefährlichen Boards und
+potenziell verpassten Value. Beispielsweise checkt ein Skill-45-Bot in
+Hand #162 auf `J♣ 5♣ 7♣ 4♥` mit `A♣ A♦ 8♣ 5♠` einen Ass-hohen Flush
+(`good`, objektiv `near-nuts`); die Wahrnehmung stuft das Nut-Potenzial auf
+`medium` zurück. Check liegt bei 53, Bet bei 43,4 Utility; darin stecken
+`−11` Turn-Barrel- und rund `−19` Passivitätsbeitrag zur Bet. In Hand #217
+checkt ein Skill-35-Bot auf `2♠ 6♠ A♥ 9♣` mit `A♠ A♣ 6♣ 3♠` ein Set Asse
+mit Nut-Flush-Draw (Check 42, Bet 21,1). Das sind reproduzierbare
+Entscheidungsbeispiele, **kein** Beweis, dass jede Good-Hand betten sollte.
+
+Der niedrige Aggregatwert ist damit weder ein Pot-/Metrikfehler noch bloß
+ein 300-Hand-Zufall. Zugleich gibt es eine konkrete Value-Frage, die vor
+einer Release-Entscheidung bewusst eingeordnet werden muss: Wie viel
+Nut-Erkennung und Value-Initiative soll eine schwache Calling Station trotz
+ihrer Passivität behalten? Bis dahin bleiben der Korridor und der
+Turn-Score unverändert; die gezielte Turn-Kategorieausgabe ist mit
+`CALIB_TRACE=1` im Simulator verfügbar.

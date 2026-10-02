@@ -1,5 +1,7 @@
 # Audit: PLO4-Preflop-Handabstraktion
 
+> Englische Fassung: [Audit: PLO4 Preflop Hand Abstraction](../../en/reviews/plo-preflop-abstraction-audit-2026-10-01.md)
+
 Stand: 01.10.2026 · **Baseline-Audit und begrenzter PLO4-Preflop-Pilot; keine Freigabe als kalibrierte Strategie**
 
 Die Kalibrierungszahlen unten gehören zum jeweiligen Pilotstand. Nach den
@@ -97,7 +99,7 @@ Nut- und Domination-Risiko hängen vom Kontext ab.
 Nach dem Tabellenabgleich läuft nun ein reproduzierbarer Vergleich durch
 `createBotContext()` → Variantenbewertung → `decideBotDecision()` mit
 Skill-Wahrnehmung, allen Aktionsscores, Persönlichkeitsmodifikatoren,
-gewichteter Auswahl und Legalisierung. Das [Diagnoseskript](../../scripts/plo-preflop-contrast.ts)
+gewichteter Auswahl und Legalisierung. Das [Diagnoseskript](../../../scripts/plo-preflop-contrast.ts)
 verwendet von `PokerGame` erzeugte **legale PLO4-Preflop-Zustände** mit
 öffentlicher Aktionsgeschichte. Nur die vier *eigenen* Karten werden als
 kontrollierte Gegenfaktoren ersetzt; die versteckten Gegnerkarten werden

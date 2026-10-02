@@ -66,7 +66,7 @@ was für die nächste Freigabe tatsächlich noch fehlt.
 ## Rückblick bis 0.8.1
 
 Die abgeschlossenen Meilensteine von 0.1.0 bis 0.8.1 stehen im
-[Roadmap-Archiv](docs/plans/roadmap-archiv-bis-0.8.1.md). Maßgeblich für
+[Roadmap-Archiv](docs/de/plans/roadmap-archiv-bis-0.8.1.md). Maßgeblich für
 veröffentlichte Änderungen bleibt der [Changelog](CHANGELOG.md);
 Kalibrierungs-Rohwerte und Freigabeberichte liegen unter
 [calibration/](calibration/README.md).
@@ -102,7 +102,7 @@ dem Release separat bereinigt. Das Release-Gate bleibt verbindlich.
 Details stehen im [Changelog](CHANGELOG.md) und im
 [0.8.2-Sessiondiagnosebericht](calibration/v0.8.2-session-diagnostics-2026-08-12.md).
 Der nachträgliche Offline-Engine-Korrektheitsblock ist im
-[Review-Nachtrag vom 29.09.2026](docs/reviews/offline-core-review-2026-09-29.md)
+[Review-Nachtrag vom 29.09.2026](docs/de/reviews/offline-core-review-2026-09-29.md)
 getrennt dokumentiert; der Server bleibt ausgeklammert.
 
 #### Umgesetzter Funktionsschnitt und nachgelagerte Dynamik
@@ -131,7 +131,7 @@ getrennt dokumentiert; der Server bleibt ausgeklammert.
   zu Solver-Bots zu glätten.
 - [ ] Öffentlich gezeigte Showdownkarten nur als skill-, stichproben- und
   variantenabhängige Evidenz für spätere Gegner-Reads verwenden; niedriger
-  Skill darf sie ignorieren (siehe [Informationsfluss-Audit](docs/reviews/gegner-reads-informationsfluss-audit-2026-09-30.md)).
+  Skill darf sie ignorieren (siehe [Informationsfluss-Audit](docs/de/reviews/gegner-reads-informationsfluss-audit-2026-09-30.md)).
 - [ ] `generalSkill` und deterministisch korrelierte
   `variantProficiency` als Grundlage für spätere Variantenfamilien
   vorbereiten.
@@ -142,7 +142,7 @@ getrennt dokumentiert; der Server bleibt ausgeklammert.
   Hysterese/Decay zuverlässig zur archetypischen Grundlinie zurückführen.
 
 Das fachliche Zielbild und die Reihenfolge sind ausführlich unter
-[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/concepts/bot-dynamics-roster-and-notes.md)
+[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/de/concepts/bot-dynamics-roster-and-notes.md)
 dokumentiert.
 
 #### Release-Gate für den 0.8.2-Cut
@@ -157,7 +157,7 @@ dokumentiert.
   Turn-C-Bet-Änderung. Vor dem Release die betroffenen Handlinien und ihre
   Spielwirkung prüfen; weder global nachjustieren noch allein wegen der
   nicht bindenden Zielkorridore blockieren
-  ([Diagnose und Gegenlauf](docs/reviews/plo-postflop-session-2026-10-01.md)).
+  ([Diagnose und Gegenlauf](docs/de/reviews/plo-postflop-session-2026-10-01.md)).
 - [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up mit
   strukturellen Invarianten und dokumentierten Rohzählern; kurze Web-,
   Electron- und Android-Smokes auf dem Release-Kandidaten.
@@ -198,7 +198,7 @@ großen UI-Release abschließen.
   die Betrags-/Zustandskonventionen der Engine für Beitragende dokumentieren.
 
 Die vorgesehenen Datei- und Schnittstellengrenzen sind im
-[0.8.3-Refactoring-Scope](docs/plans/refactoring-v0.8.3.md) festgehalten.
+[0.8.3-Refactoring-Scope](docs/de/plans/refactoring-v0.8.3.md) festgehalten.
 
 #### Integrationstests
 
@@ -219,7 +219,7 @@ Die vorgesehenen Datei- und Schnittstellengrenzen sind im
   Telemetrie, Obfuskation oder Laufzeit-Wasserzeichen.
 
 Abgrenzung und genaue Artefakte stehen ebenfalls im
-[0.8.3-Refactoring-Scope](docs/plans/refactoring-v0.8.3.md#public-readiness-und-herkunftsnachweis).
+[0.8.3-Refactoring-Scope](docs/de/plans/refactoring-v0.8.3.md#public-readiness-und-herkunftsnachweis).
 
 ---
 
@@ -264,9 +264,9 @@ Abgrenzung und genaue Artefakte stehen ebenfalls im
   oder deterministisches Replay.
 
 Der vollständige Funktionsumfang steht im
-[0.8.4-Scopedokument](docs/plans/session-flexibility-v0.8.4.md). Fortlaufende
+[0.8.4-Scopedokument](docs/de/plans/session-flexibility-v0.8.4.md). Fortlaufende
 Roster-, Wiederholungs- und Variantenregeln bleiben zentral unter
-[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/concepts/bot-dynamics-roster-and-notes.md)
+[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/de/concepts/bot-dynamics-roster-and-notes.md)
 dokumentiert.
 
 ---
@@ -421,7 +421,7 @@ Candidate, Packaging und breitere Kommunikation beginnen.
   Arbeitstitel prüfen und den endgültigen Projekt-/Produktnamen vor dem
   Release Candidate festlegen
 - [ ] Kandidat **CheckBack** anhand der dokumentierten Stärken, Kollisionen und
-  Verfügbarkeitsprüfungen bewerten ([Naming-Notizen](docs/concepts/product-naming.md))
+  Verfügbarkeitsprüfungen bewerten ([Naming-Notizen](docs/de/concepts/product-naming.md))
 - [ ] Auffindbarkeit, Verwechslungsrisiken, Repository-/Domain-Namen sowie
   technische Bezeichner wie Paket- und App-IDs vor einer Umbenennung gemeinsam
   bewerten
@@ -579,7 +579,7 @@ durch Guardrails verhindert.
   für Rebuys, Stakes und Sessionergebnis ergänzen.
 
 Vorläufige Beträge, Tabellen, offene Modellierungsfragen und die vollständige
-Aufgabenliste stehen im [Bankroll-Konzept](docs/plans/bankroll-v1.0.1.md).
+Aufgabenliste stehen im [Bankroll-Konzept](docs/de/plans/bankroll-v1.0.1.md).
 
 ---
 
@@ -617,7 +617,7 @@ endliche Sammlung dauerhaft gelöster Profile zu verwandeln.
 
 Das detaillierte Konzept einschließlich Rostergröße, Stake-Gewichten,
 Anti-Exploit-Grenzen und Akzeptanzkriterien steht in
-[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/concepts/bot-dynamics-roster-and-notes.md).
+[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/de/concepts/bot-dynamics-roster-and-notes.md).
 
 ---
 

@@ -3,7 +3,7 @@
 Status: Planungsstand unter der bisherigen Versionsnummer; Neuzuschnitt offen.
 
 Dieses Dokument konkretisiert den technischen Umfang der in der
-[Roadmap](../../ROADMAP.md) bewusst kompakt gehaltenen Version 0.8.3. Alle
+[Roadmap](../../../ROADMAP.md) bewusst kompakt gehaltenen Version 0.8.3. Alle
 Umbauten bleiben verhaltensneutral und werden in getrennten Commits
 durchgeführt.
 

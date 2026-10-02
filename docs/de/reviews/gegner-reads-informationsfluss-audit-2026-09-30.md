@@ -1,5 +1,7 @@
 # Audit: Informationsfluss der Gegner-Reads
 
+> Englische Fassung: [Audit: Information Flow of the Opponent Reads](../../en/reviews/opponent-reads-information-flow-audit-2026-09-30.md)
+
 Status: Diagnose vom 30.09.2026; Befunde gegen aktuellen Code prüfen.
 
 Stand: 30.09.2026 · **Audit mit anschließendem Datenhygiene-Fix; keine neue Botstrategie**

@@ -27,7 +27,7 @@ Alternativ: ComfyUI Manager installieren → `Install Missing Custom Nodes` klic
 
 ### 4. Workflow laden
 
-- In ComfyUI: **Workflow → Open** → [`avatar-workflow.json`](../../avatar-workflow.json) aus dem Projektverzeichnis auswählen
+- In ComfyUI: **Workflow → Open** → [`avatar-workflow.json`](../../../avatar-workflow.json) aus dem Projektverzeichnis auswählen
 - Oder einfach die JSON-Datei ins Browser-Fenster ziehen
 
 ## Nutzung

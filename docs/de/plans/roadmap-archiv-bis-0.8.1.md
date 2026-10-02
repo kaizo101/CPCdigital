@@ -1,8 +1,10 @@
 # Roadmap-Archiv bis 0.8.1
 
+> Englische Fassung: [Roadmap archive through 0.8.1](../../en/plans/roadmap-archive-through-0.8.1.md)
+
 Dieser Stand bewahrt abgeschlossene Meilensteine und damalige offene Punkte.
 Offene Checkboxen sind historisch und keine aktuellen Release-Blocker.
-Für den aktuellen Plan gilt die [Roadmap](../../ROADMAP.md).
+Für den aktuellen Plan gilt die [Roadmap](../../../ROADMAP.md).
 
 ## Phase 1 — Spielbares Fundament
 
@@ -453,7 +455,7 @@ Browser-Demo bleibt mobil bewusst auf einen funktionalen Fallback begrenzt.
   Zurück-Taste und Resume abschließen
 
 > Gerätelauf und Kontrollmatrix sind im
-> [APK-Gerätebericht vom 30.07.2026](../../testing/apk/2026-07-30-device-inventory.md)
+> [APK-Gerätebericht vom 30.07.2026](../../../testing/apk/2026-07-30-device-inventory.md)
 > festgehalten. Der Replayer besitzt inzwischen einen begrenzten
 > Landscape-Zwischenfix; seine gemeinsame mobile Tischgeometrie und das
 > vollständige Touch-Redesign bleiben bewusst Bestandteil von 0.9.1.
@@ -648,13 +650,13 @@ darauf aufbauen.
 - [x] Pot-Commitment, Fold-Schwellen und Multiway-Dynamik als strukturelle
   Ursachen statt über einzelne Zielzellen korrigiert.
 - [x] 19 randomisierte Engine-Invarianten für NLHE und PLO etabliert und ein
-  Review von 30 Modulen abgeschlossen ([historischer Review](../../docs/reviews/review-2026-08-07.md)).
+  Review von 30 Modulen abgeschlossen ([historischer Review](../reviews/review-2026-08-07.md)).
 - [x] Versionierte 10k-NLHE-/3k-PLO-Baselines für alle Archetypen und Formate
   erzeugt; die noch geplanten Regressionsebenen wurden in 0.8.1 umgesetzt.
 
 Die vollständige Begründung, Rohwerte, bekannte Abweichungen und
 Reproduktionsbefehle stehen im
-[0.8.0-Kalibrierungsbericht](../../calibration/v0.8.0.md).
+[0.8.0-Kalibrierungsbericht](../../../calibration/v0.8.0.md).
 
 #### Release-Status
 
@@ -673,7 +675,7 @@ vorübergehende Entscheidungspfade anzupassen.
 > WTSD-Diagnostik sind implementiert. Sämtliche technischen Gates sowie die
 > unveränderten NLHE-/PLO-Zielranges sind in den finalen 10k-/3k-Läufen grün.
 > Rohwerte und Invarianten stehen im
-> [Release-Gate-Report](../../calibration/v0.8.1-release-gate.md).
+> [Release-Gate-Report](../../../calibration/v0.8.1-release-gate.md).
 
 #### Umgesetzter Kernumfang
 
@@ -690,9 +692,9 @@ vorübergehende Entscheidungspfade anzupassen.
 - [x] Deterministische Kalibrierungsregression und Parameter-Validierung als
   zweite und dritte Testebene eingeführt.
 
-Die fachlichen Einzelregeln sind im [Changelog](../../CHANGELOG.md) beschrieben;
+Die fachlichen Einzelregeln sind im [Changelog](../../../CHANGELOG.md) beschrieben;
 Rohwerte, Grenztests und Freigabeentscheidung stehen im
-[0.8.1-Release-Gate-Report](../../calibration/v0.8.1-release-gate.md).
+[0.8.1-Release-Gate-Report](../../../calibration/v0.8.1-release-gate.md).
 
 #### Release-Status
 

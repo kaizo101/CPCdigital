@@ -88,7 +88,7 @@ sind.
 ## Herkunft und Status der Zielkorridore
 
 Forschungsarbeiten, Datengrundlagen und deren bisheriger Prüfstatus stehen im
-[Literatur- und Evidenzregister](../docs/concepts/literatur-und-evidenz.md). Dort
+[Literatur- und Evidenzregister](../docs/de/concepts/literatur-und-evidenz.md). Dort
 aufgeführte Arbeiten ändern für sich genommen keinen Zielkorridor.
 
 Die hinterlegten Zielkorridore (VPIP, PFR, 3-Bet, C-Bet, AF, WTSD etc.) sind
