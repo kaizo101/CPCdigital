@@ -1,140 +1,138 @@
 # CPCdigital
 
-CPCdigital ist eine primär für den Desktop entwickelte Offline-Poker-App:
-Singleplayer-Poker gegen glaubwürdige Bots, ohne Echtgeld, Konto oder Server.
-Die Desktop-App benötigt zum Spielen keine Internetverbindung; die öffentliche
-Browser-Demo muss zunächst online geladen werden.
+CPCdigital is an offline poker app primarily developed for the desktop:
+singleplayer poker against credible bots, without real money, account or
+server. The desktop app needs no internet connection to play; the public
+browser demo has to be loaded online first.
 
-Im Mittelpunkt steht menschlich wirkendes Casual-Poker statt vorgetäuschter
-Solver-Perfektion. Bots erhalten dabei nur Informationen, die auch ein realer
-Spieler kennen könnte.
+The focus is human-like casual poker rather than simulated solver perfection.
+Bots only receive information that a real player could know as well.
 
-Der letzte veröffentlichte Stand ist **v0.8.1**; das Repository befindet sich
-in der Entwicklung von **v0.8.2** (`0.8.2-dev`). `CPCdigital` ist weiterhin
-der interne Arbeitstitel; der endgültige Produktname wird vor dem Release
-Candidate festgelegt.
+The latest released state is **v0.8.1**; the repository is being developed
+towards **v0.8.2** (`0.8.2-dev`). `CPCdigital` is still the internal working
+title; the final product name will be decided before the release candidate.
 
 ## Highlights
 
-- **Zwei Varianten:** No-Limit Texas Hold'em und Pot-Limit Omaha High
-- **Flexible Tische:** Heads-up, 6-max und Full Ring mit einstellbaren Blinds,
-  Startstack und Anzeige in Euro oder Dollar
-- **Glaubwürdige Gegner:** TAG, Nit, LAG und Calling Station mit
-  unterschiedlichen Persönlichkeiten, Skills, Reads und Gewohnheiten
-- **Wiederkehrende Identitäten:** 44 Bots mit eigenem Verhalten; 40 besitzen
-  individuelle Porträts
-- **Nachvollziehbare Hände:** Hand-Replay, lokales Archiv,
-  lesbare Hand-History als Textdatei und kompakter Debug-Export
-- **Gemeinsame Regel-Engine:** Sie verwaltet Side Pots, Split Pots, All-ins,
-  Min-Raises und schrittweise Runouts
-- **Diagnose und Reproduktion:** Strukturierte Decision Records und ein
-  optionaler Debug Inspector; Session-Seeds sind für Tests und Simulationen
-  über die interne Schnittstelle verfügbar, nicht als Setup-Option
-- **Mehrere Entwicklungsplattformen:** Electron-Desktop-App, öffentliche
-  Browser-Demo und nativer Android-Debug-Prototyp
+- **Two variants:** No-Limit Texas Hold'em and Pot-Limit Omaha High
+- **Flexible tables:** Heads-up, 6-max and Full Ring with adjustable blinds,
+  starting stack and display in Euro or Dollar
+- **Credible opponents:** TAG, Nit, LAG and Calling Station with different
+  personalities, skills, reads and habits
+- **Recurring identities:** 44 bots with their own behaviour; 40 have
+  individual portraits
+- **Traceable hands:** hand replay, local archive, readable hand history as a
+  text file and a compact debug export
+- **Shared rules engine:** it handles side pots, split pots, all-ins, min-raises
+  and staged runouts
+- **Diagnostics and reproduction:** structured decision records and an optional
+  debug inspector; session seeds are available for tests and simulations via
+  the internal interface, not as a setup option
+- **Multiple development platforms:** Electron desktop app, public browser demo
+  and native Android debug prototype
 
-## Projektstatus
+## Project status
 
-CPCdigital befindet sich in aktiver Entwicklung. Der Schwerpunkt liegt derzeit
-auf Bot-Realismus, Kalibrierung und einer stabilen Offline-Spielerfahrung für
-NLHE und PLO. Maßgeblich für geplante Arbeiten ist die
-[Roadmap](ROADMAP.md); tatsächlich veröffentlichte Änderungen stehen im
-[Changelog](CHANGELOG.md).
+CPCdigital is under active development. The current focus is bot realism,
+calibration and a stable offline playing experience for NLHE and PLO. Planned
+work is governed by the [Roadmap](ROADMAP.md); changes that are actually
+released are listed in the [Changelog](CHANGELOG.md).
 
-Version 0.8.1 hat sämtliche technischen und unveränderten Kalibrierungsgates
-bestanden. Die finalen 10k-/3k-Rohwerte und Sicherheitsinvarianten stehen im
-[0.8.1-Kalibrierungsreport](calibration/v0.8.1-release-gate.md).
+Version 0.8.1 passed all technical and unchanged calibration gates. The final
+10k/3k raw values and security invariants are documented in the
+[0.8.1 release gate report](calibration/v0.8.1-release-gate.md).
 
-Die offizielle **[Browser-Demo](https://kaizo101.github.io/CPCdigital/)** wird
-direkt aus diesem öffentlichen Repository gebaut. Sie eignet sich zum schnellen
-Ausprobieren; Desktop bleibt die primäre Entwicklungsplattform.
+The official **[browser demo](https://kaizo101.github.io/CPCdigital/)** is built
+directly from this public repository. It is suitable for a quick try-out;
+desktop remains the primary development platform.
 
-### Bekannte Einschränkungen
+### Known limitations
 
-- Es gibt noch keine fertigen plattformspezifischen Installer oder
-  signierten Release-Pakete.
-- Bot-Balance und insbesondere komplexe PLO-/Heads-up-Postflop-Situationen
-  werden weiter kalibriert.
-- Die Hand-History ist ein eigenes Textformat; gängige externe Replayer
-  unterstützen den Import derzeit nicht.
-- Android ist ein unsignierter Landscape-Debug-Prototyp. Ein begrenzter
-  Zwischenfix hält den Hand-Replayer im kompakten Landscape lesbar; das
-  vollständige responsive Replay- und Touch-Redesign folgt weiterhin mit der
-  gemeinsamen Tischgeometrie.
-- Die mobile Browseransicht ist nur ein funktionaler Fallback; eine PWA und
-  vollständige mobile Feature-Parität sind nicht vorgesehen.
-- Persistente Sessionstatistiken, Tutorials, weitergehende Analysen und
-  zusätzliche Pokervarianten gehören noch nicht zum stabilen Funktionsumfang.
-- Der vorhandene Server ist ein ruhender Prototyp. Online-Multiplayer ist kein
-  Bestandteil der aktuellen Offline-App.
+- There are no finished platform-specific installers or signed release packages
+  yet.
+- Bot balance and in particular complex PLO/heads-up postflop situations are
+  still being calibrated.
+- The hand history is a custom text format; common external replayers do not
+  support importing it at the moment.
+- Android is an unsigned landscape debug prototype. A limited interim fix keeps
+  the hand replayer readable in the compact landscape layout; the full
+  responsive replay and touch redesign will still follow together with the
+  shared table geometry.
+- The mobile browser view is only a functional fallback; a PWA and full mobile
+  feature parity are not planned.
+- Persistent session statistics, tutorials, deeper analyses and additional
+  poker variants are not yet part of the stable feature set.
+- The existing server is a dormant prototype. Online multiplayer is not part of
+  the current offline app.
 
-Konkrete Fehler und technische Folgebefunde werden nicht dauerhaft in dieser
-Liste gepflegt, sondern in Roadmap, Changelog und den jeweiligen Testberichten
-dokumentiert.
+Concrete bugs and technical follow-up findings are not maintained in this list
+permanently, but are documented in the roadmap, the changelog and the
+respective test reports.
 
-## Lokale Entwicklung
+## Local development
 
-Vorausgesetzt werden [Node.js 24 LTS](.nvmrc), npm und für die Desktop-App eine
-grafische Umgebung mit Electron.
+[Node.js 24 LTS](.nvmrc), npm and, for the desktop app, a graphical environment
+with Electron are required.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Unter Linux kann die gebaute Offline-App alternativ über `./start.sh` gestartet
-werden.
+On Linux, the built offline app can alternatively be started via `./start.sh`.
 
-Der Android-Prototyp benötigt zusätzlich Android Studio und SDK 36. Der
-vollständige Workflow sowie Architektur-, Kalibrierungs- und Debug-Hinweise
-stehen in der [Entwicklerdokumentation](DEV.md).
+The Android prototype additionally requires Android Studio and SDK 36. The
+complete workflow as well as architecture, calibration and debugging notes are
+in the [developer documentation](DEV.md).
 
-## Tests und Build
+## Tests and build
 
 ```bash
-npm test             # alle Workspace-Tests
-npm run build        # alle Pakete bauen und den Client typprüfen
+npm test             # all workspace tests
+npm run build        # build all packages and type-check the client
 npm run test:responsive
 ```
 
-Der Responsive-Smoke setzt einen vorherigen Client-Build sowie Chrome oder
-Chromium voraus. Bot-Kalibrierungen sind wegen ihrer Laufzeit ein separates
-Release-Gate; Reproduktion und Baselines stehen im
-[Kalibrierungsverzeichnis](calibration/README.md).
+The responsive smoke test requires a previous client build as well as Chrome or
+Chromium. Bot calibrations are a separate release gate due to their runtime;
+reproduction and baselines are documented in the
+[calibration directory](calibration/README.md).
 
-## Dokumentation
+## Documentation
 
-- [Dokumentationsübersicht](docs/README.md) — Einstieg, Status und Ablage der
-  vertiefenden Dokumente
-- [Roadmap](ROADMAP.md) — Entwicklungsphasen und langfristige Vision
-- [Changelog](CHANGELOG.md) — veröffentlichte Änderungen je Version
-- [Entwicklerdokumentation](DEV.md) — Architektur, Android, Kalibrierung und
-  Debugging
-- [Kalibrierungsberichte](calibration/README.md) — reproduzierbare Bot-Baselines
-- [Test- und Distributionsstrategie](testing/TESTING_STRATEGY.md) — Teststufen,
-  Rollen und Release-Kommunikation
-- [Tester-Formulare](testing/TESTER_FORMS.md) — Vorlagen für Realismus-, Usability-,
-  UI- und Betatests
-- [Beitragsrichtlinien](CONTRIBUTING.md) — Beiträge, Rechte und Lizenzierung
-- [Sicherheitsrichtlinie](SECURITY.md) — unterstützte Stände und vertrauliche
-  Meldungen
+- [Documentation overview](docs/README.md) — entry point, status and storage of
+  the in-depth documents
+- [Roadmap](ROADMAP.md) — development phases and long-term vision
+- [Changelog](CHANGELOG.md) — released changes per version
+- [Developer documentation](DEV.md) — architecture, Android, calibration and
+  debugging
+- [Calibration reports](calibration/README.md) — reproducible bot baselines
+  (German)
+- [Testing and distribution strategy](testing/TESTING_STRATEGY.md) — test
+  levels, roles and release communication (German)
+- [Tester forms](testing/TESTER_FORMS.md) — templates for realism, usability,
+  UI and betting tests (German)
+- [Contribution guidelines](CONTRIBUTING.md) — contributions, rights and
+  licensing
+- [Security policy](SECURITY.md) — supported versions and confidential
+  reports
 
-## Lizenz
+## License
 
-CPCdigital steht unter der
+CPCdigital is licensed under the
 [GNU Affero General Public License Version 3](LICENSE) (`AGPL-3.0-only`).
 Copyright © 2026 Lukas Schäfer.
 
-Der Lizenzumfang umfasst den Quellcode und die für CPCdigital erstellten
-Projektassets einschließlich der mit ChatGPT erzeugten Avatarbilder.
-Abhängigkeiten und Material Dritter behalten ihre jeweiligen Lizenzen; Details
-stehen in [NOTICE.md](NOTICE.md).
+The licence scope covers the source code and the project assets created for
+CPCdigital, including the avatar images generated with ChatGPT. Dependencies
+and third-party material keep their respective licences; details are documented
+in [NOTICE.md](NOTICE.md).
 
-Wer eine veränderte Version verteilt oder über ein Netzwerk anbietet, muss die
-einschlägigen Bedingungen der AGPLv3 einschließlich der Bereitstellung des
-korrespondierenden Quellcodes erfüllen.
+Anyone who distributes a modified version or offers it over a network must
+comply with the applicable AGPLv3 conditions, including providing the
+corresponding source code.
 
-## Hinweis
+## Note
 
-CPCdigital ist ein Spiel- und Lernprojekt ohne Echtgeldfunktion. Der aktuelle
-Stand ist eine Entwicklungsversion und kein fertiges Produkt.
+CPCdigital is a game and learning project without real-money features. The
+current state is a development version and not a finished product.
