@@ -75,11 +75,14 @@ Kalibrierungs-Rohwerte und Freigabeberichte liegen unter
 
 ## Phase 4 — Stabilisierung & Release-Vorbereitung
 
-### 0.8.2 — Dynamische Gegner & Anti-Exploit
+### 0.8.2 — Bot-Foundation & Stabilisierung
 
-**Ziel:** Bots lernen aus Gegnerverhalten, passen sich dynamisch an und zeigen
-glaubwürdige emotionale Reaktionen — ohne in Solver-Bots oder berechenbare
-Muster zu verfallen.
+**Ziel des geplanten Zwischenrelease:** Die bereits umgesetzten Engine-,
+Wahrnehmungs-, Diagnose- und ersten Dynamikbausteine auf einem geprüften Stand
+abschließen. Seit dem Scope-Freeze vom 02.10.2026 kommen vor dem Release keine
+weiteren Bot-Features hinzu. Die offenen Dynamik- und Mental-Features unten
+sind **nicht** Voraussetzung für diesen Cut; ihre Versionszuordnung wird vor
+dem Release separat bereinigt. Das Release-Gate bleibt verbindlich.
 
 #### Abgeschlossene Foundation
 
@@ -102,7 +105,7 @@ Der nachträgliche Offline-Engine-Korrektheitsblock ist im
 [Review-Nachtrag vom 29.09.2026](docs/reviews/offline-core-review-2026-09-29.md)
 getrennt dokumentiert; der Server bleibt ausgeklammert.
 
-#### Verbleibender Releaseumfang
+#### Umgesetzter Funktionsschnitt und nachgelagerte Dynamik
 
 - [x] Tiefe 4-Bet-/5-Bet-Ketten nach tatsächlicher Aggressionsstufe absichern,
   damit generische Boni keine klare Fold-Präferenz strukturell überstimmen.
@@ -112,6 +115,17 @@ getrennt dokumentiert; der Server bleibt ausgeklammert.
 - [ ] Button-/Cutoff-Steals und Blind-Defense gegner-, positions-, stichproben-
   und konfidenzabhängig beobachten und beantworten; als nächstes
   Erfolg/Misserfolg und Gegenanpassung über mehrere Hände prüfen.
+- [x] Erster Flop→Turn-Linienschnitt: Gewählte Bluff-/Semi-Bluff-Bet statt
+  einer nachträglich erfundenen Absicht im Handgedächtnis halten; selektiv
+  fortsetzen oder mit Debuggrund abbrechen, ohne All-in-Anreiz.
+- [ ] Street-übergreifende Handlinien: Die tatsächlich gewählte Absicht
+  (Value, Protection, Semi-Bluff, Bluff, Pot-Control) für die laufende Hand
+  merken und am Turn/River anhand von Board, öffentlicher Gegnerreaktion und
+  Kosten fortsetzen, umplanen oder begründet aufgeben. NLHE/PLO getrennt
+  bewerten; kein automatisches Durchbarreln wegen bereits investierter Chips.
+  Weitere Mehr-Street-Tests und Debuggründe für Planwechsel ergänzen;
+  insbesondere Value-/Protection-/Pot-Control-Linien und River-Fortsetzung
+  sind noch offen.
 - [ ] Strategische Anpassung klar von emotionaler Überreaktion trennen;
   Skill steuert Erkennung, Qualität, Regulation und Erholung, ohne Archetypen
   zu Solver-Bots zu glätten.
@@ -131,15 +145,11 @@ Das fachliche Zielbild und die Reihenfolge sind ausführlich unter
 [Bot-Dynamik, Stake-Roster und Spielernotizen](docs/concepts/bot-dynamics-roster-and-notes.md)
 dokumentiert.
 
-#### Kalibrierungs-Gate
+#### Release-Gate für den 0.8.2-Cut
 
-- [ ] Szenario-, Sequenz- und Sessiontests trennen Betstufen, wiederholte
-  Steals, High-Skill-Defense, Low-Skill-Überreaktion und Rückkehr zur
-  Grundlinie; marginale Deep-Stack-Eskalationen bleiben ausgeschlossen.
-- [ ] Im Baseline-Modus werden Archetypen ohne adaptive Reads und Mental
-  Events gegen die Zielkorridore geprüft; Ausreißer werden mit Rohnennern
-  dokumentiert und nach Größe, Wiederholbarkeit und Spielwirkung triagiert,
-  nicht automatisch als Release-Fehler gewertet.
+- [ ] Die vier formalen Meldungen der 300-Hand-Foundation-Regression mit
+  Rohnennern und gezielten Gegenproben triagieren; den Snapshot nur nach
+  bewusster Review-Entscheidung aktualisieren, nicht still passend machen.
 - [ ] PLO Calling Station 6-max separat triagieren: Im unabhängigen
   3.000-Hand-Lauf liegen Fold-to-CBet bei 810/1909 (42,4 %) und
   Turn-C-Bet bei 47/270 (17,4 %). Der enge Fix für drawlose Multiway-Calls
@@ -148,9 +158,21 @@ dokumentiert.
   Spielwirkung prüfen; weder global nachjustieren noch allein wegen der
   nicht bindenden Zielkorridore blockieren
   ([Diagnose und Gegenlauf](docs/reviews/plo-postflop-session-2026-10-01.md)).
+- [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up mit
+  strukturellen Invarianten und dokumentierten Rohzählern; kurze Web-,
+  Electron- und Android-Smokes auf dem Release-Kandidaten.
+
+#### Nachgelagertes Dynamik-Gate (nicht Teil des 0.8.2-Cuts)
+
+- [ ] Szenario-, Sequenz- und Sessiontests trennen Betstufen, wiederholte
+  Steals, High-Skill-Defense, Low-Skill-Überreaktion und Rückkehr zur
+  Grundlinie; marginale Deep-Stack-Eskalationen bleiben ausgeschlossen.
+- [ ] Im Baseline-Modus werden Archetypen ohne adaptive Reads und Mental
+  Events gegen die Zielkorridore geprüft; Ausreißer werden mit Rohnennern
+  dokumentiert und nach Größe, Wiederholbarkeit und Spielwirkung triagiert,
+  nicht automatisch als Release-Fehler gewertet.
 - [ ] Im adaptiven Modus werden gerichtete, begrenzte Deltas statt statischer
   Einzelwerte geprüft.
-- [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up.
 
 ---
 

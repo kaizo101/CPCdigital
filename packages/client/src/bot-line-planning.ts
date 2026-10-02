@@ -1,6 +1,99 @@
 import type { DecisionContext, ScoredAction, ScoreContribution } from './bot-decision-types'
+import type { BotHandMemory } from './bot-types'
 import { params } from './bot-params'
+import { analysisSkillWeight } from './bot-skill-gates'
 import type { StreetAnalysis } from './bot-street-analysis'
+
+export interface FlopTurnLineReview {
+  intent: 'bluff' | 'semi-bluff'
+  status: 'continue' | 'replan' | 'abort' | 'unrecognized'
+  reason: string
+}
+
+/** Remember only an opening flop bet actually selected as bluff/semi-bluff. */
+export function chosenFlopLine(
+  context: DecisionContext,
+  chosen: ScoredAction,
+): BotHandMemory['flopLine'] {
+  if (
+    context.gameView.phase !== 'flop'
+    || chosen.action.type !== 'raise'
+    || context.metrics.callAmount > 0
+    || (chosen.intent !== 'bluff' && chosen.intent !== 'semi-bluff')
+  ) return null
+  return {
+    intent: chosen.intent,
+    opponentsAtBet: context.streetAnalysis?.activeOpponents
+      ?? Math.max(0, context.activePlayerCount - 1),
+  }
+}
+
+/** Reconsider a chosen flop bluff from perceived, public turn information. */
+export function reviewFlopTurnLine(context: DecisionContext): FlopTurnLineReview | null {
+  const line = context.botState.memory.hand.flopLine
+  if (context.gameView.phase !== 'turn' || !line) return null
+  const review = (status: FlopTurnLineReview['status'], reason: string): FlopTurnLineReview => ({
+    intent: line.intent, status, reason,
+  })
+  const hand = context.handAssessment
+  const analysis = context.streetAnalysis
+  if (analysisSkillWeight(context.botState.skill.level, 'boardDynamics') === 0) {
+    return review('unrecognized', 'Skill does not support a reliable multi-street plan')
+  }
+  if (hand.made && (hand.category === 'good' || hand.category === 'strong' || hand.category === 'premium')) {
+    return review('replan', 'Turn hand improved; reassess as value, not a bluff')
+  }
+  if (line.opponentsAtBet !== 1 || analysis?.activeOpponents !== 1) {
+    return review('abort', 'Multiway pressure makes the flop bluff plan unreliable')
+  }
+  if (
+    analysis.streetAggressor.flop !== context.botId
+    || analysis.streetAggression?.flop.orderedAggressors.some(id => id !== context.botId)
+  ) return review('abort', 'Opponent raised the flop bluff')
+  if (context.metrics.callAmount > 0) return review('abort', 'Opponent took the turn initiative')
+  const collapseLimit = context.variantId === 'omaha-high' ? 0.12 : 0.2
+  if (hand.boardGotWorse || hand.equityCollapse >= collapseLimit) {
+    return review('abort', 'Turn card worsened the perceived hand or board')
+  }
+
+  if (context.variantId === 'omaha-high') {
+    const nutDraw = hand.drawTypes.includes('nut-flush-draw')
+      || hand.drawTypes.includes('nut-wrap')
+    if (
+      line.intent === 'semi-bluff'
+      && nutDraw
+      && hand.cleanOuts >= 4
+    ) return review('continue', 'PLO nut-relevant draw still supports a selective barrel')
+    return review('abort', 'PLO bluff lacks a nut-relevant continuation')
+  }
+  if (line.intent === 'semi-bluff' && hand.drawTypes.length > 0 && hand.cleanOuts >= 4) {
+    return review('continue', 'NLHE draw still has clean outs')
+  }
+  if (line.intent === 'bluff' && (context.boardTexture === 'dry' || hand.blockerValue >= 20)) {
+    return review('continue', 'NLHE dry runout or relevant blocker supports pressure')
+  }
+  return review('abort', 'NLHE bluff lost its turn continuation')
+}
+
+export function flopTurnLineModifiers(
+  context: DecisionContext,
+  scored: ScoredAction,
+): ScoreContribution[] {
+  const review = reviewFlopTurnLine(context)
+  if (!review || review.status === 'replan' || review.status === 'unrecognized') return []
+  const weight = analysisSkillWeight(context.botState.skill.level, 'boardDynamics')
+  const type = scored.action.type
+  const value = review.status === 'continue'
+    ? type === 'raise' ? 2 * weight : type === 'check' ? -1 * weight : 0
+    : context.metrics.callAmount <= 0
+      ? type === 'raise' ? -2 * weight : type === 'check' ? 1 * weight : 0
+      : type === 'raise' ? -2 * weight : 0
+  return value === 0 ? [] : [{
+    category: 'strategy',
+    label: `Flop ${review.intent} line: ${review.status} — ${review.reason}`,
+    value,
+  }]
+}
 
 export interface LineCommitment {
   /** The hand plan: bet, check-call, check-fold, bluff */

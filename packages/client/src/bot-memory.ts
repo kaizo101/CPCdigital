@@ -1,10 +1,11 @@
-import type { BotSessionMemory } from './bot-types'
+import type { BotHandMemory, BotSessionMemory } from './bot-types'
 
 export interface BotDecisionMemoryUpdate {
   raisedPreflop?: boolean
   lastAction?: 'bet' | 'check' | 'call' | 'fold' | null
   lastStreet?: string | null
   betFoldStreet?: string | null
+  flopLine?: BotHandMemory['flopLine']
 }
 
 export function resetHandMemory(memory: BotSessionMemory): void {
@@ -12,6 +13,7 @@ export function resetHandMemory(memory: BotSessionMemory): void {
   memory.hand.lastAction = null
   memory.hand.lastStreet = null
   memory.hand.betFoldStreet = null
+  memory.hand.flopLine = null
 }
 
 export function applyDecisionMemory(
@@ -28,6 +30,7 @@ export function applyDecisionMemory(
       ? update.betFoldStreet
       : null
   }
+  if (update.flopLine !== undefined) memory.hand.flopLine = update.flopLine
 }
 
 export function recordHandResult(memory: BotSessionMemory, won: boolean): void {

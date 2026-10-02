@@ -9,12 +9,13 @@ import {
   type RandomSource,
 } from './bot-action-selection'
 import type { DecisionContext, ScoredAction } from './bot-decision-types'
+import type { BotHandMemory } from './bot-types'
 import {
   addPerceptionReasons,
   applySkillPerception,
   type SkillPerceptionError,
 } from './bot-skill-perception'
-import { isNlheRiverBetFoldOpening } from './bot-line-planning'
+import { chosenFlopLine, isNlheRiverBetFoldOpening, reviewFlopTurnLine, type FlopTurnLineReview } from './bot-line-planning'
 
 export { applyPersonalityModifiers } from './bot-action-modifiers'
 export { scoreActions } from './bot-action-scoring'
@@ -44,11 +45,13 @@ export interface DecisionResult {
   objectiveHandAssessment: DecisionContext['handAssessment']
   objectiveOpponentRanges: NonNullable<DecisionContext['opponentRanges']>
   objectiveStreetAnalysis: DecisionContext['streetAnalysis']
+  lineReview?: FlopTurnLineReview
   stateUpdates: {
     raisedPreflop?: boolean
     lastAction?: 'bet' | 'check' | 'call' | 'fold' | null
     lastStreet?: string | null
     betFoldStreet?: string | null
+    flopLine?: BotHandMemory['flopLine']
   }
 }
 
@@ -65,7 +68,7 @@ export function decideAction(
   const personalityActions = applyPersonalityModifiers(scoredActions, perception.context)
   const chosenScored = weightedCandidateChoice(personalityActions, rng)
   const chosenAction = chosenScored.action
-  const stateUpdates = deriveStateUpdates(chosenAction, perception.context)
+  const stateUpdates = deriveStateUpdates(chosenScored, perception.context)
 
   return {
     action: chosenAction,
@@ -79,17 +82,25 @@ export function decideAction(
     objectiveHandAssessment: context.handAssessment,
     objectiveOpponentRanges: context.opponentRanges ?? [],
     objectiveStreetAnalysis: context.streetAnalysis,
+    lineReview: reviewFlopTurnLine(perception.context) ?? undefined,
     stateUpdates,
   }
 }
 
 function deriveStateUpdates(
-  action: PlayerAction,
+  chosen: ScoredAction,
   context: DecisionContext,
 ): DecisionResult['stateUpdates'] {
+  const action = chosen.action
   const updates: DecisionResult['stateUpdates'] = {
     lastStreet: context.gameView.phase,
     betFoldStreet: null,
+  }
+
+  if (context.gameView.phase === 'flop') {
+    updates.flopLine = chosenFlopLine(context, chosen)
+  } else if (context.gameView.phase === 'turn') {
+    updates.flopLine = null
   }
 
   if (action.type === 'raise') {

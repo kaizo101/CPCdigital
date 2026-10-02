@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BettingContext, Card, LegalActions, PlayerAction } from '@cpc/shared'
 import { createBotState } from './bot-state'
+import { applyDecisionMemory } from './bot-memory'
 import { deriveDecisionMetrics } from './bot-decision-metrics'
 import { applyPersonalityModifiers, decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
 import { applySkillPerception } from './bot-skill-perception'
@@ -117,6 +118,45 @@ function withSizingRead(decisionContext: DecisionContext, potFraction: number): 
   })
   return decisionContext
 }
+
+describe('remembered flop bluff across streets', () => {
+  it('stores the chosen bluff, reviews it on the turn, then clears it', () => {
+    const flop = context({
+      fold: false, check: false, callAmount: null,
+      raise: { minAmount: 40, maxAmount: 1000 }, allInAmount: null,
+    })
+    flop.botState.skill.level = 100
+    flop.handAssessment.category = 'air'
+    flop.handAssessment.made = false
+    flop.boardTexture = 'dry'
+    flop.preferredRaiseTo = 40
+    const first = decideAction(flop, { random: () => 0.5 })
+    expect(first.action.type).toBe('raise')
+    expect(first.stateUpdates.flopLine).toEqual({ intent: 'bluff', opponentsAtBet: 1 })
+    applyDecisionMemory(flop.botState.memory, first.stateUpdates)
+
+    const turn = {
+      ...flop,
+      gameView: { ...flop.gameView, phase: 'turn' as const },
+      legalActions: {
+        fold: false, check: true, callAmount: null,
+        raise: { minAmount: 40, maxAmount: 1000 }, allInAmount: null,
+      },
+      streetAnalysis: {
+        preflopAggressor: 'bot', preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'bot', flop: 'bot', turn: null, river: null },
+        iAmPreflopAggressor: true, opponentLines: new Map(), activeOpponents: 1,
+        opponentShowedWeakness: false, opponentCheckRaised: false,
+        street: 'turn' as const, actionCountThisStreet: 0,
+      },
+    } satisfies DecisionContext
+    const next = decideAction(turn, { random: () => 0.5 })
+    expect(next.lineReview).toMatchObject({ intent: 'bluff', status: 'continue' })
+    expect(next.stateUpdates.flopLine).toBeNull()
+    applyDecisionMemory(turn.botState.memory, next.stateUpdates)
+    expect(turn.botState.memory.hand.flopLine).toBeNull()
+  })
+})
 
 function postflopAnalysis(overrides: Partial<StreetAnalysis> = {}): StreetAnalysis {
   return {
@@ -1987,6 +2027,52 @@ describe('bot utility candidates', () => {
 
     expect(perception.errors).toEqual([])
     expect(perception.context).toBe(actual)
+  })
+
+  it('does not invent preflop board vulnerability or absent blockers while preserving later random rolls', () => {
+    const sample = (phase: 'preflop' | 'flop', variantId: 'texas-holdem' | 'omaha-high') => {
+      const actual = context({
+        fold: true, check: false, callAmount: 20,
+        raise: { minAmount: 60, maxAmount: 1000 }, allInAmount: null,
+      })
+      actual.botState.skill.level = 0
+      actual.variantId = variantId
+      actual.gameView.phase = phase
+      actual.gameView.board = phase === 'flop'
+        ? [{ rank: 'K', suit: 'spades' }, { rank: '8', suit: 'hearts' }, { rank: '3', suit: 'clubs' }]
+        : []
+      actual.handAssessment.vulnerability = 0
+      actual.handAssessment.blockerValue = 0
+      let randomCalls = 0
+      const perception = applySkillPerception(actual, { random: () => {
+        randomCalls++
+        return 0.1
+      } })
+      return { perception, randomCalls }
+    }
+
+    for (const variant of ['texas-holdem', 'omaha-high'] as const) {
+      const preflop = sample('preflop', variant)
+      expect(preflop.perception.context.handAssessment.vulnerability).toBe(0)
+      expect(preflop.perception.context.handAssessment.blockerValue).toBe(0)
+      expect(preflop.perception.errors.some(error => error.field === 'vulnerability' || error.field === 'blocker-value')).toBe(false)
+      expect(preflop.randomCalls).toBe(sample('flop', variant).randomCalls)
+    }
+    const flop = sample('flop', 'texas-holdem')
+    expect(flop.perception.errors.map(error => error.field)).toEqual(expect.arrayContaining([
+      'vulnerability', 'blocker-value',
+    ]))
+  })
+
+  it('never rewards protection against future board draws before the flop', () => {
+    const preflop = context({
+      fold: true, check: false, callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 }, allInAmount: null,
+    })
+    preflop.gameView.phase = 'preflop'
+    preflop.handAssessment.vulnerability = 80
+    expect(scoreActions(preflop).flatMap(action => action.contributions)
+      .some(contribution => contribution.label === 'Protection against draws')).toBe(false)
   })
 
   it('gates PLO4 coordination and nut-suit interpretation continuously at exact skill boundaries', () => {

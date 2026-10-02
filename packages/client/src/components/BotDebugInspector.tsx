@@ -327,6 +327,11 @@ function DecisionDetails({ debug, currency }: { debug: BotDebugDecision; currenc
             ? 'noch keine belastbaren Beobachtungen'
             : profile.reads.map(read => `${read.playerId}: VPIP ${formatNumber(read.vpip)}, Agg ${formatNumber(read.aggression)} (${read.handsSampled} Hände)`).join(' · ')}
         </div>
+        {decision.lineReview && (
+          <div style={{ marginTop: 7, color: '#cbd5df', fontSize: 10 }}>
+            Flop-Linie ({decision.lineReview.intent}): {decision.lineReview.status} — {decision.lineReview.reason}
+          </div>
+        )}
       </Section>
 
       <Section title="Wahrnehmungsfehler">

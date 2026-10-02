@@ -5,6 +5,7 @@ import {
   betFoldEscalationBlocked,
   betFoldLineModifiers,
   determineLineCommitment,
+  flopTurnLineModifiers,
   lineCommitmentModifiers,
 } from './bot-line-planning'
 
@@ -237,6 +238,9 @@ export function applyPersonalityModifiers(
         context.streetAnalysis.iAmPreflopAggressor,
       )
       contributions.push(...lineCommitmentModifiers(commitment, context.gameView.phase, scored))
+      if (context.gameView.phase === 'turn') {
+        contributions.push(...flopTurnLineModifiers(context, scored))
+      }
     }
 
     contributions.push(...betFoldLineModifiers(context, scored))

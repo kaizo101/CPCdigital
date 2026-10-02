@@ -214,10 +214,11 @@ function scoreRaise(context: DecisionContext, amount = calculateRaiseTo(context)
   if (hand.nutPotential === 'nuts') contributions.push(factor('hand-strength', 'Nut potential', params.scoring.raiseBonus.nutPotential))
   else if (hand.nutPotential === 'near-nuts') contributions.push(factor('hand-strength', 'Near-nut potential', params.scoring.raiseBonus.nearNutPotential))
   else if (hand.nutPotential === 'second-nuts') contributions.push(factor('hand-strength', 'Second-nut potential', params.scoring.raiseBonus.secondNutPotential))
-  if (context.gameView.board.length < 5 && hand.vulnerability > 60) {
+  if (context.gameView.board.length >= 3 && context.gameView.board.length < 5 && hand.vulnerability > 60) {
     contributions.push(factor('hand-strength', 'Protection against draws', params.scoring.raiseBonus.vulnerability))
   }
   const vulnerablePloMadeHand = context.variantId === 'omaha-high'
+    && context.gameView.board.length >= 3
     && context.gameView.board.length < 5
     && hand.made
     && hand.rank >= 4

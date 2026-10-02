@@ -8,6 +8,12 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Added
 
+- **Erste Street-übergreifende Bot-Linie:** Eine tatsächlich gewählte
+  Flop-Bluff- oder Semi-Bluff-Bet bleibt bis zur Turnentscheidung erhalten.
+  Der Turn-Review kann sie je nach öffentlicher Gegenwehr, Board, Skill und
+  Variante fortsetzen, als Value neu bewerten oder begründet abbrechen;
+  die Entscheidung ist im Debug sichtbar. Kein Sunk-Cost- oder All-in-Bonus;
+  Value-/Protection-Linien und River-Fortsetzung bleiben offen.
 - **Erste 0.8.2-Anti-Steal-Basis:** Bots merken sich pro Gegner und getrennt
   für Button/Cutoff ungeöffnete Steal-Gelegenheiten und tatsächliche Raises.
   Nach genügend Beobachtungen kann ein skillabhängiger, archetypischer Read
@@ -148,6 +154,10 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Fixed
 
+- **Preflop-Wahrnehmung:** Die Platzhalter-Verwundbarkeit `0` und ein nicht
+  vorhandener Blocker erzeugen keine scheinbaren Wahrnehmungsfehler mehr.
+  Schutz gegen künftige Board-Draws wird erst ab dem Flop bewertet; die
+  Zufallsziehungen bleiben zur Stabilität nachfolgender Wahrnehmungen erhalten.
 - **PLO-Wrap-Qualität**: Straight-Outs, die zugleich einen gegnerischen
   Flush ermöglichen, zählen ohne eigene stärkere Hand nicht mehr als
   saubere Outs; teilweise dominierte Wraps heißen nicht länger

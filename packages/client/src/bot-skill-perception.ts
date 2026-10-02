@@ -130,26 +130,34 @@ export function applySkillPerception(
     errors, 'relative-strength', 'Relative hand strength', hand.relativeStrength,
     gaussian(rng) * 12 * errorScale, 0, 100,
   )
-  hand.vulnerability = perceivedNumber(
-    errors, 'vulnerability', 'Vulnerability', hand.vulnerability,
-    gaussian(rng) * 12 * errorScale, 0, 100,
-  )
-  const blockerDelta = gaussian(rng) * 15 * errorScale
-  if (plo && !hasAnalysisSkill(skill, 'blocker')) {
-    if (hand.blockerValue > 0) {
-      errors.push({
-        field: 'blocker-value',
-        label: 'Blocker value',
-        actual: hand.blockerValue,
-        perceived: 0,
-      })
-    }
-    hand.blockerValue = 0
-  } else {
-    hand.blockerValue = perceivedNumber(
-      errors, 'blocker-value', 'Blocker value', hand.blockerValue,
-      blockerDelta, 0, 100,
+  // Preflop vulnerability is a placeholder, not a board property to misread.
+  // Still draw the error to keep all subsequent perception rolls stable.
+  const vulnerabilityDelta = gaussian(rng) * 12 * errorScale
+  if (context.gameView.phase !== 'preflop') {
+    hand.vulnerability = perceivedNumber(
+      errors, 'vulnerability', 'Vulnerability', hand.vulnerability,
+      vulnerabilityDelta, 0, 100,
     )
+  }
+  const blockerDelta = gaussian(rng) * 15 * errorScale
+  // Zero before the flop means no recognized blocker, not a board read to perturb.
+  if (context.gameView.phase !== 'preflop' || hand.blockerValue > 0) {
+    if (plo && !hasAnalysisSkill(skill, 'blocker')) {
+      if (hand.blockerValue > 0) {
+        errors.push({
+          field: 'blocker-value',
+          label: 'Blocker value',
+          actual: hand.blockerValue,
+          perceived: 0,
+        })
+      }
+      hand.blockerValue = 0
+    } else {
+      hand.blockerValue = perceivedNumber(
+        errors, 'blocker-value', 'Blocker value', hand.blockerValue,
+        blockerDelta, 0, 100,
+      )
+    }
   }
 
   if (plo && !hasAnalysisSkill(skill, 'wrapDominance')) {

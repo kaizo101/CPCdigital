@@ -6,6 +6,7 @@ import {
   retainRecentBotDebugDecision,
 } from './session/LocalGameRunner'
 import {
+  compactBotDebugDecisionV4,
   createSessionDebugJsonlFilename,
   parseSessionDebugJsonl,
   serializeSessionDebugJsonlParts,
@@ -129,6 +130,12 @@ describe('session debug JSONL export', () => {
     expect(decision.selection[4]).toBeGreaterThanOrEqual(1)
     expect(decision.objectiveHand).toBeTruthy()
     expect('scores' in decision).toBe(false)
+    const richDecision = runner.getBotDebugDecisions()[0]
+    richDecision.decision.lineReview = {
+      intent: 'bluff', status: 'abort', reason: 'Turn card changed the plan',
+    }
+    expect(compactBotDebugDecisionV4(richDecision).lineReview)
+      .toEqual(['bluff', 'abort', 'Turn card changed the plan'])
     runner.cleanup()
   })
 

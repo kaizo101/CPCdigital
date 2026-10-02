@@ -240,6 +240,8 @@ export interface CompactBotDebugDecisionV4 {
   }
   action: PlayerAction
   chosenCandidateId: string
+  /** Present only when a remembered flop bluff is reviewed on the turn. */
+  lineReview?: [intent: 'bluff' | 'semi-bluff', status: string, reason: string]
   candidates: CompactCandidateV4[]
   selection: [
     bestUtility: number,
@@ -394,6 +396,13 @@ export function compactBotDebugDecisionV4(decision: BotDebugDecision): CompactBo
     },
     action: decision.decision.action,
     chosenCandidateId: decision.decision.chosenCandidateId,
+    lineReview: decision.decision.lineReview
+      ? [
+          decision.decision.lineReview.intent,
+          decision.decision.lineReview.status,
+          decision.decision.lineReview.reason,
+        ]
+      : undefined,
     candidates: decision.decision.allActions.map(candidate => [
       candidate.candidateId,
       candidate.action,

@@ -22,7 +22,7 @@ describe('separated bot state', () => {
       memory: expect.objectContaining({
         handsPlayed: 0,
         handsWon: 0,
-        hand: { raisedPreflop: false, lastAction: null, lastStreet: null, betFoldStreet: null },
+        hand: { raisedPreflop: false, lastAction: null, lastStreet: null, betFoldStreet: null, flopLine: null },
       }),
     })
     expect(state).not.toHaveProperty('aggression')
@@ -63,12 +63,14 @@ describe('separated bot state', () => {
       lastAction: 'bet',
       lastStreet: 'preflop',
       betFoldStreet: 'river',
+      flopLine: { intent: 'bluff', opponentsAtBet: 1 },
     })
     expect(state.memory.hand).toEqual({
       raisedPreflop: true,
       lastAction: 'bet',
       lastStreet: 'preflop',
       betFoldStreet: 'river',
+      flopLine: { intent: 'bluff', opponentsAtBet: 1 },
     })
 
     resetHandMemory(state.memory)
@@ -77,6 +79,7 @@ describe('separated bot state', () => {
       lastAction: null,
       lastStreet: null,
       betFoldStreet: null,
+      flopLine: null,
     })
     expect(state.personality).toEqual(personality)
     expect(state.mentalState).toEqual(mentalState)

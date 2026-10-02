@@ -75,6 +75,49 @@ Ein skilliger Bot soll:
 - auf Gegenanpassungen des Nutzers reagieren,
 - nach Fehlannahmen wieder zur Grundlinie zurückkehren.
 
+### Street-übergreifende Handlinien (offen für 0.8.2)
+
+Die bisherige Aktionshistorie bewahrt zwar sichtbare Aktionen und es gibt
+einzelne Turn-Barrel- und River-Bet-Fold-Regeln. Die Absicht der **gewählten**
+Flop-Aktion wird aber nicht allgemein im Handgedächtnis gehalten:
+`determineLineCommitment()` bildet den Plan bei jeder Entscheidung aus der
+aktuellen Hand-/Boardbewertung erneut. Dadurch kann ein Bluff seine
+Begründung verlieren oder eine aggressive Linie entstehen, die der Bot zuvor
+gar nicht begonnen hatte.
+
+Für die laufende Hand soll die gewählte Linie mit Ausgangsstreet, Absicht
+(Value, Protection, Semi-Bluff, Bluff oder Pot-Control) und begrenztem
+Fortsetzungsrahmen erhalten bleiben. Auf der nächsten Street wird **neu
+geprüft**, ob öffentliche Gegneraktionen, Boardwechsel, Hand-/Drawqualität,
+Stackrisiko und Betpreis die Fortsetzung noch tragen. Das Ergebnis ist
+`fortsetzen`, `umplanen` oder `aufgeben` mit einem sichtbaren Debuggrund.
+„Commitment“ bedeutet hier Plan-Kohärenz, nicht Sunk-Cost-Rechtfertigung:
+ein rechtzeitig abgebrochener Bluff kann die konsistenteste Entscheidung sein.
+
+Skill beeinflusst, ob und wie verlässlich ein Bot eine solche Linie bildet
+und revidiert; Archetyp und spätere Mental-Events können die Ausführung
+verändern, ohne den strategischen Plan rückwirkend umzudeuten. NLHE und PLO
+erhalten getrennte Fortsetzungs-/Abbruchbedingungen: Insbesondere können in
+PLO Turnkarten die Nut-Hierarchie und Drawqualität stärker verändern. Kein
+Bot erhält dafür Kenntnis verdeckter gegnerischer Karten.
+
+Akzeptanztests vergleichen dieselbe Flop-Absicht bei günstiger und
+ungünstiger Turnkarte sowie nach Check, Call und Raise des Gegners; sie
+prüfen Fortsetzung **und** begründeten Abbruch, Skill-Unterschiede,
+NLHE/PLO-Trennung und das Ausbleiben erzwungener Mehr-Street-Bluffs oder
+uncommitted Deep-Stack-Shoves.
+
+**Erster Implementierungsschnitt:** Eine tatsächlich gewählte, ungeöffnete
+Flop-Bet mit Intent `bluff` oder `semi-bluff` bleibt bis zur Turnentscheidung
+im Handgedächtnis. Ein enger Turn-Review nutzt die wahrgenommene Hand,
+öffentliche Gegenwehr und getrennte NLHE-/PLO-Bedingungen. Sein Ergebnis
+(`continue`, `replan`, `abort` oder bei zu geringem Skill `unrecognized`)
+erscheint im Debug; die Linie läuft danach aus. Die Bewertung ergänzt die
+bestehenden Turn-Regeln nur mit einem kleinen, skillgewichteten Impuls und
+belohnt keine All-ins; ein Review ist kein harter Aktionszwang. Value-,
+Protection- und Pot-Control-Linien bleiben noch außen vor. Die
+vollständige Street-übergreifende Planung bis zum River bleibt offen.
+
 ### Emotionale Reaktion
 
 Ein schwächerer oder emotionalerer Bot kann:
@@ -264,11 +307,13 @@ würde sie das dauerhafte Lösen einzelner Identitäten zu stark beschleunigen.
 1. Preflop und postflop echte Bet-/Raise-/Reraise-Stufen modellieren.
 2. Range- und Selection-Gates für tiefe 4-Bet-/5-Bet-Ketten absichern.
 3. Positionsbezogene Steal-Erkennung und strategische Blind-Defense ergänzen.
-4. Mentale Ereignisse, Skill-Regulation, Frustration und Erholung vollständig
+4. Street-übergreifende strategische Handlinien mit begründetem Planwechsel
    anschließen.
-5. Stakeabhängige, überlappende Roster- und Skill-Pools mit dem Bankrollsystem
+5. Mentale Ereignisse, Skill-Regulation, Frustration und Erholung vollständig
+   anschließen.
+6. Stakeabhängige, überlappende Roster- und Skill-Pools mit dem Bankrollsystem
    einführen.
-6. Spielernotizen und eine grobe faire Erinnerung wiederkehrender Bots an den
+7. Spielernotizen und eine grobe faire Erinnerung wiederkehrender Bots an den
    Nutzer als Meta-Game-Schicht ergänzen.
 
 ## Spätere Akzeptanzkriterien
@@ -283,5 +328,8 @@ würde sie das dauerhafte Lösen einzelner Identitäten zu stark beschleunigen.
   deterministisch vorhersagbar.
 - Zusätzliche Gegenwehr erzeugt keine neuen marginalen Deep-Stack-4-Bet- oder
   All-in-Ketten.
+- Flop-Pläne werden nur bei passendem Turn-/River-Kontext fortgesetzt;
+  Planwechsel und Abbruch sind im Debug nachvollziehbar und werden nicht
+  durch bereits investierte Chips erzwungen.
 - Probesessions und Kalibrierungen werden zusätzlich nach Skill- und
   Stake-Bändern ausgewertet.
