@@ -1,922 +1,1071 @@
 # Changelog
 
-Alle wichtigen veröffentlichten Änderungen an CPCdigital werden in dieser Datei dokumentiert.
+All significant published changes to CPCdigital are documented in this file.
 
-Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und das Projekt verwendet semantische Versionsnummern. Geplante Funktionen stehen ausschließlich in der [Roadmap](ROADMAP.md).
+The format is based on [Keep a Changelog](https://keepachangelog.com/1.1.0/)
+, and the project uses semantic versioning. Planned features are listed
+exclusively in the [Roadmap](ROADMAP.md).
 
 ## [Unreleased]
 
 ### Added
 
-- **Erste Street-übergreifende Bot-Linie:** Eine tatsächlich gewählte
-  Flop-Bluff- oder Semi-Bluff-Bet bleibt bis zur Turnentscheidung erhalten.
-  Der Turn-Review kann sie je nach öffentlicher Gegenwehr, Board, Skill und
-  Variante fortsetzen, als Value neu bewerten oder begründet abbrechen;
-  die Entscheidung ist im Debug sichtbar. Kein Sunk-Cost- oder All-in-Bonus;
-  Value-/Protection-Linien und River-Fortsetzung bleiben offen.
-- **Erste 0.8.2-Anti-Steal-Basis:** Bots merken sich pro Gegner und getrennt
-  für Button/Cutoff ungeöffnete Steal-Gelegenheiten und tatsächliche Raises.
-  Nach genügend Beobachtungen kann ein skillabhängiger, archetypischer Read
-  die Blind-Defense bereits spielbarer Hände vorsichtig verschieben; Limps,
-  Reraises, Heads-up-Opens, Short-Stack-Shoves und ungeeignete Hände lösen
-  keinen Anti-Steal-Gegenangriff aus. Erfolg/Misserfolg und Gegenanpassungen
-  über mehrere Hände bleiben Teil des offenen 0.8.2-Blocks.
-- **PLO4-Preflop-Pilot:** Getrenntes Strukturprofil für Paarhöhe,
-  Vier-Karten-Koordination und nutzbare Suit-Höhe; Koordination und A-hoher
-  Suit wirken nur skillabhängig, tief und in später Position mit kleinen
-  lokalen Scorefaktoren. Die Pilotwirkung ist noch nicht manuell geprüft;
-  Details und Rohzähler stehen im PLO-Preflop-Audit.
-- **Vollständiger Entscheidungskontext**: Bots bewahren öffentliche Position,
-  Preflop-Rolle und die geordnete Aggressionsstufe jeder Street. C-Bet-Logik
-  greift nur beim ersten passenden Flop-Angriff; Opening-Bets werden nicht mehr
-  als Reraises behandelt.
-- **Skillabhängige Kontextwahrnehmung**: Paired-Board-Hierarchie,
-  positionsabhängige Ranges, Board-Interaktion und Card Removal werden ab ihren
-  jeweiligen Skill-Schwellen stetig eingeblendet. Die Wirkung ist an der
-  Schwelle exakt null und erreicht erst bei Skill 100 den objektiven Wert.
-- **NLHE-Paired-Board-Hierarchie**: Board-Play, Pocket-Pairs, Top Pair samt
-  Kicker und Trips werden auf einfach gepaarten Boards getrennt bewertet.
-  Gegnerische Trips-Repräsentation berücksichtigt Preflop-Rolle, Position,
-  eigene Karten und Multiway-Felder.
-- **Auswahl- und Exportdiagnostik v4**: Aktionskandidaten besitzen stabile IDs,
-  stackgroße Raises werden als genau ein All-in-Kandidat geführt und die
-  unveränderte 85%-Plausibilitätsgrenze wird mit Kandidatenzahl und Utility-Gap
-  sichtbar. Der vollständige Session-Debugexport enthält alle Entscheidungen,
-  Contributions sowie objektive und wahrgenommene Analysewerte; der normale
-  Export lässt klar zwischen Handhistory und Debug-JSONL wählen. Eine
-  Session-Kopfzeile, genau eine kompakte Zeile pro Hand und eine prüfbare
-  Abschlusszeile ersetzen das speicherintensive Pretty-JSON.
-- **Kalibrierungs-Snapshot**: Der deterministische 300-Hand-Smoke erhält nach
-  den bewusst spielwirksamen Kontext- und Kandidatenänderungen eine eigene
-  0.8.2-Foundation-Baseline. Die 0.8.1-Datei bleibt unverändert als historischer
-  Vergleich erhalten; strukturelle Invarianten gelten weiterhin unverändert.
-- **Eindeutige Session- und Handreferenzen**: Neue Sessions erhalten eine
-  stabile Session-ID, die im Handhistory-Header, in jeder Handreferenz und in
-  den Dateinamen von Handhistory und Debug-JSONL wiederkehrt. Mehrere
-  gespeicherte Sessions werden als separates Archiv mit eigener Archiv-ID
-  exportiert; bestehende Replays ohne ID bleiben lesbar.
+-  **First cross-street bot line:** A bet chosen on the flop (bluff or
+  semi-bluff) remains active until the turn decision. The turn review can
+  continue it based on public action, board, skill and variant, re-evaluate it
+  as value, or cancel it with a clear rationale; the decision is visible in
+  debug output. No sunk-cost bonus or all-in bonus; value/protection lines and
+  river continuation remain open.
+-  **First 0.8.2 anti-steal foundation:** Bots remember per opponent and
+  separately for the button and cutoff unraised steal opportunities and actual
+  raises. After sufficient observations, a skill-dependent archetypal read can
+  cautiously shift blind defence for playable hands; limps, reraises, heads-up
+  opens, short-stack shoves and unsuitable hands do not trigger an anti-steal
+  counter. Success/failure and opponent adjustments across multiple hands remain
+  part of the open 0.8.2 block.
+-  **PLO4 preflop pilot:** Separate structural profiles for pair strength,
+  four-card coordination and usable suit strength; coordination and A-high suit
+  only apply in a skill-dependent, limited way in later positions with small
+  local score factors. The pilot effect has not yet been manually verified;
+  details and raw counts are in the PLO preflop audit.
+-  **Complete decision context:** Bots preserve public position, preflop role
+  and the ordered aggression level for each street. C-Bet logic only applies to
+  the first valid flop attack; opening bets are no longer treated as reraises.
+-  **Skill-dependent context perception:** The paired-board hierarchy,
+  position-dependent ranges, board interaction and card removal are gradually
+  introduced at their respective skill thresholds. The effect is exactly zero at
+  the threshold and only reaches the objective value at skill 100.
+-  **NLHE paired-board hierarchy:** Board play, pocket pairs, top pair with
+  kicker and trips are evaluated separately on single-paired boards. Opponent
+  trips representation takes into account preflop role, position, hole cards and
+  multiway fields.
+-  **Selection and export diagnostics v4:** Action candidates have stable IDs,
+  large-stack raises are consolidated into exactly one all-in candidate and the
+  unchanged 85% plausibility threshold is shown with candidate count and utility
+  gap. The full session debug export contains all decisions, contributions and
+  both objective and perceived analysis values; the normal export clearly
+  distinguishes between hand history and debug JSONL. A session header, exactly
+  one compact line per hand and a verifiable footer replace the memory-intensive
+  pretty JSON.
+-  **Calibration snapshot:** The deterministic 300-hand smoke test has its own
+  0.8.2 foundation baseline after the intentionally gameplay-relevant context
+  and candidate changes. The 0.8.1 file remains unchanged as a historical
+  comparison; structural invariants still apply unchanged.
+-  **Unique session and hand references:** New sessions receive a stable session
+  ID, which appears in the hand history header, in every hand reference and in
+  the file names for hand history and debug JSONL. Multiple saved sessions are
+  exported as a separate archive with its own archive ID; existing replays
+  without an ID remain readable.
 
 ### Changed
 
-- **PLO-Postflop auf gepaarten Boards:** Bloßer Board-Drilling wird nicht
-  länger wie eine gute eigene Made Hand behandelt; Straights berücksichtigen
-  mögliche Full Houses und Flushes beim Nut-Potenzial. Der SPR-Commit-Bonus
-  setzt für `good`-Hände jetzt tatsächlich starkes Nut-Potenzial voraus,
-  ohne Low-Skill-Fehleinschätzungen künstlich zu entfernen. Der
-  [Session-Nachtrag](docs/de/reviews/plo-postflop-session-2026-10-01.md)
-  dokumentiert die Hände #10/#24/#26, Regressionstests und die bewusst
-  geprüfte 0.8.2-Entwicklungsbaseline; Zielkorridore bleiben unverändert.
-- **PLO-Sessionfolgefix:** Gute Made Hands werden beim Betten als Value statt
-  Bluff eingeordnet. Drawlose schwache Hände erhalten gegen teure C-Bets auf
-  gepaartem oder nassem Multiway-Flop weniger pauschale Defense-Boni; ein
-  zweiter Sessionexport deckte dabei eine zuvor zu hohe Call/Pot-Schwelle auf.
-  Bei gekappter
-  Betsize bleibt für eine erkannte River-Straight auf sicherem Board eine
-  kleinere Value-Bet als Alternative zum Check/All-in erhalten. Der
-  [Session-Nachtrag](docs/de/reviews/plo-postflop-session-2026-10-01.md)
-  hält auch den noch offenen 300-Hand-Kalibrierungsdrift fest.
-- **Vite-Konfiguration**: Der Import der Paketversion verwendet ein
-  JSON-Importattribut und bleibt damit auch mit der künftig nativen
-  Konfigurationsladung kompatibel. Die separate Chunkgrößen-Warnung bleibt
-  für die gezielte Prüfung im 0.8.3-Refactoring vorgemerkt.
-- **Projektdokumentation aufgeräumt**: Die Haupt-README bleibt ein kompakter
-  Projektüberblick; `docs/README.md` führt zu Konzepten, Plänen, Reviews und
-  Anleitungen. Teststrategie und Formulare liegen gebündelt unter `testing/`,
-  veraltete Pfade wurden angepasst. Die Roadmap trennt laufende und künftige
-  Planung vom archivierten Versionsrückblick und verlinkt ausführliche
-  Konzepte separat; ihre Überschriften sind ohne Status-Emojis vereinheitlicht.
-  Veröffentlichter Stand, aktueller Entwicklungsstand und historische Review-
-  Befunde sind klarer getrennt;
-  überholte Aussagen zu Session-Seeds und externer Hand-History-Kompatibilität
-  wurden korrigiert.
-- **Entwicklereinstieg präzisiert**: Die Varianten-Anleitung nennt die
-  tatsächlichen Engine-, Bot-, Runner- und Export-Einstiegspunkte sowie
-  aktuelle Erweiterungsgrenzen. `CONTRIBUTING.md` trennt lokale
-  Electron-Installation vom CI-Installationspfad und ordnet zusätzliche Tests
-  nach Änderungstyp zu; die ausführlichen Bot- und Engine-Konventionsguides
-  sind für 0.8.3 eingeplant.
-- **Kalibrierungs-Gate präzisiert**: Zielkorridore sind diagnostische
-  Leitplanken statt automatische Exit-Bedingungen. Release-Läufe und
-  begründete Ausreißer-Triage bleiben Pflicht; strukturelle Invarianten
-  stoppen den Lauf weiterhin. Null-Nenner werden als nicht auswertbar gezeigt.
-  Ein maschinenprüfbarer Releasebericht kontrolliert Metadaten, alle 24
-  Kombinationen und Rohnenner; auffällige oder seltene Metriken erhalten
-  einen unabhängigen Bestätigungs-Seed.
-- **Klarer Hand-History-Export**: Die Beschriftung nennt den eigenen
-  Text-Export ohne fremden Plattformnamen; externe Replayer-Kompatibilität
-  wird nicht behauptet.
-- **Caller-berechtigter Pot als Entscheidungsgrundlage**: Pot Odds,
-  Call/Pot-Verhältnis und SPR verwenden bei Shortstack-Calls nur noch den Pot,
-  den der handelnde Spieler tatsächlich gewinnen kann. Nicht callbare
-  Overbet-Anteile und fremde Side-Pot-Beiträge verbilligen Entscheidungen nicht
-  mehr; Live-Pot und Pot-Limit-Raisegrenzen bleiben separat erhalten.
-- **Tiefe Preflop-Eskalationen**: In klaren Fold-to-5-Bet-Bereichen ersetzt das
-  konkrete Eskalationsmodell die gröberen Handstärke- und Archetyp-Boni.
-  Value-Cores sowie committed Ace-Blocker-Linien behalten ihre Sonderpfade.
-- **Gezielte River-Disziplin**: Draw-Protection endet auf dem Turn. NLHE-Calls
-  ohne Made Hand erhalten nur gegen eine tatsächlich stark eingeschätzte
-  River-Range eine zusätzliche Bremse; Calling-Station-Hero-Calls gegen
-  schwache Ranges bleiben möglich.
-- **Kalibrierungs-Snapshot**: Die 0.8.2-Foundation-Baseline wurde nach den
-  bewusst spielwirksamen Engine- und Scoringkorrekturen aktualisiert. Die
-  Zielkorridore selbst bleiben unverändert. Nach der PLO-Wrap-Out-Korrektur
-  wurde nur der PLO-Teil anhand einer dokumentierten 3k-A/B-Gegenprobe erneut
-  auf den neuen Verhaltensstand gesetzt.
+-  **PLO postflop on paired boards:** Board drumming alone is no longer treated
+  as a strong made hand; straights take into account possible full houses and
+  flushes for nut potential. The SPR commitment bonus now requires strong nut
+  potential for `good` hands without artificially removing low-skill
+  misjudgements. The
+  [session addendum](docs/en/reviews/plo-postflop-session-2026-10-01.md)
+  documents hands #10/#24/#26, regression tests and the deliberately verified
+  0.8.2 development baseline; target corridors remain unchanged.
+-  **PLO session sequence fix:** Strong made hands are classified as value when
+  betting, not as bluffs. Drawless weak hands receive less blanket defence
+  bonuses against expensive C-Bets on paired or wet multiway flops; a second
+  session export revealed a previously excessive call/pot threshold. For a
+  capped bet size, a recognised river straight on a safe board retains a small
+  value bet as an alternative to check/all-in. The
+  [session addendum](docs/en/reviews/plo-postflop-session-2026-10-01.md) also
+  records the still open 300-hand calibration drift.
+-  **Vite configuration:** The package version import now uses a JSON import
+  attribute, keeping it compatible with native configuration loading in future.
+  The separate chunk-size warning remains reserved for targeted checks during
+  the 0.8.3 refactoring.
+-  **Project documentation cleanup:** The main README remains a compact project
+  overview; `docs/README.md` links to concepts, plans, reviews and guides. Test
+  strategy and forms are bundled under `testing/`, and outdated paths have been
+  updated. The roadmap separates ongoing and future planning from the archived
+  version history and links detailed concepts separately; its headings have been
+  unified without status emojis. The released state, current development state
+  and historical review findings are clearly separated; outdated statements
+  about session seeds and external hand history compatibility have been
+  corrected.
+-  **Developer onboarding clarified:** The variant guide lists the actual
+  engine, bot, runner and export entry points as well as current extension
+  limits. `CONTRIBUTING.md` separates local Electron installation from the CI
+  installation path and categorises additional tests by change type; the
+  detailed bot and engine convention guides are planned for 0.8.3.
+-  **Calibration gate clarified:** Target corridors are diagnostic guardrails,
+  not automatic exit conditions. Release runs and justified outlier triage
+  remain mandatory; structural invariants still stop a run. Zero denominators
+  are shown as not evaluable. A machine-verifiable release report checks
+  metadata, all 24 combinations and raw denominators; conspicuous or rare
+  metrics receive an independent confirmation seed.
+-  **Clear hand history export:** The label refers to the app's own text export
+  without naming a third-party platform; external replay compatibility is not
+  claimed.
+-  **Caller-eligible pot as decision basis:** Pot odds, call/pot ratio and SPR
+  now use only the pot that the acting player can actually win for short-stack
+  calls. Uncallable overbet portions and other players' side-pot contributions
+  no longer undervalue decisions; live pot and pot-limit raise limits remain
+  separate.
+-  **Deep preflop escalations:** In clear fold-to-5-bet zones, the concrete
+  escalation model replaces the coarser hand-strength and archetype bonuses.
+  Value cores and committed ace-blocker lines retain their special paths.
+-  **Targeted river discipline:** Draw protection ends on the turn. NLHE calls
+  without a made hand only receive an additional brake against a range perceived
+  as very strong; calling-station hero calls against weak ranges remain
+  possible.
+-  **Calibration snapshot:** The 0.8.2 foundation baseline was updated after the
+  intentionally gameplay-relevant engine and scoring corrections. The target
+  corridors themselves remain unchanged. Following the PLO wrap-out correction,
+  only the PLO section was re-aligned to the new behaviour using a documented
+  3k-hand A/B counter-check.
 
-- **Gezielte All-in-Tiefensicherung**: Nicht-Premium-Open-Shoves sind ab 25 BB
-  keine auswählbaren Kandidaten mehr; ab 40 BB gilt die Sperre nach höchstens
-  einem gegnerischen Raise auch für Premiumhände, solange der Bot noch nicht
-  substanziell investiert hat. Normale Raises sowie kurze und bereits
-  committed 4-/5-Bet-All-ins bleiben verfügbar.
-- **Calling-Station-C-Bet-Defense**: Der zusätzliche Call-/Raise-Bonus für
-  drawlose, ungemachte Hände wird auf 25 Prozent gedämpft, wenn mindestens vier
-  Spieler den Flop sehen oder der geforderte Call den gesamten Reststack
-  kostet. Gewöhnliche Heads-up- und Drei-Spieler-Floats bleiben unverändert.
-- **Speichersicherer Debugexport**: Der laufende Rich-Debugpuffer ist auf die
-  letzten 50 Entscheidungen begrenzt; nur die aktuelle Hand bleibt zusätzlich
-  reichhaltig für Inspector und Replay erhalten. Der vollständige kompakte
-  Handdatensatz wächst weiterhin ohne Handlimit und wird im Web als Blob-Teile
-  beziehungsweise auf Android sequenziell in ungefähr 256-KB-Blöcken
-  geschrieben. Doppelte Score-Strings und sessionweit duplizierte Decision
-  Snapshots entfallen; erneutes Antippen ist während des Exports gesperrt.
-- **Lesbare Handhistory-Diagnose**: Handzeitstempel beziehen sich auf den
-  tatsächlichen Handstart und werden im menschlichen Export mit lokaler
-  Zeitzone sowie explizitem UTC-Offset ausgegeben; maschinenlesbare Daten
-  behalten den UTC-Zeitstempel. Entscheidungsblöcke nennen Botname, Street,
-  Archetyp, Skill und Reihenfolge statt nur interner Bot-ID und runden lange
-  Contribution-Werte ausschließlich in der Textdarstellung.
+-  **Targeted all-in depth guard:** Non-premium open shoves are no longer
+  selectable candidates from 25 BB; from 40 BB, the block also applies to
+  premium hands after at most one opponent raise, as long as the bot has not
+  invested substantially. Normal raises and short or already committed
+  4-bet/5-bet all-ins remain available.
+-  **Calling-station C-Bet defence:** The extra call/raise bonus for drawless,
+  unimproved hands is reduced to 25% when at least four players see the flop or
+  the required call costs the entire remaining stack. Normal heads-up and
+  three-player floats remain unchanged.
+-  **Memory-safe debug export:** The running rich debug buffer is limited to the
+  last 50 decisions; only the current hand remains fully rich for inspector and
+  replay. The full compact hand dataset continues to grow without a hand limit
+  and is written as blob chunks in the web version or sequentially in blocks of
+  approximately 256 KB on Android. Duplicate score strings and session-wide
+  duplicate decision snapshots have been removed; repeated taps are blocked
+  during export.
+-  **Readable hand history diagnostics:** Hand timestamps refer to the actual
+  hand start and are output in the human-readable export with the local timezone
+  and explicit UTC offset; machine-readable data retains the UTC timestamp.
+  Decision blocks name the bot name, street, archetype, skill and order instead
+  of only the internal bot ID, and long contribution values are rounded only for
+  text display.
 
-- **C-Bet-Defense mit schwachem Made Hand**: Aggressive Bots dürfen gegen eine
-  C-Bet weiterhin Druck ausüben, erhalten aber nicht mehr denselben Raise-Schub
-  wie ein echter Draw. Im reproduzierten Alva-artigen Spot bleiben Call und
-  Raise innerhalb der bestehenden Auswahlstreuung, statt den Shove-Pfad
-  strukturell zu erzwingen.
+-  **C-Bet defence with a weak made hand:** Aggressive bots may still apply
+  pressure against a C-Bet, but no longer receive the same raise boost as a
+  genuine draw. In the reproduced Alva-like spot, calls and raises remain within
+  the existing selection variance rather than structurally forcing the shove
+  path.
 
 ### Fixed
 
-- **Preflop-Wahrnehmung:** Die Platzhalter-Verwundbarkeit `0` und ein nicht
-  vorhandener Blocker erzeugen keine scheinbaren Wahrnehmungsfehler mehr.
-  Schutz gegen künftige Board-Draws wird erst ab dem Flop bewertet; die
-  Zufallsziehungen bleiben zur Stabilität nachfolgender Wahrnehmungen erhalten.
-- **PLO-Wrap-Qualität**: Straight-Outs, die zugleich einen gegnerischen
-  Flush ermöglichen, zählen ohne eigene stärkere Hand nicht mehr als
-  saubere Outs; teilweise dominierte Wraps heißen nicht länger
-  `nut-wrap`. Bereits gemachte Flushes sammeln keine schwächeren
-  Straight-Outs. [Konkrete Hände und Grenzen](docs/de/reviews/plo-wrap-outs-review-2026-09-30.md)
-  sind dokumentiert.
-- **PLO-Draw-Outs hinter Full House/Vierling**: Schwächere Straight- und
-  Flush-Treffer werden nicht mehr als saubere Verbesserungen oder
-  Semi-Bluff-Draws angezeigt. Echte Nut-Straight-Flush-Redraws bleiben als
-  Clean Outs erhalten; [Reproduktionen und Oracle-Checks](docs/de/reviews/plo-made-hand-redraw-review-2026-09-30.md)
-  dokumentieren die Abgrenzung.
-- **PLO-Straight-Flush-Nuts**: Die höchste gegnerisch mögliche Straight
-  Flush wird jetzt aus genau drei Boardkarten und zwei ungesehenen Karten
-  ermittelt. Eigene Blocker verhindern falsch-positive höhere Kombinationen;
-  ein [reproduzierter Q-high-Nuts-Fall](docs/de/reviews/plo-straight-flush-nut-review-2026-09-29.md)
-  ist regressionsgetestet.
-- **PLO-Vierlings-Nut-Potential**: Höhere Vierlinge werden nur bei passender
-  Boardstruktur und verfügbaren Karten als gegnerische Möglichkeit gewertet.
-  Ein tatsächlich möglicher Straight Flush verhindert die Einstufung als
-  absolute Nuts; eigene Karten können diese Möglichkeit blockieren. Vier
-  reproduzierbare Fälle sind im [PLO-Nachtrag](docs/de/reviews/plo-quads-nut-review-2026-09-29.md)
-  beschrieben.
-- **Offline-Engine-Korrektheit**: Ungecallte Einsätze werden vor einem
-  Uncontested-Pot-Award zurückgegeben; verwaiste Side-Pot-Layer werden nach
-  ihrer Fold-Reihenfolge statt an einen unberechtigten Shortstack vergeben.
-  Ungültige Actions, Bruchteile von Cents und nicht vollständig dealbare
-  Tische werden vor Zustandsänderungen abgewiesen. Physische Sitzfolge und
-  Dealer-Anker bleiben bei Sitzwechseln stabil. Der lokale Runner verbucht
-  ein verschachtelt erreichtes Handende nur einmal. Reproduktionen und
-  Grenzen stehen im [Offline-Kern-Nachtrag](docs/de/reviews/offline-core-review-2026-09-29.md).
-- **NLHE-Flushdraw-Provenienz**: Vier gleichfarbige Boardkarten erzeugen ohne
-  eigene Karte dieser Farbe keinen persönlichen Flushdraw mehr. Echte Draws
-  zählen nur unbekannte Karten als Outs und unterscheiden Nut- von Non-Nut-
-  Draws anhand der höchsten verfügbaren privaten Karte.
-- **NLHE-Pocket-Pair-Stärke**: Pocket Pairs unter Boardkarten erhalten nicht
-  länger pauschal `High relative strength`. Overpairs bleiben stark; ein, zwei
-  oder mindestens drei Overcards stufen die relative Stärke gezielt ab.
-- **Rebuy-Bilanz des Hero**: Das Handergebnis wird vor Ergebnisanimation und
-  zwischenzeitlichem Rebuy verbucht. Ein Bust mit anschließendem 100-BB-Rebuy
-  bleibt damit als `-100 BB` erhalten, statt auf `+0.0 BB` zurückzuspringen;
-  sofortige und vorgemerkte Rebuys werden weiterhin nicht als Gewinn gezählt.
-- **River-Protection**: `Protection against draws` und
-  `Board got more dangerous — protect harder` werden nicht mehr am River
-  vergeben, an dem keine zukünftige Karte mehr geschützt werden kann.
+-  **Preflop perception:** The placeholder vulnerability `0` and a non-existent
+  blocker no longer create apparent perception errors. Protection against future
+  board draws is only evaluated from the flop onwards; random draws are
+  preserved for stability of subsequent perceptions.
+-  **PLO wrap quality:** Straight outs that also enable an opponent flush are no
+  longer counted as clean outs when the player has no stronger hand; partially
+  dominated wraps are no longer labelled `nut-wrap`. Already made flushes do
+  not collect weaker straight outs.
+  [Specific hands and limits](docs/en/reviews/plo-wrap-outs-review-2026-09-30.md)
+  are documented.
+-  **PLO draw outs behind full house/quads:** Weaker straight and flush hits are
+  no longer treated as clean improvements or semi-bluff draws. True
+  nut-straight-flush redraws remain clean outs;
+  [reproductions and oracle checks](docs/en/reviews/plo-made-hand-redraw-review-2026-09-30.md)
+  document the boundary.
+-  **PLO straight-flush nuts:** The highest opponent-possible straight flush is
+  now determined from exactly three board cards and two unseen cards. Hole
+  blockers prevent false-positive higher combinations; a
+  [reproduced Q-high nuts case](docs/en/reviews/plo-straight-flush-nut-review-2026-09-29.md)
+  is regression-tested.
+-  **PLO quads nut potential:** Higher quads are only evaluated as a possible
+  opponent hand when the board structure matches and cards are available. A
+  genuinely possible straight flush prevents classification as absolute nuts;
+  hole cards can block that possibility. Four reproducible cases are described
+  in the [PLO addendum](docs/en/reviews/plo-quads-nut-review-2026-09-29.md).
+-  **Offline engine correctness:** Uncalled bets are returned before an
+  uncontested pot award; orphaned side-pot layers are assigned in fold order
+  rather than to an ineligible short stack. Invalid actions, fractions of a cent
+  and tables that cannot be fully dealt are rejected before state changes.
+  Physical seat order and the dealer anchor remain stable across seat changes.
+  The local runner only counts a nested hand-end once. Reproductions and limits
+  are in the
+  [offline core addendum](docs/en/reviews/offline-core-review-2026-09-29.md).
+-  **NLHE flush draw provenance:** Four board cards of the same suit do not
+  create a personal flush draw without a hole card of that suit. Genuine draws
+  only count unknown cards as outs and distinguish nut from non-nut draws based
+  on the highest available hole card.
+-  **NLHE pocket pair strength:** Pocket pairs below board cards are no longer
+  automatically given `High relative strength`. Overpairs remain strong; one,
+  two or at least three overcards reduce relative strength in a targeted way.
+-  **Hero rebuy balance:** Hand results are recorded before result animation and
+  any interim rebuy. A bust followed by a 100 BB rebuy therefore remains
+  `-100 BB` instead of reverting to `+0.0 BB`; immediate and pending rebuys are
+  still not counted as winnings.
+-  **River protection:** `Protection against draws` and
+  `Board got more dangerous — protect harder` are no longer awarded on the
+  river, where no future card remains to protect against.
 
 ### Security
 
-- **High-Severity-Abhängigkeiten geschlossen**: Electron wurde auf `41.10.7`,
-  `@xmldom/xmldom` auf `0.9.12` und `nanoid` auf `3.3.19` aktualisiert. Der
-  Workspace-Audit meldet damit keine kritischen oder hoch eingestuften
-  Schwachstellen mehr; verbleibende Findings sind separat zu bewertende
-  Moderate-/Low-Funde.
-- **Electron-Download-Abhängigkeit abgesichert**: Das transitive `undici` wurde
-  auf `7.30.0` aktualisiert. Damit wird auch der von GitHub als hoch eingestufte
-  TLS-Zertifikatsprüfungs-Alert für Versionen unter `7.29.1` geschlossen.
+-  **High-severity dependencies closed:** Electron was updated to `41.10.7`,
+  `@xmldom/xmldom` to `0.9.12` and `nanoid` to `3.3.19`. The workspace audit
+  now reports no critical or high-severity vulnerabilities; remaining findings
+  are moderate/low and require separate assessment.
+-  **Electron download dependency secured:** The transitive `undici` was updated
+  to `7.30.0`. This also closes the TLS certificate verification alert rated
+  high by GitHub for versions below `7.29.1`.
 
 ## [0.8.1] — 2026-08-11
 
 ### Added
 
-- **Getrennte Commitment-Semantik**: Bot-Entscheidungen unterscheiden nun echte
-  freiwillige Pot-Beteiligung (`potCommitment`) von der Größe eines geforderten
-  Calls relativ zum Reststack (`forcedAllInRatio`). Blinds erzeugen kein
-  Sunk-Cost-Signal; niedriger Skill, Archetyp, Tilt und Geduld skalieren eine
-  begrenzte menschliche Commitment-Tendenz. Große Reststack-Calls mit schwacher
-  Hand werden dagegen vorsichtiger bewertet, während starke Hände und sehr
-  günstige Pot Odds geschützt bleiben. Beide Werte sind im Bot-Debug und im
-  Session-Debug-Export sichtbar.
-- **Kalibrierungs-Regression (Layer 2)**: Ein deterministischer 300-Hand-Smoke
-  vergleicht alle 24 Varianten-/Archetyp-/Formatkombinationen mit einem
-  versionierten Snapshot. Raten warnen oberhalb von 2 Prozentpunkten und
-  schlagen oberhalb von 5 Prozentpunkten fehl; AF verwendet eigene absolute
-  Grenzen von 0,2 und 0,5. Strukturelle Verstöße bleiben harte Fehler.
-- **WTSD-Pfaddiagnostik**: Optionale Kalibrierungsdetails trennen All-in-,
-  Call-down-, Aggressor- und Check-down-Showdowns, Rollen, Gegnerfelder,
-  Preisklassen und Fold-Exits. Erhaltungstests verhindern doppelt oder nicht
-  zugeordnete Showdownpfade.
-- **Parameter-Validierung (Layer 3)**: Tests prüfen alle aufgelösten NLHE- und
-  PLO-Scoretabellen, Clamp-Grenzen, Skill-Tier-Sortierung und negative
-  All-in-Mali. Die Kalibrierungsregression läuft zusätzlich in der CI.
-- **PLO-SPR-Zonen**: Postflop-Entscheidungen überblenden nun graduell zwischen
-  Commitment, Protection und Draw-Realisation. Niedrige SPR unterscheiden
-  starke Made Hands und Premium-Draws von Non-Nut-Equity, mittlere SPR
-  bevorzugen Protection mit verwundbaren Made Hands und hohe SPR realisieren
-  starke saubere Draws; Risikotoleranz und Aggression erhalten dabei den
-  Archetypenunterschied.
-- **PLO-Board-Dynamics**: Turn- und River-Übergänge liefern statt eines binären
-  `boardGotWorse`-Signals einen handrelativen Equity-Collapse-Wert. Gepaarte
-  Boards entwerten Flushes und Straights, neu mögliche Flushes Non-Flush-Hände
-  und dichter werdende Straight-Boards werden nach tatsächlicher Hand- und
-  Nut-Stärke abgestuft. Gegen Bets wirkt der Faktor voll, bei ungeöffneter
-  Aktion nur als kleines Pot-Control-Signal; hohe Risikotoleranz dämpft ihn.
-- **PLO-River-Disziplin**: Schwache und mittlere Bluff-Catcher reagieren nun
-  auf Mehrstreet-Druck und fehlende Nut-Blocker. Nut-, Near-Nut- und
-  Second-Nut-Value bleibt ausgenommen; reale Flush-/Straight-Blocker,
-  Archetypen-Risikotoleranz und ein bereits verrechneter Equity Collapse
-  reduzieren die Strafe kontrolliert.
-- **PLO-Positionshebel**: Die echte Postflop-Aktionsreihenfolge bestimmt IP/OOP
-  auch nach Folds korrekt. In Position können dünne Redraws kostenlos realisiert
-  werden, realisierbare OOP-Equity foldet seltener und Made Hands mit
-  sauberen Nut-Redraws erhalten eine eigene Freeroll-Linie.
-- **PLO-Wrap-Kombinatorik**: `wrap-8+` und `wrap-13+` unterscheiden nun Nut-,
-  Mixed-, Second- und Bottom-Wraps anhand jeder physischen Out-Karte. Dominierte
-  Straight-Outs zählen nicht länger als `cleanOuts` oder Premium-SPR-Equity;
-  niedrige Skills können die rohe Out-Zahl weiterhin archetypisch überschätzen.
-- **Analyse-Skill-Gates**: Zentrale, validierte Schwellen staffeln PLO Board
-  Dynamics, River Discipline, Nut-Potential, Freerolls, Blocker und
-  Wrap-Dominanz. Skill 20 arbeitet in komplexen Wrap-Spots weiter mit der rohen
-  Out-Zahl; Skill 90 nutzt sämtliche Ebenen. Wahrnehmungsfehler und vereinfachte
-  Annahmen sind im Bot-Debug sichtbar.
-- **PLO-Blocker-Linien**: Erkannte Nut- und Teilblocker beeinflussen nun gezielt
-  Bluff-Catches, Bluff-Raises und Value-Pressure. Der Effekt skaliert mit
-  Blockerqualität, Skill sowie Aggression oder Risikotoleranz; Low-Skill-Bots und
-  NLHE bleiben von diesem PLO-spezifischen Pfad getrennt.
-- **Dynamische Implied Odds**: Der frühere pauschale +7-Callbonus berücksichtigt
-  nun effektiven Gegnerstack, wahrgenommenes Nut-Potential und aktive Gegner.
-  Tiefe Multiway-Pots stärken nut-nahe Draws, während dominierbare Draws wegen
-  Reverse Implied Odds weniger Bonus erhalten; Preflop wird nicht beeinflusst.
-- **Check-Raise-Strategie**: Die Street-Analyse erkennt klassische gegnerische
-  Check-Raises nun korrekt und nur auf der aktuellen Street. Calls, Folds und
-  Reraises reagieren differenziert nach Hand-Schutz, Preis, Skill, Archetyp und
-  Variante. Geeignete OOP-Heads-up-Spots erhalten außerdem ausführbare Value-
-  und Nut-Draw-Check-Raise-Pläne für NLHE und PLO.
-- **NLHE Turn-Double-Barrel-Habit**: Bots mit bestehender Three-Barrel-Neigung
-  können nun bereits auf geeigneten Blank Turns weiterfeuern. Value-, Draw- und
-  Bluff-Kandidaten werden getrennt bewertet; Skill, deterministische Habit-
-  Konsistenz und die gewichtete Aktionswahl halten die Linie individuell. Das
-  Habit bleibt auf Heads-up-in-der-Hand-NLHE-Spots begrenzt, verändert PLO nicht
-  und lost bestehende gespeicherte Identitäten nicht neu aus.
-- **NLHE Float-Defense**: Street-History erkennt nun exakt, wenn derselbe Gegner
-  eine Flop-C-Bet callt und nach dem Check des Aggressors den Turn bettet.
-  Geeignete Bluff-Catcher, Draws, Value-Hände und echte Blocker-Rebluffs reagieren
-  nach Preis, Boardentwicklung, Skill, Persönlichkeit und Gegnerread; normale
-  Turn-Bets, Air ohne Blocker und PLO erhalten keinen Float-Bonus.
-- **Preflop 4-Bet/5-Bet-Modell**: Preflop-Eskalationen unterscheiden jetzt
-  Value-Core, kontrollierte NLHE-A5s/A4s-Blockerbluffs und klare Fold-Ranges.
-  5-Bets benötigen passendes Stack-Commitment; nach einer 5-Bet bleiben
-  Non-Core-Raises und -Shoves ausgeschlossen. PLO nutzt eine separate lineare
-  Value-/Fold-Logik, und Deep-Stack-Shove-Sicherungen bleiben erhalten.
-- **NLHE River-Bet-Fold-Linien**: Bots können eine dünne Heads-up-Valuebet als
-  konkreten Bet-Fold-Plan in der Hand-Memory speichern. Die Fortsetzung wird nur
-  nach der exakten Sequenz eigene Opening-Bet → gegnerischer Raise aktiviert:
-  Fold gewinnt kontrolliert gegen den Bluff-Catch, während Reraises und Shoves
-  aus der Auswahl fallen. Nut-nahe Hände, Multiway, PLO und Low-Skill bleiben
-  geschützt; der aktive Plan erscheint im Bot-Debug.
-- **Formatgenaue Postflop-Kalibrierung**: C-Bet-Defense, Turn-Barrels und
-  PLO-Preflop-Reraises besitzen gezielte Varianten-/Archetyp-/Formathebel. Ein
-  C-Bet-Defense-Faktor wirkt nur gegen die echte Flop-C-Bet des
-  Preflop-Aggressors; NLHE-HU-LAG und Calling Station können dabei kontrolliert
-  auch Dead Air weiterspielen, ohne andere Formate zu verändern.
+-  **Separate commitment semantics:** Bot decisions now distinguish between
+  genuine voluntary pot participation (`potCommitment`) and the size of a
+  required call relative to the remaining stack (`forcedAllInRatio`). Blinds do
+  not generate a sunk-cost signal; low skill, archetype, tilt and patience scale
+  a limited human commitment tendency. Large remaining-stack calls with weak
+  hands are evaluated more cautiously, while strong hands and very favourable
+  pot odds remain protected. Both values are visible in bot debug and in the
+  session debug export.
+-  **Calibration regression (layer 2):** A deterministic 300-hand smoke test
+  compares all 24 variant/archetype/format combinations against a versioned
+  snapshot. Rates warn above 2 percentage points and fail above 5 percentage
+  points; AF uses its own absolute thresholds of 0.2 and 0.5. Structural
+  violations remain hard errors.
+-  **WTSD path diagnostics:** Optional calibration details separate all-in,
+  call-down, aggressor and check-down showdowns, roles, opponent fields, price
+  classes and fold exits. Preservation tests prevent double-counted or
+  unassigned showdown paths.
+-  **Parameter validation (layer 3):** Tests verify all resolved NLHE and PLO
+  score tables, clamp limits, skill-tier ordering and negative all-in money
+  lost. The calibration regression also runs in CI.
+-  **PLO SPR zones:** Postflop decisions now blend gradually between commitment,
+  protection and draw realisation. Low SPR distinguishes strong made hands and
+  premium draws from non-nut equity, medium SPR favours protection for
+  vulnerable made hands, and high SPR realises strong clean draws; risk
+  tolerance and aggression retain their archetype differences.
+-  **PLO board dynamics:** Turn and river transitions now provide a
+  hand-relative equity collapse value instead of a binary `boardGotWorse`
+  signal. Paired boards devalue flushes and straights, newly possible flushes
+  devalue non-flush hands, and tightening straight boards are scaled by actual
+  hand strength and nut strength. Against bets, the factor applies fully; with
+  no action, it only acts as a small pot-control signal; high risk tolerance
+  dampens it.
+-  **PLO river discipline:** Weak and medium bluff catchers now respond to
+  multi-street pressure and missing nut blockers. Nut, near-nut and second-nut
+  value are excluded; real flush/straight blockers, archetype risk tolerance and
+  an already accounted-for equity collapse reduce the penalty in a controlled
+  way.
+-  **PLO position leverage:** The true postflop action order correctly
+  determines IP/OOP even after folds. In position, thin redraws can be realised
+  for free, realisable OOP equity folds less often, and made hands with clean
+  nut redraws get a separate freeroll line.
+-  **PLO wrap combinatorics:** `wrap-8+` and `wrap-13+` now distinguish nut,
+  mixed, second and bottom wraps by each physical out card. Dominated straight
+  outs are no longer counted as `cleanOuts` or premium SPR equity; low skills
+  can still overestimate the raw out count archetypally.
+-  **Analysis skill gates:** Central, validated thresholds tier PLO board
+  dynamics, river discipline, nut potential, freerolls, blockers and wrap
+  dominance. Skill 20 continues to use the raw out count in complex wrap spots;
+  skill 90 uses all levels. Perception errors and simplified assumptions are
+  visible in bot debug.
+-  **PLO blocker lines:** Recognised nut and partial blockers now specifically
+  affect bluff catches, bluff raises and value pressure. The effect scales with
+  blocker quality, skill and aggression or risk tolerance; low-skill bots and
+  NLHE are kept separate from this PLO-specific path.
+-  **Dynamic implied odds:** The previous blanket +7 call bonus now takes into
+  account effective opponent stack, perceived nut potential and active
+  opponents. Deep multiway pots strengthen nut-adjacent draws, while dominable
+  draws receive less bonus due to reverse implied odds; preflop is not affected.
+-  **Check-raise strategy:** Street analysis now correctly detects classic
+  opponent check-raises and only on the current street. Calls, folds and
+  reraises respond differentially by hand protection, price, skill, archetype
+  and variant. Suitable OOP heads-up spots also receive executable value and
+  nut-draw check-raise plans for NLHE and PLO.
+-  **NLHE turn double-barrel habit:** Bots with an existing three-barrel
+  tendency can now fire again on suitable blank turns. Value, draw and bluff
+  candidates are evaluated separately; skill, deterministic habit consistency
+  and weighted action selection keep the line individual. The habit remains
+  limited to heads-up-in-hand NLHE spots, does not change PLO and does not
+  re-assign existing stored identities.
+-  **NLHE float defence:** Street history now precisely detects when the same
+  opponent calls a flop C-Bet and bets the turn after the aggressor checks.
+  Suitable bluff catchers, draws, value hands and genuine blocker rebluffs
+  respond by price, board development, skill, personality and opponent reads;
+  normal turn bets, air without blockers and PLO receive no float bonus.
+-  **Preflop 4-bet/5-bet model:** Preflop escalations now distinguish value
+  core, controlled NLHE A5s/A4s blocker bluffs and clear fold ranges. 5-bets
+  require suitable stack commitment; after a 5-bet, non-core raises and shoves
+  are excluded. PLO uses a separate linear value/fold logic, and deep-stack
+  shove safeguards remain intact.
+-  **NLHE river bet-fold lines:** Bots can store a thin heads-up value bet as a
+  concrete bet-fold plan in hand memory. Continuation only activates after the
+  exact sequence: own opening bet → opponent raise. Fold wins control against
+  the bluff catch, while reraises and shoves are removed from selection.
+  Nut-adjacent hands, multiway, PLO and low skill remain protected; the active
+  plan appears in bot debug.
+-  **Format-accurate postflop calibration:** C-Bet defence, turn barrels and PLO
+  preflop reraises have targeted variant/archetype/format levers. A C-Bet
+  defence factor only applies against the true flop C-Bet of the preflop
+  aggressor; NLHE HU LAG and calling station can continue to play dead air in a
+  controlled way without changing other formats.
 
 ### Fixed
 
-- **Korrekte Turn-C-Bet-Metrik**: Turn-Bets nach einem durchgecheckten Flop
-  zählen nicht länger als Double Barrel. Eine Opportunity entsteht nur, wenn
-  derselbe Spieler Preflop-Aggressor und Flop-C-Bettor war und der Turn noch
-  nicht eröffnet wurde.
-- **PLO-Reraise-Kalibrierung**: Die generische Preflop-Reraise-Strafe skaliert
-  nach Archetyp und Format. Dadurch werden die zuvor zu hohen LAG-3-Bets in
-  Full Ring/6-max begrenzt, ohne die PLO-HU-Initiative aller Archetypen
-  abzuschneiden.
-- **PLO-Wheel-Nut-Erkennung**: Die Wheel-Straight wird in der geordneten
-  Straight-Suche als Five-high statt irrtümlich als Ace-high behandelt.
+-  **Correct turn C-Bet metric:** Turn bets after a checked-through flop are no
+  longer counted as double barrel. An opportunity only arises when the same
+  player was preflop aggressor and flop C-Bettor and the turn has not yet been
+  opened.
+-  **PLO reraise calibration:** The generic preflop reraise penalty scales by
+  archetype and format. This limits previously excessive LAG 3-bets in full ring
+  and 6-max without cutting PLO HU initiative for all archetypes.
+-  **PLO wheel nut recognition:** The wheel straight is treated as five-high in
+  the ordered straight search rather than mistakenly as ace-high.
 
-- **Handisolierte Kalibrierungs-Seeds**: Deck- und Entscheidungs-RNG werden pro
-  Hand separat abgeleitet und der Dealer explizit rotiert. Unterschiedlich
-  lange Postflop-Runouts können dadurch nicht länger alle folgenden Deals und
-  Entscheidungen eines A/B-Laufs verschieben.
+-  **Hand-isolated calibration seeds:** Deck and decision RNG are derived
+  separately per hand and the dealer is explicitly rotated. Differing postflop
+  runout lengths can no longer shift all subsequent deals and decisions in an
+  A/B run.
 
-- **Android-HandReplayer**: Header, Tischbereich und Replay-Steuerung belegen
-  jetzt eigene Layoutzeilen. Der Tisch skaliert im kompakten Landscape aus dem
-  tatsächlich verfügbaren Mittelbereich statt aus einer pauschal um 260 px
-  reduzierten Viewport-Höhe; ein Responsive-Smoke-Test deckt Heads-up, 6-max
-  und 9-max PLO bei 844×390 ab.
-- **NLHE auf doppelt gepaarten Boards**: Hole Cards, die eine gemeinsame
-  Two-Pair-Boardhand nicht verbessern, gelten nicht länger als eigene
-  `marginal` Made Hand. Board-Plays wie `5-2` auf `A-A-T-T-5` erhalten die
-  schwache River-Bewertung, während echte Kicker und Full Houses getrennt
-  bleiben.
-- **Release-Kalibrierung**: Format- und archetypspezifische Preflop-, C-Bet-,
-  Barrel-, Probe-, Pot-Control- und bounded-Call-Hebel schließen alle
-  unveränderten NLHE-/PLO-Zielranges in Full Ring, 6-max und Heads-up. Die
-  10k-/3k-Gates enthalten keine Invalid-Action-Fallbacks oder uncommitted
-  Deep-Stack-Shoves.
+-  **Android HandReplayer:** Header, table area and replay controls now occupy
+  separate layout rows. The table scales from the actual available middle area
+  in compact landscape instead of from a viewport height reduced by 260 px; a
+  responsive smoke test covers heads-up, 6-max and 9-max PLO at 844×390.
+-  **NLHE on double-paired boards:** Hole cards that do not improve a shared
+  two-pair board hand are no longer treated as an own `marginal` made hand.
+  Board plays such as `5-2` on `A-A-T-T-5` receive the weak river assessment,
+  while genuine kickers and full houses remain separate.
+-  **Release calibration:** Format- and archetype-specific preflop, C-Bet,
+  barrel, probe, pot-control and bounded-call levers cover all unchanged
+  NLHE/PLO target ranges in full ring, 6-max and heads-up. The 10k-/3k-hand
+  gates contain no invalid-action fallbacks or uncommitted deep-stack shoves.
 
 ## [0.8.0] — 2026-08-09
 
 ### Added
 
-- **Tabellenformat-Isolation**: Eine zentrale Auflösung unterscheidet Full Ring,
-  6-max und Heads-up anhand der festen Sitzanzahl. Die Zahl aktiver Spieler im
-  Pot beeinflusst weiterhin Multiway-Entscheidungen, kann das Tischformat aber
-  nicht mehr nachträglich umklassifizieren.
-- **Explizite PLO-HU-Strategie**: Heads-up besitzt eigene Preflop-, Flop-, Turn-
-  und River-Score-Tabellen und erbt nicht länger implizit 6-max-Overrides.
-- **Kalibrierungsdiagnostik**: Rohnenner für C-Bet, Fold-to-CBet, Turn C-Bet,
-  AF und WTSD sowie AF nach Street, PFA-Rolle und Drucksituation.
-- **Engine-Invariantensuite**: 19 randomisierte NLHE-/PLO-Tests über je 1.000
-  Hände prüfen Chip-, Pot-, Stack-, Queue-, Blind- und Kartenintegrität.
+-  **Table format isolation:** A central resolution distinguishes full ring,
+  6-max and heads-up by fixed seat count. The number of active players in the
+  pot still affects multiway decisions but can no longer reclassify the table
+  format retroactively.
+-  **Explicit PLO HU strategy:** Heads-up has its own preflop, flop, turn and
+  river score tables and no longer implicitly inherits 6-max overrides.
+-  **Calibration diagnostics:** Raw denominators for C-Bet, fold-to-CBet, turn
+  C-Bet, AF and WTSD, plus AF by street, PFA role and pressure situation.
+-  **Engine invariants suite:** 19 randomised NLHE/PLO tests of 1,000 hands each
+  check chip, pot, stack, queue, blind and card integrity.
 
-- **Code-Review**: Systematische Prüfung von 30 Modulen (Engine, Game-Loop,
-  Scoring, Modifier, Support, Habits, Identities, Replay, Rebuy, NLHE/PLO-Handbewertung).
-  22 Bugs gefunden und behoben, 19 Module als bugfrei bestätigt ([historischer Review](docs/de/reviews/review-2026-08-07.md)).
-- **PLO-Nut-Erkennung verfeinert**: `'second-nuts'`-Stufe zwischen `'near-nuts'`
-  und `'strong'` für granulare PLO-Bewertung (Quads-K-vs-A, FH-KKKAA-vs-AAA,
-  K-high-Flush-vs-A-high, Straight-Gap). Eigener Scoring-Parameter
-  `secondNutPotential: 4` dämpft Aggression bei zweitbesten Händen.
-- **PLO-Straight-Flush- & Quads-Nut**: SF prüft höchsten möglichen Straight-Flush
-  via Board-Suit-Ranks; Quads erkennen blockierte höhere Ränge via `ourCount`.
-- **`findStraightTop`-Algorithmus**: O(10)-Enumeration über alle 10 Straight-Runs
-  für NLHE und PLO — ersetzt defekte Heuristiken in `isNutStraight` (NLHE) und
+-  **Code review:** Systematic review of 30 modules (engine, game loop, scoring,
+  modifiers, support, habits, identities, replay, rebuy, NLHE/PLO hand
+  evaluation). 22 bugs found and fixed, 19 modules confirmed bug-free
+  ([historical review](docs/en/reviews/review-2026-08-07.md)).
+-  **PLO nut recognition refined:** `'second-nuts'` level added between
+  `'near-nuts'` and `'strong'` for more granular PLO evaluation (quads K vs A,
+  FH KKKAA vs AAA, K-high flush vs A-high flush, straight gap). Dedicated
+  scoring parameter `secondNutPotential: 4` dampens aggression with second-best
+  hands.
+-  **PLO straight-flush and quads nuts:** SF checks the highest possible
+  straight flush via board suit ranks; quads detect blocked higher ranks via
+  `ourCount`.
+-  ** `findStraightTop` algorithm:** O(10) enumeration over all 10 straight runs
+  for NLHE and PLO — replaces broken heuristics in `isNutStraight` (NLHE) and
   `findNutStraightTop` (PLO).
-- **PLO-Flush-Nut**: Korrekte Hole-vs-Board-Trennung statt Hand-Cards-Minus-Board-Hack;
-  höchste nicht-auf-Board-Rang der Flush-Farbe bestimmt Nut-Status.
+-  **PLO flush nuts:** Correct hole-vs-board separation instead of a
+  hand-cards-minus-board hack; the highest non-board rank of the flush suit
+  determines nut status.
 
 ### Changed
 
-- **Kalibrierungs-Gate**: v0.8.0 friert eine formatisolierte statische Baseline
-  ein. Exaktes Postflop-Tuning folgt nach den Strategieänderungen von v0.8.1;
-  adaptive Preflop-/HU-Validierung folgt nach v0.8.2. Die Zielranges wurden
-  dafür nicht aufgeweicht.
+-  **Calibration gate:** v0.8.0 freezes a format-isolated static baseline. Exact
+  postflop tuning follows the strategy changes of v0.8.1; adaptive preflop/HU
+  validation follows after v0.8.2. The target ranges were not relaxed for this.
 
-- **PLO-Score-Tabellen rekalibriert**: LAG-Raise-Scores auf v0.7.8-Niveau
-  zurück, TAG-Raise-Scores erhöht, Nit-Fold-Scores erhöht, Protection-Boni
-  auf Originalwerte zurück, Board-Worse-Sensitivity 0.6→0.4.
-- **Kalibrierungs-Targets aktualisiert**: NLHE C-Bet (LAG 80–90→68–78%,
-  Nit 45–58→60–72%), NLHE/PLO AF-Caps gesenkt, PLO WTSD-Targets nach
-  PLO-Realismus-Kriterien gesetzt (TAG 22–32, Nit 22–28, LAG 28–34, CS 28–45).
-- **ROADMAP**: PLO-Nut-Erkennung, `findStraightTop` und Code-Review als abgeschlossene Punkte in v0.8.0 eingetragen.
+-  **PLO score tables recalibrated:** LAG raise scores reverted to v0.7.8
+  levels, TAG raise scores increased, nit fold scores increased, protection
+  bonuses reverted to original values, board-worse sensitivity changed from 0.6
+  to 0.4.
+-  **Calibration targets updated:** NLHE C-Bet (LAG 80–90% → 68–78%, nit 45–58%
+  → 60–72%), NLHE/PLO AF caps lowered, PLO WTSD targets set according to PLO
+  realism criteria (TAG 22–32%, nit 22–28%, LAG 28–34%, CS 28–45%).
+-  **ROADMAP:** PLO nut recognition, `findStraightTop` and code review marked as
+  completed in v0.8.0.
 
 ### Fixed
 
-- **`calculateOmahaStrength`**: if-Chain ohne `else` — alle Rangstufen ≥4 kollabierten in dieselbe Formel (rank 9=72 statt 88).
-- **`isDominatedStraightOut`**: Gegner-Trial immer leer — `out` gleichzeitig auf Board und im Hole, Gegner-Prüfung nie ausgeführt.
-- **`findNutStraightTop` (PLO)**: `boardRanks`-Parameter nie genutzt, gab immer 14 zurück — falsch-positive Nut-Erkennung bei Straights.
-- **PLO-Flush-Nut**: Board-Ass wurde zu unseren Hole-Card-Rängen gezählt — jeder Board-Ass-Flush als `near-nuts`.
-- **PLO Full House/Trips/Two Pair**: Nut-Heuristik ohne Gegner-Trips-Berechnung (`boardCount+min(2,4-bc-ourCount)≥3`).
-- **`limp-reraise-premium`**: Checkte `'strong'` statt `'premium'` — AA/KK lösten den Habit nicht aus.
-- **`three-barrel-bluff`**: Feuerte bei jedem River-Bluff ohne Prüfung auf Flop-/Turn-Aggression.
-- **Nit-Rebuy-Policy**: `rebuyThresholdBb` und `maxRebuys` unabhängig gewürfelt — 28% der Nits mit `null`-Threshold bei `maxRebuys:1`.
-- **`getCashOutPolicy`**: LAG nicht im Ternary-Chain — fiel durch auf Default-Fallback.
-- **Turn-Karte doppelt**: Der Hand-History-Text zeigte die Turn-Karte im Board-Segment und erneut als Einzelkarte.
-- **`marginal`-Doppelstrafe**: Reraise-Penalties trafen `marginal` doppelt (−30) vs. `weak` (−18).
-- **`findStraightDraw` (NLHE)**: A-high-Wrap (J,Q,K,A) als OESD (8 Outs) statt Gutshot (4 Outs) klassifiziert.
-- **`calculateCleanOuts`**: JSDoc-Kommentar fehlplatziert im Funktionskörper, Klammern-Einrückung gebrochen.
-- Alle weiteren Bugs aus dem [historischen Code-Review](docs/de/reviews/review-2026-08-07.md).
-
+-  ** `calculateOmahaStrength`:** if-chain without `else` — all rank levels ≥4
+  collapsed into the same formula (rank 9 became 72 instead of 88).
+-  ** `isDominatedStraightOut`:** opponent trial always empty — `out` checked
+  against board and hole simultaneously, opponent check never executed.
+-  ** `findNutStraightTop` (PLO):** `boardRanks` parameter never used, always
+  returned 14 — false-positive nut straight detection.
+-  **PLO flush nuts:** Board ace was counted among our hole-card ranks — every
+  board-ace flush treated as `near-nuts`.
+-  **PLO full house/trips/two pair:** Nut heuristic lacked opponent trips
+  calculation (`boardCount+min(2,4-bc-ourCount)≥3`).
+-  ** `limp-reraise-premium`:** checked `'strong'` instead of `'premium'` —
+  AA/KK did not trigger the habit.
+-  ** `three-barrel-bluff`:** fired on every river bluff without checking for
+  flop/turn aggression.
+-  **Nit rebuy policy:** `rebuyThresholdBb` and `maxRebuys` rolled independently
+  — 28% of nits had `null` threshold with `maxRebuys:1`.
+-  ** `getCashOutPolicy` **: LAG missing from the ternary chain — it fell
+  through to the default fallback.
+-  **Turn card twice**: the hand-history text showed the turn card in the board
+  segment and again as a single card.
+-  **Double penalty for `marginal` **: reraise penalties hit `marginal` twice
+  (−30) vs. `weak` (−18).
+-  ** `findStraightDraw` (NLHE)**: A-high wrap (J,Q,K,A) was classified as OESD
+  (8 outs) instead of a gutshot (4 outs).
+-  ** `calculateCleanOuts` **: JSDoc comment misplaced in the function body,
+  bracket indentation broken.
+-  All other bugs from the
+  [historical code review](docs/en/reviews/review-2026-08-07.md).
 ## [0.7.9] — 2026-08-04
 
 ### Added
 
-- **Nativer Android-Export**: Session-Logs, Replayer-Hand-Histories und das
-  vollständige Debug-JSON werden im App-Cache als echte Datei erzeugt und über
-  das Android-Teilen-/Speichern-Menü exportiert. Web und Desktop behalten den
-  direkten Browser-Download.
-- **Bot-Porträts**: 36 weitere Roster-Identitäten erhalten aus den neuen
-  Avatarbögen zugeschnittene und optimierte 512×512-WebP-Porträts. Damit sind
-  40 der 44 stabilen Bot-Identitäten bebildert; die übrigen vier verwenden
-  weiterhin den Initialen-Fallback.
-- **PLO-Board-Delta**: Flush-Vervollständigungen, Board-Paarungen und nach der
-  Omaha-3-Board-Regel neu entstehende Straight-Fenster lösen jetzt eine
-  variantenabhängig dosierte Protection-Reaktion aus.
-- **Kalibrierungsschema v2**: Ein zentraler Hand-Accumulator definiert VPIP,
-  PFR, 3-Bet, C-Bet, Fold-to-C-Bet und AF; Golden-Hand-Tests und Invarianten
-  sichern unmögliche Zählerrelationen ab.
-- **Bot-Cash-outs**: Gewinner verlassen den Tisch nach einer archetypabhängigen
-  Mindestdauer ab einer Basisschwelle von 240–480 BB, individuell durch ihre
-  Risikoneigung verschoben, und spätestens am persönlichen Hard-Limit bis
-  800 BB. Der vorhandene Ersatzmechanismus besetzt den Sitz anschließend wieder
-  mit dem normalen Startstack.
+- **Native Android export**: Session logs, replayer hand histories and the full
+  debug JSON are written as real files in the app cache and exported through the
+  Android share/save menu. Web and desktop keep the direct browser download.
+- **Bot portraits**: 36 further roster identities receive cropped and optimised
+  512×512 WebP portraits from the new avatar arcs. 40 of the 44 stable bot
+  identities now have images; the remaining four still use the initials
+  fallback.
+- **PLO board delta**: Flush completions, board pairings and straight windows
+  that arise newly under the Omaha three-board rule now trigger a protection
+  reaction dosed per variant.
+- **Calibration schema v2**: A central hand accumulator defines VPIP, PFR,
+  3-Bet, C-Bet, Fold-to-C-Bet and AF; golden-hand tests and invariants guard
+  against impossible counter relations.
+- **Bot cash-outs**: Winners leave the table after an archetype-dependent
+  minimum duration starting from a base threshold of 240–480 BB, shifted
+  individually by their risk appetite, and at the latest at their personal hard
+  limit of 800 BB. The existing replacement mechanism then reseats the seat with
+  the normal starting stack.
 
 ### Changed
 
-- **Opponent Evidence**: Line- und Sizing-Signale wirken gemeinsam und
-  aktionsabhängig auf Fold, Call und Raise. Kleine Bets werden abhängig von der
-  eigenen Aggressionsneigung attackiert, große Abweichungen vorsichtiger
-  behandelt.
-- **Sessiontreue Kalibrierung**: Simulation und echte lokale Session verwenden
-  dieselbe Opponent-Read-Beobachtung. Alle unveränderten Full-Ring- und
-  6-max-Targets wurden für NLHE und PLO mit deterministischen 10k-Läufen
-  bestätigt; Heads-up bleibt in v0.8.0.
-- **PLO Calling Station**: Flop-Defense in Full Ring und 6-max verbreitert und
-  die spätere Call-Down-Neigung getrennt kalibriert. Das senkt unplausibel hohe
-  Fold-to-C-Bet-Werte, ohne AF- oder WTSD-Korridore zu erweitern.
-- **PLO-Preflop-Handqualität**: Suit-Struktur, Nut-Suits, Paare, Rundowns,
-  Wheel-Connectivity und Dangler werden unabhängig von Position und vorheriger
-  Action bewertet. Triple-/monotone Suits gelten nicht länger als
-  double-suited und Paare erzeugen keine fiktive Connectedness.
-- **PLO-Format- und Street-Trennung**: Eine gemeinsame absolute Handbewertung
-  speist formatspezifische Full-Ring-/6-max-Aktionen sowie getrennte
-  Flop-/Turn-/River-Scores. LAG-River-Pressure und Calling-Station-Defense
-  bleiben dadurch lokal kalibrierbar, ohne andere Formate mitzuziehen.
-- **Calling-Station-Skillprofil**: Dauerhaft loose-passive Identitäten bleiben
-  mit einer deterministischen Verteilung von 38 ± 6 vollständig im Low-Tier
-  von 15 bis 49. Generator v3 migriert vorhandene CS-Skills, ohne Namen, IDs
-  oder individuelle Nicht-CS-Skills neu auszulosen.
-- **Manuelle Verhaltensprüfung**: Nach Änderungen an Kalibrierung, Ranges oder
-  Action Scores ist zusätzlich zu deterministischen Läufen eine 100–150-Hände-
-  Probe-Session mit Hand-Triage als wiederkehrendes Release-Gate dokumentiert.
+- **Opponent evidence**: Line and sizing signals act jointly on fold, call and
+  raise, depending on the action. Small bets are attacked depending on one's own
+  aggression tendency, large deviations are treated cautiously.
+- **Session-faithful calibration**: Simulation and real local session use the
+  same opponent read observation. All unchanged full-ring and 6-max targets were
+  confirmed for NLHE and PLO with deterministic 10k runs; heads-up stays in
+  v0.8.0.
+- **PLO calling station**: Flop defence in full ring and 6-max broadened and the
+  later call-down tendency calibrated separately. This lowers implausibly high
+  Fold-to-C-Bet values without widening the AF or WTSD corridors.
+- **PLO preflop hand quality**: Suit structure, nut suits, pairs, rundowns,
+  wheel connectivity and danglers are evaluated independently of position and
+  previous action. Triple-suit/monotone suits no longer count as double-suited
+  and pairs no longer generate fictitious connectedness.
+- **PLO format and street separation**: A common absolute hand evaluation feeds
+  format-specific full-ring/6-max actions as well as separate flop/turn/river
+  scores. LAG river pressure and calling-station defence therefore stay locally
+  calibratable without dragging other formats along.
+- **Calling-station skill profile**: Permanently loose-passive identities remain
+  fully within the low tier from 15 to 49 with a deterministic distribution of
+  38 ± 6. Generator v3 migrates existing CS skills without redrawing names, IDs
+  or individual non-CS skills.
+- **Manual behaviour check**: After changes to calibration, ranges or action
+  scores, a 100–150 hand trial session with hand triage is documented in
+  addition to deterministic runs as a recurring release gate.
 
 ### Fixed
 
-- **Android-Debugzugang**: Der Bot-Debug-Modus ist im nativen Client nicht
-  länger ausschließlich über die Desktop-Tastenkombination `Strg+D`
-  erreichbar. Fünf schnelle Berührungen der Versionsanzeige schalten ihn
-  touchfähig um; der Zustand bleibt lokal für folgende Sessions gespeichert.
-- **Capacitor-Plugin-Sync im Workspace**: Die vom Client verwendeten Plugins
-  `App`, `Filesystem` und `Share` werden im Monorepo explizit in den nativen
-  Android-Build aufgenommen; zuvor blieb die generierte Plugin-Liste leer.
-- **Omaha-Showdownvergleich**: `evaluateOmahaHand()` wählt innerhalb derselben
-  Handkategorie jetzt die tatsächlich stärkste Fünf-Karten-Kombination statt
-  der zuerst iterierten. Der in der PLO-Probesession sichtbare falsche Sieg von
-  9-9-2-2 gegen Q-Q-2-2 ist als reihenfolgeunabhängiger Regressionstest
-  abgesichert.
-- **PLO-Made-Hand-Protection**: Verwundbare Sets, Straights und Flushes
-  erhalten auf Flop und Turn einen eigenen, dosierten Equity-Denial-Impuls;
-  der River bleibt davon ausgenommen. Dadurch überschreibt Protection nicht
-  deterministisch den Archetyp.
-- **PLO-LAG-Commitment**: Nicht-nut-orientierte Preflop- und Postflop-All-ins
-  deutlich gedämpft, normale Raises aber beibehalten. Full Ring und 6-max
-  besitzen getrennte späte Pressure-/Fold-Gewichte statt einer gemeinsamen
-  Kompromisstabelle.
+- **Android debug access**: The bot debug mode in the native client is no longer
+  reachable only via the desktop keyboard shortcut `Ctrl+D`. Five quick taps on
+  the version display toggle it in a touch-friendly way; the state remains
+  stored locally for subsequent sessions.
+- **Capacitor plugin sync in the workspace**: The plugins `App`, `Filesystem`
+  and `Share` used by the client are explicitly included in the native Android
+  build in the monorepo; previously the generated plugin list stayed empty.
+- **Omaha showdown comparison**: `evaluateOmahaHand()` now selects the actually
+  strongest five-card combination within the same hand category instead of the
+  first one iterated. The incorrect win of 9-9-2-2 against Q-Q-2-2 visible in
+  the PLO trial session is guarded by an order-independent regression test.
+- **PLO made-hand protection**: Vulnerable sets, straights and flushes receive
+  their own dosed equity-denial impulse on flop and turn; the river is exempt
+  from it. Protection therefore no longer deterministically overrides the
+  archetype.
+- **PLO LAG commitment**: Non-nut-oriented preflop and postflop all-ins damped
+  considerably, normal raises however retained. Full ring and 6-max have
+  separate late pressure/fold weights instead of a common compromise table.
 
-- **Sizing-Normalisierung**: Historische und aktuelle aggressive Aktionen
-  werden einheitlich als tatsächlich investierte Chips relativ zum Pot vor der
-  Aktion verglichen; die aktuelle Beobachtung wird aus ihrem EMA-Vergleich
-  herausgerechnet.
-- **Passive All-ins**: Zu kurze All-in-Calls erzeugen weder Aggressions- noch
-  Sizing-Evidenz und werden in Reads wie Calls behandelt.
-- **VPIP bei Free Checks**: Ein kostenloser Check im Big Blind gilt weder in
-  Session-Reads noch in der Kalibrierung als freiwillige Pot-Beteiligung.
-- **Bot-Austausch am Tisch**: Name, Avatar, Engine-Spieler und Replayer wechseln
-  nun gemeinsam auf die neue Identität; zuvor blieb am Live-Sitz der alte Name
-  stehen.
-- **Protection-Sizing**: `boardGotWorse` wird an die Raise-Sizing-Berechnung
-  weitergereicht; der zuvor wirkungslose `any`-Zugriff ist entfernt.
-- **Opponent Reads**: Eine normalerweise passive gegnerische Bet erzeugt nicht
-  länger pauschal einen Call-Bonus; Preflop- und Postflop-Reaktionen sind
-  unterschiedlich stark dosiert.
-- **Deep-Stack-All-ins**: Open-Shoves über 40 BB sowie tiefe, noch nicht
-  ausreichend investierte All-ins erhalten harte Commitment-Grenzen, statt als
-  normale Raise-Alternative bis 400+ BB auswählbar zu bleiben. Die
-  Kalibrierung zählt solche Open-Shoves und uncommitted Deep-Shoves separat und
-  schlägt bei jedem Treffer fehl. Normale Raises, die auf den Maximalbetrag
-  runden würden, bleiben unterhalb des All-ins, solange der Shove gesperrt ist.
-- **NLHE-Calling-Station-Value**: Niedrige Aggression reduziert Value-Bets
-  weiterhin, löst für Made Hands aber nicht zusätzlich die Bluff-/Initiative-
-  Sperre aus. Der `sticky-postflop`-Einfluss nimmt über die Streets ab;
-  wiederholter Druck bestraft drawlose schwache Call-downs auf Turn und River.
-  PLO behält seine separat kalibrierten Street-Tabellen.
-- **Latentes Positionsfeld**: Das semantisch falsche und ungenutzte
-  `iAmInPosition` aus der Street-Analyse entfernt, bevor es versehentlich an
-  Scoring angeschlossen werden kann.
+- **Sizing normalisation**: Historical and current aggressive actions are
+  compared uniformly as chips actually invested relative to the pot before the
+  action; the current observation is factored out of its EMA comparison.
+- **Passive all-ins**: All-in calls that are too short produce neither
+  aggression nor sizing evidence and are treated like calls in reads.
+- **VPIP on free checks**: A free check in the big blind counts neither in
+  session reads nor in calibration as voluntary pot participation.
+- **Bot swap at the table**: Name, avatar, engine player and replayer now switch
+  to the new identity together; previously the old name stayed at the live seat.
+- **Protection sizing**: `boardGotWorse` is passed on to the raise sizing
+  calculation; the previously ineffective `any` access is removed.
+- **Opponent reads**: A normally passive opponent bet no longer
+  blanket-generates a call bonus; preflop and postflop reactions are dosed to
+  different degrees.
+- **Deep-stack all-ins**: Open-shoves over 40 BB as well as deep all-ins that
+  are not yet invested sufficiently receive hard commitment limits instead of
+  remaining selectable as a normal raise alternative up to 400+ BB. Calibration
+  counts such open-shoves and uncommitted deep-shoves separately and fails on
+  every hit. Normal raises that would round up to the maximum amount stay below
+  the all-in as long as the shove is locked.
+- **NLHE calling-station value**: Low aggression still reduces value bets, but
+  no longer additionally triggers the bluff/initiative lock for made hands. The
+  `sticky-postflop` influence decreases across the streets; repeated pressure
+  punishes weak drawless call-downs on turn and river. PLO keeps its separately
+  calibrated street tables.
+- **Latent position field**: Removed the semantically wrong and unused
+  `iAmInPosition` from the street analysis before it can accidentally be
+  connected to scoring.
 
 ### Security
 
-- **Transitive npm-Abhängigkeiten**: `brace-expansion` auf 5.0.9 und
-  `socket.io-parser` auf 4.2.7 aktualisiert; der High-Severity-Audit ist damit
-  wieder ohne Befund.
-- **Electron-Sicherheitsupdate**: Electron innerhalb der kompatiblen 41er-Reihe
-  auf 41.10.4 aktualisiert und die Install-Script-Freigabe versionsgenau
-  nachgezogen; die am 5. August gemeldeten High-Severity-Advisories sind damit
-  behoben.
+- **Transitive npm dependencies**: `brace-expansion` updated to 5.0.9 and
+  `socket.io-parser` to 4.2.7; the high-severity audit is therefore free of
+  findings again.
+- **Electron security update**: Electron updated within the compatible 41 series
+  to 41.10.4 and the install-script release approval brought up to date exactly
+  by version; the high-severity advisories reported on 5 August are fixed by
+  this.
 
 ## [0.7.8] — 2026-08-03
 
 ### Added
 
-- **PLO-Preflop-Strategie-Tabelle**: Archetyp, Situation, Handkategorie und
-  Tischgröße steuern die bevorzugte Aktion; PLO verwendet dafür eine gegenüber
-  NLHE abgeschwächte Strategiegewichtung.
-- **Gemischte Nit-6-max-Aktionen**: `raise-or-call` für gute Hände und
-  `call-or-fold` für mittlere Hände gegen ein Open verbreitern die Range
-  kontrolliert, ohne globale Postflop-Aggression zu manipulieren.
-- **Kalibrierungsdiagnostik**: Profil- und Formatfilter sowie optionale Traces
-  nach Street, Handkategorie, PFA-Rolle und Bet-Druck ergänzt.
-- **Kalibrierungsberichte**: NLHE-C-Bet-Neudefinition, PLO-Metrik-Audit und die
-  finalen deterministischen 10k-Werte nachvollziehbar dokumentiert.
+- **PLO preflop strategy table**: Archetype, situation, hand category and table
+  size steer the preferred action; PLO uses a strategy weighting weakened
+  compared to NLHE.
+- **Mixed nit 6-max actions**: `raise-or-call` for good hands and `call-or-fold`
+  for medium hands against an open broaden the range in a controlled way,
+  without manipulating global postflop aggression.
+- **Calibration diagnostics**: Profile and format filters as well as optional
+  traces by street, hand category, PFA role and bet pressure added.
+- **Calibration reports**: NLHE C-Bet redefinition, PLO metric audit and the
+  final deterministic 10k values documented traceably.
 
 ### Changed
 
-- **PLO-Kalibrierung abgeschlossen**: TAG, Nit, LAG und Calling Station liegen
-  in Full Ring und 6-max über VPIP, PFR, 3-Bet, C-Bet, AF und WTSD innerhalb
-  ihrer menschlich plausiblen Zielkorridore.
-- **PLO-Archetypen geschärft**: TAG-/LAG-3-Bets, Calling-Station-VPIP und die
-  Nit-Ranges für Full Ring und 6-max situationsabhängig kalibriert.
-- **NLHE-C-Bet**: Die fachlich präzisere Kennzahl zählt den letzten
-  Preflop-Aggressor beim offenen Flop; die Zielkorridore wurden anhand der
-  unveränderten deterministischen Baseline neu gesetzt.
-- **Metrikabhängige PLO-Ziele**: Kleine Korridorkorrekturen berücksichtigen die
-  bereinigten AF-, WTSD- und 3-Bet-Definitionen; die zwischenzeitlich breite
-  Nit-6-max-Erweiterung auf AF 4,5 / WTSD 40 wurde verworfen.
+- **PLO calibration completed**: TAG, nit, LAG and calling station are within
+  their humanly plausible target corridors in full ring and 6-max via VPIP, PFR,
+  3-Bet, C-Bet, AF and WTSD.
+- **PLO archetypes sharpened**: TAG/LAG 3-Bets, calling-station VPIP and the nit
+  ranges for full ring and 6-max calibrated depending on the situation.
+- **NLHE C-Bet**: The technically more precise metric counts the last preflop
+  aggressor on an open flop; the target corridors were reset using the unchanged
+  deterministic baseline.
+- **Metric-dependent PLO targets**: Small corridor corrections take the cleaned
+  AF, WTSD and 3-Bet definitions into account; the interim broad nit 6-max
+  expansion to AF 4.5 / WTSD 40 was discarded.
 
 ### Fixed
 
-- **WTSD-Nenner**: Spieler, die den Flop sehen und später folden, bleiben im
-  Nenner; Preflop-All-ins mit automatischem Board-Runout werden korrekt ergänzt.
-- **AF bei All-ins**: Zu kurze passive All-in-Calls zählen als Calls statt als
-  Bets oder Raises.
-- **3-Bet-Opportunities**: Spätere Backraise-Gelegenheiten werden auch nach
-  einer vorherigen Aktion des Spielers im Nenner erfasst.
-- **Kalibrierungs-Typecheck**: Test-Fixture an die verpflichtende
-  `preflopRaiseCount`-Angabe angepasst.
+- **WTSD denominator**: Players who see the flop and fold later remain in the
+  denominator; preflop all-ins with automatic board runout are added correctly.
+- **AF on all-ins**: Too short passive all-in calls count as calls instead of
+  bets or raises.
+- **3-Bet opportunities**: Later backraise opportunities are also counted after
+  a previous action by the player in the denominator.
+- **Calibration typecheck**: Test fixture adapted to the mandatory
+  `preflopRaiseCount` specification.
 
 ### Known limitations
 
-- **Heads-up-Kalibrierung**: Bleibt vollständig für v0.8.0 vorgesehen. Der
-  korrigierte NLHE-Lauf bestätigt für Calling Station HU 1,79% 3-Bet bei 10k
-  Händen (63/3512 Opportunities) gegenüber dem bisherigen Korridor von 2–13%;
-  Verhalten und Target bleiben in v0.7.8 bewusst unverändert.
+- **Heads-up calibration**: Remains fully planned for v0.8.0. The corrected NLHE
+  run confirms 1.79% 3-Bet for calling station HU over 10k hands (63/3,512
+  opportunities) against the previous corridor of 2–13%; behaviour and target
+  deliberately remain unchanged in v0.7.8.
 
 ## [0.7.7] — 2026-07-30
 
 ### Added
 
-- **Lizenzierung**: Quellcode und originale Projektassets unter `AGPL-3.0-only` gestellt; Lizenzumfang, Copyright und Beitragsregeln dokumentiert.
-- **Android-Prototyp**: Capacitor 8, ein eingechecktes Android-Projekt und Skripte für Sync, Android Studio, Debug-Deployment und Gradle-Validierung ergänzt.
-- **Native Runtime-Schicht**: Web und Android werden ohne User-Agent-Abfrage unterschieden; Android erhält Landscape-Ausrichtung, immersive Systemleisten, Display-Cutout-Unterstützung sowie Resume- und Zurück-Taste-Handling.
-- **Lokaler Electron-Start**: Versionsgebundene Freigaben für erforderliche Dependency-Install-Skripte und eine Runtime-Prüfung mit konkreter Reparaturanweisung ergänzt.
-- **Demo-Sicherheit**: Öffentlichen Demo-Sync zunächst auf eine Positivliste umgestellt und nach dem Pages-Cutover durch eine statische Weiterleitung auf das Hauptrepository ersetzt.
-- **Abhängigkeiten**: Vite/Vitest sowie sicherheitsrelevante transitive Express-/Socket.IO-Abhängigkeiten auf behobene Versionen aktualisiert.
-- **Public Readiness**: Sicherheitsrichtlinie, reproduzierbare CI, Dependabot, Dependency Review, CodeQL und ein auf öffentliche Sichtbarkeit begrenztes Pages-Deployment ergänzt; Hauptrepository und offizielle Demo veröffentlicht.
-- **Server-Konfigurationstests**: JWT-Secret, Host- und Port-Validierung in die Root-Test-Suite aufgenommen.
-- **Responsive-Regressionstests**: Produktionsbuild in Chrome/Chromium für Desktop, Tablet, Phone-Landscape und Phone-Portrait auf sichtbare Karten, Sitze, Aktionen und Viewport-Grenzen abgesichert.
-- **Test- und Distributionsstrategie**: Rollenbezogene Alpha-, Beta- und RC-Phasen sowie Feedback-Triage, Datenschutz und geeignete Zeitpunkte für breitere Projektvorstellungen dokumentiert.
-- **Lokale Tester-Formulare**: Eigenständige HTML-Bögen für blinden NLHE-FR-Realismus, Neulings-Usability, UI-/Tischdesign und allgemeines Beta-Feedback mit Browser-Autosave, Textdatei-Export, Kopieren und optionalem Smartphone-Teilen ergänzt.
+- **Licensing**: Source code and original project assets placed under
+  `AGPL-3.0-only`; licence scope, copyright and contribution rules documented.
+- **Android prototype**: Capacitor 8, a checked-in Android project and scripts
+  for sync, Android Studio, debug deployment and Gradle validation added.
+- **Native runtime layer**: Web and Android are distinguished without a
+  user-agent query; Android gets landscape orientation, immersive system bars,
+  display cutout support as well as resume and back-button handling.
+- **Local Electron start**: Version-bound releases for required dependency
+  install scripts and a runtime check with a concrete repair instruction added.
+- **Demo security**: Public demo sync initially switched to an allowlist and
+  replaced after the Pages cutover by a static redirect to the main repository.
+- **Dependencies**: Vite/Vitest as well as security-relevant transitive
+  Express/Socket.IO dependencies updated to fixed versions.
+- **Public readiness**: Security policy, reproducible CI, Dependabot, dependency
+  review, CodeQL and a Pages deployment limited to public visibility added; main
+  repository and official demo published.
+- **Server configuration tests**: JWT secret, host and port validation included
+  in the root test suite.
+- **Responsive regression tests**: Production build in Chrome/Chromium for
+  desktop, tablet, phone landscape and phone portrait secured against visible
+  cards, seats, actions and viewport boundaries.
+- **Test and distribution strategy**: Role-related alpha, beta and RC phases as
+  well as feedback triage, privacy and suitable times for broader project
+  presentations documented.
+- **Local tester forms**: Standalone HTML sheets for blind NLHE FR realism,
+  newcomer usability, UI/table design and general beta feedback with browser
+  autosave, text file export, copying and optional smartphone sharing added.
 
 ### Changed
 
-- **Mobile Zielsetzung**: Die GitHub-Pages-Demo bleibt ein funktionaler, bewusst rudimentärer Smartphone-Fallback; die weitergehende mobile Bedienung wird im nativen Android-Prototyp entwickelt. Eine PWA ist nicht vorgesehen.
-- **Android-Bedienung**: Setup und Tisch nutzen den verfügbaren Landscape-Bildschirm; die Actionbar fasst Hauptaktionen, Betrag, Schrittsteuerung und Slider in einer kompakten Zeile zusammen.
-- **Kleine Viewports**: Layout-Modi werden per `matchMedia` aus Breite, Höhe und Ausrichtung bestimmt, sodass geeignete Tablets weiterhin das Desktop-Layout verwenden können.
+- **Mobile focus**: The GitHub Pages demo remains a functional, deliberately
+  rudimentary smartphone fallback; the more extensive mobile operation is
+  developed in the native Android prototype. A PWA is not planned.
+- **Android operation**: Setup and table use the available landscape screen; the
+  action bar combines main actions, amount, step control and slider in one
+  compact row.
+- **Small viewports**: Layout modes are determined via `matchMedia` from width,
+  height and orientation, so that suitable tablets can continue to use the
+  desktop layout.
 
 ### Fixed
 
-- **Startskript**: Build und Electron-Start verwenden die definierten npm-Workspace-Skripte und brechen bei Fehlern zuverlässig ab.
-- **Responsive Safety Pass**: Actionbar erhält im Phone-Landscape einen eigenen kompakten Bereich, Desktop und Tablet halten Abstand zum Hero-Seat und Portrait zeigt einen verständlichen Querformat-Hinweis.
-- **Android-Vollbild**: Weißer Streifen am Kamera-Cutout entfernt und Safe Areas in den nativen Seitenrahmen übernommen.
-- **Android-Setup und Tisch**: Zeilenumbruch von „Starting Amount“, zu kleine Hero-/Board-Karten und abgeschnittene Karten der oberen Sitze im Prototyp korrigiert.
-- **Android-Geräteaufnahme**: Unlesbaren nativen Blind-Preset-Dialog durch eine vollständig sichtbare app-eigene Auswahl ersetzt, kompakte Statistik direkt über den Metadaten im Header verankert, direktes Touch-Peek gefoldeter Hero-Karten sowie spiegelbildliche Sicherheitsabstände für Dealer-Buttons bei Hero und gegenüberliegendem Bot korrigiert.
-- **Android-Actionbar**: Hauptaktionen gleichmäßig aufgeteilt, Slider in einem vertikal zentrierten Rahmen mit grober Skala touch-tauglicher gestaltet und 3-BB/3×-, Pot- und Max-Presets dauerhaft links oberhalb der sichtbaren Actionbar angedockt; die freie Eingabe bleibt als bewusste Sekundäraktion erhalten.
-- **Android-Export**: Im WebView nicht verlässlich nutzbare Hand- und Session-Exporte im Debug-Prototyp ausgeblendet.
-- **Session-Startdealer**: Der erste Dealer sitzt nicht mehr in jeder Session fest links vom Hero, sondern wird über einen eigenen Zufallsstrom gewählt; gesetzte Session-Seeds bleiben reproduzierbar und folgende Hände rotieren regulär.
+- **Start script**: Build and Electron start use the defined npm workspace
+  scripts and abort reliably on errors.
+- **Responsive safety pass**: Action bar gets its own compact area in phone
+  landscape, desktop and tablet keep distance from the hero seat, and portrait
+  shows an understandable landscape hint.
+- **Android fullscreen**: White stripe at the camera cutout removed and safe
+  areas adopted in the native page frame.
+- **Android setup and table**: Line wrap of "Starting Amount", too small
+  hero/board cards and cut-off cards of the upper seats corrected in the
+  prototype.
+- **Android device onboarding**: Unreadable native blind preset dialog replaced
+  by a fully visible app-specific selection, compact statistics anchored
+  directly above the metadata in the header, direct touch peek of folded hero
+  cards as well as mirrored safety margins for dealer buttons at hero and
+  opposite bot corrected.
+- **Android action bar**: Main actions distributed evenly, slider made
+  touch-friendly in a vertically centred frame with a coarse scale, and
+  3-BB/3×, pot and max presets permanently docked to the left above the visible
+  action bar; free input remains as a deliberate secondary action.
+- **Android export**: Hand and session exports that cannot be used reliably in
+  the WebView hidden in the debug prototype.
+- **Session start dealer**: The first dealer no longer sits permanently to the
+  left of the hero in every session, but is chosen via its own random stream;
+  set session seeds remain reproducible and subsequent hands rotate regularly.
 
 ### Known limitations
 
-- **Android-HandReplayer**: Die Replay-Funktion ist grundsätzlich vorhanden, Tisch und Bedienelemente wirken auf kleinen Displays jedoch noch zu klein und gequetscht. Die responsive Überarbeitung ist für den gemeinsamen UI-/Replayer-Pass vorgesehen.
-- **Android-Distribution**: Es existiert ausschließlich ein lokaler Debug-Prototyp ohne Release-Signierung, Veröffentlichungsprozess oder zugesagte Gerätekompatibilität.
+- **Android hand replayer**: The replay function is fundamentally available, but
+  table and controls still appear too small and cramped on small displays. The
+  responsive revision is planned for the common UI/replayer pass.
+- **Android distribution**: There exists exclusively a local debug prototype
+  without release signing, publication process or promised device
+  compatibility.
 
 ### Security
 
-- **Server-Fail-Closed**: Unsicheren JWT-Default entfernt; der Prototyp startet nur noch mit einem mindestens 32 Byte langen Secret.
-- **Lokale Angriffsfläche**: Standardbindung auf `127.0.0.1` begrenzt und History-/Statistik-Endpunkte mit Bearer-Authentifizierung geschützt.
-- **Persistenz**: SQLite-Daten, WAL und SHM werden mit privaten Dateirechten erzeugt; Docker-Build-Kontext schließt lokale Secrets, Datenbanken und Arbeitsdateien aus.
-- **QA-Zugangsdaten**: Feste Dummy-Passwörter durch pro Prozess generierte Zufallswerte ersetzt.
-- **Rate Limits**: Registrierung und Login sowie authentifizierte History- und Statistik-Routen gegen automatisierten Missbrauch und ungebremste Abfragen begrenzt.
-- **GitHub-Härtung**: Secret Scanning, Push Protection, Private Vulnerability Reporting, SHA-Pinning für Actions und Schutz von `master` gegen Löschen und Force-Push aktiviert.
+- **Server fail-closed**: Insecure JWT default removed; the prototype now only
+  starts with a secret at least 32 bytes long.
+- **Local attack surface**: Default binding limited to `127.0.0.1` and
+  history/statistics endpoints protected with bearer authentication.
+- **Persistence**: SQLite data, WAL and SHM created with private file
+  permissions; Docker build context excludes local secrets, databases and
+  working files.
+- **QA credentials**: Fixed dummy passwords replaced by random values generated
+  per process.
+- **Rate limits**: Registration and login as well as authenticated history and
+  statistics routes limited against automated abuse and unthrottled queries.
+- **GitHub hardening**: Secret scanning, push protection, private vulnerability
+  reporting, SHA pinning for Actions and protection of `master` against
+  deletion and force-push activated.
 
 ## [0.7.6] — 2026-07-29
 
 ### Added
 
-- **Replay-Archiv**: Die letzten 200 lokal gespeicherten Hände sind über die Tischoberfläche erreichbar.
-- **Regressionstests**: Tests für PLO-Draws, Session-Statistiken, Replay-Sonderfälle, Mental Events, Pot-Limit-Aktionen und Debug-Exporte ergänzt.
+- **Replay archive**: The last 200 locally stored hands are reachable via the
+  table interface.
+- **Regression tests**: Tests for PLO draws, session statistics, replay special
+  cases, mental events, pot-limit actions and debug exports added.
 
 ### Changed
 
-- **PLO-Persönlichkeiten**: Positionsabhängige Preflop-Bewertung sowie archetyp- und street-spezifische Score-Tabellen für TAG, Nit, LAG und Calling Station eingeführt.
-- **PLO-Draw-Auswertung**: Outs werden über physische ungesehene Karten mit exakt zwei Hole Cards und drei Board Cards ermittelt; Wraps verwenden 8/13 Karten als Schwellen.
-- **Opponent Reads**: Bots beobachten nun auch Aktionen anderer Bots und erfassen Aktionen nach dem eigenen Fold.
-- **Rebuy-Determinismus**: Ersatz-Identity und Wartezeit verwenden den seedbaren Session-RNG.
-- **Session-Replays**: Kein zusätzliches 50-Hand-Limit im Arbeitsspeicher; das persistente Archiv bleibt auf 200 Hände begrenzt.
-- **PLO-Kalibrierung**: Deterministischer A/B-Lauf mit 10.000 Händen je Archetyp und Format dokumentiert; die physisch korrekte Draw-Auswertung bleibt trotz verschobener Zieltreffer unverändert.
+- **PLO personalities**: Position-dependent preflop evaluation as well as
+  archetype- and street-specific score tables for TAG, nit, LAG and calling
+  station introduced.
+- **PLO draw evaluation**: Outs determined via physical unseen cards with
+  exactly two hole cards and three board cards; wraps use 8/13 cards as
+  thresholds.
+- **Opponent reads**: Bots now also observe actions of other bots and record
+  actions after their own fold.
+- **Rebuy determinism**: Replacement identity and waiting time use the seedable
+  session RNG.
+- **Session replays**: No additional 50-hand limit in memory; the persistent
+  archive remains limited to 200 hands.
+- **PLO calibration**: Deterministic A/B run with 10,000 hands per archetype
+  and format documented; the physically correct draw evaluation remains
+  unchanged despite shifted target hits.
 
 ### Fixed
 
-- **PLO-Flush-Draws**: Ein Hole Card oder Runner-Runner-Möglichkeiten werden nicht mehr als direkter Flush Draw gemeldet; Nut- und Second-Nut-Draws berücksichtigen die tatsächlich verfügbaren Hole Cards.
-- **PLO-Straight-Draws**: Omaha-Constraint, Wheel-Outs, bereits gemachte Straights und physische Out-Zählung korrigiert.
-- **PLO-Zehnen**: `T` hatte in der Rangwert-Tabelle den Wert 0 und verfälschte Straight-Auswertungen.
-- **Session-Statistiken**: VPIP/PFR/3-Bet werden einmal pro Spieler und Hand gezählt; 3-Bet-Gelegenheiten entstehen nur beim ersten Zug gegen genau einen Raise.
-- **Replay/Export**: Dealer-Seat, Call-Beträge, Bet/Raise/All-in-Typen, laufende Stacks, Uncalled Bets sowie Split- und Side-Pot-Auszahlungen korrigiert.
-- **Mental Events**: Foldende Bots werden anhand ihres eigenen Nettoverlusts statt des gesamten späteren Pots bewertet; Uncalled Bets werden abgezogen.
-- **Pot-Limit-Tastaturaktion**: Das Pot-Maximum wird bei legalem Full Raise als `raise` statt als ungültiges `all-in` gesendet.
-- **Archivnavigation**: Handnummern dürfen zwischen Sessions doppelt vorkommen, ohne dass die falsche Hand geöffnet wird.
-- **Kartenreihenfolge**: `T` wird in Engine-Views korrekt zwischen Bube und Neun sortiert.
-- **Session-Debugexport**: Omaha-Entscheidungen enthalten alle vier Hole Cards; kompakte Decision Snapshots sind ohne `any` typisiert.
+- **PLO flush draws**: A single hole card or runner-runner possibilities are no
+  longer reported as a direct flush draw; nut and second-nut draws take the
+  actually available hole cards into account.
+- **PLO straight draws**: Omaha constraint, wheel-outs, already made straights
+  and physical out counting corrected.
+- **PLO tens**: `T` had the value 0 in the rank value table and distorted
+  straight evaluations.
+- **Session statistics**: VPIP/PFR/3-Bet counted once per player and hand;
+  3-Bet opportunities arise only on the first action against exactly one raise.
+- **Replay/export**: Dealer seat, call amounts, bet/raise/all-in types, running
+  stacks, uncalled bets as well as split- and side-pot payouts corrected.
+- **Mental events**: Folding bots are evaluated by their own net loss instead of
+  the entire later pot; uncalled bets are deducted.
+- **Pot-limit keyboard action**: The pot maximum is sent as `raise` instead of
+  an invalid `all-in` on a legal full raise.
+- **Archive navigation**: Hand numbers may occur twice between sessions without
+  opening the wrong hand.
+- **Card order**: `T` is sorted correctly between jack and nine in engine views.
+- **Session debug export**: Omaha decisions contain all four hole cards; compact
+  decision snapshots typed without `any`.
 
 ## [0.7.5] — 2026-07-24
 
 ### Added
 
-- **Hero-Bust-Handling**: `startHand()` versucht nach einem Bust alle 2 Sekunden erneut zu starten.
-- **Setup-Formate**: Drei direkte Buttons für Heads-up, 6-max und Full Ring ersetzen den Bot-Slider.
-- **Touch-Support**: Long-Press (600 ms) öffnet das Rebuy-Menü.
+- **Hero bust handling**: `startHand()` tries to start again every 2 seconds
+  after a bust.
+- **Setup formats**: Three direct buttons for heads-up, 6-max and full ring
+  replace the bot slider.
+- **Touch support**: Long press (600 ms) opens the rebuy menu.
 
 ### Changed
 
-- NLHE-Bedenkzeit von 1,8–4,5 s auf 1,2–3,0 s reduziert.
-- Session-Stats per Toggle inline in die Kopfzeile verschoben; Bot-Daten bleiben hinter `Ctrl+D`.
-- Karten, Action Buttons und Tischabstände für kleinere Displays skaliert.
-- Short-Stack-Rebuy-Wahrscheinlichkeit erhöht, damit Bots nicht dauerhaft mit 0,5 BB weiterspielen.
-- Formatname ersetzt die generische Spieleranzahl in der Kopfzeile.
-- Setup-Label „Starting Chips“ in „Starting Amount“ geändert.
+- NLHE think time reduced from 1.8–4.5 s to 1.2–3.0 s.
+- Session stats moved inline into the header via toggle; bot data stay behind
+  `Ctrl+D`.
+- Cards, action buttons and table spacing scaled for smaller displays.
+- Short-stack rebuy probability increased so that bots do not keep playing
+  permanently with 0.5 BB.
+- Format name replaces the generic player count in the header.
+- Setup label "Starting Chips" changed to "Starting Amount".
 
 ### Fixed
 
-- **BB-Tracking**: Erste Hand wurde nicht gezählt (`heroPrevChips` startete als `null`), Rebuy verfälschte die Bilanz (wurde als Profit gezählt)
-- **Runout-Spoiler**: Chips, `isSittingOut` und BB-Stats springen nicht mehr voreilig — warten auf `finishHandPresentation`
-- **Replayer-Crash**: `step` out-of-bounds beim Hand-Wechsel (letzter Zug → vorherige Hand)
-- **Hero-Rebuy**: `applyPendingRebuys` setzt jetzt `isSittingOut = false` — Hero blieb nach Rebuy auf "Sitting Out" hängen
-- **Session-Log-Privacy**: "Dealt to"-Zeilen zeigen nur noch Hero-Karten, nicht Bot-Hole-Cards
-- **Bot-Rebuy-Spoiler**: `savedState` wird jetzt VOR `processAutoRebuys` captured — rebuyter Stack nicht während Runout sichtbar
-- **Omaha Split-Pot**: `findWinnerIndices` verglich nur Rank (1–9), ignorierte Kicker. Jetzt pokersolver-`Hand.winners()` für korrekten Vergleich
-- **Actionbar-Overlap**: Bottom-Padding 130→260px, Table-Shell-Formel an neue Paddings angepasst (320→470)
-- **Landscape-Phone**: Media Query `max-height: 450px` verhindert Scrollen, reduziert Paddings
+- **BB tracking**: First hand was not counted (`heroPrevChips` started as
+  `null`), rebuy falsified the balance (was counted as profit)
+- **Runout spoiler**: Chips, `isSittingOut` and BB stats no longer jump
+  prematurely — they wait for `finishHandPresentation`
+- **Replayer crash**: `step` out of bounds on hand change (last move → previous
+  hand)
+- **Hero rebuy**: `applyPendingRebuys` now sets `isSittingOut = false` — hero
+  remained stuck on "Sitting Out" after rebuy
+- **Session log privacy**: "Dealt to" lines now only show hero cards, not bot
+  hole cards
+- **Bot rebuy spoiler**: `savedState` is now captured BEFORE
+  `processAutoRebuys` — rebuyed stack not visible during runout
+- **Omaha split pot**: `findWinnerIndices` only compared rank (1–9), ignored
+  kicker. Now pokersolver `Hand.winners()` for correct comparison
+- **Actionbar overlap**: Bottom padding 130→260px, table shell formula adapted
+  to new paddings (320→470)
+- **Landscape phone**: Media query `max-height: 450px` prevents scrolling,
+  reduces paddings
 
 ## [0.7.4] — 2026-07-23
 
 ### Added
 
-- **Session-Statistiken**: Live-VPIP/PFR/3-Bet für alle Spieler in einklappbarem Panel (📊)
-- Session-Ergebnis in BB (grün/rot) und BB/100 in der Kopfleiste
-- Session-Log-Export als lesbarer Poker-Text (Download-Button im Stats-Panel)
-- `session-stats.ts`: VPIP/PFR/3B-Tracking + BB/100-Berechnung + Session-Log-Generator
-- `SessionStats.tsx`: einklappbare Komponente mit Spieler-Tabelle und Export
+- **Session statistics**: Live VPIP/PFR/3-Bet for all players in a collapsible
+  panel (📊)
+- Session result in BB (green/red) and BB/100 in the header bar
+- Session log export as readable poker text (download button in the stats
+  panel)
+- `session-stats.ts`: VPIP/PFR/3B tracking + BB/100 calculation + session log
+  generator
+- `SessionStats.tsx`: Collapsible component with player table and export
 
 ## [0.7.3] — 2026-07-23
 
 ### Changed
 
-- **Personality-Tuning**: Aggression-Modifier `/4` → `/3.5` (LAG-Raise-Bonus +1.07),
-  RiskTolerance-Call `/6` → `/8` (LAG-Call −0.75, Nit-Call +1.04)
-- TAG PLO: VPIP 22.7% / PFR 15.3% / AF 2.89 / WTSD 34.1% — 6/6 in Range
-- Nit PLO: WTSD 45→41% (Richtung stimmt, aber noch über Target)
-- LAG PLO: AF 1.60→1.73 (Richtung stimmt, aber noch unter Target)
-- CS PLO 6-max: VPIP 60.0% jetzt in Range (war 60.8%)
+- **Personality tuning**: Aggression modifier `/4` → `/3.5` (LAG raise bonus
+  +1.07), RiskTolerance call `/6` → `/8` (LAG call −0.75, nit call +1.04)
+- TAG PLO: VPIP 22.7% / PFR 15.3% / AF 2.89 / WTSD 34.1% — 6/6 in range
+- Nit PLO: WTSD 45→41% (direction is right, but still above target)
+- LAG PLO: AF 1.60→1.73 (direction is right, but still below target)
+- CS PLO 6-max: VPIP 60.0% now in range (was 60.8%)
 
 ## [0.7.2] — 2026-07-23
 
 ### Changed
 
-- **WTSD-Fix**: Postflop-Showdown-Rate durch variant-spezifische Category-Scores gesenkt
-  - `CategoryScoreTable` in `bot-variant-evaluation.ts` definiert
-  - `VariantEvaluation.categoryScores` → `DecisionContext.categoryScores` → `bot-action-scoring.ts`
-  - NLHE: Scores identisch mit bisherigen `params.scoring.handStrength` (keine Regression)
-  - PLO: `call.medium` 20→8, `call.weak` −5→−8, `call.marginal` 5→0 (WTSD 52%→36%)
-  - TAG PLO 9-max: 6/6 Metriken im Soll, TAG PLO 6-max: 6/6
+- **WTSD fix**: Postflop showdown rate lowered via variant-specific category
+  scores
+  - `CategoryScoreTable` defined in `bot-variant-evaluation.ts`
+  - `VariantEvaluation.categoryScores` → `DecisionContext.categoryScores` →
+    `bot-action-scoring.ts`
+  - NLHE: Scores identical to previous `params.scoring.handStrength` (no
+    regression)
+  - PLO: `call.medium` 20→8, `call.weak` −5→−8, `call.marginal` 5→0 (WTSD
+    52%→36%)
+  - TAG PLO 9-max: 6/6 metrics on target, TAG PLO 6-max: 6/6
 
 ### Fixed
 
-- **PLO Bot-Bedenkzeit**: 3–8s → 2–5.5s (Preflop war zu langsam)
+- **PLO bot think time**: 3–8s → 2–5.5s (preflop was too slow)
 
 ## [0.7.1] — 2026-07-23
 
 ### Added
 
-- **Omaha High**: vollständig spielbare Pot-Limit-Omaha-Variante
-  - Variant-Selector im SetupScreen (No Limit Texas Hold'em / Pot Limit Omaha High)
-  - Omaha-Hand-Evaluation: `evaluateOmahaHand` mit 60 2-aus-4+3-aus-5-Kombinationen
-  - Engine-Support: 4 Hole Cards, Pot-Limit-Betting, `findWinnerIndices`-Dispatch
-  - `omaha-hand-evaluation.ts`: Draw-Dichte (Flush-Draw, Wrap-Outs), Nut-Potential, Preflop-Assessment (Double-Suited, Connectedness)
-- **Variant-spezifische Bot-Bedenkzeit**: NLHE 1.8–4.5s (max 12s), PLO 2–5.5s (max 20s)
-- **Omaha-Kalibrierung**: 12 Archetyp-Formate, TAG FR VPIP 30.8% / PFR 14.8% / AF 2.89 / WTSD 33.4% (10k Hände)
-- **Omaha-UI**: 4-Karten-Layout mit Overlap (−16px), CardBacks passen sich Variante an, Hole-Cards absteigend nach Rank sortiert (A→2)
-- **Hand-History-Export**: variantenabhängiger Header ("Omaha Pot Limit" / "Hold'em No Limit")
-- **PLO/NLHE-Badge** in der TableScreen-Kopfleiste
-- `BettingStructure`-Typ in `betting.ts` ausgelagert, Variants in `variants/` pro Datei
-- `formatVariantName()`-Helper, `holeCardCount`-Prop für PlayerSeat/Replay
+- **Omaha High**: Fully playable pot-limit Omaha variant
+  - Variant selector in the SetupScreen (No Limit Texas Hold'em / Pot Limit
+    Omaha High)
+  - Omaha hand evaluation: `evaluateOmahaHand` with 60 2-of-4 + 3-of-5
+    combinations
+  - Engine support: 4 hole cards, pot-limit betting, `findWinnerIndices`
+    dispatch
+  - `omaha-hand-evaluation.ts`: Draw density (flush draw, wrap-outs), nut
+    potential, preflop assessment (double-suited, connectedness)
+- **Variant-specific bot think time**: NLHE 1.8–4.5s (max 12s), PLO 2–5.5s
+  (max 20s)
+- **Omaha calibration**: 12 archetype formats, TAG FR VPIP 30.8% / PFR 14.8% /
+  AF 2.89 / WTSD 33.4% (10k hands)
+- **Omaha UI**: 4-card layout with overlap (−16px), card backs adapt to the
+  variant, hole cards sorted descending by rank (A→2)
+- **Hand history export**: Variant-dependent header ("Omaha Pot Limit" /
+  "Hold'em No Limit")
+- **PLO/NLHE badge** in the TableScreen header bar
+- `BettingStructure` type moved out into `betting.ts`, variants in `variants/`
+  one file per variant
+- `formatVariantName()` helper, `holeCardCount` prop for PlayerSeat/Replay
 
 ### Changed
 
-- **Type-System**: `[Card, Card]` → `Card[]` in 58 Stellen (shared, engine, client)
-- **Aggression-Modifier**: `/5` → `/4` (LAG NLHE AF 1.45→1.91, TAG unverändert)
-- **Bot-Bedenkzeit**: Min 900→1800ms, Max 1800→4500ms, Hard-Max 6000→12000ms (NLHE); PLO separat (s.o.)
-- **Calling Station**: Persönlichkeits-Call-Boni bei dead air (kein Pair, keine Draws) auf 50% skaliert
-- **Rebuy-Migration**: alte Identities ohne `rebuyPolicy` kriegen beim Laden eine archetyp-echte Policy (nicht mehr pauschal 40 BB)
+- **Type system**: `[Card, Card]` → `Card[]` in 58 places (shared, engine,
+  client)
+- **Aggression modifier**: `/5` → `/4` (LAG NLHE AF 1.45→1.91, TAG unchanged)
+- **Bot think time**: Min 900→1800ms, Max 1800→4500ms, Hard-Max 6000→12000ms
+  (NLHE); PLO separately (see above)
+- **Calling station**: Personality call bonus at dead air (no pair, no draws)
+  scaled to 50%
+- **Rebuy migration**: Old identities without `rebuyPolicy` get an
+  archetype-true policy when loaded (no longer blanket 40 BB)
 
 ### Fixed
 
-- **Top Set (Rank 4) in Omaha**: war fälschlich "weak" → jetzt "good" (Lio checkte Top Set auf Q-high-Flop statt zu betten)
-- **`detectFlushDanger`**: NLHE-Annahme "1 Hole Card = Flush-Redraw" → jetzt Omaha-aware (braucht 2 Karten derselben Farbe)
-- **ActionButtons**: Pot-Limit-All-In-Bug — Button sendet nicht mehr `all-in` wenn `raise` legal ist
-- **`weightedChoice`-Fallback**: `fold` nur noch wenn keine andere Aktion legal (vorher blind-fold bei allen negativen Scores)
-- **Replay Pot-Anzeige**: Bet-Stacks akkumulierten zu viel (`totalBet` statt `amount`)
-- **Export-Menü**: per Portal zu `document.body` gerendert (kein Verdecken durch Footer)
-- **Debug-Mode im Replay**: `localStorage.replay-debug` für IPC-Fenster
-- **Hand-History-Header**: Fremde Plattformbezeichnung durch "CPCdigital" ersetzt
+- **Top set (rank 4) in Omaha**: Was wrongly "weak" → now "good" (Lio checked
+  top set on a Q-high flop instead of betting)
+- **`detectFlushDanger`**: NLHE assumption "1 Hole Card = Flush-Redraw" → now
+  Omaha-aware (needs 2 cards of the same suit)
+- **ActionButtons**: Pot-limit all-in bug — button no longer sends `all-in`
+  when `raise` is legal
+- **`weightedChoice` fallback**: `fold` only when no other action is legal
+  (previously blind fold with all negative scores)
+- **Replay pot display**: Bet stacks accumulated too much (`totalBet` instead
+  of `amount`)
+- **Export menu**: Rendered via portal to `document.body` (no hiding by footer)
+- **Debug mode in the replay**: `localStorage.replay-debug` for IPC window
+- **Hand history header**: Foreign platform label replaced by "CPCdigital"
 
 ## [0.7.0] — 2026-07-22
 
 ### Added
 
-- **Postflop-Kalibrierung**: 5 neue Metriken in `simulation.ts` (C-Bet%, Fold-to-CBet, AF, WTSD, W$SD)
-- **C-Bet-Targets**: pro Archetyp und Format (TAG 35-55%, Nit 33-55%, LAG 42-70%, CS 25-45%)
-- **PFA-Tracking**: Preflop-Aggressor wird erkannt und C-Bet-Chancen pro Position gezählt
-- **`hand.strength`**: numerischer Handstärkewert 0-100 mit Draw-Quality-Bonus (bis +10)
-- **Hybrid-Scoring**: Strength-Bonus (±5-10) zusätzlich zum Kategorie-System
-- **Bluff-C-Bet-Bonus**: +15 für PFA mit Air auf trockenem Board
-- **Session-Evaluator C-Bet-Patterns**: "PFA missed C-Bet", "Folded playable hand to C-Bet"
+- **Postflop calibration**: 5 new metrics in `simulation.ts` (C-Bet%,
+  Fold-to-CBet, AF, WTSD, W$SD)
+- **C-Bet targets**: Per archetype and format (TAG 35-55%, Nit 33-55%,
+  LAG 42-70%, CS 25-45%)
+- **PFA tracking**: Preflop aggressor detected and c-bet chances counted per
+  position
+- **`hand.strength`**: Numeric hand strength value 0-100 with draw quality bonus
+  (up to +10)
+- **Hybrid scoring**: Strength bonus (±5-10) in addition to the category system
+- **Bluff c-bet bonus**: +15 for PFA with air on a dry board
+- **Session evaluator c-bet patterns**: "PFA missed C-Bet", "Folded playable
+  hand to C-Bet"
 
 ### Changed
 
-- **C-Bet-Opportunity-Bonus**: von +12 auf +18 erhöht
-- **Check-Basiswerte gesenkt**: air +20→+10, weak +20→+10, marginal +15→+8, medium +10→+5
-- **Min-Reaktionszeit Bots**: 600ms → 900ms
+- **C-Bet opportunity bonus**: Increased from +12 to +18
+- **Check base values lowered**: air +20→+10, weak +20→+10, marginal +15→+8,
+  medium +10→+5
+- **Min reaction time bots**: 600ms → 900ms
 
 ### Fixed
 
-- **"Free card for draw"-Bug**: Bonus galt fälschlich auch für PFA am Flop (widerspricht C-Bet-Logik)
-- **PFA-Check-Penalty**: −30 für Air/Weak am Flop (nicht für Good+)
-- **C-Bet% von 20% auf 47-60% angehoben** (TAG 6-max: 20% → 52%)
-- **"You wins" → "You win"** in der Ergebnisanzeige
+- **"Free card for draw" bug**: Bonus wrongly also applied to PFA on the flop
+  (contradicts c-bet logic)
+- **PFA check penalty**: −30 for air/weak on the flop (not for good+)
+- **C-Bet% raised from 20% to 47-60%** (TAG 6-max: 20% → 52%)
+- **"You wins" → "You win"** in the result display
 
 ## [0.6.0] — 2026-07-22
 
 ### Added
 
-- **Rebuy-System**: Auto-Rebuy bei Bust (pro Identity ausgewürfelt, Threshold 10–90 BB), Leave-on-Bust, Ersatz-Bots mit 2–6 Händen Pause
-- **Setup-Toggle**: "Auto-Rebuy & Ersatz-Bots" in der Setup-Maske
-- **Hand-Replay**: deterministisches Replay aus Decision Snapshots, Tisch-Ansicht mit Step-Forward/Back, Autoplay
-- **Session-Navigation**: alle Hände der Session durchblätterbar (◀▶)
-- **Hand-History im Poker-Textstil**: Export pro Hand und ganze Session
-- **Pot-Filter**: Replay nach Minimum-Pot-Größe filtern (≥ X BB)
-- **Session-übergreifende History**: localStorage, max 200 Hände
-- **Bot-Entscheidungsgründe**: Scores und Beiträge als Export-Option (debug-only)
-- **7-Stufen-Handbewertung**: premium > strong > good > medium > marginal > weak > air mit Board-Kontext
-- **Board-Relativierung**: Top Pair ≠ Bottom Pair, Flush/Straight/Full House je nach Board-Gefahr abgestuft
-- **Protection-Betting**: Board-Verschlechterungserkennung (Turn bringt drittes Herz → sizing +0.08, scoring +8)
-- **Parameter-System**: `bot-params.ts` zentralisiert ~50 tuning-Knobs, Auto-Kalibrierer via Env-Vars
-- **Auto-Kalibrierer**: Random-Search-Optimizer mit Loss-Funktion, progressive narrowing
-- **Rebuy-Manager**: `bot-rebuy-manager.ts` aus `LocalGameRunner` extrahiert (907 → 241 Zeilen)
-- **Session-Ordner**: `session/` für LocalGameRunner, Rebuy-Manager, Session-Evaluator, Hand-Replay
+- **Rebuy system**: Auto-rebuy on bust (rolled per identity, threshold 10–90
+  BB), leave-on-bust, replacement bots with a 2–6 hand pause
+- **Setup toggle**: "Auto-Rebuy & Ersatz-Bots" in the setup mask
+- **Hand replay**: Deterministic replay from decision snapshots, table view with
+  step forward/back, autoplay
+- **Session navigation**: All hands of the session browsable (◀▶)
+- **Hand history in poker text style**: Export per hand and for the whole
+  session
+- **Pot filter**: Filter the replay by minimum pot size (≥ X BB)
+- **Cross-session history**: localStorage, max 200 hands
+- **Bot decision reasons**: Scores and contributions as an export option
+  (debug-only)
+- **7-level hand evaluation**: premium > strong > good > medium > marginal >
+  weak > air with board context
+- **Board relativisation**: Top pair ≠ bottom pair, flush/straight/full house
+  graded depending on board danger
+- **Protection betting**: Board worsening detection (turn brings a third heart
+  → sizing +0.08, scoring +8)
+- **Parameter system**: `bot-params.ts` centralises ~50 tuning knobs,
+  auto-calibrator via env vars
+- **Auto-calibrator**: Random search optimiser with loss function, progressive
+  narrowing
+- **Rebuy manager**: `bot-rebuy-manager.ts` extracted from `LocalGameRunner`
+  (907 → 241 lines)
+- **Session folder**: `session/` for LocalGameRunner, rebuy manager, session
+  evaluator, hand replay
 
 ### Changed
 
-- **ReadTyp**: Bots tracken Gegner-Bet-Sizing (Pot-Fraktion-EMA), Abweichungserkennung (>2× Overbet)
-- **Raise-Sizing**: Short-Stack-Reduktion (effBb/50), Reraise-Faktor (×0.75), Non-Premium-Raises bei ≤20 BB bestraft
-- **Preflop-Reraising**: keine Blind-Eskalation mit marginalen Händen mehr (−35 Penalty)
-- **Scoring-Tuning**: call.weak −5, fold.weak +5 (7-Kategorien-System nachgezogen), float-flop-Habit +10→+7
-- **Pot-Visualisierung**: Gewinnbetrag erscheint beim Gewinner, Pot springt auf 0
-- **Debug-Mode**: BotDebugInspector, Cards-on, Entscheidungs-Export hinter Ctrl+D
-- **Route aufräumen**: v0.6 → 19 Punkte (besser verteilt auf v0.5.2–v0.5.4 in Retrospektive)
+- **ReadTyp**: Bots track opponent bet sizing (pot fraction EMA), deviation
+  detection (>2× overbet)
+- **Raise sizing**: Short-stack reduction (effBb/50), reraise factor (×0.75),
+  non-premium raises at ≤20 BB punished
+- **Preflop reraising**: No more blind escalation with marginal hands (−35
+  penalty)
+- **Scoring tuning**: call.weak −5, fold.weak +5 (7-category system brought up
+  to date), float-flop habit +10→+7
+- **Pot visualisation**: Win amount appears at the winner, pot jumps to 0
+- **Debug mode**: BotDebugInspector, cards-on, decision export behind Ctrl+D
+- **Tidy up routes**: v0.6 → 19 points (better distributed on v0.5.2–v0.5.4 in
+  retrospect)
 
 ### Fixed
 
-- **Queue-Reihenfolge**: `reopenBettingAfterRaise` sortiert jetzt clockwise ab Raiser (war Sitz-Index)
-- **Hand-History-Format**: Blinds korrekt (via Dealer-Position), Chips ohne /100-Division, Raise-Format "raises to X"
-- **All-in-Crash**: Spiel friert nicht mehr wenn nur noch Hero übrig ist (forced replacement)
-- **Rebuy-Crash**: fehlendes `rebuyPolicy`-Feld in alten Roster-Identities → Default-Policy-Fallback
-- **Replay-Daten**: alle Hole-Cards gespeichert (nicht nur Showdown), Community-Cards kumulieren korrekt
+- **Queue order**: `reopenBettingAfterRaise` now sorts clockwise from the raiser
+  (was seat index)
+- **Hand history format**: Blinds correct (via dealer position), chips without
+  /100 division, raise format "raises to X"
+- **All-in crash**: Game no longer freezes when only the hero is left (forced
+  replacement)
+- **Rebuy crash**: Missing `rebuyPolicy` field in old roster identities →
+  default policy fallback
+- **Replay data**: All hole cards stored (not only showdown), community cards
+  accumulate correctly
 
-## [0.5.1] — 2026-07-22 (unveröffentlicht, direkt in 0.6.0 aufgegangen)
+## [0.5.1] — 2026-07-22 (unpublished, folded into 0.6.0)
 
 ## [0.4.0] — 2026-07-20
 
 ### Added
 
-- Maniac als seltene extreme LAG-Ausprägung (20% der LAG-Identities, +15 auf Aggression/VPIP)
-- 12 Habits mit archetyp-spezifischen Präferenzen und Consistency 55–90%
-- persistenter lokaler Bot-Roster über localStorage mit wiederkehrenden Identities
-- archetyp-spezifische Tilt-Reaktionen (LAG kippt schneller, Nit erholt sich zügiger)
-- gewichtete Beobachtungsfähigkeit pro Archetyp (Nit merkt Folds, LAG sieht Aggression)
-- Reads mit Stichprobengröße, Konfidenz und verzerrten Priors (Beta-Distribution)
-- überhastete Reads: LAG/CS handeln ab 2 Samples, bei Tilt ab 1
-- Roster auf 44 Identities erweitert (12 neue für 0.4, Ziel 100+ bis v1.0)
-- Session-Debug-Export v2 mit inkrementeller Action-History und dedupliziertem Context
-- Mixed-Table-Kalibrierung über alle Archetypen mit BB/100, W$SD und Aggression/Street
-- Balance-Simulation mit 7 randomisierten Tischzusammensetzungen
+- Maniac as a rare extreme LAG expression (20% of the LAG identities, +15 on
+  aggression/VPIP)
+- 12 habits with archetype-specific preferences and consistency 55–90%
+- Persistent local bot roster via localStorage with recurring identities
+- Archetype-specific tilt reactions (LAG tips faster, nit recovers faster)
+- Weighted observability per archetype (nit notices folds, LAG sees aggression)
+- Reads with sample size, confidence and distorted priors (Beta distribution)
+- Over-hasty reads: LAG/CS act from 2 samples, from 1 when tilted
+- Roster expanded to 44 identities (12 new for 0.4, target 100+ by v1.0)
+- Session debug export v2 with incremental action history and deduplicated
+  context
+- Mixed-table calibration across all archetypes with BB/100, W$SD and
+  aggression/street
+- Balance simulation with 7 randomised table compositions
 
 ### Changed
 
-- `BotIdentity` um `maniac`-Flag und gefüllte `habitIds` erweitert
-- `DecisionContext` um `botHabits` ergänzt, Habits fließen in Action-Scoring ein
-- Mentale-Event-Multiplier pro Archetyp eingeführt (LAG 1.3×, CS 0.5×)
-- Tilt-/Confidence-/Patience-Modifier pro Archetyp statt uniform
-- Session-Bot-Auswahl von strikt balanced auf gewichtete Zufallsverteilung
-- `scoreCheck`/`scoreCall`: Trap-Intent nur noch Pre-River oder out-of-Position
-- River-Check mit starker Hand erhält −20 Malus in Position
-- `slowplay-monsters`-Habit feuert nur noch bei `nuts`, nicht bei `strong`
-- Debug-Export auf letzte 5 Hände begrenzt, Contributions zu Strings geflattet
-- Versionierung in package.json, README und CHANGELOG auf 0.4.0
+- `BotIdentity` extended by `maniac` flag and filled `habitIds`
+- `DecisionContext` extended by `botHabits`, habits flow into action scoring
+- Mental event multiplier per archetype introduced (LAG 1.3×, CS 0.5×)
+- Tilt/confidence/patience modifier per archetype instead of uniform
+- Session bot selection from strictly balanced to weighted random distribution
+- `scoreCheck`/`scoreCall`: Trap intent only pre-river or out of position
+- River check with a strong hand gets −20 malus in position
+- `slowplay-monsters` habit only fires at `nuts`, not at `strong`
+- Debug export limited to the last 5 hands, contributions flattened to strings
+- Versioning in package.json, README and CHANGELOG set to 0.4.0
 
 ### Fixed
 
-- TAG 3-bet Full Ring wieder im Kalibrierungsbereich (12.7% von 13.0%)
-- Top-Pair auf River wird nicht mehr fälschlich als Slowplay klassifiziert
+- TAG 3-bet full ring back in the calibration range (12.7% of 13.0%)
+- Top pair on the river no longer wrongly classified as slowplay
 
 ## [0.3.1] — 2026-07-19
 
 ### Added
 
-- sichtbare Versionsnummer in der App
-- Auswahl zwischen Dollar- und Eurodarstellung
-- typische Blind-Presets mit automatischem 100-BB-Startstack
-- einfacher Rechtsklick-Rebuy auf den konfigurierten Startstack zwischen Händen
-- zeitversetztes Aufdecken von Flop, Turn und River bei All-in-Runouts
-- zusätzliche Tests für Runout, Sessionverlauf und Betragsformatierung
+- Visible version number in the app
+- Selection between dollar and euro display
+- Typical blind presets with automatic 100-BB starting stack
+- Simple right-click rebuy to the configured starting stack between hands
+- Time-delayed reveal of flop, turn and river on all-in runouts
+- Additional tests for runout, session history and amount formatting
 
 ### Changed
 
-- Aktionsbutton wechselt nun passend zwischen Bet, Raise und All-in
-- individuelle Bet- und Raisebeträge lassen sich per Enter bestätigen
-- Geldbeträge vermeiden unnötige Dezimalstellen und berücksichtigen die gewählte Währung
-- Setup und Tischdarstellung wurden für den Testbetrieb weiter verbessert
-- Roadmap um Bot-Identitäten, Sessionanpassungen, Statistiken und spätere Table Rules erweitert
+- Action button now switches appropriately between bet, raise and all-in
+- Individual bet and raise amounts can be confirmed with Enter
+- Money amounts avoid unnecessary decimal places and take the chosen currency
+  into account
+- Setup and table display further improved for test operation
+- Roadmap extended by bot identities, session customisations, statistics and
+  later table rules
 
 ## [0.3.0] — 2026-07-19
 
 ### Added
 
-- allgemeiner `BotContext` ohne versteckte Informationen
-- Utility Scores und nachvollziehbare Einflussfaktoren für alle legalen Aktionen
-- Wahrnehmungs- und Bewertungsungenauigkeit abhängig vom Bot-Skill
-- getrennte Zustände für Personality, Mental State, Reads und Session Memory
-- gewichtete Auswahl zwischen plausiblen Aktionen
-- situationsabhängige Bot-Reaktionszeiten
-- Debug Inspector für Kontext, Bewertungen und Entscheidungsgründe
-- Variant Registry und getrennte NLHE-Handbewertung als Grundlage weiterer Pokervarianten
-- umfangreiche Szenariotests für Botkontext, Pipeline, Skill, Timing und Entscheidungssensitivität
+- General `BotContext` without hidden information
+- Utility scores and traceable influencing factors for all legal actions
+- Perception and evaluation imprecision depending on bot skill
+- Separate states for personality, mental state, reads and session memory
+- Weighted selection between plausible actions
+- Situation-dependent bot reaction times
+- Debug inspector for context, evaluations and decision reasons
+- Variant registry and separate NLHE hand evaluation as a basis for further
+  poker variants
+- Extensive scenario tests for bot context, pipeline, skill, timing and decision
+  sensitivity
 
 ### Changed
 
-- Botentscheidungen berücksichtigen Betgröße, Pot Odds, effektiven Stack und SPR
-- bisherige TAG-Logik in eine allgemeine, erklärbare Decision Pipeline überführt
-- zufällige Fehler durch nachvollziehbare Wahrnehmungs- und Bewertungsabweichungen ersetzt
+- Bot decisions take bet size, pot odds, effective stack and SPR into account
+- Previous TAG logic transferred into a general, explainable decision pipeline
+- Random errors replaced by traceable perception and evaluation deviations
 
 ## [0.2.1] — 2026-07-19
 
 ### Added
 
-- komfortablere Betgrößensteuerung mit Presets, Schieberegler und manueller Eingabe
-- zusätzliche Tests für Positionslogik und Betragsformatierung
+- More convenient bet size control with presets, slider and manual input
+- Additional tests for position logic and amount formatting
 
 ### Changed
 
-- Setup-Maske, Tischskalierung, Hole Cards und Community Cards für bessere Lesbarkeit überarbeitet
-- Raise-Presets an vorausgegangene Raises angepasst
-- Darstellung kleiner Blinds und nicht notwendiger Dezimalstellen korrigiert
-- Action Panel und Tastaturbedienung stabilisiert
+- Setup mask, table scaling, hole cards and community cards reworked for better
+  legibility
+- Raise presets adapted to preceding raises
+- Display of small blinds and unnecessary decimal places corrected
+- Action panel and keyboard operation stabilised
 
 ## [0.2.0] — 2026-07-18
 
 ### Added
 
-- vollständig lokale Electron-Laufzeit ohne erforderlichen Server
-- Engine-bestimmte Legal Actions und vollständiger Betting Context
-- korrekte Min-Raise-, All-in-, Reopen-, Side-Pot- und Split-Pot-Logik
-- strukturierte Action History als Events
-- deterministische Hand-Replays und seedbarer Zufallszahlengenerator
-- Decision Snapshots für jeden Spielerzug
-- Trennung öffentlicher und privater Spielinformationen
-- variantenneutrale Phasen- und Betting-Struktur
-- umfassende Unit- und Integrationstests für zentrale Engine-Sonderfälle
-- erste lokale NLHE-Bot-Pipeline und Testsimulationen
+- Fully local Electron runtime without a required server
+- Legal actions determined by the engine and full betting context
+- Correct min-raise, all-in, reopen, side-pot and split-pot logic
+- Structured action history as events
+- Deterministic hand replays and seedable random number generator
+- Decision snapshots for every player action
+- Separation of public and private game information
+- Variant-neutral phase and betting structure
+- Comprehensive unit and integration tests for central engine special cases
+- First local NLHE bot pipeline and test simulations
 
 ### Changed
 
-- Projektfokus verbindlich auf Offline-First und Singleplayer bis v1.0 ausgerichtet
-- Client in Setup, Tisch, Actions, Karten und lokale Spielsteuerung aufgeteilt
+- Project focus definitively aligned to offline-first and singleplayer until
+  v1.0
+- Client split into setup, table, actions, cards and local game control
 
 [Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.8.1...HEAD
 [0.8.1]: https://github.com/kaizo101/CPCdigital/compare/v0.8.0...v0.8.1
