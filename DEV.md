@@ -1,173 +1,172 @@
-# Entwicklerdokumentation
+# Developer documentation
 
 ## Quick-Start
 
-Node.js 24 LTS aus [`.nvmrc`](.nvmrc) verwenden; Node.js 26 liegt außerhalb des
-unterstützten Bereichs.
+Use Node.js 24 LTS from [`.nvmrc`](.nvmrc); Node.js 26 lies outside the
+supported range.
 
 ```bash
 npm ci
 npm run dev          # Vite + Electron
-npm test             # alle Workspace-Tests
-npm run build        # alle Workspaces bauen und Client typprüfen
+npm test             # all workspace tests
+npm run build        # build all workspaces and type-check the client
 npm run test:responsive
 ```
 
-Die versionsgebundene `allowScripts`-Policy in `package.json` erlaubt nur die
-benötigten Install-Skripte von Electron, esbuild, bcrypt und better-sqlite3.
-Bei Updates dieser Pakete muss die freigegebene Version bewusst mit aktualisiert
-werden. `npm run dev` und `./start.sh` prüfen vor dem Start, ob das Electron-Binary
-vollständig installiert ist.
+The version-bound `allowScripts` policy in `package.json` permits only the
+required install scripts of Electron, esbuild, bcrypt and better-sqlite3. When
+these packages are updated, the approved version must deliberately be updated
+along with them. `npm run dev` and `./start.sh` check before starting whether
+the Electron binary is fully installed.
 
-## Android-Debug-Workflow
+## Android debug workflow
 
-Der Android-Stand ist ein lokaler Capacitor-8-Prototyp, kein Release-Artefakt.
-Das native Projekt unter `android/`, `capacitor.config.ts` und die
-Runtime-Integration werden versioniert. Kopierte Web-Assets, `local.properties`,
-Gradle-Ausgaben und APKs bleiben generiert und werden nicht eingecheckt.
+The Android state is a local Capacitor 8 prototype, no release artefact. The
+native project under `android/`, `capacitor.config.ts` and the runtime
+integration are versioned. Copied web assets, `local.properties`, Gradle
+outputs and APKs stay generated and are not checked in.
 
-Vorausgesetzt werden Node.js 24, Android Studio, SDK 36 sowie ein per ADB
-erreichbares Gerät oder ein Emulator. Der übliche Änderungszyklus ist:
+Prerequisites are Node.js 24, Android Studio, SDK 36 as well as a device that
+is reachable via ADB or an emulator. The usual change cycle is:
 
 ```bash
-npm run android:sync    # Client bauen und Web-Assets/Plugins synchronisieren
-npm run android:open    # Projekt in Android Studio öffnen
-npm run android:run     # alternativ synchronisieren und direkt deployen
-npm run android:check   # Sync plus Gradle assembleDebug
+npm run android:sync    # build the client and sync web assets/plugins
+npm run android:open    # open the project in Android Studio
+npm run android:run     # alternatively sync and deploy directly
+npm run android:check   # sync plus Gradle assembleDebug
 ```
 
-`scripts/android-gradle.mjs` sucht zuerst
-`CPC_ANDROID_JAVA_HOME`, danach die JBR einer über
-`CPC_ANDROID_STUDIO_HOME` oder an üblichen Orten gefundenen
-Android-Studio-Installation. Das SDK wird über `ANDROID_HOME`,
-`ANDROID_SDK_ROOT` oder `~/Android/Sdk` ermittelt. Damit bleibt der Build auch
-auf einem System mit inkompatiblem Java 26 reproduzierbar.
+`scripts/android-gradle.mjs` looks for `CPC_ANDROID_JAVA_HOME` first, then for
+the JBR of an Android Studio installation found via `CPC_ANDROID_STUDIO_HOME`
+or at the usual locations. The SDK is determined via `ANDROID_HOME`,
+`ANDROID_SDK_ROOT` or `~/Android/Sdk`. This keeps the build reproducible even on
+a system with an incompatible Java 26.
 
-Die native Runtime wird in `native-runtime.ts` erkannt. Android läuft in
-`sensorLandscape`, blendet die Systemleisten aus, verarbeitet Display-Cutouts
-über CSS-Safe-Areas und stellt den immersiven Zustand nach `resume` wieder her.
-Die native Zurück-Taste schließt zuerst geöffnete UI-Ebenen und beendet erst
-danach die App. Setup und Tisch besitzen einen einfachen Android-spezifischen
-Vollbildpfad; die Browser-Demo bleibt davon getrennt ein rudimentärer mobiler
-Fallback. Eine PWA ist nicht vorgesehen.
+The native runtime is detected in `native-runtime.ts`. Android runs in
+`sensorLandscape`, hides the system bars, handles display cutouts via CSS safe
+areas and restores the immersive state after `resume`. The native back button
+first closes UI layers that were opened and only then quits the app. Setup and
+table have a simple Android-specific full-screen path; the browser demo
+remains a separate rudimentary mobile fallback. A PWA is not planned.
 
-### Abgeschlossene APK-Bestandsaufnahme
+### Completed APK inventory
 
-Der qualitative Durchlauf und die verkürzte Kontrollmatrix auf echter Hardware
-sind abgeschlossen. Geprüft wurden:
+The qualitative run-through and the shortened control matrix on real hardware
+are complete. The following was checked:
 
-1. Setup, Tisch und Actionbar in NLHE und PLO prüfen.
-2. Heads-up, 6-max und Full Ring jeweils auf Zuordnung, Überlagerung und
-   abgeschnittene Karten oder Bets prüfen.
-3. Kamera-Cutout, Systemleisten, native Zurück-Taste sowie App-Wechsel und
-   Resume nachvollziehen.
-4. Board, Hero-Hole-Cards, obere Pods, Cardbacks, Stack- und Bet-Anzeigen
-   fotografisch beziehungsweise per Screenrecording vergleichen.
-5. Den funktionalen, aber geometrisch zu kleinen Android-HandReplayer in allen
-   Formaten kurz gegenprüfen; sein vollständiges Redesign bleibt in v0.9.1.
-6. Befunde als Blocker für 0.7.7, normales mobiles UX-Thema oder
-   TableGeometry-Arbeit für 0.9.0 klassifizieren.
+1. Check setup, table and action bar in NLHE and PLO.
+2. Check heads-up, 6-max and Full Ring each for assignment, overlap and
+   clipped cards or bets.
+3. Trace camera cutout, system bars, native back button as well as app switch
+   and resume.
+4. Compare board, hero hole cards, upper pods, card backs, stack and bet
+   displays photographically or by means of screen recording.
+5. Spot-check the functional but geometrically too small Android hand replayer
+   in all formats; its complete redesign remains in v0.9.1.
+6. Classify findings as blocker for 0.7.7, ordinary mobile UX topic or
+   TableGeometry work for 0.9.0.
 
-Gerätelauf und Kontrollmatrix sind im
-[APK-Gerätebericht vom 30.07.2026](testing/apk/2026-07-30-device-inventory.md)
-dokumentiert. Er trennt unmittelbar korrigierbare 0.7.7-Fehler von den
-bewusst für TableGeometry und Responsive UI zurückgestellten Punkten. Der
-Android-Replayer ist soweit beurteilbar funktional; seine zu kleine und
-gequetschte Tischgeometrie bleibt für v0.9.1 dokumentiert.
+Device run and control matrix are documented in the
+[APK device report of 30 July 2026](testing/apk/2026-07-30-device-inventory.md).
+It separates immediately correctable 0.7.7 errors from the points that are
+deliberately deferred to TableGeometry and responsive UI. As far as can be
+assessed, the Android replayer is functional; its too small and squeezed table
+geometry remains documented for v0.9.1.
 
-## Architektur-Überblick
+## Architecture overview
 
-### Pakete
+### Packages
 
 ```
 .
 ├── packages/
-│   ├── client/src/           React UI + Bot-AI + Session-Management
-│   │   ├── session/          LocalGameRunner, Rebuys, Replay, Debug-Export
+│   ├── client/src/           React UI + bot AI + session management
+│   │   ├── session/          LocalGameRunner, rebuys, replay, debug export
 │   │   ├── components/       PokerTable, PlayerSeat, Cards, HandReplayer
 │   │   ├── screens/          SetupScreen, TableScreen
 │   │   └── utils/            format, positions
-│   ├── poker-engine/src/     Regeln, State Machine, Hand-Evaluator
-│   ├── shared/src/           Typen (Player, Card, GameState, Events)
-│   ├── electron/src/         Desktop-Wrapper (main, preload)
-│   └── server/src/           ruhender Online-Prototyp, nicht Teil des v1-Laufzeitpfads
-├── android/                  nativer Capacitor-Debug-Prototyp
-└── capacitor.config.ts       native App- und Systemleisten-Konfiguration
+│   ├── poker-engine/src/     rules, state machine, hand evaluator
+│   ├── shared/src/           types (Player, Card, GameState, Events)
+│   ├── electron/src/         desktop wrapper (main, preload)
+│   └── server/src/           dormant online prototype, not part of the v1 runtime path
+├── android/                  native Capacitor debug prototype
+└── capacitor.config.ts       native app and system bar configuration
 ```
 
-### Wichtige Dateien
+### Important files
 
-| Datei | Verantwortung |
+| File | Responsibility |
 |-------|---------------|
-| `session/LocalGameRunner.ts` | Game-Loop, Bot-Management, Event-Capture |
-| `session/bot-rebuy-manager.ts` | Rebuys, Replacements, Leave-on-Bust |
-| `session/hand-replay.ts` | Replay-Builder, Archiv, lesbarer Hand-History-Textexport |
-| `bot-action-scoring.ts` | Fold/Check/Call/Raise/All-In-Scoring |
-| `bot-action-modifiers.ts` | Persönlichkeit, Stack, Tilt-Modifier |
-| `bot-decision-metrics.ts` | SPR, Pot-Odds, Bet-Sizing |
-| `bot-params.ts` | Zentralisierte Tuning-Konstanten |
-| `bot-pipeline.ts` | Decision-Pipeline (Variant→Scoring→Auswahl) |
-| `nlhe-hand-evaluation.ts` | Hand-Kategorien, Draws, Vulnerability |
-| `omaha-hand-evaluation.ts` | PLO-Handbewertung, physische Draw-Outs |
-| `bot-identities.ts` | Identity-Generator, Rebuy-Policies |
-| `bot-habits.ts` | Archetypspezifische Verhaltenspräferenzen |
-| `poker-engine/src/game.ts` | Engine: State Machine, Betting, Showdown |
+| `session/LocalGameRunner.ts` | game loop, bot management, event capture |
+| `session/bot-rebuy-manager.ts` | rebuys, replacements, leave-on-bust |
+| `session/hand-replay.ts` | replay builder, archive, readable hand history text export |
+| `bot-action-scoring.ts` | fold/check/call/raise/all-in scoring |
+| `bot-action-modifiers.ts` | personality, stack, tilt modifiers |
+| `bot-decision-metrics.ts` | SPR, pot odds, bet sizing |
+| `bot-params.ts` | centralised tuning constants |
+| `bot-pipeline.ts` | decision pipeline (variant→scoring→selection) |
+| `nlhe-hand-evaluation.ts` | hand categories, draws, vulnerability |
+| `omaha-hand-evaluation.ts` | PLO hand evaluation, physical draw outs |
+| `bot-identities.ts` | identity generator, rebuy policies |
+| `bot-habits.ts` | archetype-specific behaviour preferences |
+| `poker-engine/src/game.ts` | engine: state machine, betting, showdown |
 
-### Entscheidungs-Flow (Bot)
+### Decision flow (bot)
 
 ```
 1. PokerEngine → getPlayerView(botId) → BotGameView
 2. BotGameView + HandHistory → BotContext
-3. BotContext → VariantEvaluator.evaluate() → objektive VariantEvaluation
-4. Entscheidungs-Kontext → applySkillPerception() → wahrgenommener Kontext
-5. Wahrgenommener Kontext → Scoring + Persönlichkeits-Modifier
-6. ScoredAction[] → gewichtete Kandidatenauswahl → Aktion
+3. BotContext → VariantEvaluator.evaluate() → objective VariantEvaluation
+4. Decision context → applySkillPerception() → perceived context
+5. Perceived context → scoring + personality modifiers
+6. ScoredAction[] → weighted candidate selection → action
 ```
 
-Scoring und nachgelagerte Modifier kombinieren unter anderem:
+Scoring and the subsequent modifiers combine, among others:
 ```
-Base(Hand-Kategorie) + Position + Board-Texture + Gegner-Reads
-+ Stack-Tiefe + SPR + Preflop-Strategy + Street-Initiative
-+ Range-Estimation + Habits + Mental-State + Line-Planning
-→ Utility-Score (0-100)
+Base(hand category) + Position + Board texture + Opponent reads
++ Stack depth + SPR + Preflop strategy + Street initiative
++ Range estimation + Habits + Mental state + Line planning
+→ Utility score (0-100)
 ```
 
-### Eine neue Variante hinzufügen
+### Adding a new variant
 
-Die vorhandenen Varianten sind NLHE und PLO; `omaha-hand-evaluation.ts` ist
-bereits die PLO-Implementierung, keine Vorlage für eine neu anzulegende Datei.
-Eine weitere Variante benötigt mindestens die folgenden abgestimmten Schritte:
+The existing variants are NLHE and PLO; `omaha-hand-evaluation.ts` is already
+the PLO implementation, not a template for a file to be newly created. A
+further variant needs at least the following coordinated steps:
 
-1. Engine-Regeln als `GameVariant` unter `packages/poker-engine/src/variants/`
-   definieren und über `packages/poker-engine/src/index.ts` exportieren. Die
-   Phasentypen stehen in `game-variant.ts`; Showdown-Ranking und Kartennutzung
-   in `hand-evaluator.ts` müssen für die neuen Regeln explizit geprüft werden.
-2. Einen variantenspezifischen `VariantEvaluator` im Client implementieren und
-   in `bot-variant-registry.ts` registrieren. `evaluate(context)` liefert eine
-   vollständige `VariantEvaluation`, einschließlich `handAssessment`,
-   `boardTexture` und `categoryScores` (optional `preferredRaiseTo`).
-3. Die Variantenauswahl in `session/LocalGameRunner.ts` und `screens/SetupScreen.tsx`
-   erweitern. Der Runner ordnet zurzeit nur `omaha-high` ausdrücklich zu und
-   fällt für andere IDs auf NLHE zurück; bloßes Registrieren des Evaluators
-   reicht also nicht. Replay-/Hand-History-Bezeichnungen in
-   `session/hand-replay.ts` und betroffene UI-Kartendarstellung mitprüfen.
-4. Engine-, Bot-, Session- und Replay-Tests für die Variante ergänzen.
-   Kalibrierungsprofile und Zielkorridore sind derzeit auf NLHE/PLO begrenzt;
-   eine neue Variante braucht einen eigenen, begründeten Prüfplan statt einer
-   stillen Aufnahme in den bestehenden 24-Kombinationen-Report.
+1. Define the engine rules as `GameVariant` under
+   `packages/poker-engine/src/variants/` and export them via
+   `packages/poker-engine/src/index.ts`. The phase types are in
+   `game-variant.ts`; showdown ranking and card usage in `hand-evaluator.ts`
+   must be explicitly checked for the new rules.
+2. Implement a variant-specific `VariantEvaluator` in the client and register
+   it in `bot-variant-registry.ts`. `evaluate(context)` returns a complete
+   `VariantEvaluation`, including `handAssessment`, `boardTexture` and
+   `categoryScores` (optionally `preferredRaiseTo`).
+3. Extend the variant selection in `session/LocalGameRunner.ts` and
+   `screens/SetupScreen.tsx`. The runner currently maps only `omaha-high`
+   explicitly and falls back to NLHE for other IDs; merely registering the
+   evaluator is therefore not enough. Also check the replay/hand history labels
+   in `session/hand-replay.ts` and the affected UI card rendering.
+4. Add engine, bot, session and replay tests for the variant. Calibration
+   profiles and target corridors are currently limited to NLHE/PLO; a new
+   variant needs its own justified test plan instead of a silent inclusion in
+   the existing 24-combination report.
 
-Die gemeinsame Bot-Pipeline nutzt `VariantHandAssessment`, aber
-variantenspezifische Scoring-Annahmen und Skill-Wahrnehmung müssen fachlich
-geprüft werden; unverändertes Verhalten ist nicht automatisch korrekt. Die
-Engine führt aktuell nur Community-Card-Varianten mit zwei oder vier Hole-Cards
-aus. Draw-Phasen sind im Typmodell reserviert, im `PokerGame` aber noch nicht
-implementiert; Draw-/Stud-Spiele erfordern deshalb mehr als neue Konfiguration.
+The shared bot pipeline uses `VariantHandAssessment`, but variant-specific
+scoring assumptions and skill perception must be checked for technical
+correctness; unchanged behaviour is not automatically correct. The engine
+currently only runs community card variants with two or four hole cards. Draw
+phases are reserved in the type model, but not yet implemented in `PokerGame`;
+draw and stud games therefore require more than new configuration.
 
-### Ruhenden Server-Prototyp lokal starten
+### Starting the dormant server prototype locally
 
-Der Server gehört nicht zum v1-Laufzeitpfad und wird von `npm run dev` nicht
-gestartet. Für eine bewusste lokale Ausführung müssen mindestens ein starkes
-JWT-Secret und ein lokaler Datenbankpfad gesetzt werden:
+The server is not part of the v1 runtime path and is not started by
+`npm run dev`. For a deliberate local run, at least a strong JWT secret and a
+local database path must be set:
 
 ```bash
 export JWT_SECRET="$(openssl rand -hex 32)"
@@ -175,266 +174,281 @@ export DB_PATH="./.local-data/cpcdigital.db"
 npm run dev --workspace @cpc/server
 ```
 
-Ohne `HOST` bindet der Prozess ausschließlich an `127.0.0.1`. Für eine
-Container- oder Netzwerkfreigabe müssen `HOST`, `CLIENT_ORIGIN`, TLS am
-vorgeschalteten Proxy und die Persistenz bewusst konfiguriert werden. History-
-und Statistik-Endpunkte verlangen einen gültigen Bearer-Token. Die
-Beispielvariablen stehen in [`.env.example`](.env.example).
+Without `HOST` the process binds exclusively to `127.0.0.1`. For a container or
+network release, `HOST`, `CLIENT_ORIGIN`, TLS on the upstream proxy and
+persistence must be deliberately configured. History and statistics endpoints
+require a valid bearer token. The example variables are in
+[`.env.example`](.env.example).
 
-### Game-Loop
+### Game loop
 
 ```
 Setup → startHand() → postBlinds() → scheduleBotAction()
-  → Bot entscheidet → applyAction() → syncChips() → notify()
-  → nächster Spieler oder checkHandEnd()
-  → Ergebnis anzeigen → finishHandPresentation()
-  → setTimeout → startHand() (nächste Hand)
+  → Bot decides → applyAction() → syncChips() → notify()
+  → next player or checkHandEnd()
+  → show result → finishHandPresentation()
+  → setTimeout → startHand() (next hand)
 ```
 
-## Kalibrierung
+## Calibration
 
-Die Bot-Kalibrierung (VPIP, PFR, 3-Bet, C-Bet, Fold-to-CBet, Turn C-Bet, AF
-und WTSD) wird mit `npm run calibrate:bots` gemessen. Ohne `CALIB_HANDS` läuft
-die Release-Stufe mit 10.000 Händen pro Format × 3 Formate × 4 Archetypen.
+The bot calibration (VPIP, PFR, 3-Bet, C-Bet, Fold-to-CBet, Turn C-Bet, AF
+and WTSD) is measured with `npm run calibrate:bots`. Without `CALIB_HANDS` the
+release stage runs with 10,000 hands per format × 3 formats × 4 archetypes.
 
-Für PLO wird `CALIB_VARIANT=omaha-high` gesetzt. Seeds und Handzahl müssen bei
-A/B-Vergleichen identisch bleiben. `CALIB_DETAIL=1` ergänzt Rohnenner und die
-AF-Aufschlüsselung. `CALIB_PROFILE` und `CALIB_FORMAT` begrenzen gezielte
-Entwicklungsläufe. Korridor-Ausreißer werden berichtet, führen aber allein
-nicht mehr zu einem Exit-Code ungleich null. Strukturelle Verstöße bleiben
-auch bei einem Diagnose-Lauf blockierend; `CALIB_NO_EXIT` ist obsolet.
+For PLO, `CALIB_VARIANT=omaha-high` is set. Seeds and hand count must remain
+identical in A/B comparisons. `CALIB_DETAIL=1` adds raw denominators and the
+AF breakdown. `CALIB_PROFILE` and `CALIB_FORMAT` limit targeted development
+runs. Corridor outliers are reported, but on their own no longer lead to an
+exit code different from zero. Structural violations remain blocking even in a
+diagnostic run; `CALIB_NO_EXIT` is obsolete.
 
-Die Ergebnisse werden in `calibration/` versioniert abgelegt. Die
-formatisolierte Ausgangsbasis ist im [v0.8.0-Bericht](calibration/v0.8.0.md)
-dokumentiert.
+The results are stored under version control in `calibration/`. The
+format-isolated baseline is documented in the
+[v0.8.0 report](calibration/v0.8.0.md).
 
-Der veröffentlichte 0.8.1-Stand ist im
-[Release-Gate-Report](calibration/v0.8.1-release-gate.md) festgehalten. Tests,
-Build, Responsive-Smoke, Layer-2-Regression, strukturelle Invarianten und alle
-unveränderten Zielranges sind grün. Der damalige 300-Hand-Snapshot bleibt als
-historische Referenz erhalten. Die aktuell verwendete Regression referenziert
-den späteren [0.8.2-Foundation-Snapshot](calibration/v0.8.2-foundation-300-hand.json).
+The published 0.8.1 state is recorded in the
+[release gate report](calibration/v0.8.1-release-gate.md). Tests, build,
+responsive smoke, layer 2 regression, structural invariants and all unchanged
+target ranges are green. The 300-hand snapshot from that time is retained as a
+historical reference. The regression currently in use references the later
+[0.8.2 foundation snapshot](calibration/v0.8.2-foundation-300-hand.json).
 
-Für neue Releases sind vollständige, versionierte Rohberichte Pflicht.
-Null-Nenner erscheinen als `n/a`; Ausreißer werden nach Größe, Wiederholbarkeit
-und Spielwirkung triagiert. Eine explizit begründete Akzeptanz ist möglich,
-ein struktureller Verstoß nicht. Details stehen in
+For new releases, complete versioned raw reports are mandatory. Zero
+denominators appear as `n/a`; outliers are triaged by magnitude,
+repeatability and effect on play. An explicitly justified acceptance is
+possible, a structural violation is not. Details are in
 [calibration/README.md](calibration/README.md).
 
-Turn C-Bet bezeichnet seit Metrikschema v2 ausschließlich ein echtes Double
-Barrel: derselbe Spieler war Preflop-Aggressor und Flop-C-Bettor und eröffnet
-einen bislang ungeöffneten Turn. Eine Turn-Bet nach durchgechecktem Flop zählt
-nicht als Turn C-Bet.
+Since metric schema v2, Turn C-Bet denotes exclusively a genuine double
+barrel: the same player was preflop aggressor and flop c-bettor and opens a
+previously unopened turn. A turn bet after a checked flop does not count as a
+Turn C-Bet.
 
-`npm run test:calibration` führt den deterministischen Layer-2-Smoke für alle
-24 Varianten-/Archetyp-/Formatkombinationen aus. Er vergleicht 300 Hände pro
-Kombination mit dem versionierten 0.8.2-Foundation-Snapshot und läuft auch in der CI.
-Raten warnen bei mehr als 2 Prozentpunkten Drift und schlagen oberhalb von 5
-Prozentpunkten fehl; AF verwendet absolute Grenzen von 0,2 und 0,5.
-`npm run calibrate:baseline` aktualisiert die Referenz nur nach einer bewusst
-freigegebenen Verhaltensänderung.
+`npm run test:calibration` runs the deterministic layer 2 smoke for all 24
+variant/archetype/format combinations. It compares 300 hands per combination
+with the versioned 0.8.2 foundation snapshot and also runs in CI. Rates warn
+at more than 2 percentage points of drift and fail above 5 percentage points;
+AF uses absolute thresholds of 0.2 and 0.5. `npm run calibrate:baseline`
+updates the reference only after a deliberately approved behaviour change.
 
-Für das botrelevante Release-Gate erzeugt
+For the bot-relevant release gate,
 `npm run calibrate:release -- --output calibration/evidence/<eindeutiger-name>.json`
-einen maschinenprüfbaren Rohbericht. Er prüft alle 24 Kombinationen auf
-Vollständigkeit und bestätigt Ausreißer sowie Metriken mit weniger als 50
-Gelegenheiten mit einem unabhängigen Seed. `--hands N` dient kurzen
-Entwicklungsläufen; der Standard sind 10.000 Hände pro Kombination. Mit
-`npm run calibrate:release -- --validate <pfad>` lässt sich ein Bericht erneut
-prüfen. Die Auswahlregel und Freigabe-Triage stehen in
+produces a machine-checkable raw report. It checks all 24 combinations for
+completeness and confirms outliers as well as metrics with fewer than 50
+opportunities with an independent seed. `--hands N` serves short development
+runs; the default is 10,000 hands per combination. With
+`npm run calibrate:release -- --validate <pfad>` a report can be checked again.
+The selection rule and release triage are in
 [calibration/README.md](calibration/README.md).
 
-Für faire A/B-Vergleiche besitzen einzelne Kalibrierungshände eigene Deck- und
-Entscheidungs-Seeds sowie einen explizit aus der Handnummer rotierten Dealer.
-Damit bleiben spätere Deals identisch, auch wenn eine Strategieänderung einen
-früheren Runout verkürzt. Bot-Sessionzustände werden dagegen absichtlich nicht
-zurückgesetzt, sodass reale Folgeeffekte auf Reads und Verhalten messbar
-bleiben.
+For fair A/B comparisons, individual calibration hands have their own deck and
+decision seeds as well as a dealer rotated explicitly from the hand number.
+Later deals therefore remain identical, even if a strategy change shortens an
+earlier runout. Bot session states, on the other hand, are deliberately not
+reset, so that real knock-on effects on reads and behaviour remain
+measurable.
 
-### Stichprobengrößen
+### Sample sizes
 
-| Stufe | Hände/Format | Total | Einsatz |
+| Stage | Hands/format | Total | Purpose |
 |-------|-------------:|------:|---------|
-| Smoke | 300 | 3.600 | Laufzeitfehler, Invalid Actions, grobe Ausreißer |
-| Entwicklung | 3.000 | 36.000 | Richtungsvergleich während gezieltem Tuning |
-| Release | 10.000 | 120.000 | reproduzierbarer Bericht vor botrelevanten Releases |
-| Bestätigung | 20.000–50.000 | 240.000–600.000 | knappe Grenzen oder statistisch auffällige A/B-Differenzen |
+| Smoke | 300 | 3,600 | runtime errors, invalid actions, gross outliers |
+| Development | 3,000 | 36,000 | directional comparison during targeted tuning |
+| Release | 10,000 | 120,000 | reproducible report before bot-relevant releases |
+| Confirmation | 20,000–50,000 | 240,000–600,000 | close thresholds or statistically conspicuous A/B differences |
 
-Die Laufzeit hängt stark von Variante und Evaluator ab; physische PLO-Outs sind
-deutlich teurer als NLHE. Ein 20k–50k-Lauf ist daher kein pauschales Minor-Release-
-Ritual, sondern eine gezielte Bestätigung, wenn 10k keine klare Entscheidung erlaubt.
+The runtime depends strongly on the variant and evaluator; physical PLO outs
+are considerably more expensive than NLHE. A 20k–50k run is therefore not a
+blanket minor release ritual, but a targeted confirmation when 10k does not
+allow a clear decision.
 
-Beispiel für einen PLO-Smoke-Lauf:
+Example of a PLO smoke run:
 
 ```bash
 CALIB_VARIANT=omaha-high CALIB_HANDS=300 npm run calibrate:bots
 ```
 
-## Parameter-System
+## Parameter system
 
-`bot-params.ts` zentralisiert ~120 tuning-relevante Konstanten in einem Objekt. Betroffene Kategorien:
+`bot-params.ts` centralises ~120 tuning-relevant constants in one object.
+Categories concerned:
 
-- Archetype-Means (12 Parameter)
-- Scoring-Gewichte (Fold/Check/Call/Raise/All-In pro Kategorie)
-- Betting-Faktoren (Pot-Odds, Sizing, SPR, Reraise-Penalties)
-- Preflop-Coverage-Tabellen
-- Stack-Depth-Schwellen
-- Mental-State-Magnituden
+- Archetype means (12 parameters)
+- Scoring weights (fold/check/call/raise/all-in per category)
+- Betting factors (pot odds, sizing, SPR, reraise penalties)
+- Preflop coverage tables
+- Stack depth thresholds
+- Mental state magnitudes
 
-Der Auto-Kalibrierer (`scripts/calibrate.ts`) variiert nur die Archetype-Means. Scoring-Gewichte und Betting-Faktoren werden manuell getunt.
+The auto-calibrator (`scripts/calibrate.ts`) varies only the archetype means.
+Scoring weights and betting factors are tuned manually.
 
-## Bot-Architektur
+## Bot architecture
 
-Der oben skizzierte Flow ist bewusst verkürzt: Variantenbewertung und weitere
-Analyse liefern den objektiven Entscheidungskontext. `bot-pipeline.ts` wendet
-darauf zuerst `applySkillPerception()` an, bewertet anschließend die legalen
-Aktionen und ihre Persönlichkeits-Modifier und wählt unter positiven,
-zulässigen Kandidaten mit mindestens 85 % des besten Utility-Scores gewichtet
-zufällig aus. Nur wenn kein positiver Kandidat vorliegt, greift der Fallback.
-Eine vollständige, beispielgestützte Beschreibung der Informationsgrenzen
-folgt mit der [0.8.3-Modultrennung](docs/de/plans/refactoring-v0.8.3.md).
+The flow sketched above is deliberately abbreviated: variant evaluation and
+further analysis provide the objective decision context. `bot-pipeline.ts`
+first applies `applySkillPerception()` to it, then evaluates the legal actions
+and their personality modifiers and selects at random with weighting among
+positive, admissible candidates with at least 85 % of the best utility score.
+Only if there is no positive candidate does the fallback apply. A complete,
+example-based description of the information limits follows with the
+[0.8.3 module separation](docs/de/plans/refactoring-v0.8.3.md).
 
 ## Tests
 
-- `npm test` führt alle Workspace-Tests mit Vitest aus
-- `npm run test:calibration` prüft die deterministische 300-Hand-Baseline aller
-  24 Botkombinationen; dieser kurze Kalibrierungs-Smoke läuft in der CI
-- Testdateien liegen neben den Source-Dateien (`*.test.ts`)
-- Client-, Engine- und Server-Konfigurationstests laufen in getrennten Workspaces
-- `npm run test:responsive` startet den gebauten Client in Chrome/Chromium und
-  prüft 1440×1000, 1024×768, 844×390 und 390×844 auf abgeschnittene Karten,
-  Sitze, Actionbar-Überlagerungen und den Portrait-Guard
-- Entwicklungs- und Release-Kalibrierungen mit 3k/10k Händen bleiben wegen
-  ihrer Laufzeit separate Skripte
+- `npm test` runs all workspace tests with Vitest
+- `npm run test:calibration` checks the deterministic 300-hand baseline of all
+  24 bot combinations; this short calibration smoke runs in CI
+- Test files are located next to the source files (`*.test.ts`)
+- Client, engine and server configuration tests run in separate workspaces
+- `npm run test:responsive` starts the built client in Chrome/Chromium and
+  checks 1440×1000, 1024×768, 844×390 and 390×844 for clipped cards, seats,
+  action bar overlaps and the portrait guard
+- Development and release calibrations with 3k/10k hands remain separate
+  scripts because of their runtime
 
-Der Responsive-Smoke setzt einen vorherigen Client-Build voraus und verwendet
-`CHROME_PATH`, falls Chrome/Chromium nicht an einem üblichen Systempfad liegt.
-Mit `CPC_RESPONSIVE_SCREENSHOT_DIR=/ziel` schreibt er zusätzlich je Viewport
-einen Screenshot. Er definiert bewusst nur äußere Akzeptanzgrenzen und greift
-nicht der für 0.9.0 geplanten TableGeometry-SSOT vor.
+The responsive smoke requires a previous client build and uses `CHROME_PATH`
+if Chrome/Chromium is not located at a usual system path. With
+`CPC_RESPONSIVE_SCREENSHOT_DIR=/ziel` it additionally writes one screenshot
+per viewport. It deliberately defines only outer acceptance boundaries and does
+not preempt the TableGeometry SSOT planned for 0.9.0.
 
-### Externe Tests
+### External tests
 
-Externe Tests folgen der
-[Test- und Distributionsstrategie](testing/TESTING_STRATEGY.md). Pokerrealismus,
-Bedienbarkeit für Neulinge und technische Betatests sind getrennte
-Testaufträge mit jeweils eigenem Bogen aus
-[TESTER_FORMS.md](testing/TESTER_FORMS.md). Sie ergänzen automatisierte Tests und
-Kalibrierungen, ersetzen deren Release-Gates aber nicht.
+External tests follow the
+[testing and distribution strategy](testing/TESTING_STRATEGY.md). Poker
+realism, usability for newcomers and technical bet tests are separate test
+assignments, each with its own form from
+[TESTER_FORMS.md](testing/TESTER_FORMS.md). They complement automated tests and
+calibrations, but do not replace their release gates.
 
-## Debug-Modus
+## Debug mode
 
-`Ctrl+D` im Spiel aktiviert den Debug-Modus:
-- BotDebugInspector (Entscheidungsdetails, Scores, Reads pro Bot)
-- "Cards on" im Replay (alle Hole-Cards sichtbar)
-- Entscheidungs-Export im Replay
+`Ctrl+D` in the game activates the debug mode:
+- BotDebugInspector (decision details, scores, reads per bot)
+- "Cards on" in the replay (all hole cards visible)
+- Decision export in the replay
 
-Der Session-Debug-Export (`.jsonl`, Schema v4) enthält den kompletten
-Spielverlauf inklusive privater Bot-Karten und ist für die Offline-Analyse
-gedacht. Frühere v1-v3-JSON-Dateien bleiben historische Formate; es gibt keinen
-stillen Import oder eine Umschreibung alter Exporte.
+The session debug export (`.jsonl`, schema v4) contains the complete course of
+the game including private bot cards and is intended for offline analysis.
+Earlier v1-v3 JSON files remain historical formats; there is no silent import
+or a rewriting of old exports.
 
-Die erste JSON-Zeile beschreibt Session, App-Version, Profile, Identitäten und
-die Legenden der kompakten Tupelfelder. Danach folgt genau eine Zeile pro Hand,
-auch für eine noch laufende Hand. Sie enthält unveränderte Spielereignisse,
-private Hole Cards einmal pro Spieler und alle Botentscheidungen. Die letzte
-Zeile ist ein Footer mit Hand- und Entscheidungszahl. Fehlt sie oder stimmen
-die Zähler nicht, gilt die Datei als unvollständig.
+The first JSON line describes the session, app version, profiles, identities
+and the legends of the compact tuple fields. After that follows exactly one
+line per hand, also for a hand that is still running. It contains unchanged
+player events, private hole cards once per player and all bot decisions. The
+last line is a footer with the hand and decision count. If it is missing or
+the counters do not match, the file counts as incomplete.
 
-Jede Botentscheidung enthält die stabile ID des gewählten Kandidaten, sämtliche
-legalen Kandidaten, alle von null verschiedenen Contributions, die unveränderte
-85%-Auswahldiagnostik, objektive Hand-/Range-Werte sowie Deltas der
-skillabhängig wahrgenommenen Sicht. Preflop-Rollen, Positionen und die echte
-Aggressionsfolge bleiben erhalten. Diagnostische Fließkommazahlen werden auf
-maximal sechs Nachkommastellen begrenzt; Chips und Spielereignisse bleiben
-unverändert. Doppelte formatierte Score-Strings und sessionweit duplizierte
-Decision Snapshots sind nicht Teil von v4.
+Each bot decision contains the stable ID of the selected candidate, all legal
+candidates, all non-zero contributions, the unchanged 85% selection
+diagnostics, objective hand/range values as well as deltas of the
+skill-dependent perceived view. Preflop roles, positions and the actual
+sequence of aggression are retained. Diagnostic floating-point numbers are
+limited to a maximum of six decimal places; chips and player events remain
+unchanged. Duplicate formatted score strings and session-wide duplicated
+decision snapshots are not part of v4.
 
-Zur Laufzeit bleiben die letzten 50 Rich-Entscheidungen für den Inspector und
-alle Rich-Entscheidungen der aktuellen Hand für den Replayer im Speicher. Der
-vollständige kompakte Handdatensatz hat kein Sessionlimit. Beim Export werden
-ungefähr 256 KB große Teile erzeugt: Android schreibt zuerst eine Cache-Datei
-und hängt die übrigen Teile an, bevor der Share-Dialog geöffnet wird; im Browser
-entsteht ein Blob aus denselben Teilen. Ein 100-Hand-Stresstest mit zehn
-vollständigen Botentscheidungen je Hand erzwingt höchstens 102 JSONL-Zeilen und
-weniger als 4 MB. Die Datei enthält private Karten und ist daher nicht zum
-öffentlichen Teilen bestimmt.
+At runtime, the last 50 rich decisions stay in memory for the inspector and all
+rich decisions of the current hand for the replayer. The complete compact hand
+record has no session limit. On export, chunks of roughly 256 KB are produced:
+Android first writes a cache file and appends the remaining chunks before the
+share dialog is opened; in the browser a blob is created from the same chunks.
+A 100-hand stress test with ten complete bot decisions per hand forces at most
+102 JSONL lines and less than 4 MB. The file contains private cards and is
+therefore not intended for public sharing.
 
-Der Exportknopf in den Sessionstatistiken öffnet eine Auswahl:
+The export button in the session statistics opens a selection:
 
-- Hand-History im eigenen Textformat (`.txt`) für kompaktes Lesen und Teilen;
-  eine Kompatibilität mit externen Replayern wird nicht zugesagt
-- kompakte vollständige Debug-Session (`.jsonl`) für reproduzierbare Ursachenanalyse
+- Hand history in its own text format (`.txt`) for compact reading and sharing;
+  compatibility with external replayers is not promised
+- compact complete debug session (`.jsonl`) for reproducible root cause
+  analysis
 
-## Bug-Reproduktion
+## Bug reproduction
 
-1. Vollständige Debug-Session über den Exportknopf der Sessionstatistiken oder
-   den Button im Debug-Inspector erstellen
-2. Replay der betroffenen Hand öffnen (↻-Button)
-3. Mit Step-Through und "Cards on" den Spielverlauf nachvollziehen
-4. Bot-Entscheidungsgründe im Debug-Inspector prüfen
+1. Create a complete debug session via the export button in the session
+   statistics or the button in the debug inspector
+2. Open the replay of the affected hand (↻ button)
+3. Trace the course of the game with step-through and "Cards on"
+4. Check the bot decision reasons in the debug inspector
 
-## Lizenz und Distribution
+## Licence and distribution
 
-Das Repository ist unter `AGPL-3.0-only` lizenziert. Die vollständigen Bedingungen
-stehen in [`LICENSE`](LICENSE), Copyright- und Scope-Angaben in
-[`NOTICE.md`](NOTICE.md). Beiträge werden gemäß
-[`CONTRIBUTING.md`](CONTRIBUTING.md) unter derselben Lizenz angenommen.
+The repository is licensed under `AGPL-3.0-only`. The full terms are in
+[`LICENSE`](LICENSE), copyright and scope statements in
+[`NOTICE.md`](NOTICE.md). Contributions are accepted under the same licence in
+accordance with [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-Für spätere Binärpakete gilt insbesondere:
+For later binary packages, the following applies in particular:
 
-- Lizenztext und erforderliche Copyright-Hinweise mit ausliefern
-- den exakt zum Binärpaket gehörenden korrespondierenden Quellcode gleichwertig zugänglich machen
-- Lizenzen und erforderliche Hinweise gebündelter Drittanbieterkomponenten erhalten
-- bei einer modifizierten netzwerkfähigen v2-Version einen gut sichtbaren kostenlosen Source-Zugang bereitstellen
+- ship the licence text and the required copyright notices
+- make the corresponding source code belonging exactly to the binary package
+  available on equivalent terms
+- retain the licences and required notices of bundled third-party components
+- for a modified network-capable v2 version, provide a clearly visible free
+  source access
 
-Der direkte Pages-Build liegt in `.github/workflows/pages.yml`. Er deployt
-ausschließlich `packages/client/dist` aus `master` und bettet dieses Repository
-als Source-Link ein. Die offizielle Demo ist unter
-<https://kaizo101.github.io/CPCdigital/> erreichbar.
+The direct Pages build is in `.github/workflows/pages.yml`. It deploys only
+`packages/client/dist` from `master` and embeds this repository as a source
+link. The official demo is available at
+<https://kaizo101.github.io/CPCdigital/>.
 
-Das frühere Repository `cpcdigital-demo` liefert nur noch eine statische
-Weiterleitung aus. Sein alter Quellstand bleibt in der Git-Historie erhalten;
-der vorherige Positivlisten-Sync wurde nach dem erfolgreichen Cutover entfernt.
-Eine Archivierung erfolgt erst nach einer angemessenen Übergangszeit.
+The former repository `cpcdigital-demo` now only delivers a static redirect.
+Its old source state is preserved in the Git history; the previous allowlist
+sync was removed after the successful cutover. Archiving will only take place
+after a reasonable transition period.
 
-## Public-Release- und Betriebskontrollen
+## Public release and operational controls
 
-Der öffentliche Cutover vom 29.07.2026 umfasste:
+The public cutover of 29 July 2026 covered:
 
-1. vollständigen Secret-Scan über Arbeitsbaum und Git-Historie
-2. `npm ci --ignore-scripts`, `npm test`, `npm run build` und `npm audit`
-3. Kontrolle auf getrackte Datenbanken, `.env`-Dateien, Schlüssel und Credentials
-4. Secret Scanning, Push Protection, Private Vulnerability Reporting und CodeQL
-5. ausschließlich GitHub-eigene, vollständig per Commit-SHA fixierte Actions
-6. Schutz von `master` gegen Löschen und Force-Push
-7. Prüfung des Pages-Bundles auf Version, AGPL-Hinweis und Source-Link
-8. Browserprüfung der Weiterleitung vom früheren Demo-Repository
+1. complete secret scan across working tree and Git history
+2. `npm ci --ignore-scripts`, `npm test`, `npm run build` and `npm audit`
+3. check for tracked databases, `.env` files, keys and credentials
+4. Secret Scanning, Push Protection, Private Vulnerability Reporting and CodeQL
+5. exclusively GitHub's own actions, fully pinned by commit SHA
+6. protection of `master` against deletion and force push
+7. check of the Pages bundle for version, AGPL notice and source link
+8. browser check of the redirect from the former demo repository
 
-Für weitere Releases bleiben Tests, Build, Audit, CodeQL und die
-variant-spezifischen Kalibrierungsgates verpflichtend. Release-Tags werden erst
-nach erfolgreichem Gate auf dem geprüften Release-Commit erstellt und gemeinsam
-mit dem zugehörigen Branch veröffentlicht.
+For further releases, tests, build, audit, CodeQL and the variant-specific
+calibration gates remain mandatory. Release tags are only created after a
+successful gate on the checked release commit and are published together with
+the associated branch.
 
-Der aktuelle technische Befund ist im
-[Public-Readiness-Audit vom 29.07.2026](security/audits/2026-07-29-public-readiness.md)
-dokumentiert.
+The current technical finding is documented in the
+[public readiness audit of 29 July 2026](security/audits/2026-07-29-public-readiness.md).
 
-## Bekannte Limitationen
+## Known limitations
 
-- **Scoring ist additiv**: Beiträge werden summiert, kein Clamping zwischen Schichten. Ein extremer Habit (+30) kann alle anderen Modifier überschreiben.
-- **Keine GTO-Basis**: Alle Entscheidungen basieren auf Heuristiken, nicht auf spielfheoretischen Berechnungen. Das ist gewollt (Casual statt Solver).
-- **Reads heuristisch kalibriert**: Bots beobachten Hero und andere Bots; echtes menschliches Spielverhalten ist noch nicht validiert.
-- **Persistenter Roster**: Bot-Identities werden in localStorage gespeichert. Nach Browser-Daten-Löschung wird ein neuer Roster generiert.
-- **Lokales Hand-Archiv**: Die letzten 200 Replays liegen in localStorage und gehen beim Löschen der Browser-Daten verloren.
-- **Replay je Plattform**: Separate BrowserWindows funktionieren nur in
-  Electron. Browser und Android verwenden ein Overlay; der kompakte
-  Android-Landscape-Replayer ist durch einen Zwischenfix wieder nutzbar und im
-  Responsive-Smoke für 2-max, 6-max und 9-max abgedeckt. Die gemeinsame
-  responsive Überarbeitung folgt weiterhin mit der TableGeometry-SSOT.
-- **Android nur als Debug-Prototyp**: Gerätekompatibilität, Release-Signierung, Distribution und vollständige mobile Feature-Parität sind noch nicht zugesagt. Die qualitative Erstaufnahme ist abgeschlossen; die vollständige Varianten-/Format-/Lifecycle-Matrix steht noch aus.
-- **Mobile Geometrie**: Sicherheitskorrekturen verhindern die derzeit bekannten oberen Karten-Clips. Eine konsistente Sitz-, Karten- und Bet-Geometrie folgt erst mit der TableGeometry-SSOT in v0.9.0.
-- **Ruhender Server-Prototyp**: `packages/server` bleibt bewusst für eine mögliche v2-Integration erhalten, wird aber vom Offline-Client nicht importiert und ist kein v1-Produktionspfad. Seine aktuelle Härtung ersetzt kein Produktions-Sicherheitsaudit.
-- **Formatierung**: Eine gemeinsame Prettier-Konfiguration ist noch nicht
-  eingecheckt; die mechanische Vereinheitlichung ist für den
-  Code-Qualitätsblock in v0.8.3 vorgesehen.
+- **Scoring is additive**: contributions are summed, there is no clamping
+  between layers. An extreme habit (+30) can override all other modifiers.
+- **No GTO basis**: all decisions are based on heuristics, not on
+  game-theoretic calculations. This is intentional (casual instead of solver).
+- **Reads heuristically calibrated**: bots observe Hero and other bots; real
+  human playing behaviour is not yet validated.
+- **Persistent roster**: bot identities are stored in localStorage. After
+  deleting the browser data, a new roster is generated.
+- **Local hand archive**: the last 200 replays are stored in localStorage and
+  are lost when the browser data is deleted.
+- **Replay per platform**: separate browser windows only work in Electron.
+  Browser and Android use an overlay; the compact Android landscape replayer
+  is usable again thanks to an interim fix and is covered in the responsive
+  smoke for 2-max, 6-max and 9-max. The shared responsive revision still
+  follows with the TableGeometry SSOT.
+- **Android only as a debug prototype**: device compatibility, release
+  signing, distribution and complete mobile feature parity are not yet
+  promised. The qualitative first inventory is complete; the full
+  variant/format/lifecycle matrix is still outstanding.
+- **Mobile geometry**: safety fixes prevent the currently known top card
+  clips. Consistent seat, card and bet geometry follows only with the
+  TableGeometry SSOT in v0.9.0.
+- **Dormant server prototype**: `packages/server` is deliberately retained for
+  a possible v2 integration, but is not imported by the offline client and is
+  not a v1 production path. Its current hardening does not replace a production
+  security audit.
+- **Formatting**: a shared Prettier configuration is not yet checked in; the
+  mechanical standardisation is planned for the code quality block in v0.8.3.

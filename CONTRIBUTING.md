@@ -1,47 +1,45 @@
-# Beiträge zu CPCdigital
+# Contributing to CPCdigital
 
-Vielen Dank für dein Interesse an CPCdigital.
+Thank you for your interest in CPCdigital.
 
-Mit dem Einreichen eines Beitrags bestätigst du, dass du die notwendigen Rechte
-an diesem Beitrag besitzt und ihn unter der
-[GNU Affero General Public License Version 3](LICENSE) (`AGPL-3.0-only`)
-bereitstellst. Bereits bestehende Lizenz- und Copyright-Hinweise dürfen nicht
-entfernt werden.
+By submitting a contribution you confirm that you hold the necessary rights to
+it and that you provide it under the
+[GNU Affero General Public License Version 3](LICENSE) (`AGPL-3.0-only`).
+Existing licence and copyright notices must not be removed.
 
-Material Dritter darf nur aufgenommen werden, wenn seine Lizenz mit
-`AGPL-3.0-only` vereinbar ist und Herkunft, Lizenz sowie erforderliche Hinweise
-nachvollziehbar dokumentiert sind. Generierte oder KI-unterstützte Assets müssen
-ebenfalls hinsichtlich ihrer Nutzungsrechte geprüft und als solche dokumentiert
-werden.
+Third-party material may only be included if its licence is compatible with
+`AGPL-3.0-only` and if origin, licence and required notices are documented in a
+traceable way. Generated or AI-assisted assets must likewise be checked with
+regard to usage rights and documented as such.
 
-Für größere Änderungen bitte zunächst ein Issue mit Ziel, Umfang und möglichen
-Auswirkungen auf Engine, Replays, persistente Daten oder Kalibrierung anlegen.
+For larger changes, please open an issue first with goal, scope and possible
+effects on engine, replays, persistent data or calibration.
 
-Vermutete Sicherheitslücken oder versehentlich veröffentlichte Zugangsdaten
-bitte nicht als öffentliches Issue melden, sondern gemäß
-[`SECURITY.md`](SECURITY.md) vertraulich einreichen.
+Suspected security vulnerabilities or accidentally published credentials should
+not be reported as a public issue; please submit them confidentially as
+described in [`SECURITY.md`](SECURITY.md).
 
-Für die lokale Electron-Entwicklung `npm ci` verwenden: So werden die
-freigegebenen Install-Skripte und das Electron-Binary eingerichtet. Das in der
-CI verwendete `npm ci --ignore-scripts` ist für Tests und Builds geeignet,
-installiert aber kein startfähiges Electron-Binary. Weitere Voraussetzungen
-und Startbefehle stehen in [DEV.md](DEV.md#quick-start).
+For local Electron development, use `npm ci`: this installs the released
+install scripts and the Electron binary. The `npm ci --ignore-scripts` variant
+used in CI is suitable for tests and builds, but does not install a runnable
+Electron binary. Further prerequisites and start commands are in
+[DEV.md](DEV.md#quick-start).
 
-Vor einem Pull Request bitte mindestens folgende Prüfungen lokal ausführen:
+Before a pull request, please run at least the following checks locally:
 
 ```bash
 npm test
 npm run build
 ```
 
-Zusätzlich die vom Änderungstyp betroffenen Prüfungen ausführen:
+Additionally run the checks that correspond to the type of change:
 
-| Änderung | Zusätzliche Prüfung |
-|----------|---------------------|
-| Bot-Entscheidung, Ranges, Kalibrierung oder Engine-Beträge | `npm run test:calibration` und `npm run test:stakes`; bewusste Snapshot-Abweichungen begründen, nicht still aktualisieren |
-| Tisch, Setup, Replay oder responsive Darstellung | `npm run test:responsive` nach dem Client-Build; Chrome/Chromium nötig, bei Bedarf `CHROME_PATH` setzen |
-| Android-Runtime oder native Integration | `npm run android:check` in einer passenden Android-SDK-Umgebung und einen Gerätelauf, falls das Verhalten davon abhängt |
+| Change | Additional check |
+|--------|------------------|
+| Bot decision, ranges, calibration or engine amounts | `npm run test:calibration` and `npm run test:stakes`; justify deliberate snapshot deviations instead of silently updating them |
+| Table, setup, replay or responsive rendering | `npm run test:responsive` after the client build; Chrome/Chromium required, set `CHROME_PATH` if necessary |
+| Android runtime or native integration | `npm run android:check` in a suitable Android SDK environment and one device run if the behaviour depends on it |
 
-`npm run calibrate:release` ist ein eigener Release-Prüflauf und keine
-Pflicht für jeden Pull Request. Die Testbefehle und ihre Voraussetzungen sind
-in [DEV.md](DEV.md#tests) beschrieben.
+`npm run calibrate:release` is a separate release verification run and not a
+requirement for every pull request. The test commands and their prerequisites
+are described in [DEV.md](DEV.md#tests).

@@ -1,46 +1,45 @@
-# Sicherheitsrichtlinie
+# Security Policy
 
-## Unterstützte Versionen
+## Supported Versions
 
-CPCdigital befindet sich in früher Entwicklung. Sicherheitskorrekturen werden
-für den aktuellen Stand auf `master` und, soweit praktikabel, für den neuesten
-Release bereitgestellt. Ältere Versionen erhalten keine garantierten Updates.
+CPCdigital is in early development. Security fixes are provided for the current
+state on `master` and, where practical, for the latest release. Older versions
+do not receive guaranteed updates.
 
-## Sicherheitsproblem vertraulich melden
+## Reporting a Security Issue Confidentially
 
-Bitte veröffentliche vermutete Sicherheitslücken, Zugangsdaten oder private
-Spieldaten nicht in einem öffentlichen Issue.
+Please do not publish suspected security vulnerabilities, credentials or private
+game data in a public issue.
 
-Nutze stattdessen eine
-[private GitHub-Sicherheitsmeldung](https://github.com/kaizo101/CPCdigital/security/advisories/new).
-Beschreibe nach Möglichkeit:
+Instead, use a
+[private GitHub security advisory](https://github.com/kaizo101/CPCdigital/security/advisories/new).
+If possible, describe:
 
-- betroffene Version oder Commit
-- reproduzierbare Schritte
-- erwartete und tatsächliche Auswirkungen
-- bekannte Voraussetzungen oder mögliche Gegenmaßnahmen
+- affected version or commit
+- reproducible steps
+- expected and actual impact
+- known prerequisites or possible mitigations
 
-Zugangsdaten oder personenbezogene Testdaten bitte nur in minimal notwendigem
-Umfang übermitteln.
+Please only submit credentials or personal test data to the minimum extent
+necessary.
 
-## Sicherheitsgrenzen
+## Security Boundaries
 
-Der v1-Produktpfad ist eine lokale Offline-Anwendung ohne Konto, Echtgeld,
-öffentlichen Server oder erforderliche Netzwerkverbindung.
+The v1 product path is a local offline application without accounts, real
+money, a public server or a required network connection.
 
-`packages/server` ist ein ruhender Prototyp für eine mögliche v2-Integration.
-Er ist nicht als produktionsreif dokumentiert und wird nicht durch die
-GitHub-Pages-Demo ausgeführt. Wer ihn lokal startet, muss mindestens
-`JWT_SECRET`, `CLIENT_ORIGIN` und einen geeigneten `DB_PATH` setzen. Der Server
-bindet ohne explizite Konfiguration ausschließlich an `127.0.0.1`.
+`packages/server` is a dormant prototype for a possible v2 integration. It is
+not documented as production ready and is not executed by the GitHub Pages
+demo. Anyone running it locally must set at least `JWT_SECRET`, `CLIENT_ORIGIN`
+and a suitable `DB_PATH`. Without explicit configuration, the server only binds
+to `127.0.0.1`.
 
-Die GitHub-Pages-Demo ist ein statischer Build. Sie speichert Spielstände,
-Replays und Einstellungen ausschließlich im Browser und betreibt keine
-serverseitige Benutzerverwaltung.
+The GitHub Pages demo is a static build. It stores game states, replays and
+settings exclusively in the browser and operates no server-side user
+management.
 
-## Keine Echtgeldfunktion
+## No Real-Money Features
 
-CPCdigital verarbeitet keine Einsätze, Auszahlungen oder Zahlungsdaten. Fehler,
-die ausschließlich ein Echtgeldsystem voraussetzen, liegen außerhalb des
-aktuellen Funktionsumfangs; Hinweise auf unerwartete Netzwerk- oder
-Zahlungsintegration sind dennoch ausdrücklich erwünscht.
+CPCdigital processes no stakes, payouts or payment data. Bugs that presuppose a
+real-money system are out of scope of the current feature set; reports about
+unexpected network or payment integration are nevertheless explicitly welcome.
