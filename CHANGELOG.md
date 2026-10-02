@@ -8,6 +8,13 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Added
 
+- **Erste 0.8.2-Anti-Steal-Basis:** Bots merken sich pro Gegner und getrennt
+  für Button/Cutoff ungeöffnete Steal-Gelegenheiten und tatsächliche Raises.
+  Nach genügend Beobachtungen kann ein skillabhängiger, archetypischer Read
+  die Blind-Defense bereits spielbarer Hände vorsichtig verschieben; Limps,
+  Reraises, Heads-up-Opens, Short-Stack-Shoves und ungeeignete Hände lösen
+  keinen Anti-Steal-Gegenangriff aus. Erfolg/Misserfolg und Gegenanpassungen
+  über mehrere Hände bleiben Teil des offenen 0.8.2-Blocks.
 - **PLO4-Preflop-Pilot:** Getrenntes Strukturprofil für Paarhöhe,
   Vier-Karten-Koordination und nutzbare Suit-Höhe; Koordination und A-hoher
   Suit wirken nur skillabhängig, tief und in später Position mit kleinen

@@ -4,6 +4,7 @@ import type { PreflopStrategyAction } from './bot-category-scores'
 import type { DecisionMetrics } from './bot-decision-metrics'
 import type { StreetAnalysis } from './bot-street-analysis'
 import type { PerceivedOpponentRange } from './bot-range-estimation'
+import type { StealSpot } from './bot-preflop-steal'
 import type { BotState, Position } from './bot-types'
 import type { BoardTexture, CategoryScoreTable, VariantHandAssessment } from './bot-variant-evaluation'
 
@@ -86,6 +87,8 @@ export interface DecisionContext {
   categoryScores: CategoryScoreTable
   preflopRangeAction?: PreflopStrategyAction
   opponentStats?: { vpip: number; aggression: number; foldToBet: number; confidence: number }
+  /** Public preflop action pattern; does not imply the opener actually has a weak hand. */
+  stealSpot?: StealSpot
   botHabits?: ActiveHabit[]
   streetAnalysis?: StreetAnalysis
   /** Objective public-information range evidence; skill perception may simplify it before scoring. */

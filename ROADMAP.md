@@ -106,8 +106,12 @@ getrennt dokumentiert; der Server bleibt ausgeklammert.
 
 - [x] Tiefe 4-Bet-/5-Bet-Ketten nach tatsächlicher Aggressionsstufe absichern,
   damit generische Boni keine klare Fold-Präferenz strukturell überstimmen.
+- [x] Erste Anti-Steal-Basis: Öffentliche, ungeöffnete Button-/Cutoff-
+  Gelegenheiten pro Gegner und Position zählen; Blind-Reaktion erst mit
+  ausreichender Stichprobe, Skill-Gewichtung und spielbarer Range zulassen.
 - [ ] Button-/Cutoff-Steals und Blind-Defense gegner-, positions-, stichproben-
-  und konfidenzabhängig beobachten und beantworten.
+  und konfidenzabhängig beobachten und beantworten; als nächstes
+  Erfolg/Misserfolg und Gegenanpassung über mehrere Hände prüfen.
 - [ ] Strategische Anpassung klar von emotionaler Überreaktion trennen;
   Skill steuert Erkennung, Qualität, Regulation und Erholung, ohne Archetypen
   zu Solver-Bots zu glätten.

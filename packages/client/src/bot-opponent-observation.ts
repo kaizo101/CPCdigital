@@ -1,7 +1,8 @@
 import type { HandEvent } from '@cpc/shared'
 import type { BotArchetypeId } from './bot-archetypes'
-import { updateOpponentRead, updateOpponentSizing } from './bot-reads'
+import { updateOpponentRead, updateOpponentSizing, updateOpponentSteal } from './bot-reads'
 import { aggressiveActionPotFraction, isAggressiveHistoryEvent } from './bot-sizing'
+import { classifyStealOpportunity } from './bot-preflop-steal'
 import type { BotState } from './bot-types'
 
 export interface OpponentObservationCursor {
@@ -19,7 +20,8 @@ export function observeOpponentHistory(
 ): void {
   const observationSkill = botState.skill.observation
 
-  for (const event of actionHistory.slice(cursor.eventCount)) {
+  for (let index = cursor.eventCount; index < actionHistory.length; index++) {
+    const event = actionHistory[index]
     if (event.type !== 'PlayerActed' || event.playerId === botId || event.source === 'forced') continue
 
     const opponentId = event.playerId
@@ -28,6 +30,8 @@ export function observeOpponentHistory(
     const passiveAllIn = action.type === 'all-in' && !aggressiveAction
 
     if (event.phase === 'preflop') {
+      const steal = classifyStealOpportunity(actionHistory, index)
+      if (steal) updateOpponentSteal(botState.reads, opponentId, steal.position, steal.attempted)
       if (
         (action.type === 'call' || action.type === 'raise' || action.type === 'all-in')
         && !cursor.vpipPlayers.has(opponentId)

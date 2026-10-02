@@ -119,6 +119,25 @@ export function updateOpponentSizing(
   read.sizing.average = read.sizing.average * (1 - alpha) + potFraction * alpha
 }
 
+export function updateOpponentSteal(
+  reads: BotReadsState,
+  opponentId: string,
+  position: 'button' | 'cutoff',
+  attempted: boolean,
+): void {
+  let read = reads.opponents.get(opponentId)
+  if (!read) {
+    read = createOpponentRead(opponentId, hashToNumber(opponentId + ':read-bias'))
+    reads.opponents.set(opponentId, read)
+  }
+  read.steals ??= {
+    button: { opportunities: 0, attempts: 0 },
+    cutoff: { opportunities: 0, attempts: 0 },
+  }
+  read.steals[position].opportunities++
+  if (attempted) read.steals[position].attempts++
+}
+
 export function getSizingTell(
   read: OpponentRead,
   currentPotFraction: number,
@@ -207,6 +226,10 @@ export function createOpponentRead(opponentId: string, biasRng: number): Opponen
     foldToBetEstimate: {
       successes: PRIOR_FOLD_TO_BET.successes * foldBias,
       failures: PRIOR_FOLD_TO_BET.failures / foldBias,
+    },
+    steals: {
+      button: { opportunities: 0, attempts: 0 },
+      cutoff: { opportunities: 0, attempts: 0 },
     },
     handsSampled: 0,
     effectiveObservations: 0,

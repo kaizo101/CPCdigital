@@ -8,6 +8,7 @@ import type { BotState, BotPersonality, Position, MentalEvent } from './bot-type
 import type { ActiveHabit } from './bot-habits'
 import type { DecisionContext } from './bot-pipeline'
 import { analyzeStreetAction } from './bot-street-analysis'
+import { currentStealSpot } from './bot-preflop-steal'
 import { estimateOpponentRanges } from './bot-range-estimation'
 import { getPositionCategory, type BotContext } from './bot-context'
 import { deriveDecisionMetrics, type DecisionMetrics } from './bot-decision-metrics'
@@ -190,6 +191,15 @@ export function decideBotDecision(
             ))
       : undefined,
     opponentStats,
+    stealSpot: state.phase === 'preflop'
+      ? currentStealSpot(
+          botId,
+          botContext.position.positionsFromDealer,
+          playerPositions,
+          playersInHand.length,
+          botContext.actionHistory,
+        ) ?? undefined
+      : undefined,
     botHabits,
     streetAnalysis,
     opponentRanges: estimateOpponentRanges(streetAnalysis, {

@@ -3,6 +3,7 @@ import type { HandEvent } from '@cpc/shared'
 import { createBotState } from './bot-state'
 import { TAG_PERSONALITY } from './bot-tag'
 import { observeOpponentHistory, type OpponentObservationCursor } from './bot-opponent-observation'
+import { currentStealSpot } from './bot-preflop-steal'
 
 function acted(overrides: Partial<Extract<HandEvent, { type: 'PlayerActed' }>> = {}): Extract<HandEvent, { type: 'PlayerActed' }> {
   return {
@@ -27,7 +28,90 @@ function setup() {
   }
 }
 
+function started(): Extract<HandEvent, { type: 'HandStarted' }> {
+  return {
+    type: 'HandStarted',
+    variantId: 'texas-holdem',
+    dealerId: 'button',
+    smallBlind: 1,
+    bigBlind: 2,
+    players: ['small', 'big', 'under-gun', 'cutoff', 'button'].map((playerId, seatIndex) => ({
+      playerId, seatIndex, startingChips: 200,
+    })),
+  }
+}
+
 describe('opponent history observation', () => {
+  it('counts unopened cutoff and button attempts separately and only once', () => {
+    const { botState, cursor } = setup()
+    const history: HandEvent[] = [
+      started(),
+      acted({ phase: 'preflop', playerId: 'under-gun', action: { type: 'fold' } }),
+      acted({ phase: 'preflop', playerId: 'cutoff', action: { type: 'fold' } }),
+      acted({ phase: 'preflop', playerId: 'button', action: { type: 'raise', amount: 6 }, toCall: 2, currentBetBefore: 2 }),
+    ]
+    observeOpponentHistory('big', botState, history.slice(0, 3), cursor, 'tag')
+    observeOpponentHistory('big', botState, history, cursor, 'tag')
+    observeOpponentHistory('big', botState, history, cursor, 'tag')
+
+    expect(botState.reads.opponents.get('cutoff')?.steals?.cutoff).toEqual({ opportunities: 1, attempts: 0 })
+    expect(botState.reads.opponents.get('button')?.steals?.button).toEqual({ opportunities: 1, attempts: 1 })
+  })
+
+  it('does not mistake a raise behind a limper or a reraise for a steal', () => {
+    const { botState, cursor } = setup()
+    const history: HandEvent[] = [
+      started(),
+      acted({ phase: 'preflop', playerId: 'under-gun', action: { type: 'call' }, toCall: 2 }),
+      acted({ phase: 'preflop', playerId: 'cutoff', action: { type: 'raise', amount: 6 }, currentBetBefore: 2 }),
+      acted({ phase: 'preflop', playerId: 'button', action: { type: 'raise', amount: 18 }, currentBetBefore: 6 }),
+    ]
+    observeOpponentHistory('big', botState, history, cursor, 'tag')
+
+    expect(botState.reads.opponents.get('cutoff')?.steals?.cutoff.opportunities).toBe(0)
+    expect(botState.reads.opponents.get('button')?.steals?.button.opportunities).toBe(0)
+  })
+
+  it('ignores forced actions and heads-up positions for steal samples', () => {
+    const { botState, cursor } = setup()
+    const history: HandEvent[] = [
+      started(),
+      acted({ phase: 'preflop', playerId: 'cutoff', action: { type: 'fold' }, source: 'forced' }),
+      acted({ phase: 'preflop', playerId: 'button', action: { type: 'raise', amount: 6 }, currentBetBefore: 2 }),
+    ]
+    observeOpponentHistory('big', botState, history, cursor, 'tag')
+    expect(botState.reads.opponents.get('button')?.steals?.button.attempts).toBe(1)
+
+    const hu = setup()
+    const huHistory: HandEvent[] = [
+      { ...started(), players: started().players.slice(0, 2), dealerId: 'small' },
+      acted({ phase: 'preflop', playerId: 'small', action: { type: 'raise', amount: 6 }, currentBetBefore: 2 }),
+    ]
+    observeOpponentHistory('big', hu.botState, huHistory, hu.cursor, 'tag')
+    expect(hu.botState.reads.opponents.get('small')?.steals?.button.opportunities).toBe(0)
+  })
+
+  it('offers anti-steal defense only to blinds facing one unopened late raise', () => {
+    const positions = new Map([
+      ['button', { positionsFromDealer: 0 }],
+      ['small', { positionsFromDealer: 1 }],
+      ['big', { positionsFromDealer: 2 }],
+      ['under-gun', { positionsFromDealer: 3 }],
+      ['cutoff', { positionsFromDealer: 4 }],
+    ])
+    const fold = acted({ phase: 'preflop', playerId: 'under-gun', action: { type: 'fold' } })
+    const cutoffFold = acted({ phase: 'preflop', playerId: 'cutoff', action: { type: 'fold' } })
+    const buttonRaise = acted({ phase: 'preflop', playerId: 'button', action: { type: 'raise', amount: 6 }, currentBetBefore: 2 })
+    expect(currentStealSpot('big', 2, positions, 5, [fold, cutoffFold, buttonRaise]))
+      .toEqual({ openerId: 'button', position: 'button' })
+    expect(currentStealSpot('small', 1, positions, 5, [fold, cutoffFold, buttonRaise]))
+      .toEqual({ openerId: 'button', position: 'button' })
+    expect(currentStealSpot('cutoff', 4, positions, 5, [fold, cutoffFold, buttonRaise])).toBeNull()
+    expect(currentStealSpot('big', 2, positions, 5, [fold, cutoffFold, buttonRaise, acted({ phase: 'preflop', playerId: 'small' })])).toBeNull()
+    expect(currentStealSpot('big', 2, positions, 5, [fold, cutoffFold, buttonRaise, acted({ phase: 'preflop', playerId: 'small', action: { type: 'raise', amount: 18 } })])).toBeNull()
+    expect(currentStealSpot('big', 2, positions, 5, [acted({ phase: 'preflop', playerId: 'under-gun' }), buttonRaise])).toBeNull()
+    expect(currentStealSpot('big', 2, positions, 5, [fold, cutoffFold, acted({ ...buttonRaise, action: { type: 'all-in' } })])).toBeNull()
+  })
   it('records VPIP only from preflop voluntary actions', () => {
     const { botState, cursor } = setup()
     observeOpponentHistory('hero', botState, [acted()], cursor, 'tag')

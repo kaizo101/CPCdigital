@@ -19,6 +19,26 @@ getrennt:
 Ein Read soll die Entscheidung des Nutzers verbessern, aber niemals die
 nächste Aktion eines Bots deterministisch verraten.
 
+## Implementierungsstand 0.8.2 (02.10.2026)
+
+Der erste Anti-Steal-Schnitt beobachtet ausschließlich öffentliche
+Preflop-Aktionen: pro Gegner getrennte ungeöffnete Gelegenheiten und
+Open-Raises vom Button bzw. Cutoff. Limps, Reraises, erzwungene Aktionen,
+Heads-up und Open-Shoves sind keine Steal-Versuche in diesem Read. Ein Bot
+im Blind reagiert nur gegen einen einzelnen solchen Opener, nach mindestens
+sechs Gelegenheiten in genau dieser Position und oberhalb der vorhandenen
+Skill-Schwelle für positionsbezogene Ranges (Skill 40: noch keine Wirkung).
+Die Stichprobenwirkung wächst bis 14 Gelegenheiten; der Score-Eingriff
+bleibt auf schon spielbare Hände begrenzt und belohnt kein All-in.
+Calling Stations verschieben eher Calls, LAGs eher geeignete Reraises;
+PLO erhält bewusst einen kleineren Effekt als NLHE.
+
+Dies ist ein konservativer Anfang, **kein** abgeschlossener Anti-Exploit-
+Regelkreis: Erfolgsquote der Steals, gegnerische Gegenanpassungen und
+emotionale Überreaktionen sind noch nicht angeschlossen. Der 300-Hand-
+Vergleich meldet weiterhin acht Warnungen und die beiden bereits
+dokumentierten PLO-Driftzellen; Zielkorridore/Baseline wurden nicht geändert.
+
 ## Evidenz aus der 100-Hand-Probesession zu v0.7.9
 
 - Hand #18 ist kein isolierter All-in-Ausreißer. Die problematische Stelle ist

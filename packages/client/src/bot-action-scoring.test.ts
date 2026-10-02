@@ -71,6 +71,51 @@ function makeCtx(overrides: Partial<DecisionContext> = {}): DecisionContext {
   }
 }
 
+describe('preflop anti-steal score integration', () => {
+  it('adjusts only suitable blind-defense candidates, never the all-in candidate', () => {
+    const base = makeCtx()
+    const botState = createBotState(TAG_PERSONALITY, 100, () => 0.5)
+    botState.reads.opponents.set('opp', {
+      playerId: 'opp',
+      vpipEstimate: { successes: 2, failures: 8 },
+      aggressionEstimate: { successes: 3, failures: 7 },
+      foldToBetEstimate: { successes: 5, failures: 5 },
+      handsSampled: 14,
+      effectiveObservations: 14,
+      sizing: { average: 0.6, count: 0 },
+      steals: { button: { opportunities: 14, attempts: 14 }, cutoff: { opportunities: 0, attempts: 0 } },
+    })
+    const actions = scoreActions(makeCtx({
+      botState,
+      position: 'blinds',
+      tableSize: 6,
+      stealSpot: { openerId: 'opp', position: 'button' },
+      preflopRangeAction: 'call-or-fold',
+      gameView: { ...base.gameView, currentBet: 30 },
+      metrics: { ...base.metrics, callAmount: 20 },
+      legalActions: { fold: true, check: false, callAmount: 20, raise: { minAmount: 50, maxAmount: 1000 }, allInAmount: 1000 },
+    }))
+    const stealContribution = (type: string) => actions.find(candidate => candidate.action.type === type)!
+      .contributions.filter(contribution => contribution.label.includes('button steal read'))
+
+    expect(stealContribution('fold')[0].value).toBeLessThan(0)
+    expect(stealContribution('call')[0].value).toBeGreaterThan(0)
+    expect(stealContribution('raise')).toEqual([])
+    expect(stealContribution('all-in')).toEqual([])
+
+    const passiveAllIn = scoreActions(makeCtx({
+      botState,
+      position: 'blinds',
+      tableSize: 6,
+      stealSpot: { openerId: 'opp', position: 'button' },
+      preflopRangeAction: 'call-or-fold',
+      gameView: { ...base.gameView, currentBet: 30 },
+      legalActions: { fold: true, check: false, callAmount: null, raise: null, allInAmount: 20 },
+    })).find(candidate => candidate.action.type === 'all-in')!
+    expect(passiveAllIn.contributions.some(contribution => contribution.label.includes('button steal read'))).toBe(false)
+  })
+})
+
 // ---------------------------------------------------------------------------
 // Fund 3: skillLevelFactor requires sorted tiers
 // ---------------------------------------------------------------------------

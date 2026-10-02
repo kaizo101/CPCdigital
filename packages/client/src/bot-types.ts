@@ -94,6 +94,8 @@ export interface OpponentRead {
   vpipEstimate: { successes: number; failures: number }
   aggressionEstimate: { successes: number; failures: number }
   foldToBetEstimate: { successes: number; failures: number }
+  /** Public, unopened late-position opportunities observed in this session. */
+  steals?: Record<'button' | 'cutoff', { opportunities: number; attempts: number }>
   handsSampled: number
   effectiveObservations: number
   sizing: SizingRead

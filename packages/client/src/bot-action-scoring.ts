@@ -18,6 +18,7 @@ import { params } from './bot-params'
 import { resolveTableFormat } from './bot-table-format'
 import { getPloSprAdjustments, type PloSprAction } from './plo-spr-strategy'
 import { ploPreflopStructureFactors } from './plo-preflop-strategy'
+import { stealDefenseFactors } from './bot-steal-defense'
 import { analysisSkillWeight, hasAnalysisSkill } from './bot-skill-gates'
 import { cardsToHandPattern } from './preflop-ranges'
 import {
@@ -55,6 +56,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
     ...bettingFactors('fold', context),
     ...(escalationOverridesGenericScoring ? [] : preflopStrategyFactors('fold', context)),
     ...preflopEscalationFactors('fold', context),
+    ...stealDefenseFactors('fold', context),
   ]
 
   if (gameView.phase === 'preflop' && context.botState.memory.hand.raisedPreflop && metrics.potOdds <= 0.15) {
@@ -131,7 +133,7 @@ function scoreCheck(context: DecisionContext): ScoredAction {
   return buildAction({ type: 'check' }, intent, contributions)
 }
 
-function scoreCall(context: DecisionContext): ScoredAction {
+function scoreCall(context: DecisionContext, includeStealDefense = true): ScoredAction {
   const { gameView, handAssessment: hand, metrics } = context
   const escalationOverridesGenericScoring = preflopEscalationOverridesGenericScoring(context)
   const isRiver = gameView.phase === 'river'
@@ -154,6 +156,7 @@ function scoreCall(context: DecisionContext): ScoredAction {
     ...bettingFactors('call', context),
     ...(escalationOverridesGenericScoring ? [] : preflopStrategyFactors('call', context)),
     ...preflopEscalationFactors('call', context),
+    ...(includeStealDefense ? stealDefenseFactors('call', context) : []),
   ]
 
   if (gameView.phase === 'preflop' && context.botState.memory.hand.raisedPreflop && metrics.potOdds <= 0.15) {
@@ -201,6 +204,7 @@ function scoreRaise(context: DecisionContext, amount = calculateRaiseTo(context)
     ...ploThinValuePotControlFactors('raise', context),
     ...ploSafeRiverStraightValueFactors('raise', context),
     ...preflopEscalationFactors('raise', context),
+    ...stealDefenseFactors('raise', context),
     ...ploPreflopStructureFactors('raise', context),
   ]
 
@@ -267,7 +271,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
   const allInAmount = legalActions.allInAmount ?? 0
   const passiveAllIn = allInAmount <= gameView.currentBet
   if (passiveAllIn) {
-    const call = scoreCall(context)
+    const call = scoreCall(context, false)
     return { ...call, candidateId: 'all-in:passive-call', action: { type: 'all-in' } }
   }
 
