@@ -1,867 +1,871 @@
 # CPCdigital — Roadmap
 
-**Offline Poker App · Electron Desktop · Single-Player gegen glaubwürdige Bots · später Lern- und Trainingsplattform für Pokervarianten**
+**Offline Poker App · Electron Desktop · Single-player against credible bots · future learning and training platform for poker variants**
 
-**Stand:** 0.8.1 ist veröffentlicht, 0.8.2 ist in Arbeit. Spätere
-Versionsnummern beschreiben Planung, keine Release-Zusage.
+**As of:** 0.8.1 has been released, 0.8.2 is in progress. Later version numbers
+describe planning, not a release commitment.
 
 ---
 
 ## Vision
 
-CPCdigital soll ein zugänglicher Ort sein, an dem Spieler bekannte und seltene Pokervarianten ohne Echtgeld, Wartezeiten oder chaotische öffentliche Tische ausprobieren können.
+CPCdigital aims to be an accessible place where players can try known and rare
+poker variants without real money, waiting times or chaotic public tables.
 
-Der erste Schwerpunkt liegt auf einem stabilen, unterhaltsamen Singleplayer-Pokerspiel mit glaubwürdigen Bots. Ab Version 1.0 wird darauf eine Lernschicht aufgebaut: Wiki, Tutorials, Session-Analysen und Poker-Rätsel anhand konkreter Hände.
+The first priority is a stable, enjoyable single-player poker game with credible
+bots. From version 1.0 onwards, a learning layer will be built on top of this:
+a wiki, tutorials, session analyses and poker puzzles based on concrete hands.
 
-## Kernprinzipien
+## Core principles
 
-- **Offline First** — kein Server und kein Internet notwendig
-- **Glaubwürdige Bots** — Persönlichkeiten, Reads, Gewohnheiten und mentale Zustände
-- **Fair Play** — Bots sehen nur Informationen, die auch ein realer Spieler kennen könnte
-- **Variantenfähige Architektur** — Community-Card-, Draw- und später Stud-Spiele
-- **Erklärbare Entscheidungen** — Bot-Aktionen und Spielerentscheidungen sollen später analysierbar sein
-- **Learning-ready, nicht Learning-first** — Lernoberflächen kommen später, die notwendigen Daten werden von Anfang an erfasst
-- **Casual statt Solver** — Spielspaß und menschlich wirkende Gegner sind wichtiger als GTO-Perfektion
-- **Open Source & faire Weiterverwendung** — transparente Forks und
-  AGPL-konforme kommerzielle Nutzung bleiben erlaubt; unattribuierte,
-  verschleierte oder proprietär vereinnahmte Kopien sollen nachvollziehbar
-  erkennbar sein
+- **Offline First** — no server and no internet required
+- **Credible bots** — personalities, reads, habits and mental states
+- **Fair play** — bots only see information that a real player could know
+- **Variant-ready architecture** — community card, draw and later stud games
+- **Explainable decisions** — bot actions and player decisions should be
+  analysable later
+- **Learning-ready, not learning-first** — learning interfaces come later, but
+  the necessary data is collected from the start
+- **Casual rather than solver** — fun and human-like opponents are more
+  important than GTO perfection
+- **Open source & fair reuse** — transparent forks and AGPL-compliant
+  commercial use remain permitted; uncredited, obfuscated or proprietarily
+  appropriated copies should remain recognisably traceable
 
-## Wiederkehrendes Kalibrierungs- und Verhaltens-Gate
+## Recurring calibration and behaviour gate
 
-Nach Änderungen an Ranges, Action-Scores, Persönlichkeitsfaktoren oder
-Kalibrierungsmetriken gehören künftig vier Prüfstufen zum jeweiligen Release:
+After changes to ranges, action scores, personality factors or calibration
+metrics, the following four checkpoints must be completed for each release:
 
-1. gezielte Szenario- und Regressionstests für die geänderte Logik
-2. deterministische Entwicklungsläufe und dokumentierte 10k-Release-Läufe
-   für die betroffenen Varianten, Archetypen und Tischformate
-   mit Rohzählern/Nennern; Zielkorridore sind Diagnose, kein automatisches
-   Release-Verbot. Größere oder systematische Ausreißer erfordern begründete
-   Triage und eine explizite Freigabeentscheidung. Ein prüfbarer Releasebericht
-   bestätigt Korridor-Ausreißer und Metriken mit unter 50 Gelegenheiten auf
-   einem unabhängigen Seed
-3. eine interaktive Probe-Session von mindestens 100–150 Händen in der
-   Web-Version, damit wiederkehrende Linien, Stack-Risiko und die subjektive
-   Erkennbarkeit der Archetypen geprüft werden
-4. Triage auffälliger Hände gegen Decision Scores beziehungsweise einen
-   Session-Debug-Export; strukturelle Fehler werden nicht durch breitere
-   Zielkorridore kaschiert
+1. targeted scenario and regression tests for the changed logic
+2. deterministic development runs and documented 10k release runs for the
+   affected variants, archetypes and table formats with raw counts/denominators;
+   target corridors are for diagnosis, not an automatic release block. Larger or
+   systematic outliers require a reasoned triage and an explicit approval
+   decision. A verifiable release report confirms corridor outliers and metrics
+   with fewer than 50 occurrences on an independent seed
+3. an interactive trial session of at least 100–150 hands in the web version to
+   check recurring lines, stack risk and the subjective recognisability of the
+   archetypes
+4. triage of conspicuous hands against decision scores or a session debug
+   export; structural errors must not be masked by widening target corridors
 
-Ungültige Aktionen, verletzte Invarianten, nicht endliche Messwerte und die
-abgesicherten Deep-Shove-Fälle bleiben harte Blocker. Ein Snapshot-Drift ist
-ein separater Review-Anlass; beabsichtigte Änderungen erhalten erst danach
-eine neue Baseline.
+Invalid actions, violated invariants, non-finite measurements and the secured
+deep-shove cases remain hard blockers. Snapshot drift is a separate review
+trigger; intended changes only receive a new baseline after that review.
 
-## Leseregel für Versionsblöcke
+## Reading rule for version blocks
 
-Die Roadmap beschreibt pro Version Ziel, Kernumfang und gegebenenfalls das
-Release-Gate. Konkrete Formeln, Dateigrenzen, Rohwerte und abgeschlossene
-Diagnoseverläufe stehen in
-verlinkten Scope-, Kalibrierungs- oder Releaseberichten beziehungsweise im
-Changelog. So bleibt hier auf einen Blick erkennbar, was abgeschlossen ist und
-was für die nächste Freigabe tatsächlich noch fehlt.
+The roadmap describes the goal, core scope and, where applicable, the release
+gate for each version. Concrete formulas, file boundaries, raw values and
+completed diagnostic runs are documented in linked scope, calibration or release
+reports, or in the changelog. This keeps it clear at a glance what has been
+completed and what still needs to be done for the next release.
 
 ---
 
-## Rückblick bis 0.8.1
+## Review up to 0.8.1
 
-Die abgeschlossenen Meilensteine von 0.1.0 bis 0.8.1 stehen im
-[Roadmap-Archiv](docs/de/plans/roadmap-archiv-bis-0.8.1.md). Maßgeblich für
-veröffentlichte Änderungen bleibt der [Changelog](CHANGELOG.md);
-Kalibrierungs-Rohwerte und Freigabeberichte liegen unter
+The completed milestones from 0.1.0 to 0.8.1 are listed in the
+[Roadmap archive](docs/en/plans/roadmap-archive-through-0.8.1.md). For published
+changes, the [Changelog](CHANGELOG.md) remains the authoritative source;
+calibration raw values and release reports are available under
 [calibration/](calibration/README.md).
 
 ---
 
-## Phase 4 — Stabilisierung & Release-Vorbereitung
+## Phase 4 — Stabilisation & release preparation
 
-### 0.8.2 — Bot-Foundation & Stabilisierung
+### 0.8.2 — Bot foundation & stabilisation
 
-**Ziel des geplanten Zwischenrelease:** Die bereits umgesetzten Engine-,
-Wahrnehmungs-, Diagnose- und ersten Dynamikbausteine auf einem geprüften Stand
-abschließen. Seit dem Scope-Freeze vom 02.10.2026 kommen vor dem Release keine
-weiteren Bot-Features hinzu. Die offenen Dynamik- und Mental-Features unten
-sind **nicht** Voraussetzung für diesen Cut; ihre Versionszuordnung wird vor
-dem Release separat bereinigt. Das Release-Gate bleibt verbindlich.
+**Goal of the planned interim release:** Complete and verify the engine,
+perception, diagnostics and initial dynamics building blocks that have already
+been implemented. Since the scope freeze on 2 October 2026, no further bot
+features will be added before the release. The open dynamics and mental features
+listed below are **not** prerequisites for this cut; their version assignment
+will be clarified separately before the release. The release gate remains
+binding.
 
-#### Abgeschlossene Foundation
+#### Completed foundation
 
-- [x] Objektiven Hand-, Board-, Positions- und Gegnerkontext bis zur Auswahl
-  erhalten und davon eine stetig skillgewichtete Wahrnehmung ableiten.
-- [x] Preflop-Rollen, echte Aggressionsstufen, C-Bet-Once-Semantik und
-  Paired-Board-Hierarchie samt kontextabhängiger gegnerischer Range
-  regressionsgetestet.
-- [x] Aktionskandidaten kanonisiert, Auswahlgrenzen instrumentiert und
-  auffällige uncommitted Shoves sowie extreme Calling-Station-Defense gezielt
-  abgesichert.
-- [x] Session-Debugexport v4, kompakte Android-Ausgabe, lesbare Handhistory
-  mit stabilen Session-/Handreferenzen und Stake-Invarianz fertiggestellt.
-- [x] Caller-berechtigten Pot für Pot Odds, SPR und Call/Pot-Verhältnis
-  eingeführt; River-Protection und Hero-Rebuy-Bilanz regressionsgetestet.
+- [x] Preserve objective hand, board, position and opponent context up to the
+  selection point and derive from it a continuously skill-weighted perception.
+- [x] Preflop roles, true aggression levels, C-bet-once semantics and paired
+  board hierarchy, including context-dependent opponent ranges, are covered by
+  regression tests.
+- [x] Action candidates are canonicalised, selection boundaries are
+  instrumented, and conspicuous uncommitted shoves as well as extreme
+  calling-station defence are specifically secured.
+- [x] Session debug export v4, compact Android output, readable hand history
+  with stable session/hand references and stake invariance have been completed.
+- [x] A caller-authorised pot for pot odds, SPR and call/pot ratio has been
+  introduced; river protection and hero rebuy balance are covered by regression
+  tests.
 
-Details stehen im [Changelog](CHANGELOG.md) und im
-[0.8.2-Sessiondiagnosebericht](calibration/v0.8.2-session-diagnostics-2026-08-12.md).
-Der nachträgliche Offline-Engine-Korrektheitsblock ist im
-[Review-Nachtrag vom 29.09.2026](docs/de/reviews/offline-core-review-2026-09-29.md)
-getrennt dokumentiert; der Server bleibt ausgeklammert.
+Details are in the [Changelog](CHANGELOG.md) and the
+[0.8.2 session diagnostics report](calibration/v0.8.2-session-diagnostics-2026-08-12.md).
+The retrospective offline engine correctness block is separately documented in
+the [Review addendum of 29 September 2026](docs/en/reviews/offline-core-review-2026-09-29.md);
+the server is excluded from this.
 
-#### Umgesetzter Funktionsschnitt und nachgelagerte Dynamik
+#### Implemented functional scope and downstream dynamics
 
-- [x] Tiefe 4-Bet-/5-Bet-Ketten nach tatsächlicher Aggressionsstufe absichern,
-  damit generische Boni keine klare Fold-Präferenz strukturell überstimmen.
-- [x] Erste Anti-Steal-Basis: Öffentliche, ungeöffnete Button-/Cutoff-
-  Gelegenheiten pro Gegner und Position zählen; Blind-Reaktion erst mit
-  ausreichender Stichprobe, Skill-Gewichtung und spielbarer Range zulassen.
-- [ ] Button-/Cutoff-Steals und Blind-Defense gegner-, positions-, stichproben-
-  und konfidenzabhängig beobachten und beantworten; als nächstes
-  Erfolg/Misserfolg und Gegenanpassung über mehrere Hände prüfen.
-- [x] Erster Flop→Turn-Linienschnitt: Gewählte Bluff-/Semi-Bluff-Bet statt
-  einer nachträglich erfundenen Absicht im Handgedächtnis halten; selektiv
-  fortsetzen oder mit Debuggrund abbrechen, ohne All-in-Anreiz.
-- [ ] Street-übergreifende Handlinien: Die tatsächlich gewählte Absicht
-  (Value, Protection, Semi-Bluff, Bluff, Pot-Control) für die laufende Hand
-  merken und am Turn/River anhand von Board, öffentlicher Gegnerreaktion und
-  Kosten fortsetzen, umplanen oder begründet aufgeben. NLHE/PLO getrennt
-  bewerten; kein automatisches Durchbarreln wegen bereits investierter Chips.
-  Weitere Mehr-Street-Tests und Debuggründe für Planwechsel ergänzen;
-  insbesondere Value-/Protection-/Pot-Control-Linien und River-Fortsetzung
-  sind noch offen.
-- [ ] Strategische Anpassung klar von emotionaler Überreaktion trennen;
-  Skill steuert Erkennung, Qualität, Regulation und Erholung, ohne Archetypen
-  zu Solver-Bots zu glätten.
-- [ ] Öffentlich gezeigte Showdownkarten nur als skill-, stichproben- und
-  variantenabhängige Evidenz für spätere Gegner-Reads verwenden; niedriger
-  Skill darf sie ignorieren (siehe [Informationsfluss-Audit](docs/de/reviews/gegner-reads-informationsfluss-audit-2026-09-30.md)).
-- [ ] `generalSkill` und deterministisch korrelierte
-  `variantProficiency` als Grundlage für spätere Variantenfamilien
-  vorbereiten.
-- [ ] `params.mental` tatsächlich verwenden und Bad Beat, Cooler, erkannte
-  Bluffs, erfolgreiche Bluffs und Suckouts als gewichtete Mental Events
-  anschließen.
-- [ ] Frustration, Momentum, Tilt und Confidence begrenzen und mit
-  Hysterese/Decay zuverlässig zur archetypischen Grundlinie zurückführen.
+- [x] Secure deep 4-bet/5-bet chains according to the actual aggression level
+  so that generic bonuses do not structurally override a clear fold preference.
+- [x] Initial anti-steal basis: count public, unopened button/cutoff
+  opportunities per opponent and position; allow blind reaction only with
+  sufficient sample size, skill weighting and a playable range.
+- [ ] Observe and respond to button/cutoff steals and blind defence depending
+  on opponent, position, sample size and confidence; next, check
+  success/failure and counter-adjustment over multiple hands.
+- [x] Initial flop→turn line cut: retain the chosen bluff/semi-bluff bet in
+  hand memory rather than inventing a retrospective intention; selectively
+  continue or abort with a debug reason without creating an all-in incentive.
+- [ ] Street-to-street hand lines: remember the actual chosen intention for the
+  current hand (value, protection, semi-bluff, bluff, pot control) and at
+  turn/river, based on board, public opponent reaction and cost, either
+  continue, replan or fold with reason. Evaluate NLHE/PLO separately; do not
+  barrel automatically just because chips were already invested. Add further
+  multi-street tests and debug reasons for plan changes; in particular
+  value/protection/pot control lines and river continuation are still open.
+- [ ] Clearly separate strategic adjustment from emotional overreaction; skill
+  governs detection, quality, regulation and recovery without smoothing
+  archetypes into solver bots.
+- [ ] Use publicly shown showdown cards only as evidence for future opponent
+  reads that is skill-, sample- and variant-dependent; low skill may ignore
+  them (see [Information flow audit](docs/en/reviews/opponent-reads-information-flow-audit-2026-09-30.md)).
+- [ ] Prepare `generalSkill` and deterministically correlated
+  `variantProficiency` as the basis for later variant families.
+- [ ] Actually use `params.mental` and connect bad beat, cooler, recognised
+  bluffs, successful bluffs and suckouts as weighted mental events.
+- [ ] Limit frustration, momentum, tilt and confidence and reliably return them
+  to the archetypal baseline with hysteresis/decay.
 
-Das fachliche Zielbild und die Reihenfolge sind ausführlich unter
-[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/de/concepts/bot-dynamics-roster-and-notes.md)
-dokumentiert.
+The technical vision and order are detailed in
+[Bot dynamics, stake roster and player notes](docs/en/concepts/bot-dynamics-roster-and-notes.md).
 
-#### Release-Gate für den 0.8.2-Cut
+#### Release gate for the 0.8.2 cut
 
-- [ ] Die vier formalen Meldungen der 300-Hand-Foundation-Regression mit
-  Rohnennern und gezielten Gegenproben triagieren; den Snapshot nur nach
-  bewusster Review-Entscheidung aktualisieren, nicht still passend machen.
-- [ ] PLO Calling Station 6-max separat triagieren: Im unabhängigen
-  3.000-Hand-Lauf liegen Fold-to-CBet bei 810/1909 (42,4 %) und
-  Turn-C-Bet bei 47/270 (17,4 %). Der enge Fix für drawlose Multiway-Calls
-  erklärt davon nur 21 zusätzliche Folds (+1,1 Prozentpunkte) und keine
-  Turn-C-Bet-Änderung. Vor dem Release die betroffenen Handlinien und ihre
-  Spielwirkung prüfen; weder global nachjustieren noch allein wegen der
-  nicht bindenden Zielkorridore blockieren
-  ([Diagnose und Gegenlauf](docs/de/reviews/plo-postflop-session-2026-10-01.md)).
-- [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up mit
-  strukturellen Invarianten und dokumentierten Rohzählern; kurze Web-,
-  Electron- und Android-Smokes auf dem Release-Kandidaten.
+- [ ] Triage the four formal reports from the 300-hand foundation regression
+  with raw denominators and targeted counter-samples; only update the snapshot
+  after a conscious review decision, not silently to fit.
+- [ ] Triage PLO calling station 6-max separately: in the independent 3,000-hand
+  run, fold-to-cbet was 810/1,909 (42.4 %) and turn c-bet was 47/270 (17.4 %).
+  The tight fix for drawless multiway calls explains only 21 additional folds
+  (+1.1 percentage points) and no change to turn c-bet. Before release, check
+  the affected hand lines and their gameplay effect; do not globally
+  re-adjust and do not block solely because of non-binding target corridors
+  ([Diagnosis and counter-run](docs/en/reviews/plo-postflop-session-2026-10-01.md)).
+- [ ] Final NLHE/PLO validation for full ring, 6-max and heads-up with
+  structural invariants and documented raw counts; short web, Electron and
+  Android smokes on the release candidate.
 
-#### Nachgelagertes Dynamik-Gate (nicht Teil des 0.8.2-Cuts)
+#### Downstream dynamics gate (not part of the 0.8.2 cut)
 
-- [ ] Szenario-, Sequenz- und Sessiontests trennen Betstufen, wiederholte
-  Steals, High-Skill-Defense, Low-Skill-Überreaktion und Rückkehr zur
-  Grundlinie; marginale Deep-Stack-Eskalationen bleiben ausgeschlossen.
-- [ ] Im Baseline-Modus werden Archetypen ohne adaptive Reads und Mental
-  Events gegen die Zielkorridore geprüft; Ausreißer werden mit Rohnennern
-  dokumentiert und nach Größe, Wiederholbarkeit und Spielwirkung triagiert,
-  nicht automatisch als Release-Fehler gewertet.
-- [ ] Im adaptiven Modus werden gerichtete, begrenzte Deltas statt statischer
-  Einzelwerte geprüft.
+- [ ] Separate scenario, sequence and session tests for bet levels, repeated
+  steals, high-skill defence, low-skill overreaction and return to baseline;
+  marginal deep-stack escalations remain excluded.
+- [ ] In baseline mode, test archetypes without adaptive reads and mental events
+  against target corridors; document outliers with raw denominators and triage
+  by size, reproducibility and gameplay effect, not automatically as a release
+  error.
+- [ ] In adaptive mode, test targeted, bounded deltas rather than static
+  individual values.
 
 ---
 
-### 0.8.3 — Refactoring & Code-Qualität
+### 0.8.3 — Refactoring & code quality
 
-**Ziel:** Code-Basis konsolidieren, aufräumen und Lizenz-Formalia vor dem
-großen UI-Release abschließen.
+**Goal:** Consolidate, clean up the codebase and finalise licence formalities
+before the major UI release.
 
 #### Refactoring
 
-- [ ] Engine, Bot-Scoring, Sessionrunner/-export und Simulation entlang klarer
-  fachlicher Modulgrenzen teilen; bestehende öffentliche Fassaden und Formate
-  bleiben kompatibel.
-- [ ] Tisch-, Replay-, Export- und Overlay-Orchestrierung aus den großen
-  UI-Komponenten lösen, ohne vor 0.9 sichtbare Geometrieänderungen einzuführen.
-- [ ] Gemeinsame Handanalyse-Helfer nur für tatsächlich identische NLHE-/PLO-
-  Regeln extrahieren und veraltete Bot-Dateien sowie doppelte Helfer entfernen.
-- [ ] Bet-Level aus der tatsächlichen Raise-Folge statt einer Sizinggrenze
-  ableiten und damit große Opens von kleinen 3-Bets korrekt unterscheiden.
-- [ ] Buildpfade und Entwicklerwerkzeuge bereinigen: ruhendes Serverpaket von
-  v1 trennen sowie Format- und Lintkonfiguration dokumentiert einführen.
-- [ ] Nach der Modultrennung den Bot-Datenfluss samt Informationsgrenzen und
-  die Betrags-/Zustandskonventionen der Engine für Beitragende dokumentieren.
+- [ ] Split engine, bot scoring, session runner/export and simulation along
+  clear functional module boundaries; keep existing public façades and formats
+  compatible.
+- [ ] Extract table, replay, export and overlay orchestration from large UI
+  components without introducing visible geometry changes before 0.9.
+- [ ] Extract only truly identical NLHE/PLO rule helpers into shared hand
+  analysis helpers and remove obsolete bot files and duplicate helpers.
+- [ ] Derive bet level from the actual raise sequence rather than a sizing
+  limit to correctly distinguish large opens from small 3-bets.
+- [ ] Clean up build paths and developer tools: separate the dormant server
+  package from v1 and introduce documented format and lint configuration.
+- [ ] After module separation, document the bot data flow including information
+  boundaries and the engine’s amount/state conventions for contributors.
 
-Die vorgesehenen Datei- und Schnittstellengrenzen sind im
-[0.8.3-Refactoring-Scope](docs/de/plans/refactoring-v0.8.3.md) festgehalten.
+The intended file and interface boundaries are defined in the
+[0.8.3 refactoring scope](docs/en/plans/refactoring-v0.8.3.md).
 
-#### Integrationstests
+#### Integration tests
 
-- [ ] Engine und `LocalGameRunner` als Pipeline von Blinds bis Showdown sowie
-  Empty-State, Bust-zu-Ende und schnelle Neustarts testen.
-- [ ] Große Bot-Tests nach den neuen Modulgrenzen teilen, ohne Regressionen zu
-  verbreitern oder lediglich zu verschieben.
-- [ ] Jeden Umbau als getrennten, verhaltensneutralen Commit absichern:
-  Workspace-Tests, Build und Stake-Invarianz grün; Kalibrierungs-Snapshot exakt
-  identisch statt nur innerhalb der Toleranzen.
+- [ ] Test engine and `LocalGameRunner` as a pipeline from blinds to showdown,
+  including empty state, bust-to-end and quick restarts.
+- [ ] Split large bot tests according to the new module boundaries without
+  widening regressions or merely shifting them.
+- [ ] Secure each refactoring as a separate, behaviour-neutral commit: workspace
+  tests, build and stake invariance all green; calibration snapshot identical
+  (not just within tolerances).
 
-#### Lizenzklarheit & Herkunftsnachweis
+#### Licence clarity & provenance
 
-- [ ] SPDX-Hinweise für zentrale Bot-/Engine-Dateien und signierte zukünftige
-  Release-Tags samt lokaler Verifikation einführen.
-- [ ] Leichtgewichtiges Provenance-Manifest, Software-Heritage-Archivierung
-  und einen proportionalen AGPL-Beweissicherungsleitfaden etablieren – ohne
-  Telemetrie, Obfuskation oder Laufzeit-Wasserzeichen.
+- [ ] Introduce SPDX notices for central bot/engine files and signed future
+  release tags with local verification.
+- [ ] Establish a lightweight provenance manifest, Software Heritage archiving
+  and a proportionate AGPL evidence preservation guide — without telemetry,
+  obfuscation or runtime watermarks.
 
-Abgrenzung und genaue Artefakte stehen ebenfalls im
-[0.8.3-Refactoring-Scope](docs/de/plans/refactoring-v0.8.3.md#public-readiness-und-herkunftsnachweis).
-
----
-
-### 0.8.4 — Session-Flexibilität
-
-**Ziel:** Mehr Kontrolle über die Session.
-
-#### Session-Setup und Aktionen
-
-- [ ] Hero-Name, individuelle Bot-Stacks, Buy-in-Grenzen von 40–250 BB sowie
-  Variante und Schwierigkeitsmix im Setup konfigurierbar machen; Blinds nur
-  noch über gepflegte Presets statt `Freie Eingabe` wählen.
-- [ ] Sichere Pre-Selections über eine zentral validierte
-  `pendingHeroAction`-Pipeline anbieten; zunächst keine automatischen Raises
-  oder ungebundenen Calls.
-- [ ] Optionale Clock-Profile mit sicherem Check/Fold-Timeout sowie Pause bei
-  Hintergrund, Gerätesperre und kontrolliertem App-Resume einführen.
-
-#### Tisch-QoL und Diagnose
-
-- [ ] All-in-Gewinn-/Splitwahrscheinlichkeiten und die aktuelle Made Hand für
-  NLHE und PLO regelkonform, deterministisch getestet und ohne
-  Handlungsempfehlung anzeigen.
-- [ ] Eine sessionsübergreifend eindeutige, seed-neutrale Hand-ID am Tisch, im
-  Replayer und in Exporten mit einem geschützten Reproduktionsbezug verbinden.
-
-#### Bot-Stack-Lifecycle
-
-- [ ] Rebuy-Zielstacks auf sinnvolle Geldstufen runden und Short-Stack-Rebuy,
-  Deep-Stack-Cash-out, Limits sowie Ersatzspieler als gemeinsamen
-  Zwischen-Hand-Flow modellieren.
-- [ ] Beim Cash-out den tatsächlichen Stack statt `0,00` anzeigen und alle
-  Übergänge in Replay, Sessionstatistik und Debugexport konsistent erfassen.
-
-#### Release-Gate
-
-- [ ] Setup → mehrere Hände → Rebuy/Cash-out und Ersatzspieler als
-  durchgehenden Sessionflow testen.
-- [ ] Pre-Selection- sowie Clock-/Resume-Sequenzen auf Desktop und Android
-  absichern.
-- [ ] Informationsanzeigen verändern weder Enginezustand noch Botentscheidung
-  oder deterministisches Replay.
-
-Der vollständige Funktionsumfang steht im
-[0.8.4-Scopedokument](docs/de/plans/session-flexibility-v0.8.4.md). Fortlaufende
-Roster-, Wiederholungs- und Variantenregeln bleiben zentral unter
-[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/de/concepts/bot-dynamics-roster-and-notes.md)
-dokumentiert.
+Boundaries and exact artefacts are also in the
+[0.8.3 refactoring scope](docs/en/plans/refactoring-v0.8.3.md#public-readiness-and-provenance-proof).
 
 ---
 
-### 0.8.5 — Persistenz & Recovery
+### 0.8.4 — Session flexibility
 
-**Ziel:** Lokale Nutzerdaten vor v1 kontrolliert laden, migrieren und bei
-Fehlern wiederherstellbar behandeln, statt beschädigte Einträge still zu
-verwerfen oder ungefragt durch Defaults zu ersetzen.
+**Goal:** More control over sessions.
 
-- [ ] Gemeinsame versionierte Persistenzschicht für Roster, Replay-Archiv und
-  Einstellungen definieren
-- [ ] Gespeicherte Daten vor der Nutzung strukturell validieren und
-  Migrationen als deterministische, separat getestete Schritte ausführen
-- [ ] Beschädigte oder unbekannte Daten nicht still überschreiben; Recovery
-  mit verständlicher Meldung, Diagnoseexport und bewusstem Reset anbieten
-- [ ] Vollständigen lokalen Datenexport für Diagnose und Sicherung vor einem
-  Reset bereitstellen
-- [ ] Speicherfehler wie ungültiges JSON, unbekannte Schema-Version,
-  Quota-Überschreitung und nicht verfügbares `localStorage` testen
-- [ ] Roster, Replays und Einstellungen bleiben über unterstützte Upgrades
-  erhalten; eine laufende Hand oder Session wird nicht wiederaufgenommen
+#### Session setup and actions
+
+- [ ] Make hero name, individual bot stacks, buy-in limits of 40–250 BB,
+  variant and difficulty mix configurable in setup; only choose blinds from
+  maintained presets rather than `Freie Eingabe`.
+- [ ] Offer secure pre-selections via a centrally validated
+  `pendingHeroAction` pipeline; no automatic raises or unbound calls for now.
+- [ ] Introduce optional clock profiles with safe check/fold timeout and pause
+  on background, device lock and controlled app resume.
+
+#### Table QoL and diagnostics
+
+- [ ] Display all-in win/split probabilities and the current made hand for NLHE
+  and PLO in a rule-compliant, deterministically tested way with no action
+  recommendations.
+- [ ] Link a session-unique, seed-neutral hand ID at the table, in the replayer
+  and in exports to a protected reproduction reference.
+
+#### Bot stack lifecycle
+
+- [ ] Round rebuy target stacks to sensible monetary levels and model
+  short-stack rebuy, deep-stack cash-out, limits and substitute players as a
+  common between-hand flow.
+- [ ] When cashing out, display the actual stack instead of `0,00` and
+  consistently record all transitions in replay, session statistics and debug
+  export.
+
+#### Release gate
+
+- [ ] Test setup → multiple hands → rebuy/cash-out and substitute players as a
+  continuous session flow.
+- [ ] Secure pre-selection and clock/resume sequences on desktop and Android.
+- [ ] Information displays must not change engine state, bot decisions or
+  deterministic replay.
+
+The full functional scope is in the
+[0.8.4 scope document](docs/en/plans/session-flexibility-v0.8.4.md). Ongoing
+roster, repeat-play and variant rules remain centrally documented in
+[Bot dynamics, stake roster and player notes](docs/en/concepts/bot-dynamics-roster-and-notes.md).
 
 ---
 
-### 0.8.6 — UI-Fundament
+### 0.8.5 — Persistence & recovery
 
-**Ziel:** Komponenten, Styles und Tests für den großen Tischumbau vorbereiten,
-ohne vor 0.9.0 eine zweite sichtbare Geometrie einzuführen.
+**Goal:** Load, migrate and recover local user data in a controlled way before
+v1, rather than silently discarding corrupted entries or unasked replacing them
+with defaults.
 
-- [ ] `PokerTable` sowie responsive Tisch-Styles aus `TableScreen` entkoppeln
-- [ ] Verantwortlichkeiten von TableSurface, TableStage, Pods, Karten, Bets,
-  Board, Pot und Controls als Komponenten- und Layer-Grenzen festlegen
-- [ ] Styling-Spike: Tailwind an einer repräsentativen UI-Komponente gegen
-  CSS-Klassen und Design-Tokens evaluieren und die Entscheidung vor 0.9.0
-  dokumentieren
-- [ ] Component-Tests für PokerTable, PlayerSeat, ActionButtons und
-  HandReplayer als Ausgangsbasis ergänzen
-- [ ] Referenz-Viewports und visuelle Abnahme-Checkpoints für den 0.9-Umbau
-  festhalten
-- [ ] Geführte Alpha mit klar abgegrenzten Rollen und den Vorlagen der
-  [Teststrategie](testing/TESTING_STRATEGY.md) vorbereiten; keine breite Bewerbung als
-  fertiges Produkt
+- [ ] Define a common versioned persistence layer for roster, replay archive
+  and settings
+- [ ] Structurally validate stored data before use and run migrations as
+  deterministic, separately tested steps
+- [ ] Do not silently overwrite corrupted or unknown data; offer recovery with a
+  clear message, diagnostic export and conscious reset
+- [ ] Provide full local data export for diagnosis and backup before a reset
+- [ ] Test storage errors such as invalid JSON, unknown schema version, quota
+  exceeded and unavailable `localStorage`
+- [ ] Keep roster, replays and settings preserved across supported upgrades; an
+  ongoing hand or session will not be resumed
+
+---
+
+### 0.8.6 — UI foundation
+
+**Goal:** Prepare components, styles and tests for the major table refactor
+without introducing a second visible geometry before 0.9.0.
+
+- [ ] Decouple `PokerTable` and responsive table styles from `TableScreen`
+- [ ] Define responsibilities for TableSurface, TableStage, Pods, Cards, Bets,
+  Board, Pot and Controls as component and layer boundaries
+- [ ] Styling spike: evaluate Tailwind against CSS classes and design tokens on
+  a representative UI component and document the decision before 0.9.0
+- [ ] Add component tests for PokerTable, PlayerSeat, ActionButtons and
+  HandReplayer as a starting point
+- [ ] Record reference viewports and visual acceptance checkpoints for the 0.9
+  refactor
+- [ ] Prepare a guided alpha with clearly defined roles and the templates from
+  the [Test strategy](testing/TESTING_STRATEGY.md); do not broadly promote it
+  as a finished product
 
 ---
 
 ### 0.9.0 — TableSurface & TableGeometry
 
-**Ziel:** Eine gemeinsame visuelle und mathematische Tischbasis statt
-Hardcode-Presets. Die Tischschale wird zuerst als normierte Oberfläche
-festgelegt; TableGeometry, Pods, Karten und Bets verwenden anschließend
-dieselben Zonen als SSOT.
+**Goal:** Establish a shared visual and mathematical table foundation instead of
+hard-coded presets. First define the table shell as a normalised surface; then
+TableGeometry, Pods, Cards and Bets use the same zones as the single source of
+truth (SSOT).
 
 #### Iteration 1 — TableSurface
 
-- [ ] Präsentationales React-SVG mit echter Ellipse und festem
-  Zielverhältnis um 1,75:1 statt gestreckter Stadion-/Kapselform erstellen
-- [ ] Pseudo-3D-Schichtung aus sichtbarer Unterkante, dunkler Leder-Rail,
-  innerer Naht und gedecktem grünem Filz umsetzen
-- [ ] Betting-Line nur als optionales, sehr dezentes Skin-Detail behandeln;
-  Bet-Positionen dürfen nicht von ihrer Sichtbarkeit abhängen
-- [ ] Silhouette, Rail-Stärke und Materialwirkung vor der Integration separat
-  für Desktop und Android-Landscape visuell abnehmen
+- [ ] Create a presentational React-SVG with a true ellipse and a fixed target
+  aspect ratio of 1.75:1 instead of a stretched stadium/capsule shape
+- [ ] Implement pseudo-3D layering with visible bottom edge, dark leather rail,
+  inner seam and covered green felt
+- [ ] Treat the betting line only as an optional, very subtle skin detail; bet
+  positions must not depend on its visibility
+- [ ] Visually approve silhouette, rail thickness and material appearance
+  separately for desktop and Android landscape before integration
 
 #### Iteration 2 — TableGeometry SSOT
 
-- [ ] Normierte Surface-, Seat-, Card- und Bet-Ellipsen mit gemeinsamem
-  Mittelpunkt und nachvollziehbaren Insets definieren
-- [ ] SVG und Positionsberechnung aus denselben Geometriewerten ableiten,
-  damit keine zweite visuelle Geometriequelle entsteht
-- [ ] Heads-up, 6-max und Full Ring aus der Geometrie berechnen statt
-  getrennte Seat-/Bet-/Button-Presets zu pflegen
+- [ ] Define normalised surface, seat, card and bet ellipses with a common
+  centre and traceable insets
+- [ ] Derive SVG and position calculations from the same geometry values so that
+  no second visual geometry source emerges
+- [ ] Calculate heads-up, 6-max and full ring from the geometry instead of
+  maintaining separate seat/bet/button presets
 
-#### Iteration 3 — Pod-Docking und Karten
+#### Iteration 3 — Pod docking and cards
 
-- [ ] Pods waagerecht und überwiegend außerhalb des Felts anordnen; das Felt
-  bleibt für Bets, Pot, Board und Ergebnisdarstellung frei
-- [ ] Avatarzentrum als stabilen Docking-Punkt verwenden; Podkörper auf linker
-  und rechter Tischhälfte gespiegelt vom Tisch weg wachsen lassen
-- [ ] Hole Cards aufrecht hinter dem jeweiligen Pod platzieren und teilweise
-  verdecken; feste Bühnen-Sicherheitszonen ersetzen sitzspezifische
-  Clipping-Korrekturen
-- [ ] Bets entlang der unsichtbaren inneren Bet-Ellipse eindeutig dem
-  jeweiligen Spieler zuordnen
+- [ ] Arrange pods horizontally and mostly outside the felt; the felt remains
+  free for bets, pot, board and result display
+- [ ] Use the avatar centre as a stable docking point; let pod bodies grow away
+  from the table, mirrored on the left and right table halves
+- [ ] Place hole cards upright behind the respective pod and partially obscure
+  them; replace seat-specific clipping corrections with fixed stage safety zones
+- [ ] Uniquely assign bets to the respective player along the invisible inner
+  bet ellipse
 
-#### Release-Gate
+#### Release gate
 
-- [ ] NLHE und PLO mit Heads-up, 6-max und Full Ring ohne Pod-, Karten- oder
-  Bet-Überlagerungen in den Desktop-Referenzmaßen
-- [ ] Automatisierte Geometrietests für Symmetrie, Bounding Boxes,
-  Bet-Zuordnung und stabile Reihenfolge
-- [ ] Visuelle Freigabe nach TableSurface und Pod-Docking statt ausschließlich
-  am Ende des Gesamtumbaus
-
----
-
-### 0.9.1 — Responsive UI & Replay
-
-**Ziel:** Die gemeinsame Tischgeometrie auf alle unterstützten Oberflächen und
-den HandReplayer übertragen.
-
-- [ ] Desktop-, Tablet- und Android-Abstände, Header-Kompression und
-  Table-Shell-Formel aus derselben Geometriequelle ableiten
-- [ ] Phone-Landscape: Actionbar-Usability, sichtbaren Slider und kompakte
-  Buttons auf Basis der Android-Prototyperkenntnisse finalisieren
-- [ ] HandReplayer auf dieselbe TableSurface und TableGeometry umstellen
-- [ ] **Replayer-Touch**: Android-Overlay und kleine Browser-Screens mit
-  größeren Controls und geeigneten Touch-Gesten zuverlässig bedienbar machen
-- [ ] Browser-Mobile bleibt ein funktionaler Fallback; keine PWA und keine
-  vollständige Parität mit dem nativen Android-Layout
-
-#### Release-Gate
-
-- [ ] NLHE und PLO mit Heads-up, 6-max und Full Ring auf Desktop, Tablet und
-  Android-Landscape ohne Pod-, Karten-, Bet- oder Control-Überlagerungen
-- [ ] Viewport- und Geräte-Matrix gegen abgeschnittene Inhalte, falsche
-  Bet-Zuordnung sowie Abweichungen zwischen Spiel und Replay
-- [ ] Visuelle Freigabe der finalen Plattformkomposition
-- [ ] Browser-Demo als öffentliche Beta mit bekannten Einschränkungen,
-  rollenbezogenen Formularen und getrennten Kanälen für Bugs und Eindrücke
-  ausweisen
-
-#### Sprach- und Dokumentations-Checkpoint vor englischsprachiger Projektvorstellung
-
-Nicht als technischer Blocker für 0.9.1, aber vor einer breiteren Vorstellung
-auf englischsprachigen Plattformen wie Reddit:
-
-- [ ] Öffentlich relevante Dokus zusätzlich auf Englisch anbieten: README mit
-  aktuellem Stand und Einschränkungen, Einstieg für Installation/Tests,
-  aktuelle Roadmap und Release-Hinweise sowie Beitrags- und Sicherheitswege.
-- [ ] Deutsche und englische Einstiege gegenseitig verlinken und die
-  inhaltliche Übereinstimmung bei Änderungen prüfen. Historische Audits und
-  Kalibrierungsberichte bleiben zunächst in ihrer Originalsprache; bei
-  öffentlicher Bezugnahme eine kurze englische Einordnung ergänzen.
-- [ ] Die nutzerrelevante Oberfläche auf Deutsch und Englisch anbieten:
-  insbesondere Start-/Setup-Screen, Tischaktionen und Statusmeldungen,
-  Replay, Sessionstatistiken, Exportdialoge und verständliche Fehlermeldungen.
-- [ ] Dafür eine schlanke i18n-Struktur mit zentralen Übersetzungsschlüsseln,
-  Sprachwahl, Fallback und passenden Zahlen-/Datumsformaten prüfen. Interne
-  IDs, Spielregeln und maschinenlesbare Debug-Exporte bleiben sprachunabhängig;
-  ein konkretes Framework wird erst bei der Umsetzung ausgewählt.
+- [ ] NLHE and PLO with heads-up, 6-max and full ring with no pod, card or bet
+  overlaps at desktop reference dimensions
+- [ ] Automated geometry tests for symmetry, bounding boxes, bet assignment and
+  stable order
+- [ ] Visual approval after TableSurface and pod docking, not only at the end
+  of the full refactor
 
 ---
 
-### 0.9.2 — Naming, Branding & Controls
+### 0.9.1 — Responsive UI & replay
 
-**Ziel:** Endgültige Projektidentität und ein eigenständiges Erscheinungsbild
-statt einer an fremde Plattformen angelehnten Optik festlegen, bevor Release
-Candidate, Packaging und breitere Kommunikation beginnen.
+**Goal:** Transfer the shared table geometry to all supported surfaces and to
+the HandReplayer.
 
-- [ ] **Naming-Checkpoint**: „CPCdigital“ ausdrücklich als bisherigen
-  Arbeitstitel prüfen und den endgültigen Projekt-/Produktnamen vor dem
-  Release Candidate festlegen
-- [ ] Kandidat **CheckBack** anhand der dokumentierten Stärken, Kollisionen und
-  Verfügbarkeitsprüfungen bewerten ([Naming-Notizen](docs/de/concepts/product-naming.md))
-- [ ] Auffindbarkeit, Verwechslungsrisiken, Repository-/Domain-Namen sowie
-  technische Bezeichner wie Paket- und App-IDs vor einer Umbenennung gemeinsam
-  bewerten
-- [ ] Finalen Namen konsistent in UI, Dokumentation, Paketmetadaten,
-  Repository-Beschreibung und Distributionshinweisen anwenden
-- [ ] Schlanke Marken- und Forkrichtlinie erst für die endgültige Identität
-  formulieren: Herkunftsnennung erlauben, offizielle Zugehörigkeit nicht
-  vortäuschen und AGPL-Rechte nicht einschränken
-- [ ] Unaufdringlichen „Über / Lizenz / Quellcode“-Hinweis mit Copyright,
-  AGPL-Lizenz und offiziellem Repository in die Anwendung integrieren
-- [ ] **Branding-Review**: Action-Buttons vom bisherigen Rot auf das endgültige
-  Projektfarbschema umstellen
-- [ ] 4-Color-Deck-Option (alternative Kartendarstellung)
-- [ ] BB-Anzeige-Modus (Stacks, Bets, Pot in Big Blinds)
-- [ ] Währungswahl um "Keine" erweitern (nur Zahlen, kein €/$)
-- [ ] Min-/Max-Bet direkt in der Oberfläche anzeigen
-- [ ] Session-Log (kompakter Dealer-Log-Stil, einklappbar links unten)
+- [ ] Derive desktop, tablet and Android spacing, header compression and table
+  shell formula from the same geometry source
+- [ ] Finalise phone landscape: action bar usability, visible slider and compact
+  buttons based on Android prototype learnings
+- [ ] Migrate HandReplayer to the same TableSurface and TableGeometry
+- [ ] **Replayer touch:** make the Android overlay and small browser screens
+  reliably usable with larger controls and appropriate touch gestures
+- [ ] Browser mobile remains a functional fallback; no PWA and no full parity
+  with the native Android layout
 
----
+#### Release gate
 
-### 0.9.3 — Essenzielles visuelles und akustisches Feedback
+- [ ] NLHE and PLO with heads-up, 6-max and full ring on desktop, tablet and
+  Android landscape with no pod, card, bet or control overlaps
+- [ ] Viewport and device matrix against clipped content, incorrect bet
+  assignment and deviations between play and replay
+- [ ] Visual approval of the final platform composition
+- [ ] Present the browser demo as a public beta with known limitations,
+  role-based forms and separate channels for bugs and feedback
 
-**Ziel:** Vor v1 eindeutiges, dezentes Spielgefühl schaffen, ohne Engine oder
-Replay von einer komplexen Animationspipeline abhängig zu machen.
+#### Language and documentation checkpoint before an English-language project presentation
 
-- [ ] Rein präsentationale CSS-Animationen für Deal/Reveal, Bet-/Pot-Änderung,
-  aktiven Spieler und Gewinner
-- [ ] Animationen dürfen Eingabe, Engine-Fortschritt und deterministisches
-  Replay nicht steuern oder blockieren
-- [ ] Dezente offline erzeugte Web-Audio-Sounds für Karten, Chips und
-  Handabschluss; keine Musik und keine Stimmen
-- [ ] Persistenter globaler Mute-Schalter und konservative Standardlautstärke
-- [ ] `prefers-reduced-motion` respektieren und alle Zustände auch ohne
-  Animation eindeutig darstellen
+Not a technical blocker for 0.9.1, but before a wider presentation on
+English-language platforms such as Reddit:
 
----
-
-### 0.9.4 — Hardening, Accessibility & UI-Testing
-
-**Ziel:** Fehlerfälle, Desktop-Sicherheitsgrenzen, Performance und
-Bedienbarkeit vor dem Packaging gezielt absichern.
-
-- [ ] React-ErrorBoundary mit lokaler Recovery-Ansicht, Neustart,
-  Setup-Rückkehr und kopierbarem Diagnosebericht statt leerem Screen
-- [ ] Unbehandelte Fehler und Promise-Rejections ausschließlich lokal für den
-  Diagnoseexport erfassen; keine Telemetrie oder automatische Übertragung
-- [ ] Electron-Renderer mit Sandbox und Content Security Policy härten sowie
-  Navigation, externe Links und IPC-Eingaben auf erlaubte Fälle begrenzen
-- [ ] Vollständigen Spiel-Smoke ohne Netzwerkverbindung für den gebauten
-  Client und Electron durchführen
-- [ ] Performance-Test für lange Sessions (>500 Hände) mit UI-Komponenten
-- [ ] Render-Tests für neue UI-Komponenten (TableGeometry, Animationen)
-- [ ] responsive Test-Matrix (Desktop, Tablet, Phone-Landscape)
-- [ ] native Android-Matrix für Cutouts, Systemleisten, Zurück-Taste,
-  Resume-Verhalten und unterstützte Displaygrößen
-- [ ] Tastatursteuerung, Fokusführung, Kontrast und Reduced-Motion prüfen
+- [ ] Offer publicly relevant documentation in English as well: README with
+  current status and limitations, getting started for installation/tests,
+  current roadmap and release notes, and contribution and security paths.
+- [ ] Mutually link German and English entry points and verify content
+  consistency on changes. Historical audits and calibration reports remain in
+  their original language for now; when publicly referenced, add a brief
+  English note.
+- [ ] Offer the user-relevant interface in German and English: in particular
+  start/setup screen, table actions and status messages, replay, session
+  statistics, export dialogs and clear error messages.
+- [ ] For this, evaluate a lean i18n structure with central translation keys,
+  language selection, fallback and appropriate number/date formats. Internal
+  IDs, game rules and machine-readable debug exports remain language-neutral;
+  a specific framework will only be chosen at implementation time.
 
 ---
 
-### 0.9.5 — Packaging-Smoke & Release Candidate
+### 0.9.2 — Naming, branding & controls
 
-**Ziel:** Den Kandidaten für v1.0 auf den tatsächlich unterstützten
-Desktop-Plattformen bauen und mit einer schlanken, hobbyprojektgerechten
-Abschlusskontrolle prüfen.
+**Goal:** Define the final project identity and an independent appearance
+(rather than one resembling external platforms) before release candidate,
+packaging and wider communication.
 
-- [ ] Windows-Paket und Linux-AppImage aus dem versionierten Quellstand bauen
-- [ ] Beide Pakete auf einer sauberen Umgebung installieren beziehungsweise
-  starten und Setup, NLHE, PLO sowie Replay ohne Netzwerkverbindung prüfen
-- [ ] Lizenztext, Copyright-, Drittanbieter- und Source-Hinweise in beiden
-  Distributionswegen bereitstellen
-- [ ] Paketinhalt auf lokale Entwicklungsdaten, Secrets und unnötige
-  Server-Artefakte prüfen
-- [ ] Unterstützte Systeme, Installationsweg und bekannte Einschränkungen
-  knapp dokumentieren
-- [ ] Windows- und Linux-Artefakte als öffentliche Vorabversion mit
-  strukturiertem Fehlerformular gegen reale Installationen prüfen
-- [ ] Release-Candidate taggen und nach dem vollständigen Gate bis v1.0
-  inhaltlich unverändert lassen
-
-> Checksummen können mit geringem Aufwand ergänzt werden, blockieren v1 aber
-> nicht. Code-Signierung, Auto-Updates, bitgenau reproduzierbare Builds,
-> SBOM-/Provenance-Pipelines und eine breite Distributionsmatrix sind für den
-> Erstrelease ohne eigene Monetarisierung ausdrücklich kein Pflichtumfang.
+- [ ] **Naming checkpoint:** explicitly review “CPCdigital” as the current
+  working title and define the final project/product name before the release
+  candidate
+- [ ] Evaluate candidate **CheckBack** against documented strengths, collisions
+  and availability checks ([Naming notes](docs/en/concepts/product-naming.md))
+- [ ] Jointly assess findability, confusion risks, repository/domain names and
+  technical identifiers such as package and app IDs before renaming
+- [ ] Apply the final name consistently across UI, documentation, package
+  metadata, repository description and distribution notes
+- [ ] Formulate a lean brand and fork policy only for the final identity:
+  allow attribution, do not misrepresent official affiliation, and do not
+  restrict AGPL rights
+- [ ] Integrate an unobtrusive “About / Licence / Source code” notice with
+  copyright, AGPL licence and official repository into the app
+- [ ] **Branding review:** change action buttons from the current red to the
+  final project colour scheme
+- [ ] 4-colour deck option (alternative card display)
+- [ ] BB display mode (stacks, bets, pot in big blinds)
+- [ ] Extend currency choice to “None” (numbers only, no €/$)
+- [ ] Show min/max bet directly in the UI
+- [ ] Session log (compact dealer log style, collapsible bottom-left)
 
 ---
 
-### 1.0.0 — Stable Core Release
+### 0.9.3 — Essential visual and audio feedback
 
-**Ziel:** Ein stabiles Offline-Pokerspiel mit NLHE und PLO sowie belastbarem
-Fundament für spätere Lern- und Variantenmodule.
+**Goal:** Create a clear, subtle gameplay feel before v1 without making engine
+or replay dependent on a complex animation pipeline.
 
-#### Enthalten
+- [ ] Purely presentational CSS animations for deal/reveal, bet/pot changes,
+  active player and winner
+- [ ] Animations must not control input, engine progress or deterministic
+  replay, and must not block them
+- [ ] Subtle offline-generated Web Audio sounds for cards, chips and hand end;
+  no music and no voices
+- [ ] Persistent global mute switch and conservative default volume
+- [ ] Respect `prefers-reduced-motion` and always present all states clearly
+  even without animations
 
-- [x] NLHE vollständig spielbar
-- [x] Omaha High vollständig spielbar
-- [x] 4 unterscheidbare Bot-Archetypen mit Personality, Skill, Reads, Mental State
-- [x] vollständige Hand History und Replay
-- [x] Decision Records und erklärbare Bot-Scores
-- [x] Session-Statistiken (Live-VPIP/PFR, BB/100)
-- [ ] stabiles Desktop-Packaging
-- [ ] Dokumentation für Architektur und Variantenmodule
+---
 
-#### Release-Gates
+### 0.9.4 — Hardening, accessibility & UI testing
 
-- [ ] Keine bekannten kritischen Engine-, Replay- oder Datenintegritätsfehler
-- [ ] NLHE- und PLO-Kalibrierung auf der dokumentierten 10k-Release-Stufe
-- [ ] Desktop-, Tablet- und unterstütztes Landscape-Layout bestehen die responsive Testmatrix
-- [ ] Migrationen für Roster, Replays und Sessiondaten sind rückwärtsverträglich getestet
-- [ ] Beschädigte lokale Daten und UI-Laufzeitfehler führen zu einer
-  verständlichen Recovery statt stillem Datenverlust oder leerem Screen
-- [ ] Electron-Sandbox, CSP, Navigation, externe Links und IPC bestehen die
-  dokumentierten Sicherheitsprüfungen
-- [ ] Server-Paket ist nachweislich kein Laufzeitbestandteil des Offline-v1-Builds
-- [ ] Endgültiger Projektname und Außenauftritt sind vor Packaging und
-  breiterer Distribution konsistent festgelegt
-- [ ] Offene Blocker aus geführter Alpha, Browser-Beta und öffentlichem
-  Release-Candidate sind behoben oder nachvollziehbar außerhalb des
-  v1-Umfangs eingeordnet
-- [ ] Der geprüfte 0.9.5-Release-Candidate wird ohne funktionale Änderungen als
-  v1.0.0 veröffentlicht
+**Goal:** Specifically secure error cases, desktop security boundaries,
+performance and usability before packaging.
+
+- [ ] React ErrorBoundary with local recovery view, restart, return to setup
+  and copyable diagnostic report instead of a blank screen
+- [ ] Capture unhandled errors and promise rejections only locally for
+  diagnostic export; no telemetry or automatic transmission
+- [ ] Harden Electron renderer with sandbox and Content Security Policy, and
+  restrict navigation, external links and IPC inputs to allowed cases
+- [ ] Complete a full gameplay smoke test without network connection for the
+  built client and Electron
+- [ ] Performance test for long sessions (>500 hands) with UI components
+- [ ] Render tests for new UI components (TableGeometry, animations)
+- [ ] Responsive test matrix (desktop, tablet, phone landscape)
+- [ ] Native Android matrix for cutouts, system bars, back button, resume
+  behaviour and supported display sizes
+- [ ] Check keyboard control, focus management, contrast and reduced motion
+
+---
+
+### 0.9.5 — Packaging smoke & release candidate
+
+**Goal:** Build the candidate for v1.0 on the actually supported desktop
+platforms and run a lean, hobby-project-appropriate final check.
+
+- [ ] Build Windows package and Linux AppImage from the versioned source
+- [ ] Install/start both packages in a clean environment and test setup, NLHE,
+  PLO and replay without network connection
+- [ ] Provide licence text, copyright, third-party and source notices in both
+  distribution paths
+- [ ] Check package contents for local development data, secrets and unnecessary
+  server artefacts
+- [ ] Document supported systems, installation path and known limitations
+  briefly
+- [ ] Test Windows and Linux artefacts as a public pre-release with a
+  structured bug form against real installations
+- [ ] Tag release candidate and keep content unchanged through the full gate to
+  v1.0
+
+> Checksums can be added with little effort but do not block v1. Code signing,
+> auto-updates, bit-exact reproducible builds, SBOM/provenance pipelines and a
+> broad distribution matrix are explicitly not required for the initial release
+> without self-monetisation.
+
+---
+
+### 1.0.0 — Stable core release
+
+**Goal:** A stable offline poker game with NLHE and PLO and a solid foundation
+for future learning and variant modules.
+
+#### Included
+
+- [x] NLHE fully playable
+- [x] Omaha High fully playable
+- [x] 4 distinct bot archetypes with personality, skill, reads, mental state
+- [x] Full hand history and replay
+- [x] Decision records and explainable bot scores
+- [x] Session statistics (live VPIP/PFR, BB/100)
+- [ ] Stable desktop packaging
+- [ ] Documentation for architecture and variant modules
+
+#### Release gates
+
+- [ ] No known critical engine, replay or data integrity errors
+- [ ] NLHE and PLO calibration at the documented 10k release level
+- [ ] Desktop, tablet and supported landscape layout pass the responsive test
+  matrix
+- [ ] Migrations for roster, replays and session data are tested for backward
+  compatibility
+- [ ] Corrupted local data and UI runtime errors lead to a clear recovery
+  rather than silent data loss or a blank screen
+- [ ] Electron sandbox, CSP, navigation, external links and IPC pass the
+  documented security checks
+- [ ] Server package is demonstrably not a runtime component of the offline v1
+  build
+- [ ] Final project name and public appearance are consistently defined before
+  packaging and wider distribution
+- [ ] Open blockers from guided alpha, browser beta and public release
+  candidate are fixed or clearly classified outside the v1 scope
+- [ ] The verified 0.9.5 release candidate is published as v1.0.0 with no
+  functional changes
 
 #### Packaging
 
 - [ ] Windows
 - [ ] Linux / AppImage
 
-Der Android-Prototyp bleibt ein Entwicklungsziel und blockiert v1.0 nicht. Eine
-signierte APK/AAB sowie öffentliche Distribution werden erst nach der
-UI-Stabilisierung separat entschieden.
+The Android prototype remains a development target and does not block v1.0. A
+signed APK/AAB and public distribution will only be decided separately after UI
+stabilisation.
 
-#### Nach v1.0 verschoben
+#### Deferred until after v1.0
 
-- **2-7 Draw Family** — Single Draw und Triple Draw als gemeinsamer Architekturstrang
-- **Stud Light** (Architektur-Proof offene Karten) — Teil der späteren Stud-Familie
+- **2-7 draw family** — single draw and triple draw as a shared architecture
+  strand
+- **Stud light** (architecture proof with open cards) — part of the later stud
+  family
 
 ---
 
 ## Phase 5 — Meta-Game
 
-### 1.0.1 — Bankroll-System
+### 1.0.1 — Bankroll system
 
-**Ziel:** Spielgeld kriegt Wert durch Konsequenz. Gutes Bankroll-Management führt zum
-Aufstieg, schlechtes zum Abstieg. Kurze Stacks und "eh egal, ist nur Spielgeld" werden
-durch Guardrails verhindert.
+**Goal:** Play money acquires value through consistency. Good bankroll
+management leads to promotion, poor management to relegation. Short stacks and
+"it's fine, it's only play money" are prevented by guardrails.
 
-#### Kernumfang
+#### Core scope
 
-- [ ] Trainings- und Bankroll-Modus mit persistenten, je Variante getrennten
-  Bankrolls und Buy-in-/Rebuy-Regeln.
-- [ ] Variantenspezifische Stake- und Risikoprofile anhand simulierter
-  Bankrollverläufe prüfen; Auf- und Abstieg mit Guardrails absichern.
-- [ ] Stakeabhängige, überlappende Gegnerpools und Skillbänder sowie
-  anpassbare Action-Clock-Voreinstellungen einführen.
-- [ ] Recovery bei verbrauchter Bankroll und verständliche Statusanzeigen
-  für Rebuys, Stakes und Sessionergebnis ergänzen.
+- [ ] Training and bankroll mode with persistent bankrolls kept separate per
+  variant, plus buy-in and rebuy rules
+- [ ] Review variant-specific stake and risk profiles using simulated bankroll
+  trajectories; secure promotion and relegation with guardrails
+- [ ] Introduce stake-dependent, overlapping opponent pools and skill bands, as
+  well as adjustable action-clock presets
+- [ ] Add recovery for a depleted bankroll and comprehensible status displays
+  for rebuys, stakes and the session result
 
-Vorläufige Beträge, Tabellen, offene Modellierungsfragen und die vollständige
-Aufgabenliste stehen im [Bankroll-Konzept](docs/de/plans/bankroll-v1.0.1.md).
-
----
-
-### 1.0.2 — Globale Statistiken
-
-**Ziel:** Session-übergreifendes Tracking mit Filterung und Vergleich.
-
-- [ ] Persistente, versionierte Globalstatistik (Sessions, WTSD, W$SD, BB/100)
-- [ ] Filter nach Variante, Tischgröße, Stakes, Zeitraum
-- [ ] Single- und Multitable-Sessions getrennt filtern und vergleichbar machen
-- [ ] BB/100 als primäre Vergleichsmetrik pro Stake
-- [ ] Bankroll-Verlauf als Graph (optional, minimal)
+Provisional amounts, tables, open modelling questions and the complete task
+list are documented in the
+[Bankroll concept](docs/en/plans/bankroll-v1.0.1.md).
 
 ---
 
-### 1.0.3 — Wiederkehrende Gegner & Spielernotizen
+### 1.0.2 — Global statistics
 
-**Ziel:** Beobachtung über mehrere Sessions belohnen, ohne stabile Bots in eine
-endliche Sammlung dauerhaft gelöster Profile zu verwandeln.
+**Goal:** Cross-session tracking with filtering and comparison.
 
-- [ ] freie Notiz und wenige optionale manuelle Tags an die stabile
-  `BotIdentity.id` binden
-- [ ] Notizen am Tisch und aus dem Replayer bearbeiten; Datum, Stake und
-  optionale Handreferenz sowie die gespielte Variante speichern
-- [ ] Notizen in die versionierte lokale Persistenz sowie Export/Backup
-  aufnehmen
-- [ ] keine automatische Archetyp-/Skill-Bestätigung, kein Roster-Fortschritt
-  und zunächst kein automatisches HUD einführen
-- [ ] chronologische, stakebezogene Beobachtungen unterstützen, damit Reads
-  aktualisiert statt als endgültige Lösung abgehakt werden
-- [ ] grobe faire Erinnerung wiederkehrender Bots an den Nutzer prüfen, damit
-  Wiedererkennung nicht ausschließlich einseitig zugunsten des Menschen wirkt
-- [ ] Notizfunktion erst freigeben, wenn strategische und mentale Bot-Dynamik
-  ausreichend angeschlossen und per Probesession belegt ist
-
-Das detaillierte Konzept einschließlich Rostergröße, Stake-Gewichten,
-Anti-Exploit-Grenzen und Akzeptanzkriterien steht in
-[Bot-Dynamik, Stake-Roster und Spielernotizen](docs/de/concepts/bot-dynamics-roster-and-notes.md).
+- [ ] Persistent, versioned global statistics (sessions, WTSD, W$SD, BB/100)
+- [ ] Filter by variant, table size, stakes, period
+- [ ] Filter single-table and multitable sessions separately and make them
+  comparable
+- [ ] BB/100 as the primary comparison metric per stake level
+- [ ] Bankroll history as a graph (optional, minimal)
 
 ---
 
-### 1.0.4 — Optionales Multitabling
+### 1.0.3 — Recurring opponents & player notes
 
-**Ziel:** Erfahrenen Spielern mehrere parallele Tische erlauben, ohne den
-beobachtungsorientierten Einstieg, das Bankrollsystem oder die mobile
-Bedienbarkeit zu beschädigen.
+**Goal:** Reward observation across multiple sessions without turning the
+stable bots into a finite collection of permanently solved profiles.
 
-#### Produktgrenzen
+- [ ] Bind a free-form note and a few optional manual tags to the stable
+  `BotIdentity.id`
+- [ ] Edit notes at the table and from the replayer; store date, stake and an
+  optional hand reference as well as the variant played
+- [ ] Include notes in the versioned local persistence as well as in
+  export/backup
+- [ ] No automatic archetype/skill confirmation, no roster progression and no
+  automatic HUD for the time being
+- [ ] Support chronological, stake-related observations so that reads are
+  updated instead of being ticked off as a final solution
+- [ ] Review a rough, fair reminder of recurring bots to the user so that
+  recognition does not appear to work unilaterally in the human's favour
+- [ ] Only release the note feature once strategic and mental bot dynamics are
+  sufficiently wired up and evidenced by a probe session
 
-- [ ] Single Table bleibt Standard und ist in Einsteiger-Lernpfaden sowie
-  geführten Übungen verbindlich
-- [ ] Multitabling erst nach einer fortgeschrittenen Lektion oder über eine
-  ausdrücklich aktivierte Expertenoption freischalten; nicht allein an einen
-  Stake-Aufstieg koppeln
-- [ ] zunächst höchstens zwei parallele Tische auf Desktop zulassen; vier
-  Tische erst nach UX-, Performance- und Probesession-Evidenz prüfen
-- [ ] Android wegen Bildschirmgröße zunächst auf einen Tisch begrenzen
-- [ ] Pre-Selections, sichere Auto-Actions, Action-Clock und Fokusmeldungen als
-  technische Voraussetzungen behandeln
-- [ ] jede Bot-Identität darf nur an einem gleichzeitig laufenden Tisch sitzen
-  und wird aus dem passenden Stake-Pool gezogen
-- [ ] Buy-ins und Rebuys aller offenen Tische atomar gegen die verfügbare
-  Bankroll buchen; gebundenes Gesamtrisiko sichtbar anzeigen
-- [ ] unabhängige Runner, Hand Histories, Replays und Session-Enden pro Tisch
-  ohne vermischte Aktionen oder Timer modellieren
-- [ ] Tisch mit anstehender Hero-Aktion klar hervorheben; keine automatische
-  strategische Entscheidungshilfe ergänzen
-- [ ] Statistiken und Session-Analyse nach Anzahl paralleler Tische auswerten,
-  damit geringere Entscheidungsqualität und Winrate sichtbar werden
-
-Multitabling ist eine freiwillige fortgeschrittene Spielweise, kein höherer
-Schwierigkeitsgrad und keine Voraussetzung für Bankrollfortschritt. Die
-zugehörige Learning-Lektion muss vor der regulären Freigabe vorhanden sein.
+The detailed concept including roster size, stake weights, anti-exploit limits
+and acceptance criteria is documented in
+[Bot dynamics, stake roster and player notes](docs/en/concepts/bot-dynamics-roster-and-notes.md).
 
 ---
 
-## Phase 6 — Learning Layer
+### 1.0.4 — Optional multitable play
 
-> Die Learning-Schicht ist das, was CPCdigital von anderen Poker-Apps unterscheidet.
-> Jede neue Variante profitiert sofort von Wiki, Tutorials und Analyse.
-> Die Daten sind seit v0.2 vorhanden — die UI-Schicht kommt jetzt.
+**Goal:** Allow experienced players several parallel tables without damaging
+the observation-led entry level, the bankroll system or mobile usability.
 
-### 1.1.0 — Wiki und Glossar
+#### Product boundaries
 
-**Ziel:** Eine gemeinsame Wissensbasis für Regeln, Begriffe und Grundlagen.
+- [ ] Single Table remains the default and is binding in beginner learning
+  paths as well as in guided exercises
+- [ ] Unlock multitable play only after an advanced lesson or via an
+  explicitly enabled expert option; do not couple it to a stake promotion
+  alone
+- [ ] Initially allow at most two parallel tables on desktop; only review four
+  tables after UX, performance and probe-session evidence
+- [ ] Limit Android to one table for the time being because of screen size
+- [ ] Treat pre-selections, safe auto-actions, action clock and focus messages
+  as technical prerequisites
+- [ ] Each bot identity may only sit at one simultaneously running table and
+  is drawn from the matching stake pool
+- [ ] Book the buy-ins and rebuys of all open tables atomically against the
+  available bankroll; show the bound total risk visibly
+- [ ] Model independent runners, hand histories, replays and session ends per
+  table without mixed actions or timers
+- [ ] Clearly highlight the table with a pending hero action; do not add any
+  automatic strategic decision support
+- [ ] Evaluate statistics and session analysis by the number of parallel
+  tables so that lower decision quality and win rate become visible
 
-- [ ] variantenspezifische Regelübersichten
-- [ ] Handrangfolgen
-- [ ] Glossar für Pokerbegriffe
-- [ ] grundlegende Strategiekonzepte
-- [ ] typische Anfängerfehler
-- [ ] Beispiele mit konkreten Händen
-- [ ] Querverweise zwischen verwandten Begriffen
-- [ ] kontextbezogene Links aus Tisch, Replay und Analyse
-
----
-
-### 1.2.0 — Tutorial-Modus
-
-**Ziel:** Spieler schrittweise vom Regelverständnis zum freien Spiel führen.
-
-- [ ] interaktive Grundregel-Tutorials
-- [ ] geführte Beispielhände
-- [ ] Erklärung der aktuellen Setzrunde
-- [ ] Erklärung erlaubter Aktionen und Bet-Limits
-- [ ] Draw- und Showdown-Tutorials
-- [ ] optionale Strategiehinweise
-- [ ] Lernpfade pro Variante
-- [ ] Einsteiger-, Standard- und Puristen-Hilfestufe
-- [ ] fortgeschrittene Multitabling-Lektion zu Aufmerksamkeit,
-  Entscheidungszeit, Pre-Selections, Gesamt-Bankrollrisiko und sinkender
-  Qualität eigener Reads
-- [ ] kontrollierte Vergleichsübung mit einem gegenüber zwei Tischen und
-  anschließender Auswertung von Entscheidungszeit und Fehlern
+Multitabling is a voluntary advanced way of playing, not a higher difficulty
+level and not a prerequisite for bankroll progress. The corresponding learning
+lesson must exist before the regular release.
 
 ---
 
-### 1.3.0 — Session-Analyse anhand konkreter Hände
+## Phase 6 — Learning layer
 
-**Ziel:** Entscheidungen statt bloßer Ergebnisse erklären.
+> The learning layer is what sets CPCdigital apart from other poker apps.
+> Every new variant immediately benefits from the wiki, tutorials and analysis.
+> The data has been available since v0.2 — the UI layer is what is coming now.
 
-- [ ] wenige interessante Hände pro Session auswählen
-- [ ] Entscheidungssicht und Ergebnissicht trennen
-- [ ] relevante Faktoren zum Entscheidungszeitpunkt anzeigen
-- [ ] gute Entscheidungen trotz schlechtem Ergebnis hervorheben
-- [ ] schlechte Entscheidungen trotz gewonnenem Pot erklären
-- [ ] knappe und gegnerabhängige Spots kennzeichnen
-- [ ] alternative Aktionen verständlich einordnen
-- [ ] übertragbare Lektion pro Beispielhand
-- [ ] passende Wiki-Begriffe verlinken
-- [ ] keine falsche GTO-Exaktheit vortäuschen
+### 1.1.0 — Wiki and glossary
 
-#### Analyseformat
+**Goal:** A shared knowledge base for rules, terms and fundamentals.
+
+- [ ] variant-specific rule overviews
+- [ ] hand rankings
+- [ ] glossary of poker terms
+- [ ] basic strategy concepts
+- [ ] typical beginner mistakes
+- [ ] examples with concrete hands
+- [ ] cross-references between related terms
+- [ ] context-sensitive links from table, replay and analysis
+
+---
+
+### 1.2.0 — Tutorial mode
+
+**Goal:** Guide players step by step from understanding the rules to free play.
+
+- [ ] interactive basic-rule tutorials
+- [ ] guided example hands
+- [ ] explanation of the current betting round
+- [ ] explanation of allowed actions and bet limits
+- [ ] draw and showdown tutorials
+- [ ] optional strategy hints
+- [ ] learning paths per variant
+- [ ] beginner, standard and purist help level
+- [ ] advanced multitable lesson covering attention, decision time,
+  pre-selections, total bankroll risk and the declining quality of one's own
+  reads
+- [ ] controlled comparison exercise with one versus two tables followed by an
+  evaluation of decision time and errors
+
+---
+
+### 1.3.0 — Session analysis based on concrete hands
+
+**Goal:** Explain decisions instead of mere results.
+
+- [ ] Select a few interesting hands per session
+- [ ] Separate the decision view from the result view
+- [ ] Show the relevant factors at the time of the decision
+- [ ] Highlight good decisions despite a bad result
+- [ ] Explain bad decisions despite a won pot
+- [ ] Mark marginal and opponent-dependent spots
+- [ ] Classify alternative actions in an understandable way
+- [ ] Transferable lesson per example hand
+- [ ] Link suitable wiki terms
+- [ ] Do not fake GTO precision
+
+#### Analysis format
 
 ```text
-Was ist passiert?
-→ Welche Informationen waren bekannt?
-→ Welche Faktoren waren entscheidend?
-→ Wie ist die Aktion einzuordnen?
-→ Welche Alternativen gab es?
-→ Was lässt sich daraus lernen?
+What happened?
+→ Which information was available?
+→ Which factors were decisive?
+→ How should the action be classified?
+→ Which alternatives were there?
+→ What can be learned from it?
 ```
 
 ---
 
-### 1.4.0 — Poker-Rätsel
+### 1.4.0 — Poker puzzles
 
-**Ziel:** Konkrete Situationen trainieren — inspiriert von existierenden Puzzle-Apps,
-aber mit tieferer Erklärungsschicht statt nur "richtig/falsch".
+**Goal:** Train concrete situations — inspired by existing puzzle apps, but
+with a deeper explanation layer instead of just "right/wrong".
 
-- [ ] feste Grundlagenrätsel (Preflop, Postflop, Bet-Sizing)
-- [ ] Fold-, Call-, Raise- und All-in-Entscheidungen
-- [ ] Draw- und Pat-Entscheidungen
-- [ ] Range- und Read-Aufgaben
-- [ ] Fehler in einer Hand finden
-- [ ] mehrstufige Hände nachspielen
-- [ ] Schwierigkeitsgrade
-- [ ] **Erklärungsschicht**: Warum ist Aktion X besser als Y? Welche Faktoren waren entscheidend?
-- [ ] persönliche Rätsel aus eigenen Sessions generieren
+- [ ] Fixed foundation puzzles (preflop, postflop, bet sizing)
+- [ ] Fold, call, raise and all-in decisions
+- [ ] Draw and pat decisions
+- [ ] Range and read exercises
+- [ ] Find the mistake in a hand
+- [ ] Replay multi-street hands
+- [ ] Difficulty levels
+- [ ] **Explanation layer**: why is action X better than Y? Which factors were
+  decisive?
+- [ ] Generate personal puzzles from own sessions
 
 ---
 
-## Phase 7 — Mehr Varianten
+## Phase 7 — More variants
 
-> Neue Varianten bauen auf den existierenden Architektur-Grundlagen auf
-> und profitieren direkt von Wiki, Tutorials und Rätseln aus Phase 6.
+> New variants build on the existing architectural foundation and benefit
+> directly from the wiki, tutorials and puzzles from Phase 6.
 
-### Variantenübergreifende Bot-Kompetenz
+### Cross-variant bot competence
 
-- [ ] Für jede neue Variantenfamilie eigenes `variantProficiency` und
-  `variantAffinity` ergänzen, ohne Identität, Grundpersönlichkeit und
-  allgemeinen Skill neu auszulosen
-- [ ] Archetypen in die strategische Sprache der Variante übersetzen statt
-  NLHE-Aktionslogik zu übertragen
-- [ ] Gegner-Reads und Spielernotizen mit Variantenkontext persistieren; eine
-  grobe allgemeine Reputation darf identitätsgebunden bleiben
-- [ ] den globalen Roster bei Bedarf um geprüfte Draw-/Stud-Spezialisten
-  erweitern; die nahe Zielgröße von ungefähr 64 ist kein dauerhaftes Hard-Limit
-- [ ] Kalibrierung und Probesessions pro Varianten-, Skill-, Stake- und
-  Tischformat-Kombination planen
+- [ ] For each new variant family add its own `variantProficiency` and
+  `variantAffinity` without re-rolling identity, core personality and general
+  skill
+- [ ] Translate archetypes into the strategic language of the variant instead
+  of transferring NLHE action logic
+- [ ] Persist opponent reads and player notes with variant context; a rough
+  general reputation may remain tied to the identity
+- [ ] Extend the global roster with reviewed draw/stud specialists as needed;
+  the near target size of roughly 64 is not a permanent hard limit
+- [ ] Plan calibration and probe sessions per variant, skill, stake and table
+  format combination
 
-### 1.5.0 — 2-7 Draw Family
+### 1.5.0 — 2-7 Draw family
 
-**Ziel:** Draw-Poker nach dem stabilen v1-Kern als zusammenhängendes
-Variantenmodul einführen, zunächst Single Draw und darauf aufbauend Triple Draw.
+**Goal:** Introduce draw poker as a coherent variant module on top of the
+stable v1 core, starting with single draw and building on that with triple
+draw.
 
-- [ ] 2-7-Lowball-Handrangfolge
-- [ ] `DrawPhaseDefinition`, Kartentausch und Draw-History in der Engine
-- [ ] 2-7 Single Draw mit No-Limit-Setzstruktur
-- [ ] `VariantEvaluator` für Draw-Qualität, Discards, Pat und Snowing
-- [ ] anschließend Triple Draw mit drei Draws und vier Fixed-Limit-Setzrunden
-- [ ] mehrstufige Pat-/Draw-/Bluff-Strategien für Bots
-- [ ] Regelhinweise, Tutorial- und Rätselmaterial
+- [ ] 2-7 lowball hand ranking
+- [ ] `DrawPhaseDefinition`, card exchange and draw history in the engine
+- [ ] 2-7 single draw with no-limit betting structure
+- [ ] `VariantEvaluator` for draw quality, discards, pat and snowing
+- [ ] Then triple draw with three draws and four fixed-limit betting rounds
+- [ ] Multi-street pat/draw/bluff strategies for bots
+- [ ] Rule hints, tutorial and puzzle material
 
 ---
 
 ### 1.5.1 — Omaha Hi-Lo
 
-**Ziel:** Direkte Erweiterung von Omaha High (0.7.1) — Split-Pot mit Low-Qualifier.
+**Goal:** Direct extension of Omaha High (0.7.1) — split pot with a low
+qualifier.
 
-- [ ] High-/Low-Auswertung (A-5 Lowball)
-- [ ] Qualifier-Regeln (8-or-better)
-- [ ] Split- und Quarter-Pot-Logik
-- [ ] Low-Draw- und Scoop-Bewertung
-- [ ] Bot-Strategie: Two-Way-Hands, Scoop-Potential
+- [ ] High/low evaluation (A-5 lowball)
+- [ ] Qualifier rules (8 or better)
+- [ ] Split and quarter pot logic
+- [ ] Low draw and scoop evaluation
+- [ ] Bot strategy: two-way hands, scoop potential
 
 ---
 
 ### 1.6.0 — Badugi
 
-**Ziel:** Dritte Draw-Variante mit fundamental anderem Hand-Ranking.
+**Goal:** Third draw variant with a fundamentally different hand ranking.
 
-- [ ] Badugi-Handrangfolge (4 Karten, verschiedene Farben, keine Pairs)
-- [ ] Draw-Regeln (1–4 Karten tauschen, 3 Ziehrunden)
-- [ ] Pat-Signale und Snowing
-- [ ] botseitige Draw- und Blufflogik
-
----
-
-### 1.7.0 — Stud-Familie (Razz + Seven Card Stud)
-
-**Ziel:** Stud-Spiele als eigene Kategorie — offene Karten im `BotContext`.
-
-- [ ] Razz (A-5 Lowball, 7 Cards, keine Draws)
-- [ ] Seven Card Stud (High, 7 Cards, offene Karten)
-- [ ] `BotContext` um `visibleOpponentCards` erweitert
-- [ ] Ante-, Bring-in- und Street-Logik (3rd–7th Street)
-- [ ] Vereinfachte Bot-AI für Stud als erster Architektur-Proof
+- [ ] Badugi hand ranking (4 cards, different suits, no pairs)
+- [ ] Draw rules (exchange 1–4 cards, 3 draw rounds)
+- [ ] Pat signals and snowing
+- [ ] Bot-side draw and bluff logic
 
 ---
 
-## Phase 8 — Plattformen & Multiplayer
+### 1.7.0 — Stud family (Razz + Seven Card Stud)
 
-### 1.8.0 — Android-Distribution (optional)
+**Goal:** Stud games as their own category — open cards in the `BotContext`.
 
-Die technische Grundlage und der lokale Debug-Workflow bestehen seit v0.7.7.
-Nach der UI- und Gerätevalidierung aus v0.9.0–v0.9.4 wird entschieden, ob daraus
-ein öffentlich vertriebener Android-Client entsteht. Der Prototyp darf
-unabhängig davon als internes Testziel weiterlaufen.
-
-- [ ] unterstützte Smartphones, Tablets, Tischformate und Varianten festlegen
-- [ ] App-Icons, Splashscreen, Berechtigungen und Produktionskonfiguration
-  abschließen
-- [ ] signierte APK/AAB reproduzierbar bauen und Upgrade-Pfad testen
-- [ ] AGPL-konforme Source-, Lizenz- und Drittanbieterhinweise im
-  Distributionsweg bereitstellen
-- [ ] GitHub Release, alternativen Store oder Play Store bewusst auswählen
-
-> Eine PWA ist nicht vorgesehen. Geometriearbeit bleibt in 0.9.0,
-> Touch-Integration in 0.9.1 und die native Geräte-/Lifecycle-Matrix in 0.9.4.
+- [ ] Razz (A-5 lowball, 7 cards, no draws)
+- [ ] Seven Card Stud (high, 7 cards, open cards)
+- [ ] Extend `BotContext` by `visibleOpponentCards`
+- [ ] Ante, bring-in and street logic (3rd–7th street)
+- [ ] Simplified bot AI for stud as the first architectural proof
 
 ---
 
-### 1.9.0 — Table Rules & Multiplayer-Readiness
+## Phase 8 — Platforms & multiplayer
 
-**Ziel:** Sonderregeln als allgemeine, deterministische Engine-Erweiterungen vorbereiten.
+### 1.8.0 — Android distribution (optional)
 
-- [ ] allgemeines `TableRules`-Framework getrennt von Variantenregeln definieren
-- [ ] Kompatibilitätsprüfung zwischen Pokervariante, Betting-Struktur und Sonderregel
-- [ ] Pflichtbeiträge, übersprungene Phasen, zusätzliche Boards sowie Bonusabrechnungen modellieren
-- [ ] Main- und Side-Pots bei mehreren Boards beziehungsweise zusätzlichen Auszahlungen korrekt abrechnen
-- [ ] Sonderregeln vollständig in Hand History, Decision Snapshots und deterministischen Replays erfassen
-- [ ] protokollneutrale Zustimmungs-, Timeout- und Ablehnungs-Events für spätere Spielerentscheidungen vorbereiten
-- [ ] Single-Board Bomb Pot als erster offline testbarer Proof
+The technical foundation and the local debug workflow have existed since
+v0.7.7. After the UI and device validation from v0.9.0–v0.9.4 it is decided
+whether this becomes a publicly distributed Android client. The prototype may
+continue to run independently of this as an internal test target.
 
-#### Freigabe ab v2.x
+- [ ] Define supported smartphones, tablets, table formats and variants
+- [ ] Finalise app icons, splash screen, permissions and production
+  configuration
+- [ ] Build a signed APK/AAB reproducibly and test the upgrade path
+- [ ] Provide AGPL-compliant source, licence and third-party notices in the
+  distribution path
+- [ ] Deliberately choose GitHub Release, alternative store or Play Store
 
-- Sonderregeln in Lobbys beziehungsweise Tisch-Setups für echte Spieler auswählbar machen
-- Run It Twice, Bomb Pots und 7-2-Game/Bounty im Multiplayer
-- Online-Multiplayer frühestens ab v2.0 und weiterhin nur als langfristige Option
+> A PWA is not planned. Geometry work stays in 0.9.0, touch integration in
+> 0.9.1 and the native device/lifecycle matrix in 0.9.4.
 
 ---
 
-## Später / Unerforscht
+### 1.9.0 — Table rules & multiplayer readiness
 
-Diese Themen sind notiert, aber weder priorisiert noch im Scope einer bestimmten Version.
-Sie können in zukünftige Phasen einsortiert oder verworfen werden.
+**Goal:** Prepare special rules as general, deterministic engine extensions.
 
-| Thema | Kategorie | Notizen |
+- [ ] Define a general `TableRules` framework kept separate from variant rules
+- [ ] Compatibility check between poker variant, betting structure and special
+  rule
+- [ ] Model mandatory contributions, skipped phases, additional boards and
+  bonus settlements
+- [ ] Correctly settle main and side pots with multiple boards or additional
+  payouts
+- [ ] Fully record special rules in hand history, decision snapshots and
+  deterministic replays
+- [ ] Prepare protocol-neutral consent, timeout and rejection events for later
+  player decisions
+- [ ] Single-board bomb pot as the first offline testable proof
+
+#### Release from v2.x
+
+- Make special rules selectable in lobbies or table setups for real players
+- Run It Twice, bomb pots and 7-2 game/bounty in multiplayer
+- Online multiplayer at the earliest from v2.0 and still only as a long-term
+  option
+
+---
+
+## Later / Unexplored
+
+These topics are noted but neither prioritised nor in the scope of a specific
+version. They can be sorted into future phases or discarded.
+
+| Topic | Category | Notes |
 |-------|-----------|---------|
-| Short Deck (6+) | Variante | Community-Card, 36-Karten-Deck, angepasste Hand-Ranks |
-| Stud Hi-Lo | Variante | Erweiterung von 1.7.0 |
-| Mixed Games (HORSE) | Variante | Rotation mehrerer Varianten, Session-Format |
-| Tournament-Modus | Spielmodus | Blinds steigen, Payout-Struktur, ICM |
-| Lokaler Multiplayer | Plattform | Hot-Seat, gleicher Rechner |
+| Short Deck (6+) | Variant | Community card, 36-card deck, adjusted hand ranks |
+| Stud Hi-Lo | Variant | Extension of 1.7.0 |
+| Mixed Games (HORSE) | Variant | Rotation of several variants, session format |
+| Tournament mode | Game mode | Rising blinds, payout structure, ICM |
+| Local multiplayer | Platform | Hot seat, same computer |

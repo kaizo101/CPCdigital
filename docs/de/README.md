@@ -12,11 +12,11 @@ Versionsnummer in einem älteren Dokument ist keine Release-Zusage.
 
 | Frage | Maßgebliche Stelle |
 |-------|--------------------|
-| Wie baue, teste oder debugge ich die App? | [Entwicklerdokumentation](../../DEV.md) |
-| Was ist geplant oder bereits veröffentlicht? | [Roadmap](../../ROADMAP.md) und [Changelog](../../CHANGELOG.md) |
+| Wie baue, teste oder debugge ich die App? | [Entwicklerdokumentation](../../DEV.md) (Englisch) |
+| Was ist geplant oder bereits veröffentlicht? | [Roadmap](../../ROADMAP.md) und [Changelog](../../CHANGELOG.md) (Englisch) |
 | Wie prüfe ich Bot-Statistiken und Regressionen? | [Kalibrierung](../../calibration/README.md) |
 | Wie organisiere ich externe Tests? | [Teststrategie](../../testing/TESTING_STRATEGY.md) und [Formulare](../../testing/TESTER_FORMS.md) |
-| Wie melde ich Sicherheitsprobleme? | [Sicherheitsrichtlinie](../../SECURITY.md) |
+| Wie melde ich Sicherheitsprobleme? | [Sicherheitsrichtlinie](../../SECURITY.md) (Englisch) |
 
 ## Vertiefende Dokumente
 

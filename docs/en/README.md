@@ -8,18 +8,19 @@ This page is the entry point to the in-depth project documentation. The
 [changelog](../../CHANGELOG.md) the changes actually implemented. A planned
 version number in an older document is not a release commitment.
 
-The root documents `README.md`, `DEV.md`, `ROADMAP.md` and `CHANGELOG.md` still
-exist in German only and are linked from here in their German form.
+The root documents `README.md`, `DEV.md`, `ROADMAP.md`, `CHANGELOG.md`,
+`CONTRIBUTING.md` and `SECURITY.md` are English; their German originals are only
+preserved in the Git history.
 
 ## Use this now
 
 | Question | Authoritative source |
 |-------|--------------------|
-| How do I build, test or debug the app? | [Developer documentation](../../DEV.md) (German) |
-| What is planned or already released? | [Roadmap](../../ROADMAP.md) and [Changelog](../../CHANGELOG.md) (German) |
+| How do I build, test or debug the app? | [Developer documentation](../../DEV.md) |
+| What is planned or already released? | [Roadmap](../../ROADMAP.md) and [Changelog](../../CHANGELOG.md) |
 | How do I check bot statistics and regressions? | [Calibration](../../calibration/README.md) (German) |
 | How do I organise external tests? | [Testing strategy](../../testing/TESTING_STRATEGY.md) and [forms](../../testing/TESTER_FORMS.md) (German) |
-| How do I report a security issue? | [Security policy](../../SECURITY.md) (German) |
+| How do I report a security issue? | [Security policy](../../SECURITY.md) |
 
 ## In-depth documents
 

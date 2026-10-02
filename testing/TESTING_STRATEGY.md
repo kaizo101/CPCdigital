@@ -102,7 +102,7 @@ Ein möglicher Reddit- oder Forenbeitrag ist eine Einladung zu einem klar
 beschriebenen Test, keine fertige Produkteinführung. Vor jedem Beitrag werden
 die jeweiligen Community-Regeln geprüft; pauschales Crossposting wird
 vermieden. Vor einer englischsprachigen Vorstellung gilt außerdem der
-[Sprach- und Dokumentations-Checkpoint der Roadmap](../ROADMAP.md#sprach--und-dokumentations-checkpoint-vor-englischsprachiger-projektvorstellung).
+[Sprach- und Dokumentations-Checkpoint der Roadmap](../ROADMAP.md#language-and-documentation-checkpoint-before-an-english-language-project-presentation).
 
 Die Browser-Beta darf den nativen Android-Prototyp nicht falsch versprechen:
 Browser-Mobile bleibt ein funktionaler Fallback, während die weitergehende
