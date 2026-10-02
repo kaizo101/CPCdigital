@@ -1,6 +1,6 @@
 # Literatur und Evidenz für Botverhalten
 
-Stand: 30.09.2026 · **Arbeitsregister, keine Freigabe neuer Strategie- oder Zielwerte**
+Stand: 01.10.2026 · **Arbeitsregister; begrenzter PLO4-Preflop-Pilot, keine kalibrierte Strategie- oder Zielwertfreigabe**
 
 Dieses Register macht nachvollziehbar, welche externen Arbeiten eine
 Designfrage motivieren, was sie tatsächlich untersuchen und welche konkrete
@@ -29,7 +29,11 @@ Beleg für eine andere Pokervariante ausgegeben.
   Effekten entstehen. Ein objektiver Befund im Debugexport ist kein zusätzlicher
   Wissenskanal des Bots.
 
-**Bisherige Übernahme aus L1–L6:** keine. Der im
+**Übernahme aus L1–L7:** L7 motiviert inzwischen die *getrennte Erfassung*
+von PLO4-Preflop-Merkmalen im
+[Implementierungspilot](../reviews/plo-preflop-abstraktion-audit-2026-10-01.md#begrenzter-implementierungspilot-01102026).
+Weder Clusterzahl noch Formel, Aktionsfrequenz, Skill-Schwelle oder
+Scoregewicht stammen aus L7. Der im
 [Wahrnehmungsgrenzen-Audit](../reviews/bot-wahrnehmungsgrenze-audit-2026-09-30.md)
 reproduzierte Rückgriff nach der Wahrnehmungsstufe ist ein lokaler Codebefund
 und wird nicht nachträglich einem Paper zugeschrieben. Sobald eine Quelle eine
@@ -46,6 +50,20 @@ Gegenbeispiele, Tests und A/B-Ergebnis.
 | L4 | Teófilo und Reis, *Identifying Players' Strategies in No Limit Texas Hold'em Poker through the Analysis of Individual Moves*, [arXiv:1301.5943](https://arxiv.org/abs/1301.5943), 2013. Spielertypen anhand beobachteter Aktionen und deren Häufigkeit. | Archetypen in NLHE auch an bedingten Entscheidungen statt nur an globalen VPIP-/AF-Werten auf Unterscheidbarkeit prüfen. | Abstract gesichtet; Volltext offen. Datensatz und Cluster sind nicht automatisch unsere vier Archetypen; keine PLO-Übertragung ohne Prüfung. |
 | L5 | Haaf et al., *Rational AI: A comparison of human and AI responses to triggers of economic irrationality in poker*, [arXiv:2111.07295](https://arxiv.org/abs/2111.07295), 2021. Vergleich von menschlichen und KI-Reaktionen auf Gewinne/Verluste anhand von Hold'em-Daten. | Mentale Effekte als begrenzte, ereignisabhängige Verhaltensänderungen mit Erholung prüfen. Kandidat: `bot-mental.ts`. | Abstract gesichtet; Volltext offen. Kein Beleg für PLO-Tilt-Stärken oder einen pauschalen Zufallsfehler. |
 | L6 | St. Germain und Tenenbaum, *Decision-making and thought processes among poker players*, [High Ability Studies 2011](https://doi.org/10.1080/13598139.2011.576084). Laut Abstract 45 Personen in drei Skillgruppen, 60 simulierte **NLHE**-Hände mit Laut-Denken-Verfahren. | Als Kandidat für skillabhängige Auswahl relevanter Situationshinweise und Entscheidungen auf späteren Streets prüfen. | **Nur Abstract zugänglich**; Volltextzugang und Methodendetails offen. Kein PLO-Befund und keine numerische Skill-Schwelle. |
+| L7 | Li und Huang, *Abstraction Agent*, [arXiv:2609.04303v1](https://arxiv.org/html/2609.04303v1), 2026. Information Abstraction; u. a. **PLO4 High preflop**, daneben quantitative Experimente für NLHE-Turn-Endgames und ein anderes Spiel. | Kandidat für getrennte PLO-Preflop-Merkmale statt eines alleinigen Stärke-Buckets: Paar-/Rangqualität, Suit-/Flush-Potenzial, Straight-Konnektivität, Vier-Karten-Koordination und Nut-Potenzial. Diagnose und methodische Grenze im [PLO-Preflop-Abstraktionsaudit](../reviews/plo-preflop-abstraktion-audit-2026-10-01.md). | **Volltext ausgewertet für PLO-Abschnitte** (Abschnitt 5 „Cross-game settings“, Abschnitt 6 „Cross-game portability“, Anhänge A/B/E/H). 270.725 Rohkombinationen werden nach Suit-Isomorphie zu 16.432 Repräsentanten und dort zu 30 Clustern verdichtet. **Für PLO wird keine Exploitability und keine menschliche Spielqualität gemessen**; Clusterzahl, LLM-Scores und Aktionsfrequenzen sind keine Übernahmeempfehlung. Preprint, keine von uns verifizierte PLO-Strategie. |
+
+## PLO-spezifische Praxisquelle (keine Forschungsarbeit)
+
+| ID | Quelle und Bereich | Nutzen und Grenze |
+|---|---|---|
+| P1 | Upswing Poker, [*Pot Limit Omaha Preflop Guide: Raising First In*](https://upswingpoker.com/wp-content/uploads/2020/04/PLO-Preflop-Guide-RFI-v4-UpswingPoker.pdf), 2020, S. 3–6: Handklassen, Suit-Muster, Gap-Klassen, Position und solverabgeleitete RFI-Charts für PLO4. | Unabhängiger PLO4-Praxisabgleich für Merkmale und positionsabhängige *Open*-Szenarien. Kein Peer-Review, keine menschliche Stichprobe, kein Beleg für Calls/3-Bets oder unsere Microstakes-/Bot-Archetypen. Die numerischen Solver-Ranges werden weder als Policy noch als Zielkorridore übernommen. |
+
+**Aktueller Entscheidungsstatus:** L7 und P1 motivieren die Auswahl
+PLO4-spezifischer Merkmalsachsen. Die konkreten Profildefinitionen,
+Skill-Grenzen und kleinen Preflop-Scorefaktoren sind lokale Hypothesen des
+verlinkten Pilots, keine übernommenen Quellenwerte. Keine Solver-Policy,
+Bucketzahl oder Zielkorridor wurde übernommen. Der lokale 300-Hand-
+Kalibrierungs-Snapshot besteht; eine Release-Freigabe des Pilots steht aus.
 
 ## Erster Volltextbefund: L1 und Zugangsgrenze von L3
 
@@ -81,11 +99,12 @@ Pot-Limit-Einsatzentscheidungen benötigen PLO-eigene Modelle und Tests.
 Keine NLHE-Schwelle, Handklasse, Prior-Verteilung oder Zielzahl wird 1:1
 übernommen.
 
-**Evidenzlücke PLO:** Die hier ausgewertete Forschung liefert noch keine
-PLO-4-Karten-Studie zu menschlichen Reads oder Postflop-Entscheidungswegen.
-Ein PLO-spezifischer Primärbeleg ist vor konkreten PLO-Strategieregeln
-gesondert zu suchen und auf Variante, Stichprobe und Untersuchungsziel zu
-prüfen. Bis dahin trägt L1 nur die allgemeine Informationsgrenze.
+**Evidenzlücke PLO:** L7 behandelt PLO4-Preflop-Abstraktion, aber keine
+menschlichen Reads oder Postflop-Entscheidungswege und liefert keine
+quantitative PLO-Strategievalidierung. Ein PLO-spezifischer Primärbeleg ist
+vor konkreten PLO-Strategieregeln gesondert auf Variante, Stichprobe und
+Untersuchungsziel zu prüfen. L1 trägt weiterhin nur die allgemeine
+Informationsgrenze.
 
 **L3 – vorläufig.** Der [Verlagseintrag](https://doi.org/10.1177/154193120805200449)
 stellt nur den Abstract frei bereit. Dieser berichtet von mentalen Modellen
@@ -133,13 +152,17 @@ Zielkorridore ändern sich durch dieses Register nicht.
 
 ## Nächster Auswertungsschritt
 
-1. L1 ist mit Varianten- und Methodengrenze ausgewertet. Für L3 nur bei
+1. L1 ist mit Varianten- und Methodengrenze ausgewertet; L7 ist nur für
+   PLO4-Preflop-Abstraktion ausgewertet und begründet noch keine
+   Strategieänderung. Für L3 nur bei
    rechtmäßigem Volltextzugang weitergehen; andernfalls eine offen zugängliche
    Primärstudie zur menschlichen Handlinien-Entscheidung suchen und separat
    auswerten; L6 ist ein NLHE-Kandidat, aber ebenfalls nur als Abstract
-   zugänglich. Eine PLO-4-Karten-Primärquelle wird separat gesucht. L2, L4
+   zugänglich. Eine PLO4-Primärquelle zu **menschlichen Reads oder
+   Entscheidungswegen** wird separat gesucht. L2, L4
    und L5 folgen nur bei der passenden Mess-, Archetyp- oder Mental-Frage.
-   Pro Arbeit nur überprüfbare Aussagen mit
+   Für die PLO-Preflop-Frage zuerst den verlinkten Abstraktionsaudit und
+   seine Vergleichsfälle bearbeiten. Pro Arbeit nur überprüfbare Aussagen mit
    Seiten-/Abschnittsnachweis und Übertragungsgrenze übernehmen.
 2. Die korrigierte Wahrnehmungsgrenze bei späteren Strategiearbeiten
    regressionsgeschützt halten; neue nachgelagerte Modifikatoren dürfen

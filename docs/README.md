@@ -31,7 +31,9 @@ Versionsnummer in einem älteren Dokument ist keine Release-Zusage.
   stehen im [Roadmap-Archiv](plans/roadmap-archiv-bis-0.8.1.md).
 - **Reviews und Audits:** [Offline-Kern-Nachtrag](reviews/offline-core-review-2026-09-29.md),
   [Wahrnehmungsgrenzen](reviews/bot-wahrnehmungsgrenze-audit-2026-09-30.md),
-  [Gegner-Reads](reviews/gegner-reads-informationsfluss-audit-2026-09-30.md)
+  [Gegner-Reads](reviews/gegner-reads-informationsfluss-audit-2026-09-30.md),
+  [PLO-Preflop-Abstraktion](reviews/plo-preflop-abstraktion-audit-2026-10-01.md),
+  [PLO-Postflop-Session](reviews/plo-postflop-session-2026-10-01.md)
   und die PLO-Nachträge zu [Wrap-Outs](reviews/plo-wrap-outs-review-2026-09-30.md),
   [Made-Hand-Redraws](reviews/plo-made-hand-redraw-review-2026-09-30.md),
   [Straight-Flush-Nuts](reviews/plo-straight-flush-nut-review-2026-09-29.md)

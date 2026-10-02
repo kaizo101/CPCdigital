@@ -5,7 +5,7 @@ import { params } from './bot-params'
 import type { DecisionContext } from './bot-decision-types'
 import { createBotState } from './bot-state'
 import { CALLING_STATION_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
-import { getNlheScores } from './bot-category-scores'
+import { getNlheScores, getPloScores } from './bot-category-scores'
 import { assessHand } from './nlhe-hand-evaluation'
 import { selectionDiagnostics } from './bot-action-selection'
 
@@ -1015,6 +1015,171 @@ describe('continuation-bet defense calibration', () => {
         value: params.scoring.cbetDefenseCallBonus.plo['calling-station']['six-max'],
       }),
     ]))
+  })
+
+  it('dampens PLO defense for weak made hands without a draw or clean outs', () => {
+    const base = defenseContext('opp')
+    base.variantId = 'omaha-high'
+    base.tableSize = 6
+    base.gameView = {
+      ...base.gameView,
+      board: [
+        { rank: 'K', suit: 'spades' }, { rank: 'K', suit: 'clubs' },
+        { rank: '7', suit: 'spades' },
+      ],
+    }
+    base.metrics = { ...base.metrics, toCallPotRatio: 0.44 }
+    base.streetAnalysis = { ...base.streetAnalysis!, activeOpponents: 3 }
+    base.botState = {
+      ...base.botState,
+      personality: { ...base.botState.personality, archetype: { name: 'Calling Station' } as any },
+    }
+    base.handAssessment = {
+      ...base.handAssessment, category: 'weak', made: true, rank: 3,
+      drawTypes: [], cleanOuts: 0,
+    }
+
+    const noEquity = scoreActions(base)
+    const withDraw = scoreActions({
+      ...base,
+      handAssessment: { ...base.handAssessment, drawTypes: ['flush-draw'], cleanOuts: 8 },
+    })
+    const contribution = (actions: ReturnType<typeof scoreActions>, type: string, label: string) =>
+      actions.find(candidate => candidate.action.type === type)!.contributions
+        .find(item => item.label === label)?.value ?? 0
+
+    expect(contribution(noEquity, 'call', 'C-Bet defense — continue with realizable equity'))
+      .toBeLessThan(contribution(withDraw, 'call', 'C-Bet defense — continue with realizable equity'))
+    expect(contribution(noEquity, 'fold', 'C-Bet defense — call with equity'))
+      .toBeGreaterThan(contribution(withDraw, 'fold', 'C-Bet defense — call with equity'))
+    expect(contribution(noEquity, 'fold', 'C-Bet defense mix — folding realizable equity too often'))
+      .toBeGreaterThan(contribution(withDraw, 'fold', 'C-Bet defense mix — folding realizable equity too often'))
+
+    const unpaired = scoreActions({
+      ...base,
+      gameView: { ...base.gameView, board: [
+        { rank: 'K', suit: 'spades' }, { rank: 'Q', suit: 'clubs' },
+        { rank: '7', suit: 'spades' },
+      ] },
+    })
+    expect(contribution(unpaired, 'call', 'C-Bet defense — continue with realizable equity'))
+      .toBe(contribution(withDraw, 'call', 'C-Bet defense — continue with realizable equity'))
+
+    const belowThreshold = scoreActions({
+      ...base, metrics: { ...base.metrics, toCallPotRatio: 0.3999 },
+    })
+    const atThreshold = scoreActions({
+      ...base, metrics: { ...base.metrics, toCallPotRatio: 0.4 },
+    })
+    expect(contribution(belowThreshold, 'call', 'C-Bet defense — continue with realizable equity'))
+      .toBe(contribution(withDraw, 'call', 'C-Bet defense — continue with realizable equity'))
+    expect(contribution(atThreshold, 'call', 'C-Bet defense — continue with realizable equity'))
+      .toBe(contribution(noEquity, 'call', 'C-Bet defense — continue with realizable equity'))
+  })
+
+  it('separates Elin’s drawless pair from Juno’s bottom wrap on the wet multiway flop', () => {
+    const base = defenseContext('opp')
+    base.variantId = 'omaha-high'
+    base.tableSize = 6
+    base.boardTexture = 'wet'
+    base.gameView = { ...base.gameView, board: [
+      { rank: 'Q', suit: 'clubs' }, { rank: 'T', suit: 'diamonds' },
+      { rank: '9', suit: 'clubs' },
+    ] }
+    base.streetAnalysis = { ...base.streetAnalysis!, activeOpponents: 3 }
+    base.botState = {
+      ...base.botState,
+      personality: { ...base.botState.personality, archetype: { name: 'Calling Station' } as any },
+    }
+    base.handAssessment = {
+      ...base.handAssessment,
+      category: 'weak', rank: 2, made: true, drawTypes: [], cleanOuts: 0,
+      nutPotential: 'weak',
+    }
+    base.metrics = {
+      ...base.metrics, totalPot: 0.5, callAmount: 0.22,
+      potOdds: 0.22 / 0.72, toCallPotRatio: 0.22 / 0.5,
+    }
+    base.legalActions = { fold: true, check: false, callAmount: 0.22, raise: null, allInAmount: null }
+
+    const elin = scoreActions(base)
+    const juno = scoreActions({
+      ...base,
+      botState: createBotState(TAG_PERSONALITY, 78, () => 0.5),
+      handAssessment: {
+        ...base.handAssessment, drawTypes: ['wrap-8+', 'bottom-wrap'],
+      },
+      metrics: {
+        ...base.metrics, totalPot: 0.72, potOdds: 0.22 / 0.94,
+        toCallPotRatio: 0.22 / 0.72,
+      },
+    })
+    const contribution = (actions: ReturnType<typeof scoreActions>, type: string, label: string) =>
+      actions.find(candidate => candidate.action.type === type)!.contributions
+        .find(item => item.label === label)?.value ?? 0
+    const fullBonus = params.scoring.cbetDefenseCallBonus.plo['calling-station']['six-max']
+    const tagDrawBonus = params.scoring.cbetDefenseCallBonus.plo.tag['six-max']
+
+    expect(contribution(elin, 'call', 'C-Bet defense — continue with realizable equity'))
+      .toBe(Math.round(fullBonus * 0.25))
+    expect(contribution(juno, 'call', 'C-Bet defense — continue with realizable equity'))
+      .toBe(tagDrawBonus)
+    expect(contribution(elin, 'fold', 'C-Bet defense — call with equity'))
+      .toBeGreaterThan(contribution(juno, 'fold', 'C-Bet defense — call with equity'))
+  })
+})
+
+describe('PLO value-bet candidates and intent', () => {
+  it('labels a made good hand without a draw as value, not bluff', () => {
+    const base = makeCtx()
+    const actions = scoreActions(makeCtx({
+      variantId: 'omaha-high',
+      gameView: { ...base.gameView, phase: 'river' },
+      handAssessment: { ...base.handAssessment, category: 'good', rank: 6, made: true, drawTypes: [] },
+      legalActions: { fold: false, check: true, callAmount: null, raise: { minAmount: 10, maxAmount: 100 }, allInAmount: 1000 },
+      preferredRaiseTo: 40,
+    }))
+    expect(actions.find(candidate => candidate.action.type === 'raise')?.intent).toBe('value')
+  })
+
+  it('retains a smaller PLO river bet when preferred sizing consumes the stack', () => {
+    const base = makeCtx()
+    const context = makeCtx({
+      variantId: 'omaha-high',
+      botState: createBotState(CALLING_STATION_PERSONALITY, 34, () => 0.5),
+      categoryScores: getPloScores('calling-station', 'river', 6),
+      tableSize: 6,
+      position: 'late',
+      gameView: { ...base.gameView, phase: 'river', pot: 168, bigBlind: 2, smallBlind: 1, board: [
+        { rank: '4', suit: 'spades' }, { rank: 'Q', suit: 'diamonds' },
+        { rank: '9', suit: 'clubs' }, { rank: '8', suit: 'spades' },
+        { rank: '2', suit: 'clubs' },
+      ], players: [
+        { id: 'bot', chips: 81, roundBet: 0, status: 'active', isDealer: true },
+        { id: 'opp', chips: 300, roundBet: 0, status: 'active', isDealer: false },
+      ] },
+      handAssessment: { ...base.handAssessment, category: 'medium', rank: 5, made: true, drawTypes: [], nutPotential: 'medium', strength: 40, relativeStrength: 41 },
+      metrics: { ...base.metrics, totalPot: 168, playerStack: 81, effectiveStack: 81, spr: 81 / 168, minRaiseTo: 2, maxRaiseTo: 81 },
+      legalActions: { fold: false, check: true, callAmount: null, raise: { minAmount: 2, maxAmount: 81 }, allInAmount: 81 },
+      preferredRaiseTo: 81,
+    })
+    const actions = scoreActions(context)
+    const raise = actions.find(candidate => candidate.action.type === 'raise')
+    expect(raise).toBeDefined()
+    expect(raise?.action).toMatchObject({ type: 'raise', amount: expect.any(Number) })
+    expect((raise?.action as { amount: number }).amount).toBeLessThan(81)
+    expect(raise?.utility).toBeGreaterThanOrEqual(actions.find(candidate => candidate.action.type === 'check')!.utility)
+    expect(raise?.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'PLO clean-board straight — seek a callable river value bet', value: 14 }),
+    ]))
+
+    const allInOnly = scoreActions({
+      ...context,
+      legalActions: { ...context.legalActions, raise: { minAmount: 81, maxAmount: 81 } },
+    })
+    expect(allInOnly.some(candidate => candidate.action.type === 'raise')).toBe(false)
+    expect(allInOnly.find(candidate => candidate.action.type === 'check')!.contributions
+      .some(item => item.label === 'PLO clean-board straight — seek a callable river value bet')).toBe(false)
   })
 })
 

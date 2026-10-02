@@ -17,6 +17,7 @@ import { calculateChipUnit, roundToCents } from './utils/format'
 import { params } from './bot-params'
 import { resolveTableFormat } from './bot-table-format'
 import { getPloSprAdjustments, type PloSprAction } from './plo-spr-strategy'
+import { ploPreflopStructureFactors } from './plo-preflop-strategy'
 import { analysisSkillWeight, hasAnalysisSkill } from './bot-skill-gates'
 import { cardsToHandPattern } from './preflop-ranges'
 import {
@@ -33,6 +34,10 @@ export function scoreActions(context: DecisionContext): ScoredAction[] {
   if (legal.fold) actions.push(scoreFold(context))
   if (legal.callAmount != null) actions.push(scoreCall(context))
   if (legal.raise && !raiseCanonicalizesToAllIn(context)) actions.push(scoreRaise(context))
+  else if (legal.raise) {
+    const partialValueBet = ploRiverPartialValueBet(context)
+    if (partialValueBet != null) actions.push(scoreRaise(context, partialValueBet))
+  }
   if (legal.allInAmount != null) actions.push(scoreAllIn(context))
 
   return actions
@@ -121,6 +126,7 @@ function scoreCheck(context: DecisionContext): ScoredAction {
   contributions.push(...turnBarrelCheckFactors(context))
   contributions.push(...ploProbeBetFactors('check', context))
   contributions.push(...ploThinValuePotControlFactors('check', context))
+  contributions.push(...ploSafeRiverStraightValueFactors('check', context))
 
   return buildAction({ type: 'check' }, intent, contributions)
 }
@@ -172,11 +178,12 @@ function scoreCall(context: DecisionContext): ScoredAction {
   contributions.push(...checkRaisePlanFactors('call', context))
   contributions.push(...floatDefenseFactors('call', context))
   contributions.push(...ploLateCallFactors('call', context))
+  contributions.push(...ploPreflopStructureFactors('call', context))
 
   return buildAction({ type: 'call' }, intent, contributions)
 }
 
-function scoreRaise(context: DecisionContext): ScoredAction {
+function scoreRaise(context: DecisionContext, amount = calculateRaiseTo(context)): ScoredAction {
   const { handAssessment: hand, position, boardTexture } = context
   const intent = aggressiveIntent(context)
   const contributions: ScoreContribution[] = [
@@ -192,7 +199,9 @@ function scoreRaise(context: DecisionContext): ScoredAction {
     ...streetInitiativeFactors(context),
     ...ploProbeBetFactors('raise', context),
     ...ploThinValuePotControlFactors('raise', context),
+    ...ploSafeRiverStraightValueFactors('raise', context),
     ...preflopEscalationFactors('raise', context),
+    ...ploPreflopStructureFactors('raise', context),
   ]
 
   if (hand.relativeStrength > 70) contributions.push(factor('hand-strength', 'High relative strength', params.scoring.raiseBonus.highRelStrength))
@@ -244,7 +253,7 @@ function scoreRaise(context: DecisionContext): ScoredAction {
   contributions.push(...floatDefenseFactors('raise', context))
 
   const scored = buildAction(
-    { type: 'raise', amount: calculateRaiseTo(context) },
+    { type: 'raise', amount },
     intent,
     contributions,
   )
@@ -310,6 +319,7 @@ function scoreAllIn(context: DecisionContext): ScoredAction {
 function aggressiveIntent(context: DecisionContext): ActionIntent {
   const hand = context.handAssessment
   if (isAtLeast(hand.category, 'strong')) return 'value'
+  if (context.variantId === 'omaha-high' && hand.made && isAtLeast(hand.category, 'good')) return 'value'
   if (hand.category === 'medium' && hand.made && hand.drawTypes.length === 0) return 'value'
   if (hand.drawTypes.length > 0) return 'semi-bluff'
   if (hand.category === 'medium') return 'protection'
@@ -1142,6 +1152,26 @@ function raiseCanonicalizesToAllIn(context: DecisionContext): boolean {
   return calculateRaiseTo(context) >= raise.maxAmount
 }
 
+function ploRiverPartialValueBet(context: DecisionContext): number | null {
+  const { gameView, handAssessment: hand, legalActions } = context
+  const raise = legalActions.raise
+  if (
+    context.variantId !== 'omaha-high'
+    || gameView.phase !== 'river'
+    || !hand.made
+    || hand.rank < 5
+    || legalActions.callAmount != null
+    || !raise
+    || !raiseCanonicalizesToAllIn(context)
+  ) return null
+
+  const step = calculateChipUnit(gameView.smallBlind, gameView.bigBlind)
+  const capped = roundToCents(raise.maxAmount - step)
+  if (capped < raise.minAmount) return null
+  const proposed = roundToCents(Math.round(gameView.pot * 0.35 / step) * step)
+  return Math.max(raise.minAmount, Math.min(capped, proposed))
+}
+
 function baseContribution(): ScoreContribution {
   return factor('base', 'Neutral action baseline', 0)
 }
@@ -1425,6 +1455,39 @@ function ploThinValuePotControlFactors(
       ? 'PLO thin made-hand value — prefer pot control over a called bet'
       : 'PLO thin made-hand value — seek a callable value bet',
     action === 'check' ? value : -value,
+  )]
+}
+
+function ploSafeRiverStraightValueFactors(
+  action: 'check' | 'raise',
+  context: DecisionContext,
+): ScoreContribution[] {
+  const { gameView, handAssessment: hand } = context
+  if (
+    context.variantId !== 'omaha-high'
+    || gameView.phase !== 'river'
+    || gameView.board.length !== 5
+    || context.metrics.callAmount > 0
+    || (context.streetAnalysis?.activeOpponents ?? context.activePlayerCount - 1) !== 1
+    || !hand.made
+    || hand.rank !== 5
+    || hand.nutPotential === 'weak'
+    || !context.legalActions.raise
+    || (raiseCanonicalizesToAllIn(context) && ploRiverPartialValueBet(context) == null)
+  ) return []
+
+  const ranks = gameView.board.map(card => card.rank)
+  if (new Set(ranks).size !== 5) return []
+  const suitCounts = new Map<string, number>()
+  for (const card of gameView.board) {
+    suitCounts.set(card.suit, (suitCounts.get(card.suit) ?? 0) + 1)
+  }
+  if ([...suitCounts.values()].some(count => count >= 3)) return []
+
+  return [factor(
+    'hand-strength',
+    'PLO clean-board straight — seek a callable river value bet',
+    action === 'raise' ? 14 : -7,
   )]
 }
 
@@ -1823,7 +1886,7 @@ function dynamicFoldFactors(context: DecisionContext): ScoreContribution[] {
         ? hand.category === 'air' || hand.category === 'weak' || hand.category === 'marginal' || hand.category === 'medium'
         : hand.category === 'weak' || hand.category === 'marginal' || hand.category === 'medium'
     if (isFacingContinuationBet(context) && handInDefenseRange) {
-      result.push(factor('betting-context', 'C-Bet defense — call with equity', Math.round(basePenalty * catMul * riskFactor * variantBoost * huMultiplier)))
+      result.push(factor('betting-context', 'C-Bet defense — call with equity', Math.round(basePenalty * catMul * riskFactor * variantBoost * huMultiplier * ploDrawlessWeakCbetScale(context))))
     } else if (isPFA && hand.category !== 'air') {
       result.push(factor('betting-context', 'PFA defending flop lead', Math.round(-7 * riskFactor * variantBoost)))
     }
@@ -1925,7 +1988,7 @@ function nlheFlopDefenseFactors(
 
 function cbetDefenseCandidateScale(context: DecisionContext, allowBlockerAir: boolean): number {
   const hand = context.handAssessment
-  const multiwayScale = drawlessUnmadeMultiwayScale(context)
+  const multiwayScale = drawlessUnmadeMultiwayScale(context) * ploDrawlessWeakCbetScale(context)
 
   if (hand.category === 'air') {
     if (hand.drawTypes.length > 0 || (allowBlockerAir && hand.blockerValue >= 20)) return multiwayScale
@@ -1951,13 +2014,37 @@ function cbetDefenseCandidateScale(context: DecisionContext, allowBlockerAir: bo
 
 function cbetDefenseRaiseCandidateScale(context: DecisionContext): number {
   const hand = context.handAssessment
-  const multiwayScale = drawlessUnmadeMultiwayScale(context)
+  const multiwayScale = drawlessUnmadeMultiwayScale(context) * ploDrawlessWeakCbetScale(context)
   if (hand.drawTypes.length > 0) return 1
   if (hand.category === 'air') return cbetDefenseCandidateScale(context, true)
   if (hand.category === 'weak') return (hand.made ? 0.55 : 0.65) * multiwayScale
   if (hand.category === 'marginal') return 0.7 * multiwayScale
   if (hand.category === 'medium') return 0.6 * multiwayScale
   return 0
+}
+
+function ploDrawlessWeakCbetScale(context: DecisionContext): number {
+  const hand = context.handAssessment
+  const boardRanks = context.gameView.board.map(card => card.rank)
+  const pairedOrWet = new Set(boardRanks).size < 3 || context.boardTexture === 'wet'
+  // The call/pot ratio uses a pot already containing the bet: a two-thirds-
+  // pot first bet appears here as 0.40, not 0.67.
+  const expensiveCall = context.metrics.toCallPotRatio >= 0.4
+  if (
+    context.variantId !== 'omaha-high'
+    || context.gameView.phase !== 'flop'
+    || boardRanks.length !== 3
+    || !pairedOrWet
+    || (context.streetAnalysis?.activeOpponents ?? 1) < 2
+    || !expensiveCall
+    || hand.category !== 'weak'
+    || !hand.made
+    || hand.rank > 3
+    || hand.drawTypes.length > 0
+    || hand.cleanOuts > 0
+  ) return 1
+
+  return 0.25
 }
 
 function drawlessUnmadeMultiwayScale(context: DecisionContext): number {

@@ -136,6 +136,14 @@ dokumentiert.
   Events gegen die Zielkorridore geprüft; Ausreißer werden mit Rohnennern
   dokumentiert und nach Größe, Wiederholbarkeit und Spielwirkung triagiert,
   nicht automatisch als Release-Fehler gewertet.
+- [ ] PLO Calling Station 6-max separat triagieren: Im unabhängigen
+  3.000-Hand-Lauf liegen Fold-to-CBet bei 810/1909 (42,4 %) und
+  Turn-C-Bet bei 47/270 (17,4 %). Der enge Fix für drawlose Multiway-Calls
+  erklärt davon nur 21 zusätzliche Folds (+1,1 Prozentpunkte) und keine
+  Turn-C-Bet-Änderung. Vor dem Release die betroffenen Handlinien und ihre
+  Spielwirkung prüfen; weder global nachjustieren noch allein wegen der
+  nicht bindenden Zielkorridore blockieren
+  ([Diagnose und Gegenlauf](docs/reviews/plo-postflop-session-2026-10-01.md)).
 - [ ] Im adaptiven Modus werden gerichtete, begrenzte Deltas statt statischer
   Einzelwerte geprüft.
 - [ ] Finale NLHE-/PLO-Validierung für Full Ring, 6-max und Heads-up.

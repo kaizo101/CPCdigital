@@ -5,11 +5,12 @@ import { deriveDecisionMetrics } from './bot-decision-metrics'
 import { applyPersonalityModifiers, decideAction, scoreActions, type DecisionContext } from './bot-pipeline'
 import { applySkillPerception } from './bot-skill-perception'
 import { CALLING_STATION_PERSONALITY, LAG_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
-import { getNlheScores, NLHE_CATEGORY_SCORES } from './bot-category-scores'
+import { getNlheScores, getPloScores, NLHE_CATEGORY_SCORES } from './bot-category-scores'
 import type { OpponentLine, StreetAnalysis } from './bot-street-analysis'
 import { estimateRangeFromLine } from './bot-range-estimation'
 import { params } from './bot-params'
 import { assessHand } from './nlhe-hand-evaluation'
+import { analyzePloPreflopFeatures } from './plo-preflop-features'
 
 const cards: [Card, Card] = [
   { rank: 'A', suit: 'spades' },
@@ -1440,6 +1441,76 @@ describe('bot utility candidates', () => {
     expect(raise.contributions.some(contribution => contribution.label === 'Passive style avoids initiative')).toBe(true)
   })
 
+  it('does not turn Hand #26 board-only trips into a low-skill nut-equity river shove', () => {
+    const legalActions: LegalActions = {
+      fold: false,
+      check: true,
+      callAmount: null,
+      raise: { minAmount: 0.04, maxAmount: 1 },
+      allInAmount: 1,
+    }
+    const decisionContext = context(legalActions, {
+      totalPot: 1.02,
+      eligiblePot: 1.02,
+      potRaiseTo: 0.87,
+      playerStack: 1,
+      effectiveStack: 1,
+      spr: 0.98,
+    })
+    decisionContext.variantId = 'omaha-high'
+    decisionContext.gameView.phase = 'river'
+    decisionContext.gameView.bigBlind = 0.02
+    decisionContext.gameView.board = [
+      { rank: 'K', suit: 'hearts' }, { rank: '2', suit: 'spades' },
+      { rank: '2', suit: 'clubs' }, { rank: '2', suit: 'diamonds' },
+      { rank: 'A', suit: 'clubs' },
+    ]
+    decisionContext.gameView.myCards = [
+      { rank: 'Q', suit: 'hearts' }, { rank: 'T', suit: 'spades' },
+      { rank: '8', suit: 'clubs' }, { rank: '7', suit: 'spades' },
+    ]
+    decisionContext.botState = createBotState(CALLING_STATION_PERSONALITY, 31, () => 0.5)
+    decisionContext.categoryScores = getPloScores('calling-station', 'river', 6)
+    decisionContext.tableSize = 6
+    decisionContext.activePlayerCount = 3
+    decisionContext.metrics = {
+      ...decisionContext.metrics,
+      totalPot: 1.02,
+      playerStack: 1,
+      effectiveStack: 1,
+      effectiveStackBb: 50,
+      playerStartingStackBb: 65.5,
+      spr: 0.98,
+      potCommitment: 0.236641,
+      stackDepth: 'medium',
+    }
+    decisionContext.handAssessment = {
+      ...decisionContext.handAssessment,
+      category: 'marginal', rank: 4, made: true,
+      relativeStrength: 30, showdownValue: 32, nutPotential: 'weak',
+      vulnerability: 68, strength: 32,
+    }
+
+    const result = decideAction(decisionContext, { random: () => 0.5 })
+    const check = result.allActions.find(candidate => candidate.action.type === 'check')!
+    const shove = result.allActions.find(candidate => candidate.action.type === 'all-in')!
+
+    expect(result.perceivedHandAssessment.nutPotential).toBe('medium')
+    expect(shove.contributions.some(item => item.label.includes('strong/nut equity'))).toBe(false)
+    expect(shove.contributions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: expect.stringContaining('non-strong equity') }),
+    ]))
+    expect(check.utility).toBeGreaterThan(shove.utility)
+
+    for (const [skill, expectedNutPotential] of [[49, 'medium'], [50, 'weak'], [100, 'weak']] as const) {
+      decisionContext.botState.skill.level = skill
+      const boundary = decideAction(decisionContext, { random: () => 0.5 })
+      const boundaryShove = boundary.allActions.find(candidate => candidate.action.type === 'all-in')!
+      expect(boundary.perceivedHandAssessment.nutPotential).toBe(expectedNutPotential)
+      expect(boundaryShove.contributions.some(item => item.label.includes('strong/nut equity'))).toBe(false)
+    }
+  })
+
   it('penalizes weak drawless calls under repeated turn and river pressure', () => {
     const legalActions: LegalActions = {
       fold: true,
@@ -1916,6 +1987,113 @@ describe('bot utility candidates', () => {
 
     expect(perception.errors).toEqual([])
     expect(perception.context).toBe(actual)
+  })
+
+  it('gates PLO4 coordination and nut-suit interpretation continuously at exact skill boundaries', () => {
+    const actual = context({ fold: true, check: false, callAmount: 20, raise: null, allInAmount: null })
+    actual.variantId = 'omaha-high'
+    actual.gameView.phase = 'preflop'
+    actual.handAssessment.ploPreflopProfile = analyzePloPreflopFeatures([
+      { rank: 'A', suit: 'spades' }, { rank: 'K', suit: 'spades' },
+      { rank: 'Q', suit: 'hearts' }, { rank: 'J', suit: 'hearts' },
+    ])
+    const objective = structuredClone(actual.handAssessment.ploPreflopProfile)
+    const perceived = (skill: number) => {
+      actual.botState.skill.level = skill
+      return applySkillPerception(actual, { random: () => 0.5 })
+        .context.handAssessment.ploPreflopProfile!
+    }
+
+    expect(perceived(39).coordinatedRundown).toBe(0)
+    expect(perceived(40).coordinatedRundown).toBe(0)
+    expect(perceived(41).coordinatedRundown).toBeCloseTo(1 / 60)
+    expect(perceived(49).nutSuitCount).toBe(0)
+    expect(perceived(50).nutSuitCount).toBe(0)
+    expect(perceived(51).nutSuitCount).toBeCloseTo(1 / 50)
+    expect(perceived(100)).toEqual(objective)
+    expect(actual.handAssessment.ploPreflopProfile).toEqual(objective)
+  })
+
+  it('adds only perceived, deep and late PLO4 preflop score evidence', () => {
+    const legal: LegalActions = {
+      fold: true, check: false, callAmount: 20,
+      raise: { minAmount: 60, maxAmount: 1000 }, allInAmount: null,
+    }
+    const actual = context(legal)
+    actual.variantId = 'omaha-high'
+    actual.gameView.phase = 'preflop'
+    actual.position = 'late'
+    actual.metrics.effectiveStackBb = 100
+    actual.handAssessment.category = 'good'
+    actual.handAssessment.strength = 47
+    actual.handAssessment.relativeStrength = 47
+    withSizingRead(actual, 0.5)
+    const callerLine = actual.streetAnalysis!.opponentLines.get('villain')!
+    actual.streetAnalysis!.preflopRaiseCount = 0
+    actual.streetAnalysis!.opponentLines = new Map()
+    actual.handAssessment.ploPreflopProfile = analyzePloPreflopFeatures([
+      { rank: 'K', suit: 'spades' }, { rank: 'Q', suit: 'hearts' },
+      { rank: 'J', suit: 'diamonds' }, { rank: 'T', suit: 'clubs' },
+    ])
+    const bonus = (skill: number, action: 'call' | 'raise') => {
+      actual.botState.skill.level = skill
+      const perceived = applySkillPerception(actual, { random: () => 0.5 }).context
+      return scoreActions(perceived).find(candidate => candidate.action.type === action)!
+        .contributions.filter(item => item.label.includes('PLO4 coordinated'))
+        .reduce((sum, item) => sum + item.value, 0)
+    }
+
+    expect(bonus(40, 'raise')).toBe(0)
+    expect(bonus(100, 'raise')).toBe(3)
+    expect(bonus(100, 'call')).toBe(0)
+    const raiseUtility = () => scoreActions(applySkillPerception(actual, { random: () => 0.5 }).context)
+      .find(candidate => candidate.action.type === 'raise')!.utility
+    const coordinatedUtility = raiseUtility()
+    actual.handAssessment.ploPreflopProfile = analyzePloPreflopFeatures([
+      { rank: 'A', suit: 'spades' }, { rank: 'A', suit: 'hearts' },
+      { rank: '7', suit: 'diamonds' }, { rank: '2', suit: 'clubs' },
+    ])
+    expect(coordinatedUtility - raiseUtility()).toBe(3)
+    actual.handAssessment.ploPreflopProfile = analyzePloPreflopFeatures([
+      { rank: 'A', suit: 'spades' }, { rank: 'A', suit: 'hearts' },
+      { rank: '7', suit: 'spades' }, { rank: '2', suit: 'clubs' },
+    ])
+    expect(raiseUtility()).toBeCloseTo(coordinatedUtility - 2)
+    const nutSuitBonus = (skill: number) => {
+      actual.botState.skill.level = skill
+      const perceived = applySkillPerception(actual, { random: () => 0.5 }).context
+      return scoreActions(perceived).find(candidate => candidate.action.type === 'raise')!
+        .contributions.find(item => item.label.includes('PLO4 ace-high usable suit'))?.value ?? 0
+    }
+    expect(nutSuitBonus(49)).toBe(0)
+    expect(nutSuitBonus(50)).toBe(0)
+    expect(nutSuitBonus(51)).toBeCloseTo(1 / 50)
+    expect(nutSuitBonus(100)).toBe(1)
+    actual.botState.skill.level = 50
+    expect(bonus(50, 'raise')).toBe(0)
+    actual.botState.skill.level = 100
+    actual.handAssessment.ploPreflopProfile = analyzePloPreflopFeatures([
+      { rank: 'K', suit: 'spades' }, { rank: 'Q', suit: 'hearts' },
+      { rank: 'J', suit: 'diamonds' }, { rank: 'T', suit: 'clubs' },
+    ])
+    actual.streetAnalysis!.preflopRaiseCount = 1
+    expect(bonus(100, 'call')).toBe(4)
+    expect(bonus(100, 'raise')).toBe(0)
+    actual.streetAnalysis!.opponentLines.set('villain', { ...callerLine, preflopRole: 'caller' })
+    expect(bonus(100, 'call')).toBe(0)
+    actual.streetAnalysis!.opponentLines.clear()
+    actual.metrics.effectiveStackBb = 40
+    expect(bonus(100, 'call')).toBe(0)
+    actual.metrics.effectiveStackBb = 39
+    expect(bonus(100, 'call')).toBe(0)
+    actual.metrics.effectiveStackBb = 41
+    expect(bonus(100, 'call')).toBeCloseTo(4 / 60)
+    actual.metrics.effectiveStackBb = 100
+    actual.position = 'early'
+    expect(bonus(100, 'call')).toBe(0)
+    actual.position = 'late'
+    actual.variantId = 'texas-holdem'
+    expect(bonus(100, 'call')).toBe(0)
   })
 
   it('models concrete low-skill errors without mutating engine-derived context', () => {

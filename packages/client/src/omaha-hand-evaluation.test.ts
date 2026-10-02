@@ -156,6 +156,41 @@ describe('omaha preflop structure', () => {
     expect(disconnectedSingleSuit.category).toBe('weak')
   })
 
+  it('keeps suit-isomorphic PLO hands equal while distinguishing nut-suited from lower-suited versions', () => {
+    const doubleSuited = evaluatePreflop([
+      { rank: 'A', suit: 'spades' }, { rank: 'K', suit: 'spades' },
+      { rank: 'Q', suit: 'hearts' }, { rank: 'J', suit: 'hearts' },
+    ])
+    const renamedSuits = evaluatePreflop([
+      { rank: 'A', suit: 'hearts' }, { rank: 'K', suit: 'hearts' },
+      { rank: 'Q', suit: 'spades' }, { rank: 'J', suit: 'spades' },
+    ])
+    const nutSuited = evaluatePreflop([
+      { rank: 'A', suit: 'spades' }, { rank: 'K', suit: 'spades' },
+      { rank: 'Q', suit: 'hearts' }, { rank: 'J', suit: 'diamonds' },
+    ])
+    const kingSuited = evaluatePreflop([
+      { rank: 'A', suit: 'spades' }, { rank: 'K', suit: 'hearts' },
+      { rank: 'Q', suit: 'hearts' }, { rank: 'J', suit: 'diamonds' },
+    ])
+
+    expect(renamedSuits).toEqual(doubleSuited)
+    expect(nutSuited.strength).toBeGreaterThan(kingSuited.strength)
+  })
+
+  it('values four-card rundown coordination above an otherwise rainbow high-card dangler', () => {
+    const rundown = evaluatePreflop([
+      { rank: 'K', suit: 'spades' }, { rank: 'Q', suit: 'hearts' },
+      { rank: 'J', suit: 'diamonds' }, { rank: 'T', suit: 'clubs' },
+    ])
+    const dangler = evaluatePreflop([
+      { rank: 'K', suit: 'spades' }, { rank: 'Q', suit: 'hearts' },
+      { rank: 'J', suit: 'diamonds' }, { rank: '2', suit: 'clubs' },
+    ])
+
+    expect(rundown.strength).toBeGreaterThan(dangler.strength)
+  })
+
   it('keeps absolute hand quality independent of position and prior action', () => {
     const cards: BotContext['ownCards'] = [
       { rank: 'Q', suit: 'clubs' },
@@ -614,6 +649,77 @@ describe('omaha straight-flush nut potential', () => {
     const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
     expect(assessment.rank).toBe(9)
     expect(assessment.nutPotential).toBe('near-nuts')
+  })
+})
+
+describe('omaha paired-board showdown hierarchy', () => {
+  it('does not rate board-only trips as a good made hand when a pocket pair makes a boat', () => {
+    const context = makeContext([
+      { rank: 'K', suit: 'hearts' }, { rank: '2', suit: 'spades' },
+      { rank: '2', suit: 'clubs' }, { rank: '2', suit: 'diamonds' },
+      { rank: 'A', suit: 'clubs' },
+    ])
+    const botHands = [
+      ['Qh', 'Ts', '8c', '7s'],
+      ['Ah', 'Kc', 'Th', '8h'],
+      ['Ad', '9h', '4h', '3s'],
+    ]
+    const suits = { h: 'hearts', d: 'diamonds', c: 'clubs', s: 'spades' } as const
+
+    for (const cards of botHands) {
+      context.ownCards = cards.map(card => ({
+        rank: card[0] as BotContext['ownCards'][number]['rank'],
+        suit: suits[card[1] as keyof typeof suits],
+      }))
+      const assessment = omahaVariantEvaluator.evaluate(context).handAssessment
+      expect(assessment.rank).toBe(4)
+      expect(assessment.category).toBe('marginal')
+      expect(assessment.nutPotential).toBe('weak')
+    }
+
+    context.ownCards = [
+      { rank: 'Q', suit: 'spades' }, { rank: 'Q', suit: 'diamonds' },
+      { rank: '6', suit: 'diamonds' }, { rank: '3', suit: 'clubs' },
+    ]
+    const pocketQueens = omahaVariantEvaluator.evaluate(context).handAssessment
+    expect(pocketQueens.rank).toBe(7)
+    expect(pocketQueens.category).toBe('strong')
+  })
+
+  it('does not call the top straight near-nuts when boats or flushes are possible', () => {
+    const paired = makeContext([
+      { rank: '2', suit: 'diamonds' }, { rank: 'J', suit: 'spades' },
+      { rank: '9', suit: 'clubs' }, { rank: 'Q', suit: 'clubs' },
+      { rank: '2', suit: 'spades' },
+    ])
+    paired.ownCards = [
+      { rank: 'K', suit: 'spades' }, { rank: 'T', suit: 'spades' },
+      { rank: '5', suit: 'clubs' }, { rank: '4', suit: 'diamonds' },
+    ]
+    const pairedStraight = omahaVariantEvaluator.evaluate(paired).handAssessment
+    expect(pairedStraight.rank).toBe(5)
+    expect(pairedStraight.nutPotential).toBe('medium')
+
+    const pairedAndThreeFlush = makeContext([
+      { rank: 'Q', suit: 'spades' }, { rank: 'Q', suit: 'diamonds' },
+      { rank: 'J', suit: 'hearts' }, { rank: 'K', suit: 'hearts' },
+      { rank: 'A', suit: 'hearts' },
+    ])
+    pairedAndThreeFlush.ownCards = [
+      { rank: 'K', suit: 'clubs' }, { rank: 'T', suit: 'diamonds' },
+      { rank: '8', suit: 'clubs' }, { rank: '3', suit: 'diamonds' },
+    ]
+    const threatenedStraight = omahaVariantEvaluator.evaluate(pairedAndThreeFlush).handAssessment
+    expect(threatenedStraight.rank).toBe(5)
+    expect(threatenedStraight.nutPotential).toBe('weak')
+
+    const clean = makeContext([
+      { rank: '9', suit: 'spades' }, { rank: 'J', suit: 'diamonds' },
+      { rank: 'Q', suit: 'clubs' }, { rank: '2', suit: 'hearts' },
+      { rank: '4', suit: 'clubs' },
+    ])
+    clean.ownCards = paired.ownCards
+    expect(omahaVariantEvaluator.evaluate(clean).handAssessment.nutPotential).toBe('near-nuts')
   })
 })
 

@@ -22,6 +22,8 @@ export type PerceptionField =
   | 'opponent-position-range'
   | 'opponent-range-board'
   | 'opponent-card-removal'
+  | 'plo-preflop-coordination'
+  | 'plo-preflop-nut-suit'
 
 export interface SkillPerceptionError {
   field: PerceptionField
@@ -51,10 +53,28 @@ export function applySkillPerception(
   const hand = {
     ...context.handAssessment,
     drawTypes: [...context.handAssessment.drawTypes],
+    ploPreflopProfile: context.handAssessment.ploPreflopProfile
+      ? { ...context.handAssessment.ploPreflopProfile,
+        usableSuitHighRanks: [...context.handAssessment.ploPreflopProfile.usableSuitHighRanks] }
+      : undefined,
   }
   const metrics = { ...context.metrics }
   const plo = context.variantId === 'omaha-high'
   const nlhe = context.variantId === 'texas-holdem'
+
+  if (plo && context.gameView.phase === 'preflop' && hand.ploPreflopProfile) {
+    const profile = hand.ploPreflopProfile
+    profile.coordinatedRundown = blendedPerception(
+      errors, 'plo-preflop-coordination', 'PLO4 four-card coordination',
+      profile.coordinatedRundown, 0,
+      analysisSkillWeight(skill, 'ploPreflopStructure'),
+    )
+    profile.nutSuitCount = blendedPerception(
+      errors, 'plo-preflop-nut-suit', 'PLO4 ace-high usable suit',
+      profile.nutSuitCount, 0,
+      analysisSkillWeight(skill, 'nutPotential'),
+    )
+  }
 
   if (nlhe && hand.rank === 3 && boardContainsPair(context.gameView.board)) {
     const weight = analysisSkillWeight(skill, 'pairedBoardHierarchy')

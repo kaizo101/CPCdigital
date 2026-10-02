@@ -4,6 +4,7 @@ import type { VariantEvaluator, HandStrengthCategory, NutPotential, VariantHandA
 import { getPloScores, type PloStreet } from './bot-category-scores'
 import { createDeck, evaluateOmahaHand } from '@cpc/poker-engine'
 import { resolveTableFormat } from './bot-table-format'
+import { analyzePloPreflopFeatures } from './plo-preflop-features'
 
 export const omahaVariantEvaluator: VariantEvaluator = {
   variantId: 'omaha-high',
@@ -124,6 +125,7 @@ function preflopAssess(ownCards: Card[], tableSize: number = 9, archetypeId?: st
 
   return {
     category,
+    ploPreflopProfile: analyzePloPreflopFeatures(ownCards),
     rank: 0,
     made: false,
     relativeStrength: strength,
@@ -151,7 +153,12 @@ function categorizeOmaha(rank: number, drawQuality: number, cleanOuts: number, c
   if (rank >= 7) return 'strong'
   if (rank >= 6) return strongDraw ? 'strong' : 'good'
   if (rank >= 5) return strongDraw ? 'good' : 'medium'
-  if (rank >= 4) return 'good'
+  // With three of a rank on the board, a bare trips hand uses two private
+  // kickers. Any private pair can already make a full house under Omaha's
+  // exactly-two-hole-card rule; this is not the same as private trips.
+  if (rank >= 4) return communityCards.some(card =>
+    communityCards.filter(other => other.rank === card.rank).length >= 3
+  ) ? 'marginal' : 'good'
   if (rank >= 3) {
     if (boardPairRank > 0) return strongDraw ? 'medium' : (drawQuality >= 3 ? 'marginal' : 'weak')
     return strongDraw ? 'good' : (drawQuality >= 3 ? 'medium' : 'marginal')
@@ -311,10 +318,21 @@ function assessOmahaNutPotential(
     const nutTop = findStraightTop(boardRanks, 3)
     const myTop = findStraightTop(handCards.map(c => c.rank), 5)
     const gap = nutTop - myTop
-    if (gap <= 0) return 'near-nuts'
-    if (gap === 1) return 'second-nuts'
-    if (gap === 2) return 'medium'
-    return 'weak'
+    const straightPotential: NutPotential = gap <= 0 ? 'near-nuts'
+      : gap === 1 ? 'second-nuts'
+        : gap === 2 ? 'medium' : 'weak'
+    const pairedBoard = boardRanks.length < communityCards.length
+    const flushPossible = ['hearts', 'diamonds', 'clubs', 'spades'].some(suit =>
+      communityCards.filter(card => card.suit === suit).length >= 3
+    )
+    // The top *straight* is not near the overall nuts if an opponent can
+    // legally make a boat or flush from the public board.
+    if (pairedBoard && flushPossible) return 'weak'
+    if (pairedBoard || flushPossible) {
+      return straightPotential === 'near-nuts' || straightPotential === 'second-nuts'
+        ? 'medium' : 'weak'
+    }
+    return straightPotential
   }
 
   if (rank === 4) {

@@ -231,6 +231,7 @@ export interface ScoringParams {
     pairedBoardHierarchy: number
     boardDynamics: number
     positionAwareRanges: number
+    ploPreflopStructure: number
     rangeBoardInteraction: number
     riverDiscipline: number
     nutPotential: number
@@ -808,6 +809,7 @@ export const DEFAULT_PARAMS: BotParams = {
       pairedBoardHierarchy: 30,
       boardDynamics: 30,
       positionAwareRanges: 40,
+      ploPreflopStructure: 40,
       rangeBoardInteraction: 50,
       riverDiscipline: 40,
       nutPotential: 50,

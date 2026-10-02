@@ -94,9 +94,12 @@ export function getPloSprAdjustments(
   const premiumDraw = hand.drawTypes.includes('nut-flush-draw')
     || premiumWrap
     || (hand.drawTypes.includes('combo-draw') && hand.cleanOuts >= 8)
-  const highEquityMadeHand = hand.made
-    && isAtLeast(hand.category, 'good')
-    && hand.nutPotential !== 'weak'
+  const highEquityMadeHand = hand.made && (
+    (isAtLeast(hand.category, 'strong') && hand.nutPotential !== 'weak')
+    || (isAtLeast(hand.category, 'good')
+      && hand.nutPotential !== 'medium'
+      && hand.nutPotential !== 'weak')
+  )
   const commitmentHand = highEquityMadeHand || premiumDraw
   const vulnerableMadeHand = hand.made
     && hand.rank >= 3

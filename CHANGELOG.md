@@ -8,6 +8,11 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Added
 
+- **PLO4-Preflop-Pilot:** Getrenntes Strukturprofil für Paarhöhe,
+  Vier-Karten-Koordination und nutzbare Suit-Höhe; Koordination und A-hoher
+  Suit wirken nur skillabhängig, tief und in später Position mit kleinen
+  lokalen Scorefaktoren. Die Pilotwirkung ist noch nicht manuell geprüft;
+  Details und Rohzähler stehen im PLO-Preflop-Audit.
 - **Vollständiger Entscheidungskontext**: Bots bewahren öffentliche Position,
   Preflop-Rolle und die geordnete Aggressionsstufe jeder Street. C-Bet-Logik
   greift nur beim ersten passenden Flop-Angriff; Opening-Bets werden nicht mehr
@@ -40,6 +45,23 @@ Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1
 
 ### Changed
 
+- **PLO-Postflop auf gepaarten Boards:** Bloßer Board-Drilling wird nicht
+  länger wie eine gute eigene Made Hand behandelt; Straights berücksichtigen
+  mögliche Full Houses und Flushes beim Nut-Potenzial. Der SPR-Commit-Bonus
+  setzt für `good`-Hände jetzt tatsächlich starkes Nut-Potenzial voraus,
+  ohne Low-Skill-Fehleinschätzungen künstlich zu entfernen. Der
+  [Session-Nachtrag](docs/reviews/plo-postflop-session-2026-10-01.md)
+  dokumentiert die Hände #10/#24/#26, Regressionstests und die bewusst
+  geprüfte 0.8.2-Entwicklungsbaseline; Zielkorridore bleiben unverändert.
+- **PLO-Sessionfolgefix:** Gute Made Hands werden beim Betten als Value statt
+  Bluff eingeordnet. Drawlose schwache Hände erhalten gegen teure C-Bets auf
+  gepaartem oder nassem Multiway-Flop weniger pauschale Defense-Boni; ein
+  zweiter Sessionexport deckte dabei eine zuvor zu hohe Call/Pot-Schwelle auf.
+  Bei gekappter
+  Betsize bleibt für eine erkannte River-Straight auf sicherem Board eine
+  kleinere Value-Bet als Alternative zum Check/All-in erhalten. Der
+  [Session-Nachtrag](docs/reviews/plo-postflop-session-2026-10-01.md)
+  hält auch den noch offenen 300-Hand-Kalibrierungsdrift fest.
 - **Vite-Konfiguration**: Der Import der Paketversion verwendet ein
   JSON-Importattribut und bleibt damit auch mit der künftig nativen
   Konfigurationsladung kompatibel. Die separate Chunkgrößen-Warnung bleibt

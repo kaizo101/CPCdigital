@@ -121,6 +121,16 @@ describe('getPloSprAdjustments', () => {
     }
   })
 
+  it('does not promote a merely medium-nut good hand into strong commitment equity', () => {
+    const mistakenTrips = context({ category: 'good', rank: 4, nutPotential: 'medium' })
+    const trueTopSet = context({ category: 'good', rank: 4, nutPotential: 'strong' })
+
+    expect(value('fold', mistakenTrips)).toBe(6)
+    expect(value('all-in', mistakenTrips)).toBe(-8)
+    expect(value('fold', trueTopSet)).toBe(-12)
+    expect(value('all-in', trueTopSet)).toBe(12)
+  })
+
   it('does not treat raw bottom-wrap outs as premium low-SPR equity', () => {
     const nutWrap = context({
       category: 'medium',

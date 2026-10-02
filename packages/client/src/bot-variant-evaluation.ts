@@ -1,4 +1,5 @@
 import type { BotContext } from './bot-context'
+import type { PloPreflopProfile } from './plo-preflop-features'
 
 export type HandStrengthCategory = 'premium' | 'strong' | 'good' | 'medium' | 'marginal' | 'weak' | 'air'
 
@@ -45,6 +46,8 @@ export interface VariantHandAssessment {
   strength: number  // 0-100 numeric hand strength (replaces category for base scoring)
   /** Exact objective made-hand details; optional for variants not yet migrated. */
   madeHandProfile?: MadeHandProfile
+  /** PLO4-only preflop structure; absent in NLHE and on later streets. */
+  ploPreflopProfile?: PloPreflopProfile
 }
 
 export interface VariantEvaluation {
