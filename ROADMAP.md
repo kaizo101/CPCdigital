@@ -44,9 +44,10 @@ metrics, the following four checkpoints must be completed for each release:
    systematic outliers require a reasoned triage and an explicit approval
    decision. A verifiable release report confirms corridor outliers and metrics
    with fewer than 50 occurrences on an independent seed
-3. an interactive trial session of at least 100–150 hands in the web version to
-   check recurring lines, stack risk and the subjective recognisability of the
-   archetypes
+3. a focused interactive trial on the current release candidate to check
+   recurring lines, stack risk and the subjective recognisability of the
+   archetypes. Document its scope and findings; expand the sample when
+   anomalies warrant it rather than imposing a fixed hand count
 4. triage of conspicuous hands against decision scores or a session debug
    export; structural errors must not be masked by widening target corridors
 
@@ -124,9 +125,9 @@ the server is excluded from this.
 - [ ] Street-to-street hand lines: remember the actual chosen intention for the
   current hand (value, protection, semi-bluff, bluff, pot control) and at
   turn/river, based on board, public opponent reaction and cost, either
-  continue, replan or fold with reason. Evaluate NLHE/PLO separately; do not
-  barrel automatically just because chips were already invested. Add further
-  multi-street tests and debug reasons for plan changes; in particular
+  continue, replan or abandon the line with a stated reason. Evaluate NLHE/PLO
+  separately; do not barrel automatically just because chips were already
+  invested. Add further multi-street tests and debug reasons for plan changes;
   value/protection/pot control lines and river continuation are still open.
 - [ ] Clearly separate strategic adjustment from emotional overreaction; skill
   governs detection, quality, regulation and recovery without smoothing
@@ -146,16 +147,52 @@ The technical vision and order are detailed in
 
 #### Release gate for the 0.8.2 cut
 
-- [ ] Triage the four formal reports from the 300-hand foundation regression
+- [x] Inventory browser storage by function and make cross-visit bot/session/
+  replay history optional in the public demo: off by default, explicit opt-in,
+  deletion on opt-out. Keep native persistence unchanged. The
+  [browser storage inventory](docs/en/reviews/browser-storage-audit-2026-10-03.md)
+  records the technical assessment under Section 25 TDDDG without claiming a
+  legal guarantee.
+- [ ] Before public deployment, check the notice's factual details against the
+  deployed GitHub Pages demo and project mailbox, and spot-check the opt-in,
+  opt-out and replay-window paths in the published build.
+- [x] Triage the four formal reports from the 300-hand foundation regression
   with raw denominators and targeted counter-samples; only update the snapshot
-  after a conscious review decision, not silently to fit.
-- [ ] Triage PLO calling station 6-max separately: in the independent 3,000-hand
-  run, fold-to-cbet was 810/1,909 (42.4 %) and turn c-bet was 47/270 (17.4 %).
-  The tight fix for drawless multiway calls explains only 21 additional folds
-  (+1.1 percentage points) and no change to turn c-bet. Before release, check
-  the affected hand lines and their gameplay effect; do not globally
-  re-adjust and do not block solely because of non-binding target corridors
-  ([Diagnosis and counter-run](docs/en/reviews/plo-postflop-session-2026-10-01.md)).
+  after a conscious review decision, not silently to fit
+  ([preflight triage](calibration/v0.8.2-release-preflight-2026-10-02.md)).
+- [x] Reproduce and correct the first-hand NLHE 100 BB QJo call against a
+  deep shove; test first-encounter overbets separately. Preserve value hands
+  and leave PLO's postflop overbet rule unchanged after a same-seed counter-run
+  showed harmful Calling Station drift
+  ([release preflight addendum](calibration/v0.8.2-release-preflight-2026-10-02.md)).
+- [x] Triage the two large 10k shifts with causal and hand-level evidence.
+  The narrow PLO TAG heads-up limp-reraise correction moved 3-bets to
+  980/5,453 = 17.97% at 10k without adjacent metric misses. NLHE LAG
+  full-ring C-bet folds remain 2,559/4,443 = 57.60% (independent seed:
+  2,518/4,424 = 56.92%); the reviewed folds are overwhelmingly air/weak and
+  price-sensitive, while a blanket raise restoration harms adjacent turn
+  opportunities. Treat the latter as a documented gameplay watch item, not
+  a rule fix or an automatic release block; do not move its guide corridor
+  or development snapshot to fit the run
+  ([preflight and plausibility review](calibration/v0.8.2-release-preflight-2026-10-02.md)).
+- [x] Triage PLO calling station 6-max separately. The independent 3k run had
+  810/1,909 = 42.4% fold-to-C-bet and 47/270 = 17.4% turn C-bet; the 10k
+  primary/independent runs reproduced smaller but persistent deviations.
+  Category and selected-hand review found deliberate weak-hand passivity plus
+  some questionable missed value, but no new rule or pot error. Do not force
+  these non-binding corridors with a global bonus or transfer the NLHE overbet
+  rule to PLO. Keep strong-draw/near-nut value initiative and short-stack
+  eligible-pot pricing as focused future gameplay observations
+  ([diagnosis](docs/en/reviews/plo-postflop-session-2026-10-01.md),
+  [preflight decision](calibration/v0.8.2-release-preflight-2026-10-02.md)).
+- [x] Check PLO first-hand deep calls and short-stack eligible-pot prices
+  separately from the accepted Calling Station aggregate deviations. Engine
+  tests now prove the opening pot-limit cap and the prior investment needed
+  before a deep preflop call; both variants use the caller's eligible pot for
+  capped-call odds. Client tests retain the payable price, separate forced
+  all-in risk from commitment and keep a very cheap PLO all-in call unpenalized.
+  No NLHE overbet rule was transferred
+  ([preflight check](calibration/v0.8.2-release-preflight-2026-10-02.md)).
 - [ ] Final NLHE/PLO validation for full ring, 6-max and heads-up with
   structural invariants and documented raw counts; short web, Electron and
   Android smokes on the release candidate.
@@ -192,6 +229,9 @@ before the major UI release.
   limit to correctly distinguish large opens from small 3-bets.
 - [ ] Clean up build paths and developer tools: separate the dormant server
   package from v1 and introduce documented format and lint configuration.
+- [x] Make the full 24-combination calibration run observable: show per-cell
+  progress and independent-seed confirmation status without changing seeds,
+  metrics or report contents (completed early during 0.8.2 release preflight).
 - [ ] After module separation, document the bot data flow including information
   boundaries and the engine’s amount/state conventions for contributors.
 
@@ -476,6 +516,8 @@ performance and usability before packaging.
 
 **Goal:** Build the candidate for v1.0 on the actually supported desktop
 platforms and run a lean, hobby-project-appropriate final check.
+An internal Linux AppImage build probe exists from 0.8.2 development, but it
+does not complete any of the public distribution checks below.
 
 - [ ] Build Windows package and Linux AppImage from the versioned source
 - [ ] Install/start both packages in a clean environment and test setup, NLHE,

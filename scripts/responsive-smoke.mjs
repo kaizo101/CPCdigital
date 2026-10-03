@@ -16,7 +16,7 @@ const VIEWPORTS = [
 const REPLAY_VIEWPORT = { name: 'replay-phone-landscape', width: 844, height: 390 }
 
 function createReplayFixture(seatCount, holeCardCount) {
-  const ranks = ['A', 'K', 'Q', 'J']
+  const ranks = ['T', 'K', 'Q', 'J']
   const suits = ['spades', 'hearts', 'diamonds', 'clubs']
   const players = Array.from({ length: seatCount }, (_, seat) => ({
     id: seat === 0 ? 'hero' : `bot-${seat}`,
@@ -265,6 +265,9 @@ function validateLandscape(viewport, result) {
 
   assert(result.action.left >= 0 && result.action.right <= viewport.width, `${label}: action panel is clipped horizontally`)
   assert(result.action.top >= 0 && result.action.bottom <= viewport.height, `${label}: action panel is clipped vertically`)
+  assert(result.legalButton, `${label}: legal notices are not accessible at the table`)
+  assert(!result.legalButtonInStatsActions, `${label}: legal notice button collides with the statistics action group`)
+  assert(result.legalButton.left >= 0 && result.legalButton.right <= viewport.width, `${label}: legal notice button is clipped`)
 }
 
 function validatePortrait(viewport, result) {
@@ -273,6 +276,8 @@ function validatePortrait(viewport, result) {
   assert(!result.gameVisible, `${label}: table UI must be hidden behind portrait guard`)
   assert(result.guardText.includes('Bitte ins Querformat drehen'), `${label}: guard explanation is missing`)
   assert(result.guardText.includes('Zurück zum Setup'), `${label}: setup escape is missing`)
+  assert(result.legalButton, `${label}: legal notices are not accessible without leaving the session`)
+  assert(result.legalButton.left >= 0 && result.legalButton.right <= viewport.width, `${label}: legal notice button is clipped`)
   assert(result.body.width <= viewport.width, `${label}: horizontal page overflow (${result.body.width}px)`)
   assert(result.body.height <= viewport.height, `${label}: vertical page overflow (${result.body.height}px)`)
 }
@@ -286,6 +291,7 @@ function validateReplay(viewport, result, seatCount) {
   assert(result.table.width >= 500, `${label}: replay table is still squeezed (${result.table.width}px)`)
   assert(result.seats.length === seatCount, `${label}: expected ${seatCount} visible seats, got ${result.seats.length}`)
   assert(result.cards.length >= seatCount * 2, `${label}: expected visible hole cards`)
+  assert(result.tenCorners >= 2, `${label}: ten card must render as 10 in both corners`)
   assert(result.body.width <= viewport.width, `${label}: horizontal page overflow (${result.body.width}px)`)
   assert(result.body.height <= viewport.height, `${label}: vertical page overflow (${result.body.height}px)`)
   assert(result.header.left >= 0 && result.header.right <= viewport.width, `${label}: header is clipped horizontally`)
@@ -342,6 +348,9 @@ async function measureReplay(session, viewport, screenshotDir, seatCount) {
       table: rect(document.querySelector('.replay-table-shell')),
       seats: [...document.querySelectorAll('.player-seat')].filter(visible).map(rect),
       cards: [...document.querySelectorAll('.playing-card, .playing-card-back')].filter(visible).map(rect),
+      tenCorners: [...document.querySelectorAll('.playing-card-rank')]
+        .filter(visible)
+        .filter(rank => rank.textContent.startsWith('10')).length,
     }
   })()`)
 
@@ -404,6 +413,8 @@ async function measureViewport(session, viewport, screenshotDir) {
     const buttonLabels = [...document.querySelectorAll('.bottom-dock button')]
       .filter(visible)
       .map(button => button.textContent.trim())
+    const legalButton = [...document.querySelectorAll('button[aria-label="Rechtliches: Impressum und Datenschutz"]')]
+      .find(visible)
 
     return {
       body: {
@@ -415,6 +426,8 @@ async function measureViewport(session, viewport, screenshotDir) {
       gameVisible: visible(document.querySelector('.landscape-game')),
       table: rect(document.querySelector('.table-shell')),
       action: rect(action),
+      legalButton: rect(legalButton),
+      legalButtonInStatsActions: !!legalButton?.closest('.compact-toolbar-actions, .game-toolbar-actions'),
       seats: seats.map(rect),
       cards: cards.map(rect),
       seatActionOverlaps,
@@ -510,11 +523,63 @@ async function main() {
       if (!setupReady) await new Promise(resolve => setTimeout(resolve, 100))
     }
     assert(setupReady, 'Timed out waiting for the setup screen')
+    const persistenceControl = `(() => {
+      const label = [...document.querySelectorAll('label')]
+        .find(element => element.textContent.includes('Bots und Hände für spätere Besuche speichern'))
+      return label?.querySelector('input[type="checkbox"]') ?? null
+    })()`
+    const initiallyOff = await session.evaluate(`!!${persistenceControl} && !${persistenceControl}.checked`)
+    assert(initiallyOff, 'Browser persistence must start unchecked for a new visitor')
+
     await session.evaluate(`(() => {
       const startButton = [...document.querySelectorAll('button')]
         .find(button => button.textContent.includes('Spiel starten'))
       startButton.click()
     })()`)
+    const noAutomaticHistory = await session.evaluate(`[
+      'cpcdigital:browser-persistence-choice',
+      'cpcdigital:bot-roster',
+      'cpcdigital:session-log',
+      'cpcdigital-hand-history',
+    ].every(key => localStorage.getItem(key) === null)`)
+    assert(noAutomaticHistory, 'Starting a browser game without opt-in wrote persistent history')
+
+    await session.evaluate('location.reload()')
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (await session.evaluate(`!!${persistenceControl}`)) break
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    await session.evaluate(`${persistenceControl}.click()`)
+    assert(
+      await session.evaluate(`localStorage.getItem('cpcdigital:browser-persistence-choice') === '1'`),
+      'Browser opt-in was not remembered',
+    )
+    await session.evaluate(`[...document.querySelectorAll('button')]
+      .find(button => button.textContent.includes('Spiel starten')).click()`)
+    assert(
+      await session.evaluate(`!!localStorage.getItem('cpcdigital:bot-roster') && !!localStorage.getItem('cpcdigital:session-log')`),
+      'Opted-in browser game did not persist its roster and session list',
+    )
+
+    await session.evaluate('location.reload()')
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (await session.evaluate(`!!${persistenceControl}`)) break
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    assert(await session.evaluate(`${persistenceControl}.checked`), 'Prior browser opt-in was not restored')
+    await session.evaluate(`${persistenceControl}.click()`)
+    assert(
+      await session.evaluate(`[
+        'cpcdigital:browser-persistence-choice',
+        'cpcdigital:bot-roster',
+        'cpcdigital:session-log',
+        'cpcdigital-hand-history',
+      ].every(key => localStorage.getItem(key) === null)`),
+      'Browser opt-out did not delete persisted history',
+    )
+    console.log('✓ browser history opt-in, restoration and opt-out')
+    await session.evaluate(`[...document.querySelectorAll('button')]
+      .find(button => button.textContent.includes('Spiel starten')).click()`)
 
     let heroTurn = false
     for (let attempt = 0; attempt < 300 && !heroTurn; attempt += 1) {
@@ -524,6 +589,25 @@ async function main() {
       if (!heroTurn) await new Promise(resolve => setTimeout(resolve, 100))
     }
     assert(heroTurn, 'Timed out waiting for the Hero action panel')
+
+    await session.evaluate(`[...document.querySelectorAll('button[aria-label="Rechtliches: Impressum und Datenschutz"]')]
+      .find(button => button.getBoundingClientRect().width > 0)?.click()`)
+    let legalDialogReady = false
+    for (let attempt = 0; attempt < 50 && !legalDialogReady; attempt += 1) {
+      legalDialogReady = await session.evaluate(
+        `document.querySelector('[role="dialog"][aria-label="Rechtliches"] iframe')?.getAttribute('src') === './impressum.html'`,
+      )
+      if (!legalDialogReady) await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    assert(legalDialogReady, 'Legal notice dialog did not open from the table')
+    await session.evaluate(`[...document.querySelectorAll('[role="dialog"][aria-label="Rechtliches"] button')]
+      .find(button => button.textContent.trim() === 'Datenschutz')?.click()`)
+    const privacySelected = await session.evaluate(
+      `document.querySelector('[role="dialog"][aria-label="Rechtliches"] iframe')?.getAttribute('src') === './datenschutz.html'`,
+    )
+    assert(privacySelected, 'Could not switch the legal notice dialog to privacy')
+    await session.evaluate(`[...document.querySelectorAll('[role="dialog"][aria-label="Rechtliches"] button')]
+      .find(button => button.textContent.trim() === 'Schließen')?.click()`)
 
     const screenshotDir = process.env.CPC_RESPONSIVE_SCREENSHOT_DIR
     for (const viewport of VIEWPORTS) {

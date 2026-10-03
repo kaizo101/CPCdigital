@@ -3,7 +3,7 @@
 > Englische Fassung: [Historical Architecture Target State](../../en/plans/architecture-target-state.md)
 
 Dieser ältere Strukturentwurf ist keine Beschreibung des aktuellen Dateibaums.
-Für den Ist-Zustand gilt die [Entwicklerdokumentation](../../../DEV.md); für die
+Für den Ist-Zustand gilt die [aktuelle Architekturübersicht](../../../ARCHITECTURE.md); für die
 Priorisierung die [Roadmap](../../../ROADMAP.md).
 
 ---

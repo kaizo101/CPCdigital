@@ -16,6 +16,7 @@ import type { HandReplay } from '../session/hand-replay'
 import { APP_VERSION } from '../app-version'
 import { useResponsiveLayout } from '../utils/responsive-layout'
 import { getAppRuntime, isAndroidRuntime } from '../native-runtime'
+import type { LegalNoticeKind } from '../components/LegalNotice'
 
 const actionButtonStyle = (bg: string, disabled = false): React.CSSProperties => ({
   padding: '10px 18px',
@@ -91,6 +92,7 @@ export function TableScreen({
   debugMode,
   setDebugMode,
   onExportSessionLog,
+  onOpenLegalNotice,
 }: {
   gameState: Readonly<PublicGameState> | null
   myCards: Card[] | null
@@ -117,6 +119,7 @@ export function TableScreen({
   debugMode: boolean
   setDebugMode: (enabled: boolean) => void
   onExportSessionLog: () => void
+  onOpenLegalNotice: (kind: LegalNoticeKind) => void
 }) {
   const showDebug = debugMode
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
@@ -311,6 +314,12 @@ export function TableScreen({
           text-transform: uppercase;
           white-space: nowrap;
         }
+        .compact-toolbar-left {
+          grid-column: 1;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
         .compact-toolbar-actions {
           grid-column: 3;
           display: flex;
@@ -322,7 +331,7 @@ export function TableScreen({
         }
         .compact-toolbar .session-stats[data-compact="true"] .session-stats-summary {
           position: absolute !important;
-          inset: 2px 104px 2px 62px !important;
+          inset: 2px 104px 2px 102px !important;
           z-index: 65 !important;
           width: auto !important;
           max-width: none !important;
@@ -718,18 +727,30 @@ export function TableScreen({
         }
       `}</style>
 
-      <PortraitGuard onBack={onBack} />
+      <PortraitGuard onBack={onBack} onOpenLegalNotice={() => onOpenLegalNotice('imprint')} />
 
       <div className="landscape-game" data-testid="landscape-game">
       <div className="compact-toolbar" data-testid="compact-toolbar">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Zurück zum Setup"
-          style={actionButtonStyle('#30343c', false)}
-        >
-          ‹ Setup
-        </button>
+        <div className="compact-toolbar-left">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Zurück zum Setup"
+            style={actionButtonStyle('#30343c', false)}
+          >
+            ‹ Setup
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenLegalNotice('imprint')}
+            aria-label="Rechtliches: Impressum und Datenschutz"
+            aria-haspopup="dialog"
+            title="Impressum und Datenschutz"
+            style={actionButtonStyle('#30343c', false)}
+          >
+            ⓘ
+          </button>
+        </div>
         <div className="compact-toolbar-meta">
           {gameState?.variantId === 'omaha-high' ? 'PLO' : 'NLHE'}
           {' · '}
@@ -795,7 +816,23 @@ export function TableScreen({
         padding: '10px 12px',
       }}>
         <div>
-          <div className="game-toolbar-title" style={{ fontSize: 24, fontWeight: 700, marginBottom: 2, letterSpacing: 0.3, color: '#f3f4f6' }}>CPCdigital</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+            <div className="game-toolbar-title" style={{ fontSize: 24, fontWeight: 700, letterSpacing: 0.3, color: '#f3f4f6' }}>CPCdigital</div>
+            <button
+              type="button"
+              onClick={() => onOpenLegalNotice('imprint')}
+              aria-label="Rechtliches: Impressum und Datenschutz"
+              aria-haspopup="dialog"
+              title="Impressum und Datenschutz"
+              style={{
+                padding: '4px 8px', borderRadius: 6, cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.18)',
+                background: '#30343c', color: '#a5dff5', font: 'inherit',
+              }}
+            >
+              ⓘ
+            </button>
+          </div>
           <div className="game-toolbar-meta" style={{ color: '#8f98a4', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
             v{APP_VERSION} · {gameState?.variantId === 'omaha-high' ? 'PLO' : 'NLHE'} · Blinds {options.smallBlind}/{options.bigBlind} · {players.length === 2 ? 'Heads-up' : players.length <= 6 ? '6-max' : 'Full Ring'}
           </div>
@@ -1008,23 +1045,29 @@ function openReplayWindow(replays: readonly HandReplay[], startIndex: number, cu
   // Keep archive insertion order: hand numbers restart with every session.
   const allReplays = [...replays]
 
-  const sessionKey = 'replay-session'
-  localStorage.setItem(sessionKey, JSON.stringify(allReplays))
-  localStorage.setItem('replay-start-index', String(startIndex))
-  localStorage.setItem('replay-debug', debugMode ? '1' : '0')
+  if (isAndroidRuntime()) {
+    openOverlay(allReplays, startIndex, currency, debugMode)
+    return
+  }
+
+  try {
+    localStorage.setItem('replay-session', JSON.stringify(allReplays))
+    localStorage.setItem('replay-start-index', String(startIndex))
+    localStorage.setItem('replay-debug', debugMode ? '1' : '0')
+  } catch {
+    clearReplayBridge()
+    openOverlay(allReplays, startIndex, currency, debugMode)
+    return
+  }
 
   // Try Electron IPC first
   const api = (window as any).electronAPI
   if (api?.openReplay) {
     const latest = allReplays[startIndex < allReplays.length ? startIndex : allReplays.length - 1]
     api.openReplay(latest.handNumber, latest).catch(() => {
+      clearReplayBridge()
       openOverlay(allReplays, startIndex, currency, debugMode)
     })
-    return
-  }
-
-  if (isAndroidRuntime()) {
-    openOverlay(allReplays, startIndex, currency, debugMode)
     return
   }
 
@@ -1033,8 +1076,17 @@ function openReplayWindow(replays: readonly HandReplay[], startIndex: number, cu
   const base = window.location.href.split('#')[0]
   const w = window.open(`${base}#replay/${latest.handNumber}`, `replay-${latest.handNumber}`, 'width=1100,height=800')
   if (!w) {
+    clearReplayBridge()
     openOverlay(allReplays, startIndex, currency, debugMode)
   }
+}
+
+function clearReplayBridge(): void {
+  try {
+    localStorage.removeItem('replay-session')
+    localStorage.removeItem('replay-start-index')
+    localStorage.removeItem('replay-debug')
+  } catch { /* Storage may be unavailable; the overlay needs no bridge data. */ }
 }
 
 function openOverlay(replays: readonly HandReplay[], startIndex: number, currency: DisplayCurrency, debugMode: boolean): void {

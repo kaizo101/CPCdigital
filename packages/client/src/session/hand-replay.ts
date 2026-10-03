@@ -79,8 +79,8 @@ export interface SessionHandHistoryOptions {
   exportedAt?: string
 }
 
-const HAND_REPLAY_ARCHIVE_KEY = 'cpcdigital-hand-history'
-const MAX_ARCHIVED_HANDS = 200
+export const HAND_REPLAY_ARCHIVE_KEY = 'cpcdigital-hand-history'
+export const MAX_ARCHIVED_HANDS = 200
 
 export function loadHandReplayArchive(): HandReplay[] {
   try {

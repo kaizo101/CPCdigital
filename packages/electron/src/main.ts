@@ -6,6 +6,12 @@ const DEV_URL = process.env.VITE_URL ?? 'http://localhost:5173'
 
 app.setName('CPCdigital')
 
+function clientIndexPath(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'client', 'index.html')
+    : path.join(__dirname, '..', '..', 'client', 'dist', 'index.html')
+}
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
@@ -36,8 +42,7 @@ function createWindow(): BrowserWindow {
     loadWithRetry(win, DEV_URL)
     win.webContents.openDevTools({ mode: 'detach' })
   } else {
-    const clientDist = path.join(__dirname, '..', '..', 'client', 'dist', 'index.html')
-    win.loadFile(clientDist)
+    win.loadFile(clientIndexPath())
   }
 
   return win
@@ -54,8 +59,6 @@ function loadWithRetry(win: BrowserWindow, url: string, attempts = 15): void {
 }
 
 app.whenReady().then(() => {
-  const clientDist = path.join(__dirname, '..', '..', 'client', 'dist', 'index.html')
-
   ipcMain.handle('open-replay', (_event, handNumber: number, _data: unknown) => {
     const win = new BrowserWindow({
       width: 1100, height: 800,
@@ -70,7 +73,7 @@ app.whenReady().then(() => {
     if (useDevServer) {
       win.loadURL(`${DEV_URL}#replay/${handNumber}`)
     } else {
-      win.loadFile(clientDist, { hash: `replay/${handNumber}` })
+      win.loadFile(clientIndexPath(), { hash: `replay/${handNumber}` })
     }
 
     return true

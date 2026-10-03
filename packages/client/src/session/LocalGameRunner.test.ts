@@ -162,3 +162,34 @@ describe('bot decision pipeline failure', () => {
     vi.useRealTimers()
   })
 })
+
+describe('session-only browser history', () => {
+  it('keeps completed hands for the current app instance without touching persistent storage', () => {
+    vi.useFakeTimers()
+    const getItem = vi.fn(() => null)
+    const setItem = vi.fn()
+    vi.stubGlobal('localStorage', { getItem, setItem })
+    const runner = new LocalGameRunner()
+    const options = { smallBlind: 0.01, bigBlind: 0.02, startingChips: 2, maxPlayers: 2, seed: 'dup-0' }
+
+    try {
+      runner.setupTable(options, 1, false, 'texas-holdem', false)
+      runner.startHand()
+      expect(runner.state.gameState?.currentPlayerId).toBe('hero')
+      runner.playerAction({ type: 'fold' })
+
+      expect(runner.state.handReplays).toHaveLength(1)
+      expect(runner.state.archivedHandReplays).toHaveLength(1)
+      expect(getItem).not.toHaveBeenCalled()
+      expect(setItem).not.toHaveBeenCalled()
+
+      runner.setupTable(options, 1, false, 'texas-holdem', false)
+      expect(runner.state.archivedHandReplays).toHaveLength(1)
+      expect(getItem).not.toHaveBeenCalled()
+      expect(setItem).not.toHaveBeenCalled()
+    } finally {
+      runner.cleanup()
+      vi.useRealTimers()
+    }
+  })
+})

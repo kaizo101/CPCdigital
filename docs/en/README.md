@@ -8,17 +8,18 @@ This page is the entry point to the in-depth project documentation. The
 [changelog](../../CHANGELOG.md) the changes actually implemented. A planned
 version number in an older document is not a release commitment.
 
-The root documents `README.md`, `DEV.md`, `ROADMAP.md`, `CHANGELOG.md`,
-`CONTRIBUTING.md` and `SECURITY.md` are English; their German originals are only
-preserved in the Git history.
+The root documents `README.md`, `ARCHITECTURE.md`, `DEV.md`, `ROADMAP.md`,
+`CHANGELOG.md`, `CONTRIBUTING.md` and `SECURITY.md` are English; their German
+originals are only preserved in the Git history.
 
 ## Use this now
 
 | Question | Authoritative source |
 |-------|--------------------|
 | How do I build, test or debug the app? | [Developer documentation](../../DEV.md) |
+| Where do game rules, session state and bot decisions live? | [Current architecture](../../ARCHITECTURE.md) |
 | What is planned or already released? | [Roadmap](../../ROADMAP.md) and [Changelog](../../CHANGELOG.md) |
-| How do I check bot statistics and regressions? | [Calibration](../../calibration/README.md) (German) |
+| How do I check bot statistics and regressions? | [Calibration](../../calibration/README.md); older reports remain in German |
 | How do I organise external tests? | [Testing strategy](../../testing/TESTING_STRATEGY.md) and [forms](../../testing/TESTER_FORMS.md) (German) |
 | How do I report a security issue? | [Security policy](../../SECURITY.md) |
 
@@ -47,10 +48,12 @@ preserved in the Git history.
   The [older module review](reviews/review-2026-08-07.md) is a historical
   review state, not a current overall assessment.
 - **Guides:** The [optional avatar workflow](guides/avatar-workflow.md)
-  describes the external creation of image material.
+  describes the external creation of image material; the
+  [internal desktop packaging probe](guides/desktop-packaging-smoke.md)
+  records the current Linux AppImage build and its verification limits.
 
 Release-related measurements and baselines stay in
-[`calibration/`](../../calibration/) (German), device findings in
+[`calibration/`](../../calibration/) (English index, older reports in German), device findings in
 [`testing/apk/`](../../testing/apk/) (German) and security checks in
 [`security/audits/`](../../security/audits/). These locations are part of the
 respective workflows and are not moved merely for a flatter directory

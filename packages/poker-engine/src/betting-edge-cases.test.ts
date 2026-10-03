@@ -230,38 +230,73 @@ describe('central betting edge cases', () => {
   })
 
   it('prices a short call from the pot the caller can actually win', () => {
-    const players = makePlayers([200, 40])
-    const game = new PokerGame(players, { ...config, seed: 'eligible-pot-overbet' })
-    const internal = game as any
+    for (const variant of [TEXAS_HOLDEM, OMAHA_HIGH]) {
+      const players = makePlayers([200, 40])
+      const game = new PokerGame(players, { ...config, variant, seed: `eligible-pot-overbet-${variant.id}` })
+      const internal = game as any
 
-    internal.state = {
-      ...internal.getPublicState(),
-      phase: 'river',
-      pot: 100,
-      currentPlayerId: 'p2',
-      players: [
-        { ...players[0], chips: 100, roundBet: 100, status: 'active' },
-        { ...players[1], chips: 40, roundBet: 0, status: 'active' },
-      ],
+      internal.state = {
+        ...internal.getPublicState(),
+        phase: 'river',
+        pot: 100,
+        currentPlayerId: 'p2',
+        players: [
+          { ...players[0], chips: 100, roundBet: 100, status: 'active' },
+          { ...players[1], chips: 40, roundBet: 0, status: 'active' },
+        ],
+      }
+      internal.currentBet = 100
+      internal.minRaise = 100
+      internal.roundBets = new Map([['p1', 100], ['p2', 0]])
+      internal.totalHandBets = new Map([['p1', 150], ['p2', 50]])
+      internal.bettingQueue = ['p2']
+      internal.syncCurrentPlayer()
+
+      const context = game.getPublicState().bettingContext
+      expect(context).toEqual(expect.objectContaining({
+        playerId: 'p2',
+        totalPot: 200,
+        eligiblePot: 140,
+        callAmount: 40,
+        toCall: 100,
+      }))
+      expect(context?.potOdds).toBeCloseTo(40 / 180)
+      expect(context?.toCallPotRatio).toBeCloseTo(40 / 140)
+      expect(context?.spr).toBeCloseTo(40 / 140)
     }
-    internal.currentBet = 100
-    internal.minRaise = 100
-    internal.roundBets = new Map([['p1', 100], ['p2', 0]])
-    internal.totalHandBets = new Map([['p1', 150], ['p2', 50]])
-    internal.bettingQueue = ['p2']
-    internal.syncCurrentPlayer()
+  })
+
+  it('does not expose a deep first-action shove at a 100 BB PLO table', () => {
+    const game = new PokerGame(makePlayers(Array(6).fill(2000)), {
+      ...config, variant: OMAHA_HIGH, seed: 'plo-first-action-pot-cap',
+    })
+    game.startHand()
 
     const context = game.getPublicState().bettingContext
-    expect(context).toEqual(expect.objectContaining({
-      playerId: 'p2',
-      totalPot: 200,
-      eligiblePot: 140,
-      callAmount: 40,
-      toCall: 100,
-    }))
-    expect(context?.potOdds).toBeCloseTo(40 / 180)
-    expect(context?.toCallPotRatio).toBeCloseTo(40 / 140)
-    expect(context?.spr).toBeCloseTo(40 / 140)
+    expect(context?.totalPot).toBe(30)
+    expect(context?.legalActions.raise).toEqual({ minAmount: 40, maxAmount: 70 })
+    expect(context?.legalActions.allInAmount).toBeNull()
+    expect(() => game.applyAction(context!.playerId, { type: 'all-in' })).toThrow()
+  })
+
+  it('requires substantial prior investment before a deep PLO preflop call', () => {
+    const game = new PokerGame(makePlayers([2000, 2000]), {
+      ...config, variant: OMAHA_HIGH, seed: 'plo-deep-preflop-price',
+    })
+    game.startHand()
+
+    for (const expectedMaxRaiseTo of [60, 180, 540, 1620]) {
+      const context = game.getPublicState().bettingContext!
+      expect(context.legalActions.raise?.maxAmount).toBe(expectedMaxRaiseTo)
+      game.applyAction(context.playerId, { type: 'raise', amount: expectedMaxRaiseTo })
+    }
+
+    const facingRaise = game.getPublicState().bettingContext!
+    expect(facingRaise.toCall).toBe(1080)
+    expect(facingRaise.callAmount).toBe(1080)
+    expect(facingRaise.playerStartingStack).toBe(2000)
+    expect(facingRaise.voluntaryHandContribution).toBe(530)
+    expect(facingRaise.potOdds).toBeCloseTo(1080 / (2160 + 1080))
   })
 
   it('uses heads-up blind and action order before and after the flop, then rotates the dealer', () => {

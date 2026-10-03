@@ -1,4 +1,7 @@
-export function PortraitGuard({ onBack }: { onBack: () => void }) {
+export function PortraitGuard({ onBack, onOpenLegalNotice }: {
+  onBack: () => void
+  onOpenLegalNotice: () => void
+}) {
   return (
     <div
       className="portrait-guard"
@@ -40,6 +43,25 @@ export function PortraitGuard({ onBack }: { onBack: () => void }) {
         >
           Zurück zum Setup
         </button>
+        <div style={{ marginTop: 12 }}>
+          <button
+            type="button"
+            onClick={onOpenLegalNotice}
+            aria-label="Rechtliches: Impressum und Datenschutz"
+            aria-haspopup="dialog"
+            style={{
+              border: 0,
+              padding: '4px 8px',
+              background: 'transparent',
+              color: '#a5dff5',
+              cursor: 'pointer',
+              font: 'inherit',
+              fontSize: 12,
+            }}
+          >
+            Impressum und Datenschutz
+          </button>
+        </div>
       </div>
     </div>
   )

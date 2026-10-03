@@ -2,14 +2,39 @@
 
 All significant published changes to CPCdigital are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/1.1.0/)
-, and the project uses semantic versioning. Planned features are listed
+The format is based on [Keep a Changelog](https://keepachangelog.com/1.1.0/),
+and the project uses semantic versioning. Planned features are listed
 exclusively in the [Roadmap](ROADMAP.md).
 
 ## [Unreleased]
 
 ### Added
 
+-  **Privacy notice draft:** A concise German notice for the public browser
+  demo covers GitHub Pages hosting, browser-local game/replay storage and
+  project-email contact. Both notices are linked directly in setup and share
+  a small legal-info dialog at the table, separate from the session statistics.
+  The revised notice lists the actual Local Storage categories and conditional
+  GDPR rights; a technical inventory records each storage trigger. In the plain
+  browser demo, cross-visit bot and hand history is now off by default and
+  requires an explicit opt-in. Opting out removes that history, including
+  legacy replay keys. Electron and Android retain their existing persistence.
+-  **Current architecture guide:** A root-level architecture document now
+  separates engine rules, offline session orchestration, bot information and
+  decision flow, platform shells and persistence. Developer instructions link
+  to it instead of maintaining a competing architecture summary.
+-  **Demo imprint:** A directly accessible German imprint page is linked from
+  setup and the game toolbar. The in-app view keeps the current session open;
+  generic liability and non-commercial-only copyright boilerplate was omitted
+  because it does not match the current DDG wording or the project's AGPL licence.
+-  **Internal Linux packaging probe:** A locally built, unsigned AppImage now
+  packages the Electron shell, client assets and licence notices without the
+  dormant server. The development build keeps the temporary CPCdigital name,
+  app ID and Electron icon; public release and Windows packaging remain open.
+-  **Observable release calibration:** The 24-combination release run now shows
+  per-cell hand progress, independent-seed confirmation status and periodic
+  heartbeat messages. Seeds, metrics and the validated report format are
+  unchanged; checkpoint/resume is not included.
 -  **First cross-street bot line:** A bet chosen on the flop (bluff or
   semi-bluff) remains active until the turn decision. The turn review can
   continue it based on public action, board, skill and variant, re-evaluate it
@@ -59,7 +84,25 @@ exclusively in the [Roadmap](ROADMAP.md).
 
 ### Changed
 
--  **PLO postflop on paired boards:** Board drumming alone is no longer treated
+-  **Calibration script execution:** The stake and 300-hand regression checks
+  invoke the simulation directly through Node's TypeScript import hook. The
+  npm commands use the same entry path, avoiding the `tsx` CLI's local IPC
+  socket while leaving seeds and calibration logic unchanged.
+-  **Ten-card display:** Face-up cards at the table and in the hand replayer
+  show `10` instead of the internal `T` rank. Poker rules, hand histories and
+  debug exports keep their existing rank notation; the compact landscape
+  replayer is covered by a visual smoke fixture.
+-  **PLO TAG heads-up limp-reraise discipline:** After a button limp and a
+  big-blind raise, weakly structured hands no longer receive the full generic
+  late-position raise bonus. Coordinated or nut-suited hands and good-or-better
+  value hands retain it. In this one pathway, opponent-range score modifiers
+  now interpolate continuously across diagnostic strength labels, avoiding a
+  sudden five-point raise swing near a score of 60. The deterministic 3,000-hand
+  heads-up probe moved 3-bets from 455/1,604 to 276/1,604; the 10,000-hand
+  check moved from 1,586/5,453 to 980/5,453. Big-blind defence and the other
+  PLO table formats were unchanged. See the
+  [release preflight](calibration/v0.8.2-release-preflight-2026-10-02.md).
+-  **PLO postflop on paired boards:** Board-only trips are no longer treated
   as a strong made hand; straights take into account possible full houses and
   flushes for nut potential. The SPR commitment bonus now requires strong nut
   potential for `good` hands without artificially removing low-skill
@@ -88,6 +131,10 @@ exclusively in the [Roadmap](ROADMAP.md).
   and historical review findings are clearly separated; outdated statements
   about session seeds and external hand history compatibility have been
   corrected.
+-  **Calibration documentation:** The active calibration guide and new 0.8.2
+  release-preflight analysis are in English. Historical German reports remain
+  available unchanged; manual trial scope is finding-driven rather than a
+  fixed hand quota.
 -  **Developer onboarding clarified:** The variant guide lists the actual
   engine, bot, runner and export entry points as well as current extension
   limits. `CONTRIBUTING.md` separates local Electron installation from the CI
@@ -118,7 +165,10 @@ exclusively in the [Roadmap](ROADMAP.md).
   intentionally gameplay-relevant engine and scoring corrections. The target
   corridors themselves remain unchanged. Following the PLO wrap-out correction,
   only the PLO section was re-aligned to the new behaviour using a documented
-  3k-hand A/B counter-check.
+  3k-hand A/B counter-check. Before the release cut, the snapshot was refreshed
+  again after review of six drift alerts, including the intended PLO TAG
+  heads-up limp-reraise change; the 24-cell regression then passed without
+  warnings or errors. This does not close the final 10k release gate.
 
 -  **Targeted all-in depth guard:** Non-premium open shoves are no longer
   selectable candidates from 25 BB; from 40 BB, the block also applies to
@@ -151,6 +201,14 @@ exclusively in the [Roadmap](ROADMAP.md).
 
 ### Fixed
 
+-  **Expensive-call defence:** An uncommitted NLHE bot no longer treats a
+  merely strong starting hand such as QJo as an automatic call against a deep
+  preflop shove. On later streets, non-nut one- and two-pair hands receive
+  graded caution when the *effective* call price exceeds a pot-sized bet;
+  sets and strong draws are not blanket-folded. Preflop medium-hand calls are
+  no longer mislabeled as bluff-catching. The postflop change is NLHE-only:
+  a same-seed PLO counter-run showed that transferring it to PLO would
+  materially worsen Calling Station C-Bet defence.
 -  **Preflop perception:** The placeholder vulnerability `0` and a non-existent
   blocker no longer create apparent perception errors. Protection against future
   board draws is only evaluated from the flop onwards; random draws are
@@ -201,10 +259,16 @@ exclusively in the [Roadmap](ROADMAP.md).
 
 ### Security
 
+-  **Release dependency audit:** Compatible lockfile updates resolve the
+  production audit findings in the dormant server dependency tree. The
+  production audit now reports zero vulnerabilities. A full development audit
+  still flags unpatched issues in the Electron packaging and Capacitor CLI
+  dependency trees; they are tracked as tooling risk, not hidden by the
+  production-only gate.
 -  **High-severity dependencies closed:** Electron was updated to `41.10.7`,
-  `@xmldom/xmldom` to `0.9.12` and `nanoid` to `3.3.19`. The workspace audit
-  now reports no critical or high-severity vulnerabilities; remaining findings
-  are moderate/low and require separate assessment.
+  `@xmldom/xmldom` to `0.9.12` and `nanoid` to `3.3.19`. The earlier
+  high-severity production findings were closed; the remaining development
+  toolchain advisories are assessed separately above.
 -  **Electron download dependency secured:** The transitive `undici` was updated
   to `7.30.0`. This also closes the TLS certificate verification alert rated
   high by GitHub for versions below `7.29.1`.

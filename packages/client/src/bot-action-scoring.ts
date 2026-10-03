@@ -11,7 +11,7 @@ import type {
   ScoreContribution,
 } from './bot-decision-types'
 import { isAtLeast } from './bot-variant-evaluation'
-import { estimateOpponentRanges, rangeStrengthModifier } from './bot-range-estimation'
+import { estimateOpponentRanges, rangeScoreModifier, rangeStrengthModifier } from './bot-range-estimation'
 import { getSizingTell } from './bot-reads'
 import { calculateChipUnit, roundToCents } from './utils/format'
 import { params } from './bot-params'
@@ -26,6 +26,7 @@ import {
   calculateInverseSeverity,
   calculateLinearSeverity,
 } from './bot-commitment'
+import { expensiveCallDefenseFactors } from './bot-expensive-call-defense'
 
 export function scoreActions(context: DecisionContext): ScoredAction[] {
   const actions: ScoredAction[] = []
@@ -54,6 +55,7 @@ function scoreFold(context: DecisionContext): ScoredAction {
       factor('hand-strength', `Strength: ${hand.strength}`, strengthScore('fold', hand.strength)),
     ]),
     ...bettingFactors('fold', context),
+    ...expensiveCallDefenseFactors('fold', context),
     ...(escalationOverridesGenericScoring ? [] : preflopStrategyFactors('fold', context)),
     ...preflopEscalationFactors('fold', context),
     ...stealDefenseFactors('fold', context),
@@ -141,7 +143,7 @@ function scoreCall(context: DecisionContext, includeStealDefense = true): Scored
   const intent: ActionIntent = hand.drawTypes.length > 0
     ? 'draw'
     : hand.category === 'medium'
-      ? 'bluff-catch'
+      ? (gameView.phase === 'preflop' ? 'pot-control' : 'bluff-catch')
       : isAtLeast(hand.category, 'strong')
         ? (isRiver && !outOfPosition) ? 'value' : 'trap'
         : 'pot-control'
@@ -154,6 +156,7 @@ function scoreCall(context: DecisionContext, includeStealDefense = true): Scored
       factor('hand-strength', `Call with ${hand.category}`, handValue + strengthScore('call', hand.strength)),
     ]),
     ...bettingFactors('call', context),
+    ...expensiveCallDefenseFactors('call', context),
     ...(escalationOverridesGenericScoring ? [] : preflopStrategyFactors('call', context)),
     ...preflopEscalationFactors('call', context),
     ...(includeStealDefense ? stealDefenseFactors('call', context) : []),
@@ -241,7 +244,12 @@ function scoreRaise(context: DecisionContext, amount = calculateRaiseTo(context)
   }
   if (hand.drawQuality > 50) contributions.push(factor('hand-strength', 'Strong draw equity', params.scoring.raiseBonus.drawQuality))
   if (hand.cleanOuts >= 8) contributions.push(factor('hand-strength', `${hand.cleanOuts} clean outs`, params.scoring.raiseBonus.cleanOuts))
-  if (position === 'late') contributions.push(factor('position', 'Late-position leverage', params.scoring.raiseBonus.latePosition))
+  if (position === 'late') contributions.push(factor(
+    'position', 'Late-position leverage',
+    ploTagHuLimpReraise(context)
+      ? params.scoring.raiseBonus.latePosition * ploTagHuLimpLeverageScale(context)
+      : params.scoring.raiseBonus.latePosition,
+  ))
   if (boardTexture === 'dry' && hand.category === 'air') {
     contributions.push(factor('board-texture', 'Dry board supports bluff', params.scoring.raiseBonus.dryBoardBluff))
   }
@@ -485,6 +493,26 @@ function preflopReraisePenaltyScale(context: DecisionContext): number {
   if (archetype === 'tag') return 0.55
   if (archetype === 'calling-station') return 0.5
   return 1
+}
+
+function ploTagHuLimpReraise(context: DecisionContext): boolean {
+  const handMemory = context.botState.memory.hand
+  return context.variantId === 'omaha-high'
+    && context.gameView.phase === 'preflop'
+    && resolveTableFormat(context.tableSize) === 'heads-up'
+    && scoringArchetypeId(context) === 'tag'
+    && context.position === 'late'
+    && context.streetAnalysis?.preflopRaiseCount === 1
+    && handMemory.lastAction === 'call'
+    && handMemory.lastStreet === 'preflop'
+}
+
+function ploTagHuLimpLeverageScale(context: DecisionContext): number {
+  const hand = context.handAssessment
+  if (isAtLeast(hand.category, 'good')) return 1
+  const profile = hand.ploPreflopProfile
+  return 0.2 + 0.8 * Math.min(1,
+    Math.max(profile?.coordinatedRundown ?? 0, profile?.nutSuitCount ?? 0))
 }
 
 function formatPreflopRaiseFactors(context: DecisionContext): ScoreContribution[] {
@@ -1584,7 +1612,9 @@ function rangeBasedFactors(
   const result: ScoreContribution[] = []
 
   for (const range of ranges) {
-    const mods = rangeStrengthModifier(range.strength)
+    const mods = ploTagHuLimpReraise(context) && range.strength !== 'unknown'
+      ? rangeScoreModifier(range.score)
+      : rangeStrengthModifier(range.strength)
     const lineValue = action === 'fold' ? mods.fold : action === 'call' ? mods.call : mods.raise
     if (lineValue !== 0) {
       result.push(factor('opponent-read', `${range.summary} ${range.playerId}`, lineValue))

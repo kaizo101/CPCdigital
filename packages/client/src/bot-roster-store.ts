@@ -9,8 +9,8 @@ import {
 import type { BotArchetypeId } from './bot-archetypes'
 import { BOT_ARCHETYPE_IDS } from './bot-archetypes'
 
-const STORAGE_KEY_ROSTER = 'cpcdigital:bot-roster'
-const STORAGE_KEY_SESSION_LOG = 'cpcdigital:session-log'
+export const BOT_ROSTER_STORAGE_KEY = 'cpcdigital:bot-roster'
+export const SESSION_LOG_STORAGE_KEY = 'cpcdigital:session-log'
 
 export interface SessionLogEntry {
   sessionStartedAt: string
@@ -24,8 +24,8 @@ export interface PersistentRosterState {
 
 export function loadPersistentRoster(): PersistentRosterState {
   try {
-    const storedRoster = localStorage.getItem(STORAGE_KEY_ROSTER)
-    const storedLog = localStorage.getItem(STORAGE_KEY_SESSION_LOG)
+    const storedRoster = localStorage.getItem(BOT_ROSTER_STORAGE_KEY)
+    const storedLog = localStorage.getItem(SESSION_LOG_STORAGE_KEY)
 
     let roster: BotRoster = storedRoster
       ? JSON.parse(storedRoster) as BotRoster
@@ -93,7 +93,7 @@ export function migrateGeneratedBotRoster(roster: BotRoster): BotRoster {
 
 export function saveRoster(roster: BotRoster): void {
   try {
-    localStorage.setItem(STORAGE_KEY_ROSTER, JSON.stringify(roster))
+    localStorage.setItem(BOT_ROSTER_STORAGE_KEY, JSON.stringify(roster))
   } catch {
     // storage full or unavailable — silently ignore
   }
@@ -101,7 +101,7 @@ export function saveRoster(roster: BotRoster): void {
 
 export function recordSession(identityIds: string[]): void {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_SESSION_LOG)
+    const stored = localStorage.getItem(SESSION_LOG_STORAGE_KEY)
     const log: SessionLogEntry[] = stored
       ? JSON.parse(stored) as SessionLogEntry[]
       : []
@@ -112,7 +112,7 @@ export function recordSession(identityIds: string[]): void {
     })
 
     const trimmed = log.length > 50 ? log.slice(log.length - 50) : log
-    localStorage.setItem(STORAGE_KEY_SESSION_LOG, JSON.stringify(trimmed))
+    localStorage.setItem(SESSION_LOG_STORAGE_KEY, JSON.stringify(trimmed))
   } catch {
     // silently ignore
   }

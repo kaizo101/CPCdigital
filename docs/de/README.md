@@ -13,6 +13,7 @@ Versionsnummer in einem älteren Dokument ist keine Release-Zusage.
 | Frage | Maßgebliche Stelle |
 |-------|--------------------|
 | Wie baue, teste oder debugge ich die App? | [Entwicklerdokumentation](../../DEV.md) (Englisch) |
+| Wo liegen Spielregeln, Session-State und Bot-Entscheidungen? | [Aktuelle Architektur](../../ARCHITECTURE.md) (Englisch) |
 | Was ist geplant oder bereits veröffentlicht? | [Roadmap](../../ROADMAP.md) und [Changelog](../../CHANGELOG.md) (Englisch) |
 | Wie prüfe ich Bot-Statistiken und Regressionen? | [Kalibrierung](../../calibration/README.md) |
 | Wie organisiere ich externe Tests? | [Teststrategie](../../testing/TESTING_STRATEGY.md) und [Formulare](../../testing/TESTER_FORMS.md) |

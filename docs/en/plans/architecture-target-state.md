@@ -3,7 +3,7 @@
 > German original: [Historisches Architektur-Zielbild](../../de/plans/architektur-zielbild.md)
 
 This older structural draft is not a description of the current file tree.
-For the current state see the [developer documentation](../../../DEV.md); for
+For the current state see the [architecture overview](../../../ARCHITECTURE.md); for
 prioritisation see the [roadmap](../../../ROADMAP.md).
 
 ---

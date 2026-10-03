@@ -1,0 +1,4231 @@
+{
+  "reportSchemaVersion": 1,
+  "appVersion": "0.8.2-dev",
+  "commit": "fe589f72777f35554afa09d340967d8cdde739c8",
+  "workingTreeDirty": true,
+  "generatedAt": "2026-10-02T18:15:32.645Z",
+  "metricSchemaVersion": 2,
+  "handsPerFormat": 10000,
+  "primarySeedSalt": "",
+  "confirmationSeedSalt": "release-confirmation-v1",
+  "minConfirmationOpportunities": 50,
+  "entries": [
+    {
+      "variant": "texas-holdem",
+      "archetype": "tag",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 17429,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 12883,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 3836,
+          "denominator": 37317
+        },
+        "cBet": {
+          "numerator": 1146,
+          "denominator": 1956
+        },
+        "foldToCBet": {
+          "numerator": 852,
+          "denominator": 1634
+        },
+        "turnCBet": {
+          "numerator": 289,
+          "denominator": 533
+        },
+        "wtsd": {
+          "numerator": 2331,
+          "denominator": 6440
+        },
+        "aggressionFactor": {
+          "numerator": 3343,
+          "denominator": 1405
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          15,
+          21
+        ],
+        "pfr": [
+          12,
+          18
+        ],
+        "threeBet": [
+          6,
+          13
+        ],
+        "cBet": [
+          60,
+          70
+        ],
+        "aggressionFactor": [
+          2,
+          3.8
+        ],
+        "foldToCBet": [
+          40,
+          52
+        ],
+        "turnCBet": [
+          45,
+          54
+        ]
+      },
+      "metrics": {
+        "vpip": 19.365555555555556,
+        "pfr": 14.314444444444444,
+        "threeBet": 10.279497280060026,
+        "cBet": 58.58895705521472,
+        "foldToCBet": 52.141982864137084,
+        "turnCBet": 54.22138836772983,
+        "wtsd": 36.19565217391305,
+        "aggressionFactor": 2.3793594306049823
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "tag",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 15561,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 11213,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 2781,
+          "denominator": 23587
+        },
+        "cBet": {
+          "numerator": 1225,
+          "denominator": 1841
+        },
+        "foldToCBet": {
+          "numerator": 696,
+          "denominator": 1653
+        },
+        "turnCBet": {
+          "numerator": 376,
+          "denominator": 726
+        },
+        "wtsd": {
+          "numerator": 2250,
+          "denominator": 6140
+        },
+        "aggressionFactor": {
+          "numerator": 3422,
+          "denominator": 1510
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          22,
+          29
+        ],
+        "pfr": [
+          18,
+          25
+        ],
+        "threeBet": [
+          8,
+          15
+        ],
+        "cBet": [
+          64,
+          74
+        ],
+        "aggressionFactor": [
+          2,
+          3.8
+        ],
+        "foldToCBet": [
+          38,
+          48
+        ],
+        "turnCBet": [
+          48,
+          58
+        ]
+      },
+      "metrics": {
+        "vpip": 25.935000000000002,
+        "pfr": 18.688333333333336,
+        "threeBet": 11.790393013100436,
+        "cBet": 66.53992395437263,
+        "foldToCBet": 42.10526315789473,
+        "turnCBet": 51.790633608815426,
+        "wtsd": 36.644951140065146,
+        "aggressionFactor": 2.266225165562914
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "tag",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 11681,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 7980,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 1035,
+          "denominator": 6945
+        },
+        "cBet": {
+          "numerator": 1729,
+          "denominator": 2519
+        },
+        "foldToCBet": {
+          "numerator": 1023,
+          "denominator": 1909
+        },
+        "turnCBet": {
+          "numerator": 331,
+          "denominator": 788
+        },
+        "wtsd": {
+          "numerator": 2808,
+          "denominator": 7500
+        },
+        "aggressionFactor": {
+          "numerator": 3835,
+          "denominator": 1270
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          45,
+          65
+        ],
+        "pfr": [
+          35,
+          55
+        ],
+        "threeBet": [
+          12,
+          22
+        ],
+        "cBet": [
+          70,
+          80
+        ],
+        "aggressionFactor": [
+          2.5,
+          10
+        ],
+        "foldToCBet": [
+          40,
+          55
+        ],
+        "turnCBet": [
+          42,
+          55
+        ]
+      },
+      "metrics": {
+        "vpip": 58.404999999999994,
+        "pfr": 39.900000000000006,
+        "threeBet": 14.902807775377969,
+        "cBet": 68.63834855101231,
+        "foldToCBet": 53.5882661079099,
+        "turnCBet": 42.00507614213198,
+        "wtsd": 37.44,
+        "aggressionFactor": 3.0196850393700787
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "nit",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 11868,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 10030,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 2298,
+          "denominator": 33916
+        },
+        "cBet": {
+          "numerator": 532,
+          "denominator": 952
+        },
+        "foldToCBet": {
+          "numerator": 404,
+          "denominator": 752
+        },
+        "turnCBet": {
+          "numerator": 100,
+          "denominator": 218
+        },
+        "wtsd": {
+          "numerator": 1271,
+          "denominator": 3283
+        },
+        "aggressionFactor": {
+          "numerator": 1935,
+          "denominator": 670
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          9,
+          15
+        ],
+        "pfr": [
+          7,
+          12
+        ],
+        "threeBet": [
+          3,
+          9
+        ],
+        "cBet": [
+          50,
+          62
+        ],
+        "aggressionFactor": [
+          2,
+          3.5
+        ],
+        "foldToCBet": [
+          45,
+          60
+        ],
+        "turnCBet": [
+          35,
+          42
+        ]
+      },
+      "metrics": {
+        "vpip": 13.186666666666666,
+        "pfr": 11.144444444444444,
+        "threeBet": 6.77556315603255,
+        "cBet": 55.88235294117647,
+        "foldToCBet": 53.72340425531915,
+        "turnCBet": 45.87155963302752,
+        "wtsd": 38.71459031373743,
+        "aggressionFactor": 2.888059701492537
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "nit",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 10244,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 8527,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 1742,
+          "denominator": 19488
+        },
+        "cBet": {
+          "numerator": 333,
+          "denominator": 719
+        },
+        "foldToCBet": {
+          "numerator": 356,
+          "denominator": 548
+        },
+        "turnCBet": {
+          "numerator": 40,
+          "denominator": 78
+        },
+        "wtsd": {
+          "numerator": 1224,
+          "denominator": 2921
+        },
+        "aggressionFactor": {
+          "numerator": 1421,
+          "denominator": 402
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          13,
+          19
+        ],
+        "pfr": [
+          10,
+          15
+        ],
+        "threeBet": [
+          4,
+          10
+        ],
+        "cBet": [
+          50,
+          62
+        ],
+        "aggressionFactor": [
+          2,
+          3.5
+        ],
+        "foldToCBet": [
+          55,
+          65
+        ],
+        "turnCBet": [
+          38,
+          46
+        ]
+      },
+      "metrics": {
+        "vpip": 17.07333333333333,
+        "pfr": 14.211666666666666,
+        "threeBet": 8.938834154351396,
+        "cBet": 46.31432545201669,
+        "foldToCBet": 64.96350364963503,
+        "turnCBet": 51.28205128205128,
+        "wtsd": 41.90345771995892,
+        "aggressionFactor": 3.5348258706467663
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "nit",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 6615,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 4825,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 327,
+          "denominator": 4498
+        },
+        "cBet": {
+          "numerator": 441,
+          "denominator": 865
+        },
+        "foldToCBet": {
+          "numerator": 378,
+          "denominator": 608
+        },
+        "turnCBet": {
+          "numerator": 63,
+          "denominator": 138
+        },
+        "wtsd": {
+          "numerator": 1312,
+          "denominator": 3280
+        },
+        "aggressionFactor": {
+          "numerator": 1548,
+          "denominator": 334
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          30,
+          45
+        ],
+        "pfr": [
+          16,
+          35
+        ],
+        "threeBet": [
+          6,
+          13
+        ],
+        "cBet": [
+          54,
+          64
+        ],
+        "aggressionFactor": [
+          2.5,
+          8
+        ],
+        "foldToCBet": [
+          50,
+          65
+        ],
+        "turnCBet": [
+          35,
+          48
+        ]
+      },
+      "metrics": {
+        "vpip": 33.074999999999996,
+        "pfr": 24.125,
+        "threeBet": 7.269897732325478,
+        "cBet": 50.982658959537574,
+        "foldToCBet": 62.17105263157895,
+        "turnCBet": 45.65217391304348,
+        "wtsd": 40,
+        "aggressionFactor": 4.634730538922156
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "lag",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 24833,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 15909,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 5461,
+          "denominator": 39541
+        },
+        "cBet": {
+          "numerator": 2929,
+          "denominator": 3728
+        },
+        "foldToCBet": {
+          "numerator": 2559,
+          "denominator": 4443
+        },
+        "turnCBet": {
+          "numerator": 446,
+          "denominator": 898
+        },
+        "wtsd": {
+          "numerator": 3660,
+          "denominator": 12753
+        },
+        "aggressionFactor": {
+          "numerator": 6991,
+          "denominator": 3524
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          22,
+          31
+        ],
+        "pfr": [
+          17,
+          26
+        ],
+        "threeBet": [
+          8,
+          18
+        ],
+        "cBet": [
+          65,
+          80
+        ],
+        "aggressionFactor": [
+          1.8,
+          4.2
+        ],
+        "foldToCBet": [
+          40,
+          48
+        ],
+        "turnCBet": [
+          52,
+          62
+        ]
+      },
+      "metrics": {
+        "vpip": 27.592222222222222,
+        "pfr": 17.676666666666666,
+        "threeBet": 13.810981007055966,
+        "cBet": 78.5675965665236,
+        "foldToCBet": 57.5962187711006,
+        "turnCBet": 49.665924276169264,
+        "wtsd": 28.69912961656081,
+        "aggressionFactor": 1.9838251986379114
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "lag",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 21872,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 13695,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 4020,
+          "denominator": 27863
+        },
+        "cBet": {
+          "numerator": 3023,
+          "denominator": 3980
+        },
+        "foldToCBet": {
+          "numerator": 2024,
+          "denominator": 4072
+        },
+        "turnCBet": {
+          "numerator": 647,
+          "denominator": 1079
+        },
+        "wtsd": {
+          "numerator": 3771,
+          "denominator": 12295
+        },
+        "aggressionFactor": {
+          "numerator": 7198,
+          "denominator": 3371
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          28,
+          40
+        ],
+        "pfr": [
+          22,
+          33
+        ],
+        "threeBet": [
+          10,
+          20
+        ],
+        "cBet": [
+          65,
+          80
+        ],
+        "aggressionFactor": [
+          2,
+          4.2
+        ],
+        "foldToCBet": [
+          38,
+          46
+        ],
+        "turnCBet": [
+          55,
+          65
+        ]
+      },
+      "metrics": {
+        "vpip": 36.45333333333333,
+        "pfr": 22.825,
+        "threeBet": 14.42773570685138,
+        "cBet": 75.95477386934674,
+        "foldToCBet": 49.70530451866404,
+        "turnCBet": 59.962928637627435,
+        "wtsd": 30.671004473363155,
+        "aggressionFactor": 2.1352714328092555
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "lag",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 17164,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 10710,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 1669,
+          "denominator": 9041
+        },
+        "cBet": {
+          "numerator": 4581,
+          "denominator": 5261
+        },
+        "foldToCBet": {
+          "numerator": 1219,
+          "denominator": 4701
+        },
+        "turnCBet": {
+          "numerator": 659,
+          "denominator": 1298
+        },
+        "wtsd": {
+          "numerator": 4354,
+          "denominator": 13288
+        },
+        "aggressionFactor": {
+          "numerator": 9833,
+          "denominator": 3089
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          65,
+          87
+        ],
+        "pfr": [
+          45,
+          68
+        ],
+        "threeBet": [
+          14,
+          28
+        ],
+        "cBet": [
+          88,
+          98
+        ],
+        "aggressionFactor": [
+          3,
+          10
+        ],
+        "foldToCBet": [
+          30,
+          45
+        ],
+        "turnCBet": [
+          50,
+          65
+        ]
+      },
+      "metrics": {
+        "vpip": 85.82,
+        "pfr": 53.55,
+        "threeBet": 18.46034730671386,
+        "cBet": 87.07470062725717,
+        "foldToCBet": 25.930653052542013,
+        "turnCBet": 50.77041602465331,
+        "wtsd": 32.76640577965082,
+        "aggressionFactor": 3.1832308190352867
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "calling-station",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 31556,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 7544,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 790,
+          "denominator": 33393
+        },
+        "cBet": {
+          "numerator": 2238,
+          "denominator": 4858
+        },
+        "foldToCBet": {
+          "numerator": 4401,
+          "denominator": 10131
+        },
+        "turnCBet": {
+          "numerator": 524,
+          "denominator": 1583
+        },
+        "wtsd": {
+          "numerator": 17014,
+          "denominator": 31859
+        },
+        "aggressionFactor": {
+          "numerator": 13137,
+          "denominator": 17496
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          28,
+          43
+        ],
+        "pfr": [
+          5,
+          14
+        ],
+        "threeBet": [
+          1,
+          8
+        ],
+        "cBet": [
+          44,
+          54
+        ],
+        "aggressionFactor": [
+          0.5,
+          2
+        ],
+        "foldToCBet": [
+          28,
+          42
+        ],
+        "turnCBet": [
+          28,
+          35
+        ]
+      },
+      "metrics": {
+        "vpip": 35.062222222222225,
+        "pfr": 8.382222222222223,
+        "threeBet": 2.3657652801485343,
+        "cBet": 46.068340881020994,
+        "foldToCBet": 43.440923896949954,
+        "turnCBet": 33.10170562223626,
+        "wtsd": 53.40406164663046,
+        "aggressionFactor": 0.7508573388203018
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "calling-station",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 26499,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 6385,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 475,
+          "denominator": 19948
+        },
+        "cBet": {
+          "numerator": 1952,
+          "denominator": 4359
+        },
+        "foldToCBet": {
+          "numerator": 2622,
+          "denominator": 7574
+        },
+        "turnCBet": {
+          "numerator": 785,
+          "denominator": 1778
+        },
+        "wtsd": {
+          "numerator": 15307,
+          "denominator": 27427
+        },
+        "aggressionFactor": {
+          "numerator": 11963,
+          "denominator": 13357
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          38,
+          56
+        ],
+        "pfr": [
+          7,
+          17
+        ],
+        "threeBet": [
+          2,
+          9
+        ],
+        "cBet": [
+          44,
+          54
+        ],
+        "aggressionFactor": [
+          0.5,
+          2
+        ],
+        "foldToCBet": [
+          30,
+          40
+        ],
+        "turnCBet": [
+          30,
+          38
+        ]
+      },
+      "metrics": {
+        "vpip": 44.165,
+        "pfr": 10.641666666666667,
+        "threeBet": 2.381191096851815,
+        "cBet": 44.78091305345263,
+        "foldToCBet": 34.61843147610246,
+        "turnCBet": 44.15073115860517,
+        "wtsd": 55.809968279432674,
+        "aggressionFactor": 0.8956352474358015
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "texas-holdem",
+      "archetype": "calling-station",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 12984,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 3927,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 220,
+          "denominator": 3707
+        },
+        "cBet": {
+          "numerator": 878,
+          "denominator": 2242
+        },
+        "foldToCBet": {
+          "numerator": 893,
+          "denominator": 2217
+        },
+        "turnCBet": {
+          "numerator": 317,
+          "denominator": 830
+        },
+        "wtsd": {
+          "numerator": 10970,
+          "denominator": 17052
+        },
+        "aggressionFactor": {
+          "numerator": 6399,
+          "denominator": 3124
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          62,
+          85
+        ],
+        "pfr": [
+          15,
+          36
+        ],
+        "threeBet": [
+          2,
+          13
+        ],
+        "cBet": [
+          38,
+          48
+        ],
+        "aggressionFactor": [
+          1,
+          3
+        ],
+        "foldToCBet": [
+          25,
+          40
+        ],
+        "turnCBet": [
+          25,
+          38
+        ]
+      },
+      "metrics": {
+        "vpip": 64.92,
+        "pfr": 19.634999999999998,
+        "threeBet": 5.934718100890208,
+        "cBet": 39.1614629794826,
+        "foldToCBet": 40.27965719440685,
+        "turnCBet": 38.19277108433735,
+        "wtsd": 64.33262960356556,
+        "aggressionFactor": 2.0483354673495517
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "tag",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 27867,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 12466,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 3505,
+          "denominator": 38693
+        },
+        "cBet": {
+          "numerator": 3460,
+          "denominator": 6821
+        },
+        "foldToCBet": {
+          "numerator": 3221,
+          "denominator": 6644
+        },
+        "turnCBet": {
+          "numerator": 635,
+          "denominator": 1598
+        },
+        "wtsd": {
+          "numerator": 7418,
+          "denominator": 25611
+        },
+        "aggressionFactor": {
+          "numerator": 11214,
+          "denominator": 6049
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          22,
+          33
+        ],
+        "pfr": [
+          12,
+          20
+        ],
+        "threeBet": [
+          5,
+          11
+        ],
+        "cBet": [
+          35,
+          55
+        ],
+        "aggressionFactor": [
+          1.5,
+          3.5
+        ],
+        "wtsd": [
+          22,
+          32
+        ],
+        "foldToCBet": [
+          45,
+          52
+        ],
+        "turnCBet": [
+          40,
+          48
+        ]
+      },
+      "metrics": {
+        "vpip": 30.96333333333333,
+        "pfr": 13.851111111111111,
+        "threeBet": 9.058486031065051,
+        "cBet": 50.725700043981824,
+        "foldToCBet": 48.47983142685129,
+        "turnCBet": 39.73717146433041,
+        "wtsd": 28.964116980984734,
+        "aggressionFactor": 1.8538601421722598
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "tag",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 18383,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 10102,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 2456,
+          "denominator": 20733
+        },
+        "cBet": {
+          "numerator": 2725,
+          "denominator": 5427
+        },
+        "foldToCBet": {
+          "numerator": 1968,
+          "denominator": 4096
+        },
+        "turnCBet": {
+          "numerator": 458,
+          "denominator": 1175
+        },
+        "wtsd": {
+          "numerator": 5416,
+          "denominator": 17099
+        },
+        "aggressionFactor": {
+          "numerator": 8313,
+          "denominator": 3390
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          28,
+          39
+        ],
+        "pfr": [
+          15,
+          24
+        ],
+        "threeBet": [
+          7,
+          13
+        ],
+        "cBet": [
+          35,
+          55
+        ],
+        "aggressionFactor": [
+          1.5,
+          3.5
+        ],
+        "wtsd": [
+          22,
+          32
+        ],
+        "foldToCBet": [
+          42,
+          50
+        ],
+        "turnCBet": [
+          42,
+          50
+        ]
+      },
+      "metrics": {
+        "vpip": 30.638333333333335,
+        "pfr": 16.836666666666666,
+        "threeBet": 11.845849611730092,
+        "cBet": 50.21190344573429,
+        "foldToCBet": 48.046875,
+        "turnCBet": 38.97872340425532,
+        "wtsd": 31.674366922042225,
+        "aggressionFactor": 2.4522123893805308
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "tag",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 12039,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 7039,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 1586,
+          "denominator": 5453
+        },
+        "cBet": {
+          "numerator": 2054,
+          "denominator": 3833
+        },
+        "foldToCBet": {
+          "numerator": 1068,
+          "denominator": 2539
+        },
+        "turnCBet": {
+          "numerator": 411,
+          "denominator": 1032
+        },
+        "wtsd": {
+          "numerator": 3728,
+          "denominator": 12566
+        },
+        "aggressionFactor": {
+          "numerator": 7166,
+          "denominator": 2014
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          45,
+          65
+        ],
+        "pfr": [
+          30,
+          48
+        ],
+        "threeBet": [
+          10,
+          20
+        ],
+        "cBet": [
+          40,
+          60
+        ],
+        "aggressionFactor": [
+          2,
+          5
+        ],
+        "wtsd": [
+          22,
+          32
+        ],
+        "foldToCBet": [
+          38,
+          52
+        ],
+        "turnCBet": [
+          38,
+          52
+        ]
+      },
+      "metrics": {
+        "vpip": 60.195,
+        "pfr": 35.195,
+        "threeBet": 29.08490739042729,
+        "cBet": 53.58726845812679,
+        "foldToCBet": 42.06380464749901,
+        "turnCBet": 39.825581395348834,
+        "wtsd": 29.667356358427504,
+        "aggressionFactor": 3.558093346573982
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "nit",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 18999,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 11902,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 2813,
+          "denominator": 43328
+        },
+        "cBet": {
+          "numerator": 1383,
+          "denominator": 3342
+        },
+        "foldToCBet": {
+          "numerator": 1281,
+          "denominator": 2004
+        },
+        "turnCBet": {
+          "numerator": 127,
+          "denominator": 352
+        },
+        "wtsd": {
+          "numerator": 2520,
+          "denominator": 9387
+        },
+        "aggressionFactor": {
+          "numerator": 3968,
+          "denominator": 951
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          14,
+          22
+        ],
+        "pfr": [
+          8,
+          14
+        ],
+        "threeBet": [
+          3,
+          7
+        ],
+        "cBet": [
+          30,
+          50
+        ],
+        "aggressionFactor": [
+          1.5,
+          3.5
+        ],
+        "wtsd": [
+          22,
+          28
+        ],
+        "foldToCBet": [
+          55,
+          65
+        ],
+        "turnCBet": [
+          32,
+          40
+        ]
+      },
+      "metrics": {
+        "vpip": 21.11,
+        "pfr": 13.224444444444444,
+        "threeBet": 6.4923375184638115,
+        "cBet": 41.38240574506284,
+        "foldToCBet": 63.92215568862275,
+        "turnCBet": 36.07954545454545,
+        "wtsd": 26.845637583892618,
+        "aggressionFactor": 4.172450052576235
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "nit",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 15335,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 9706,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 2014,
+          "denominator": 22862
+        },
+        "cBet": {
+          "numerator": 1046,
+          "denominator": 2522
+        },
+        "foldToCBet": {
+          "numerator": 978,
+          "denominator": 1655
+        },
+        "turnCBet": {
+          "numerator": 104,
+          "denominator": 305
+        },
+        "wtsd": {
+          "numerator": 2394,
+          "denominator": 8814
+        },
+        "aggressionFactor": {
+          "numerator": 3661,
+          "denominator": 794
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          18,
+          28
+        ],
+        "pfr": [
+          10,
+          17
+        ],
+        "threeBet": [
+          4,
+          9
+        ],
+        "cBet": [
+          30,
+          50
+        ],
+        "aggressionFactor": [
+          1.5,
+          4
+        ],
+        "wtsd": [
+          22,
+          28
+        ],
+        "foldToCBet": [
+          52,
+          62
+        ],
+        "turnCBet": [
+          35,
+          42
+        ]
+      },
+      "metrics": {
+        "vpip": 25.558333333333334,
+        "pfr": 16.176666666666666,
+        "threeBet": 8.809378007173475,
+        "cBet": 41.47501982553529,
+        "foldToCBet": 59.09365558912387,
+        "turnCBet": 34.0983606557377,
+        "wtsd": 27.161334240980256,
+        "aggressionFactor": 4.610831234256927
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "nit",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 6974,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 4410,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 422,
+          "denominator": 3988
+        },
+        "cBet": {
+          "numerator": 461,
+          "denominator": 1053
+        },
+        "foldToCBet": {
+          "numerator": 305,
+          "denominator": 620
+        },
+        "turnCBet": {
+          "numerator": 79,
+          "denominator": 171
+        },
+        "wtsd": {
+          "numerator": 1034,
+          "denominator": 4484
+        },
+        "aggressionFactor": {
+          "numerator": 2338,
+          "denominator": 449
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          30,
+          45
+        ],
+        "pfr": [
+          15,
+          30
+        ],
+        "threeBet": [
+          6,
+          12
+        ],
+        "cBet": [
+          35,
+          55
+        ],
+        "aggressionFactor": [
+          2,
+          4.5
+        ],
+        "wtsd": [
+          22,
+          28
+        ],
+        "foldToCBet": [
+          45,
+          60
+        ],
+        "turnCBet": [
+          32,
+          45
+        ]
+      },
+      "metrics": {
+        "vpip": 34.870000000000005,
+        "pfr": 22.05,
+        "threeBet": 10.581745235707121,
+        "cBet": 43.77967711301044,
+        "foldToCBet": 49.193548387096776,
+        "turnCBet": 46.198830409356724,
+        "wtsd": 23.05976806422837,
+        "aggressionFactor": 5.2071269487750556
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "lag",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 30347,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 17393,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 6554,
+          "denominator": 40693
+        },
+        "cBet": {
+          "numerator": 1794,
+          "denominator": 3871
+        },
+        "foldToCBet": {
+          "numerator": 1658,
+          "denominator": 3722
+        },
+        "turnCBet": {
+          "numerator": 212,
+          "denominator": 505
+        },
+        "wtsd": {
+          "numerator": 4635,
+          "denominator": 16571
+        },
+        "aggressionFactor": {
+          "numerator": 8040,
+          "denominator": 4563
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          29,
+          40
+        ],
+        "pfr": [
+          18,
+          28
+        ],
+        "threeBet": [
+          8,
+          16
+        ],
+        "cBet": [
+          40,
+          60
+        ],
+        "aggressionFactor": [
+          2,
+          4.2
+        ],
+        "wtsd": [
+          28,
+          34
+        ],
+        "foldToCBet": [
+          38,
+          46
+        ],
+        "turnCBet": [
+          45,
+          54
+        ]
+      },
+      "metrics": {
+        "vpip": 33.718888888888884,
+        "pfr": 19.325555555555557,
+        "threeBet": 16.105964170741895,
+        "cBet": 46.34461379488504,
+        "foldToCBet": 44.5459430413756,
+        "turnCBet": 41.98019801980198,
+        "wtsd": 27.970550962524893,
+        "aggressionFactor": 1.7619986850756082
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "lag",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 27522,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 14858,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 4701,
+          "denominator": 31325
+        },
+        "cBet": {
+          "numerator": 2657,
+          "denominator": 6010
+        },
+        "foldToCBet": {
+          "numerator": 1580,
+          "denominator": 3779
+        },
+        "turnCBet": {
+          "numerator": 191,
+          "denominator": 384
+        },
+        "wtsd": {
+          "numerator": 5631,
+          "denominator": 21488
+        },
+        "aggressionFactor": {
+          "numerator": 11683,
+          "denominator": 4437
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          35,
+          48
+        ],
+        "pfr": [
+          22,
+          32
+        ],
+        "threeBet": [
+          9,
+          18
+        ],
+        "cBet": [
+          40,
+          60
+        ],
+        "aggressionFactor": [
+          2,
+          4.2
+        ],
+        "wtsd": [
+          28,
+          34
+        ],
+        "foldToCBet": [
+          36,
+          44
+        ],
+        "turnCBet": [
+          48,
+          58
+        ]
+      },
+      "metrics": {
+        "vpip": 45.87,
+        "pfr": 24.763333333333335,
+        "threeBet": 15.007182761372706,
+        "cBet": 44.209650582362734,
+        "foldToCBet": 41.8100026462027,
+        "turnCBet": 49.73958333333333,
+        "wtsd": 26.205323901712585,
+        "aggressionFactor": 2.633085418075276
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "lag",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 11859,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 8283,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 1411,
+          "denominator": 6872
+        },
+        "cBet": {
+          "numerator": 1251,
+          "denominator": 2778
+        },
+        "foldToCBet": {
+          "numerator": 650,
+          "denominator": 1475
+        },
+        "turnCBet": {
+          "numerator": 113,
+          "denominator": 212
+        },
+        "wtsd": {
+          "numerator": 2070,
+          "denominator": 7362
+        },
+        "aggressionFactor": {
+          "numerator": 4981,
+          "denominator": 1028
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          50,
+          70
+        ],
+        "pfr": [
+          35,
+          52
+        ],
+        "threeBet": [
+          12,
+          24
+        ],
+        "cBet": [
+          45,
+          65
+        ],
+        "aggressionFactor": [
+          3,
+          8
+        ],
+        "wtsd": [
+          28,
+          34
+        ],
+        "foldToCBet": [
+          30,
+          45
+        ],
+        "turnCBet": [
+          42,
+          58
+        ]
+      },
+      "metrics": {
+        "vpip": 59.294999999999995,
+        "pfr": 41.415,
+        "threeBet": 20.532596041909194,
+        "cBet": 45.032397408207345,
+        "foldToCBet": 44.06779661016949,
+        "turnCBet": 53.301886792452834,
+        "wtsd": 28.117359413202937,
+        "aggressionFactor": 4.845330739299611
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "calling-station",
+      "format": "full-ring",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 35391,
+          "denominator": 90000
+        },
+        "pfr": {
+          "numerator": 6394,
+          "denominator": 90000
+        },
+        "threeBet": {
+          "numerator": 594,
+          "denominator": 28262
+        },
+        "cBet": {
+          "numerator": 1473,
+          "denominator": 4457
+        },
+        "foldToCBet": {
+          "numerator": 3533,
+          "denominator": 9086
+        },
+        "turnCBet": {
+          "numerator": 215,
+          "denominator": 1200
+        },
+        "wtsd": {
+          "numerator": 14160,
+          "denominator": 37241
+        },
+        "aggressionFactor": {
+          "numerator": 11132,
+          "denominator": 15080
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          32,
+          48
+        ],
+        "pfr": [
+          5,
+          14
+        ],
+        "threeBet": [
+          0.5,
+          7
+        ],
+        "cBet": [
+          20,
+          41
+        ],
+        "aggressionFactor": [
+          0.5,
+          2
+        ],
+        "wtsd": [
+          28,
+          45
+        ],
+        "foldToCBet": [
+          30,
+          40
+        ],
+        "turnCBet": [
+          22,
+          30
+        ]
+      },
+      "metrics": {
+        "vpip": 39.32333333333333,
+        "pfr": 7.104444444444444,
+        "threeBet": 2.1017620833628197,
+        "cBet": 33.04913619026251,
+        "foldToCBet": 38.88399735857363,
+        "turnCBet": 17.916666666666668,
+        "wtsd": 38.0226094895411,
+        "aggressionFactor": 0.7381962864721485
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "calling-station",
+      "format": "six-max",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 28209,
+          "denominator": 60000
+        },
+        "pfr": {
+          "numerator": 5193,
+          "denominator": 60000
+        },
+        "threeBet": {
+          "numerator": 448,
+          "denominator": 15828
+        },
+        "cBet": {
+          "numerator": 1402,
+          "denominator": 3826
+        },
+        "foldToCBet": {
+          "numerator": 2692,
+          "denominator": 6763
+        },
+        "turnCBet": {
+          "numerator": 260,
+          "denominator": 1167
+        },
+        "wtsd": {
+          "numerator": 11792,
+          "denominator": 31763
+        },
+        "aggressionFactor": {
+          "numerator": 9528,
+          "denominator": 6955
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          42,
+          60
+        ],
+        "pfr": [
+          7,
+          17
+        ],
+        "threeBet": [
+          1,
+          8
+        ],
+        "cBet": [
+          20,
+          40
+        ],
+        "aggressionFactor": [
+          0.5,
+          2.1
+        ],
+        "wtsd": [
+          28,
+          45
+        ],
+        "foldToCBet": [
+          28,
+          38
+        ],
+        "turnCBet": [
+          25,
+          32
+        ]
+      },
+      "metrics": {
+        "vpip": 47.015,
+        "pfr": 8.655,
+        "threeBet": 2.8304270912307303,
+        "cBet": 36.644014636696284,
+        "foldToCBet": 39.8048203460003,
+        "turnCBet": 22.279348757497857,
+        "wtsd": 37.124956710638166,
+        "aggressionFactor": 1.3699496764917325
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    },
+    {
+      "variant": "omaha-high",
+      "archetype": "calling-station",
+      "format": "heads-up",
+      "hands": 10000,
+      "observations": {
+        "vpip": {
+          "numerator": 14376,
+          "denominator": 20000
+        },
+        "pfr": {
+          "numerator": 5735,
+          "denominator": 20000
+        },
+        "threeBet": {
+          "numerator": 549,
+          "denominator": 5186
+        },
+        "cBet": {
+          "numerator": 1165,
+          "denominator": 4550
+        },
+        "foldToCBet": {
+          "numerator": 501,
+          "denominator": 1580
+        },
+        "turnCBet": {
+          "numerator": 249,
+          "denominator": 816
+        },
+        "wtsd": {
+          "numerator": 7660,
+          "denominator": 17840
+        },
+        "aggressionFactor": {
+          "numerator": 8480,
+          "denominator": 3290
+        }
+      },
+      "targetRanges": {
+        "vpip": [
+          60,
+          82
+        ],
+        "pfr": [
+          15,
+          32
+        ],
+        "threeBet": [
+          3,
+          12
+        ],
+        "cBet": [
+          25,
+          45
+        ],
+        "aggressionFactor": [
+          0.8,
+          2.5
+        ],
+        "wtsd": [
+          28,
+          45
+        ],
+        "foldToCBet": [
+          25,
+          42
+        ],
+        "turnCBet": [
+          25,
+          38
+        ]
+      },
+      "metrics": {
+        "vpip": 71.88,
+        "pfr": 28.675,
+        "threeBet": 10.586193598148862,
+        "cBet": 25.604395604395602,
+        "foldToCBet": 31.708860759493675,
+        "turnCBet": 30.514705882352942,
+        "wtsd": 42.937219730941706,
+        "aggressionFactor": 2.5775075987841944
+      },
+      "invariants": {
+        "invalidActions": 0,
+        "deepOpenShoves": 0,
+        "uncommittedDeepShoves": 0,
+        "metricViolations": []
+      }
+    }
+  ],
+  "confirmations": [
+    {
+      "key": "texas-holdem/tag/full-ring",
+      "metrics": [
+        "cBet",
+        "foldToCBet",
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "tag",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 17567,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 12807,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 3718,
+            "denominator": 37933
+          },
+          "cBet": {
+            "numerator": 1245,
+            "denominator": 2069
+          },
+          "foldToCBet": {
+            "numerator": 838,
+            "denominator": 1719
+          },
+          "turnCBet": {
+            "numerator": 329,
+            "denominator": 593
+          },
+          "wtsd": {
+            "numerator": 2403,
+            "denominator": 6788
+          },
+          "aggressionFactor": {
+            "numerator": 3725,
+            "denominator": 1598
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            15,
+            21
+          ],
+          "pfr": [
+            12,
+            18
+          ],
+          "threeBet": [
+            6,
+            13
+          ],
+          "cBet": [
+            60,
+            70
+          ],
+          "aggressionFactor": [
+            2,
+            3.8
+          ],
+          "foldToCBet": [
+            40,
+            52
+          ],
+          "turnCBet": [
+            45,
+            54
+          ]
+        },
+        "metrics": {
+          "vpip": 19.51888888888889,
+          "pfr": 14.23,
+          "threeBet": 9.80149210450004,
+          "cBet": 60.17399710004834,
+          "foldToCBet": 48.74927283304247,
+          "turnCBet": 55.4806070826307,
+          "wtsd": 35.40070713022982,
+          "aggressionFactor": 2.3310387984981227
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/tag/heads-up",
+      "metrics": [
+        "cBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "tag",
+        "format": "heads-up",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 11760,
+            "denominator": 20000
+          },
+          "pfr": {
+            "numerator": 8074,
+            "denominator": 20000
+          },
+          "threeBet": {
+            "numerator": 1027,
+            "denominator": 7047
+          },
+          "cBet": {
+            "numerator": 1856,
+            "denominator": 2560
+          },
+          "foldToCBet": {
+            "numerator": 1061,
+            "denominator": 2020
+          },
+          "turnCBet": {
+            "numerator": 337,
+            "denominator": 847
+          },
+          "wtsd": {
+            "numerator": 2778,
+            "denominator": 7452
+          },
+          "aggressionFactor": {
+            "numerator": 3891,
+            "denominator": 1335
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            45,
+            65
+          ],
+          "pfr": [
+            35,
+            55
+          ],
+          "threeBet": [
+            12,
+            22
+          ],
+          "cBet": [
+            70,
+            80
+          ],
+          "aggressionFactor": [
+            2.5,
+            10
+          ],
+          "foldToCBet": [
+            40,
+            55
+          ],
+          "turnCBet": [
+            42,
+            55
+          ]
+        },
+        "metrics": {
+          "vpip": 58.8,
+          "pfr": 40.37,
+          "threeBet": 14.573577408826452,
+          "cBet": 72.5,
+          "foldToCBet": 52.524752475247524,
+          "turnCBet": 39.7874852420307,
+          "wtsd": 37.27858293075684,
+          "aggressionFactor": 2.9146067415730337
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/nit/full-ring",
+      "metrics": [
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "nit",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 11935,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 10118,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 2330,
+            "denominator": 34360
+          },
+          "cBet": {
+            "numerator": 529,
+            "denominator": 915
+          },
+          "foldToCBet": {
+            "numerator": 419,
+            "denominator": 747
+          },
+          "turnCBet": {
+            "numerator": 88,
+            "denominator": 201
+          },
+          "wtsd": {
+            "numerator": 1159,
+            "denominator": 3107
+          },
+          "aggressionFactor": {
+            "numerator": 1752,
+            "denominator": 572
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            9,
+            15
+          ],
+          "pfr": [
+            7,
+            12
+          ],
+          "threeBet": [
+            3,
+            9
+          ],
+          "cBet": [
+            50,
+            62
+          ],
+          "aggressionFactor": [
+            2,
+            3.5
+          ],
+          "foldToCBet": [
+            45,
+            60
+          ],
+          "turnCBet": [
+            35,
+            42
+          ]
+        },
+        "metrics": {
+          "vpip": 13.261111111111113,
+          "pfr": 11.242222222222223,
+          "threeBet": 6.781140861466822,
+          "cBet": 57.81420765027322,
+          "foldToCBet": 56.09103078982597,
+          "turnCBet": 43.78109452736319,
+          "wtsd": 37.30286449951722,
+          "aggressionFactor": 3.062937062937063
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/nit/six-max",
+      "metrics": [
+        "cBet",
+        "turnCBet",
+        "aggressionFactor"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "nit",
+        "format": "six-max",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 10276,
+            "denominator": 60000
+          },
+          "pfr": {
+            "numerator": 8586,
+            "denominator": 60000
+          },
+          "threeBet": {
+            "numerator": 1734,
+            "denominator": 19843
+          },
+          "cBet": {
+            "numerator": 330,
+            "denominator": 695
+          },
+          "foldToCBet": {
+            "numerator": 400,
+            "denominator": 574
+          },
+          "turnCBet": {
+            "numerator": 40,
+            "denominator": 74
+          },
+          "wtsd": {
+            "numerator": 1043,
+            "denominator": 2854
+          },
+          "aggressionFactor": {
+            "numerator": 1372,
+            "denominator": 356
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            13,
+            19
+          ],
+          "pfr": [
+            10,
+            15
+          ],
+          "threeBet": [
+            4,
+            10
+          ],
+          "cBet": [
+            50,
+            62
+          ],
+          "aggressionFactor": [
+            2,
+            3.5
+          ],
+          "foldToCBet": [
+            55,
+            65
+          ],
+          "turnCBet": [
+            38,
+            46
+          ]
+        },
+        "metrics": {
+          "vpip": 17.12666666666667,
+          "pfr": 14.31,
+          "threeBet": 8.738597994254901,
+          "cBet": 47.482014388489205,
+          "foldToCBet": 69.68641114982579,
+          "turnCBet": 54.054054054054056,
+          "wtsd": 36.54519971969166,
+          "aggressionFactor": 3.853932584269663
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/nit/heads-up",
+      "metrics": [
+        "cBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "nit",
+        "format": "heads-up",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 6702,
+            "denominator": 20000
+          },
+          "pfr": {
+            "numerator": 4878,
+            "denominator": 20000
+          },
+          "threeBet": {
+            "numerator": 310,
+            "denominator": 4568
+          },
+          "cBet": {
+            "numerator": 427,
+            "denominator": 851
+          },
+          "foldToCBet": {
+            "numerator": 402,
+            "denominator": 646
+          },
+          "turnCBet": {
+            "numerator": 77,
+            "denominator": 161
+          },
+          "wtsd": {
+            "numerator": 1274,
+            "denominator": 3286
+          },
+          "aggressionFactor": {
+            "numerator": 1589,
+            "denominator": 375
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            30,
+            45
+          ],
+          "pfr": [
+            16,
+            35
+          ],
+          "threeBet": [
+            6,
+            13
+          ],
+          "cBet": [
+            54,
+            64
+          ],
+          "aggressionFactor": [
+            2.5,
+            8
+          ],
+          "foldToCBet": [
+            50,
+            65
+          ],
+          "turnCBet": [
+            35,
+            48
+          ]
+        },
+        "metrics": {
+          "vpip": 33.51,
+          "pfr": 24.39,
+          "threeBet": 6.786339754816112,
+          "cBet": 50.17626321974148,
+          "foldToCBet": 62.22910216718266,
+          "turnCBet": 47.82608695652174,
+          "wtsd": 38.770541692026775,
+          "aggressionFactor": 4.237333333333333
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/lag/full-ring",
+      "metrics": [
+        "foldToCBet",
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "lag",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 25067,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 15894,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 5442,
+            "denominator": 39872
+          },
+          "cBet": {
+            "numerator": 2971,
+            "denominator": 3829
+          },
+          "foldToCBet": {
+            "numerator": 2518,
+            "denominator": 4424
+          },
+          "turnCBet": {
+            "numerator": 387,
+            "denominator": 868
+          },
+          "wtsd": {
+            "numerator": 3854,
+            "denominator": 13066
+          },
+          "aggressionFactor": {
+            "numerator": 7081,
+            "denominator": 3507
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            22,
+            31
+          ],
+          "pfr": [
+            17,
+            26
+          ],
+          "threeBet": [
+            8,
+            18
+          ],
+          "cBet": [
+            65,
+            80
+          ],
+          "aggressionFactor": [
+            1.8,
+            4.2
+          ],
+          "foldToCBet": [
+            40,
+            48
+          ],
+          "turnCBet": [
+            52,
+            62
+          ]
+        },
+        "metrics": {
+          "vpip": 27.852222222222224,
+          "pfr": 17.66,
+          "threeBet": 13.648675762439808,
+          "cBet": 77.59206059023244,
+          "foldToCBet": 56.91681735985533,
+          "turnCBet": 44.585253456221196,
+          "wtsd": 29.496402877697843,
+          "aggressionFactor": 2.019104647847163
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/lag/six-max",
+      "metrics": [
+        "foldToCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "lag",
+        "format": "six-max",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 22128,
+            "denominator": 60000
+          },
+          "pfr": {
+            "numerator": 13856,
+            "denominator": 60000
+          },
+          "threeBet": {
+            "numerator": 4101,
+            "denominator": 28141
+          },
+          "cBet": {
+            "numerator": 3138,
+            "denominator": 4095
+          },
+          "foldToCBet": {
+            "numerator": 2025,
+            "denominator": 4251
+          },
+          "turnCBet": {
+            "numerator": 704,
+            "denominator": 1154
+          },
+          "wtsd": {
+            "numerator": 3695,
+            "denominator": 12613
+          },
+          "aggressionFactor": {
+            "numerator": 7517,
+            "denominator": 3577
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            28,
+            40
+          ],
+          "pfr": [
+            22,
+            33
+          ],
+          "threeBet": [
+            10,
+            20
+          ],
+          "cBet": [
+            65,
+            80
+          ],
+          "aggressionFactor": [
+            2,
+            4.2
+          ],
+          "foldToCBet": [
+            38,
+            46
+          ],
+          "turnCBet": [
+            55,
+            65
+          ]
+        },
+        "metrics": {
+          "vpip": 36.88,
+          "pfr": 23.093333333333334,
+          "threeBet": 14.573042891155255,
+          "cBet": 76.63003663003664,
+          "foldToCBet": 47.63585038814397,
+          "turnCBet": 61.005199306759096,
+          "wtsd": 29.295171648299373,
+          "aggressionFactor": 2.1014816885658374
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/lag/heads-up",
+      "metrics": [
+        "cBet",
+        "foldToCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "lag",
+        "format": "heads-up",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 17097,
+            "denominator": 20000
+          },
+          "pfr": {
+            "numerator": 10622,
+            "denominator": 20000
+          },
+          "threeBet": {
+            "numerator": 1636,
+            "denominator": 8986
+          },
+          "cBet": {
+            "numerator": 4692,
+            "denominator": 5096
+          },
+          "foldToCBet": {
+            "numerator": 1180,
+            "denominator": 4850
+          },
+          "turnCBet": {
+            "numerator": 633,
+            "denominator": 1382
+          },
+          "wtsd": {
+            "numerator": 4326,
+            "denominator": 13180
+          },
+          "aggressionFactor": {
+            "numerator": 10198,
+            "denominator": 3395
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            65,
+            87
+          ],
+          "pfr": [
+            45,
+            68
+          ],
+          "threeBet": [
+            14,
+            28
+          ],
+          "cBet": [
+            88,
+            98
+          ],
+          "aggressionFactor": [
+            3,
+            10
+          ],
+          "foldToCBet": [
+            30,
+            45
+          ],
+          "turnCBet": [
+            50,
+            65
+          ]
+        },
+        "metrics": {
+          "vpip": 85.485,
+          "pfr": 53.11,
+          "threeBet": 18.20609837525039,
+          "cBet": 92.07221350078493,
+          "foldToCBet": 24.329896907216494,
+          "turnCBet": 45.803183791606365,
+          "wtsd": 32.82245827010622,
+          "aggressionFactor": 3.0038291605301914
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/calling-station/full-ring",
+      "metrics": [
+        "foldToCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "calling-station",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 32915,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 7761,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 837,
+            "denominator": 34792
+          },
+          "cBet": {
+            "numerator": 2419,
+            "denominator": 5120
+          },
+          "foldToCBet": {
+            "numerator": 4710,
+            "denominator": 10756
+          },
+          "turnCBet": {
+            "numerator": 571,
+            "denominator": 1711
+          },
+          "wtsd": {
+            "numerator": 17766,
+            "denominator": 33152
+          },
+          "aggressionFactor": {
+            "numerator": 13488,
+            "denominator": 18463
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            28,
+            43
+          ],
+          "pfr": [
+            5,
+            14
+          ],
+          "threeBet": [
+            1,
+            8
+          ],
+          "cBet": [
+            44,
+            54
+          ],
+          "aggressionFactor": [
+            0.5,
+            2
+          ],
+          "foldToCBet": [
+            28,
+            42
+          ],
+          "turnCBet": [
+            28,
+            35
+          ]
+        },
+        "metrics": {
+          "vpip": 36.57222222222222,
+          "pfr": 8.623333333333333,
+          "threeBet": 2.4057254541273854,
+          "cBet": 47.24609375,
+          "foldToCBet": 43.789512830048345,
+          "turnCBet": 33.37229690239626,
+          "wtsd": 53.58952702702703,
+          "aggressionFactor": 0.7305421654119049
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/calling-station/six-max",
+      "metrics": [
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "calling-station",
+        "format": "six-max",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 25742,
+            "denominator": 60000
+          },
+          "pfr": {
+            "numerator": 6413,
+            "denominator": 60000
+          },
+          "threeBet": {
+            "numerator": 448,
+            "denominator": 20003
+          },
+          "cBet": {
+            "numerator": 1972,
+            "denominator": 4269
+          },
+          "foldToCBet": {
+            "numerator": 2517,
+            "denominator": 7435
+          },
+          "turnCBet": {
+            "numerator": 767,
+            "denominator": 1804
+          },
+          "wtsd": {
+            "numerator": 14783,
+            "denominator": 26485
+          },
+          "aggressionFactor": {
+            "numerator": 11709,
+            "denominator": 12813
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            38,
+            56
+          ],
+          "pfr": [
+            7,
+            17
+          ],
+          "threeBet": [
+            2,
+            9
+          ],
+          "cBet": [
+            44,
+            54
+          ],
+          "aggressionFactor": [
+            0.5,
+            2
+          ],
+          "foldToCBet": [
+            30,
+            40
+          ],
+          "turnCBet": [
+            30,
+            38
+          ]
+        },
+        "metrics": {
+          "vpip": 42.90333333333333,
+          "pfr": 10.688333333333333,
+          "threeBet": 2.239664050392441,
+          "cBet": 46.193487936284846,
+          "foldToCBet": 33.853396099529256,
+          "turnCBet": 42.51662971175166,
+          "wtsd": 55.81649990560694,
+          "aggressionFactor": 0.9138375087801451
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "texas-holdem/calling-station/heads-up",
+      "metrics": [
+        "foldToCBet",
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "texas-holdem",
+        "archetype": "calling-station",
+        "format": "heads-up",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 13421,
+            "denominator": 20000
+          },
+          "pfr": {
+            "numerator": 3897,
+            "denominator": 20000
+          },
+          "threeBet": {
+            "numerator": 214,
+            "denominator": 3683
+          },
+          "cBet": {
+            "numerator": 1109,
+            "denominator": 2668
+          },
+          "foldToCBet": {
+            "numerator": 807,
+            "denominator": 2439
+          },
+          "turnCBet": {
+            "numerator": 395,
+            "denominator": 1051
+          },
+          "wtsd": {
+            "numerator": 12036,
+            "denominator": 18356
+          },
+          "aggressionFactor": {
+            "numerator": 7141,
+            "denominator": 3725
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            62,
+            85
+          ],
+          "pfr": [
+            15,
+            36
+          ],
+          "threeBet": [
+            2,
+            13
+          ],
+          "cBet": [
+            38,
+            48
+          ],
+          "aggressionFactor": [
+            1,
+            3
+          ],
+          "foldToCBet": [
+            25,
+            40
+          ],
+          "turnCBet": [
+            25,
+            38
+          ]
+        },
+        "metrics": {
+          "vpip": 67.105,
+          "pfr": 19.485,
+          "threeBet": 5.810480586478414,
+          "cBet": 41.56671664167916,
+          "foldToCBet": 33.08733087330874,
+          "turnCBet": 37.58325404376784,
+          "wtsd": 65.56984092394858,
+          "aggressionFactor": 1.9170469798657719
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/tag/full-ring",
+      "metrics": [
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "tag",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 28199,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 12623,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 3609,
+            "denominator": 39128
+          },
+          "cBet": {
+            "numerator": 3547,
+            "denominator": 6878
+          },
+          "foldToCBet": {
+            "numerator": 3244,
+            "denominator": 6838
+          },
+          "turnCBet": {
+            "numerator": 679,
+            "denominator": 1682
+          },
+          "wtsd": {
+            "numerator": 7558,
+            "denominator": 25860
+          },
+          "aggressionFactor": {
+            "numerator": 11438,
+            "denominator": 6480
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            22,
+            33
+          ],
+          "pfr": [
+            12,
+            20
+          ],
+          "threeBet": [
+            5,
+            11
+          ],
+          "cBet": [
+            35,
+            55
+          ],
+          "aggressionFactor": [
+            1.5,
+            3.5
+          ],
+          "wtsd": [
+            22,
+            32
+          ],
+          "foldToCBet": [
+            45,
+            52
+          ],
+          "turnCBet": [
+            40,
+            48
+          ]
+        },
+        "metrics": {
+          "vpip": 31.33222222222222,
+          "pfr": 14.025555555555554,
+          "threeBet": 9.22357391126559,
+          "cBet": 51.57022390229717,
+          "foldToCBet": 47.44077215560105,
+          "turnCBet": 40.36860879904875,
+          "wtsd": 29.22660479505027,
+          "aggressionFactor": 1.7651234567901235
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/tag/six-max",
+      "metrics": [
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "tag",
+        "format": "six-max",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 18361,
+            "denominator": 60000
+          },
+          "pfr": {
+            "numerator": 10088,
+            "denominator": 60000
+          },
+          "threeBet": {
+            "numerator": 2458,
+            "denominator": 20839
+          },
+          "cBet": {
+            "numerator": 2723,
+            "denominator": 5367
+          },
+          "foldToCBet": {
+            "numerator": 1898,
+            "denominator": 4015
+          },
+          "turnCBet": {
+            "numerator": 472,
+            "denominator": 1243
+          },
+          "wtsd": {
+            "numerator": 5248,
+            "denominator": 16938
+          },
+          "aggressionFactor": {
+            "numerator": 8412,
+            "denominator": 3482
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            28,
+            39
+          ],
+          "pfr": [
+            15,
+            24
+          ],
+          "threeBet": [
+            7,
+            13
+          ],
+          "cBet": [
+            35,
+            55
+          ],
+          "aggressionFactor": [
+            1.5,
+            3.5
+          ],
+          "wtsd": [
+            22,
+            32
+          ],
+          "foldToCBet": [
+            42,
+            50
+          ],
+          "turnCBet": [
+            42,
+            50
+          ]
+        },
+        "metrics": {
+          "vpip": 30.601666666666667,
+          "pfr": 16.813333333333333,
+          "threeBet": 11.795191707855464,
+          "cBet": 50.73597913173094,
+          "foldToCBet": 47.27272727272727,
+          "turnCBet": 37.97264682220434,
+          "wtsd": 30.983587200377848,
+          "aggressionFactor": 2.4158529580700745
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/tag/heads-up",
+      "metrics": [
+        "threeBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "tag",
+        "format": "heads-up",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 11881,
+            "denominator": 20000
+          },
+          "pfr": {
+            "numerator": 6998,
+            "denominator": 20000
+          },
+          "threeBet": {
+            "numerator": 1592,
+            "denominator": 5406
+          },
+          "cBet": {
+            "numerator": 1998,
+            "denominator": 3773
+          },
+          "foldToCBet": {
+            "numerator": 999,
+            "denominator": 2458
+          },
+          "turnCBet": {
+            "numerator": 386,
+            "denominator": 1028
+          },
+          "wtsd": {
+            "numerator": 3644,
+            "denominator": 12314
+          },
+          "aggressionFactor": {
+            "numerator": 7047,
+            "denominator": 1994
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            45,
+            65
+          ],
+          "pfr": [
+            30,
+            48
+          ],
+          "threeBet": [
+            10,
+            20
+          ],
+          "cBet": [
+            40,
+            60
+          ],
+          "aggressionFactor": [
+            2,
+            5
+          ],
+          "wtsd": [
+            22,
+            32
+          ],
+          "foldToCBet": [
+            38,
+            52
+          ],
+          "turnCBet": [
+            38,
+            52
+          ]
+        },
+        "metrics": {
+          "vpip": 59.404999999999994,
+          "pfr": 34.99,
+          "threeBet": 29.44876063633,
+          "cBet": 52.95520805724887,
+          "foldToCBet": 40.642799023596424,
+          "turnCBet": 37.54863813229572,
+          "wtsd": 29.592333928861457,
+          "aggressionFactor": 3.5341023069207624
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/nit/full-ring",
+      "metrics": [
+        "aggressionFactor"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "nit",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 19073,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 11870,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 2812,
+            "denominator": 42865
+          },
+          "cBet": {
+            "numerator": 1476,
+            "denominator": 3348
+          },
+          "foldToCBet": {
+            "numerator": 1389,
+            "denominator": 2210
+          },
+          "turnCBet": {
+            "numerator": 137,
+            "denominator": 385
+          },
+          "wtsd": {
+            "numerator": 2521,
+            "denominator": 9490
+          },
+          "aggressionFactor": {
+            "numerator": 4054,
+            "denominator": 1065
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            14,
+            22
+          ],
+          "pfr": [
+            8,
+            14
+          ],
+          "threeBet": [
+            3,
+            7
+          ],
+          "cBet": [
+            30,
+            50
+          ],
+          "aggressionFactor": [
+            1.5,
+            3.5
+          ],
+          "wtsd": [
+            22,
+            28
+          ],
+          "foldToCBet": [
+            55,
+            65
+          ],
+          "turnCBet": [
+            32,
+            40
+          ]
+        },
+        "metrics": {
+          "vpip": 21.192222222222224,
+          "pfr": 13.188888888888888,
+          "threeBet": 6.560130642715502,
+          "cBet": 44.086021505376344,
+          "foldToCBet": 62.85067873303167,
+          "turnCBet": 35.58441558441559,
+          "wtsd": 26.56480505795574,
+          "aggressionFactor": 3.8065727699530516
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/nit/six-max",
+      "metrics": [
+        "turnCBet",
+        "aggressionFactor"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "nit",
+        "format": "six-max",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 14998,
+            "denominator": 60000
+          },
+          "pfr": {
+            "numerator": 9601,
+            "denominator": 60000
+          },
+          "threeBet": {
+            "numerator": 1938,
+            "denominator": 22762
+          },
+          "cBet": {
+            "numerator": 1038,
+            "denominator": 2507
+          },
+          "foldToCBet": {
+            "numerator": 888,
+            "denominator": 1552
+          },
+          "turnCBet": {
+            "numerator": 104,
+            "denominator": 312
+          },
+          "wtsd": {
+            "numerator": 2263,
+            "denominator": 8548
+          },
+          "aggressionFactor": {
+            "numerator": 3635,
+            "denominator": 795
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            18,
+            28
+          ],
+          "pfr": [
+            10,
+            17
+          ],
+          "threeBet": [
+            4,
+            9
+          ],
+          "cBet": [
+            30,
+            50
+          ],
+          "aggressionFactor": [
+            1.5,
+            4
+          ],
+          "wtsd": [
+            22,
+            28
+          ],
+          "foldToCBet": [
+            52,
+            62
+          ],
+          "turnCBet": [
+            35,
+            42
+          ]
+        },
+        "metrics": {
+          "vpip": 24.996666666666666,
+          "pfr": 16.001666666666665,
+          "threeBet": 8.514190317195327,
+          "cBet": 41.404068607897884,
+          "foldToCBet": 57.21649484536082,
+          "turnCBet": 33.33333333333333,
+          "wtsd": 26.47402901263454,
+          "aggressionFactor": 4.572327044025157
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/nit/heads-up",
+      "metrics": [
+        "turnCBet",
+        "aggressionFactor"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "nit",
+        "format": "heads-up",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 6977,
+            "denominator": 20000
+          },
+          "pfr": {
+            "numerator": 4409,
+            "denominator": 20000
+          },
+          "threeBet": {
+            "numerator": 354,
+            "denominator": 4055
+          },
+          "cBet": {
+            "numerator": 475,
+            "denominator": 1095
+          },
+          "foldToCBet": {
+            "numerator": 310,
+            "denominator": 642
+          },
+          "turnCBet": {
+            "numerator": 76,
+            "denominator": 186
+          },
+          "wtsd": {
+            "numerator": 978,
+            "denominator": 4494
+          },
+          "aggressionFactor": {
+            "numerator": 2407,
+            "denominator": 449
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            30,
+            45
+          ],
+          "pfr": [
+            15,
+            30
+          ],
+          "threeBet": [
+            6,
+            12
+          ],
+          "cBet": [
+            35,
+            55
+          ],
+          "aggressionFactor": [
+            2,
+            4.5
+          ],
+          "wtsd": [
+            22,
+            28
+          ],
+          "foldToCBet": [
+            45,
+            60
+          ],
+          "turnCBet": [
+            32,
+            45
+          ]
+        },
+        "metrics": {
+          "vpip": 34.885,
+          "pfr": 22.045,
+          "threeBet": 8.72996300863132,
+          "cBet": 43.37899543378995,
+          "foldToCBet": 48.28660436137071,
+          "turnCBet": 40.86021505376344,
+          "wtsd": 21.762349799732977,
+          "aggressionFactor": 5.360801781737194
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/lag/full-ring",
+      "metrics": [
+        "threeBet",
+        "turnCBet",
+        "wtsd",
+        "aggressionFactor"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "lag",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 30569,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 17703,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 6772,
+            "denominator": 39705
+          },
+          "cBet": {
+            "numerator": 1837,
+            "denominator": 3845
+          },
+          "foldToCBet": {
+            "numerator": 1733,
+            "denominator": 3816
+          },
+          "turnCBet": {
+            "numerator": 227,
+            "denominator": 550
+          },
+          "wtsd": {
+            "numerator": 4567,
+            "denominator": 16391
+          },
+          "aggressionFactor": {
+            "numerator": 7962,
+            "denominator": 4446
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            29,
+            40
+          ],
+          "pfr": [
+            18,
+            28
+          ],
+          "threeBet": [
+            8,
+            16
+          ],
+          "cBet": [
+            40,
+            60
+          ],
+          "aggressionFactor": [
+            2,
+            4.2
+          ],
+          "wtsd": [
+            28,
+            34
+          ],
+          "foldToCBet": [
+            38,
+            46
+          ],
+          "turnCBet": [
+            45,
+            54
+          ]
+        },
+        "metrics": {
+          "vpip": 33.965555555555554,
+          "pfr": 19.67,
+          "threeBet": 17.055786424883514,
+          "cBet": 47.77633289986996,
+          "foldToCBet": 45.414046121593294,
+          "turnCBet": 41.27272727272727,
+          "wtsd": 27.86285156488317,
+          "aggressionFactor": 1.7908232118758434
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/lag/six-max",
+      "metrics": [
+        "wtsd"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "lag",
+        "format": "six-max",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 27440,
+            "denominator": 60000
+          },
+          "pfr": {
+            "numerator": 14956,
+            "denominator": 60000
+          },
+          "threeBet": {
+            "numerator": 4797,
+            "denominator": 31213
+          },
+          "cBet": {
+            "numerator": 2634,
+            "denominator": 5962
+          },
+          "foldToCBet": {
+            "numerator": 1578,
+            "denominator": 3742
+          },
+          "turnCBet": {
+            "numerator": 232,
+            "denominator": 412
+          },
+          "wtsd": {
+            "numerator": 5553,
+            "denominator": 21186
+          },
+          "aggressionFactor": {
+            "numerator": 11512,
+            "denominator": 4536
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            35,
+            48
+          ],
+          "pfr": [
+            22,
+            32
+          ],
+          "threeBet": [
+            9,
+            18
+          ],
+          "cBet": [
+            40,
+            60
+          ],
+          "aggressionFactor": [
+            2,
+            4.2
+          ],
+          "wtsd": [
+            28,
+            34
+          ],
+          "foldToCBet": [
+            36,
+            44
+          ],
+          "turnCBet": [
+            48,
+            58
+          ]
+        },
+        "metrics": {
+          "vpip": 45.733333333333334,
+          "pfr": 24.926666666666666,
+          "threeBet": 15.3685964181591,
+          "cBet": 44.17980543441798,
+          "foldToCBet": 42.16996258685195,
+          "turnCBet": 56.310679611650485,
+          "wtsd": 26.210705182667798,
+          "aggressionFactor": 2.5379188712522045
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/calling-station/full-ring",
+      "metrics": [
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "calling-station",
+        "format": "full-ring",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 35183,
+            "denominator": 90000
+          },
+          "pfr": {
+            "numerator": 6738,
+            "denominator": 90000
+          },
+          "threeBet": {
+            "numerator": 721,
+            "denominator": 29418
+          },
+          "cBet": {
+            "numerator": 1550,
+            "denominator": 4537
+          },
+          "foldToCBet": {
+            "numerator": 3505,
+            "denominator": 9068
+          },
+          "turnCBet": {
+            "numerator": 256,
+            "denominator": 1248
+          },
+          "wtsd": {
+            "numerator": 13973,
+            "denominator": 36468
+          },
+          "aggressionFactor": {
+            "numerator": 10933,
+            "denominator": 14608
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            32,
+            48
+          ],
+          "pfr": [
+            5,
+            14
+          ],
+          "threeBet": [
+            0.5,
+            7
+          ],
+          "cBet": [
+            20,
+            41
+          ],
+          "aggressionFactor": [
+            0.5,
+            2
+          ],
+          "wtsd": [
+            28,
+            45
+          ],
+          "foldToCBet": [
+            30,
+            40
+          ],
+          "turnCBet": [
+            22,
+            30
+          ]
+        },
+        "metrics": {
+          "vpip": 39.092222222222226,
+          "pfr": 7.486666666666666,
+          "threeBet": 2.4508804133523694,
+          "cBet": 34.163544192197485,
+          "foldToCBet": 38.65240405822673,
+          "turnCBet": 20.51282051282051,
+          "wtsd": 38.315783700778766,
+          "aggressionFactor": 0.7484255202628697
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/calling-station/six-max",
+      "metrics": [
+        "foldToCBet",
+        "turnCBet"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "calling-station",
+        "format": "six-max",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 28338,
+            "denominator": 60000
+          },
+          "pfr": {
+            "numerator": 5073,
+            "denominator": 60000
+          },
+          "threeBet": {
+            "numerator": 446,
+            "denominator": 15415
+          },
+          "cBet": {
+            "numerator": 1327,
+            "denominator": 3682
+          },
+          "foldToCBet": {
+            "numerator": 2690,
+            "denominator": 6791
+          },
+          "turnCBet": {
+            "numerator": 249,
+            "denominator": 1101
+          },
+          "wtsd": {
+            "numerator": 11706,
+            "denominator": 31989
+          },
+          "aggressionFactor": {
+            "numerator": 9732,
+            "denominator": 7183
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            42,
+            60
+          ],
+          "pfr": [
+            7,
+            17
+          ],
+          "threeBet": [
+            1,
+            8
+          ],
+          "cBet": [
+            20,
+            40
+          ],
+          "aggressionFactor": [
+            0.5,
+            2.1
+          ],
+          "wtsd": [
+            28,
+            45
+          ],
+          "foldToCBet": [
+            28,
+            38
+          ],
+          "turnCBet": [
+            25,
+            32
+          ]
+        },
+        "metrics": {
+          "vpip": 47.23,
+          "pfr": 8.455,
+          "threeBet": 2.8932857606227698,
+          "cBet": 36.04019554589897,
+          "foldToCBet": 39.611250184067146,
+          "turnCBet": 22.615803814713896,
+          "wtsd": 36.59382912876301,
+          "aggressionFactor": 1.3548656550187943
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    },
+    {
+      "key": "omaha-high/calling-station/heads-up",
+      "metrics": [
+        "aggressionFactor"
+      ],
+      "seedSalt": "release-confirmation-v1",
+      "entry": {
+        "variant": "omaha-high",
+        "archetype": "calling-station",
+        "format": "heads-up",
+        "hands": 10000,
+        "observations": {
+          "vpip": {
+            "numerator": 14386,
+            "denominator": 20000
+          },
+          "pfr": {
+            "numerator": 5626,
+            "denominator": 20000
+          },
+          "threeBet": {
+            "numerator": 510,
+            "denominator": 5116
+          },
+          "cBet": {
+            "numerator": 1085,
+            "denominator": 4498
+          },
+          "foldToCBet": {
+            "numerator": 448,
+            "denominator": 1465
+          },
+          "turnCBet": {
+            "numerator": 230,
+            "denominator": 730
+          },
+          "wtsd": {
+            "numerator": 7788,
+            "denominator": 18044
+          },
+          "aggressionFactor": {
+            "numerator": 8535,
+            "denominator": 3284
+          }
+        },
+        "targetRanges": {
+          "vpip": [
+            60,
+            82
+          ],
+          "pfr": [
+            15,
+            32
+          ],
+          "threeBet": [
+            3,
+            12
+          ],
+          "cBet": [
+            25,
+            45
+          ],
+          "aggressionFactor": [
+            0.8,
+            2.5
+          ],
+          "wtsd": [
+            28,
+            45
+          ],
+          "foldToCBet": [
+            25,
+            42
+          ],
+          "turnCBet": [
+            25,
+            38
+          ]
+        },
+        "metrics": {
+          "vpip": 71.93,
+          "pfr": 28.13,
+          "threeBet": 9.968725566849102,
+          "cBet": 24.121831925300132,
+          "foldToCBet": 30.580204778156993,
+          "turnCBet": 31.506849315068493,
+          "wtsd": 43.16116160496564,
+          "aggressionFactor": 2.5989646772228987
+        },
+        "invariants": {
+          "invalidActions": 0,
+          "deepOpenShoves": 0,
+          "uncommittedDeepShoves": 0,
+          "metricViolations": []
+        }
+      }
+    }
+  ]
+}

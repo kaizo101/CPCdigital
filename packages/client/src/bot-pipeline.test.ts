@@ -230,6 +230,262 @@ function escalationValue(context: DecisionContext, type: PlayerAction['type']): 
     ?.value
 }
 
+function firstHandDeepShoveContext(holeCards: [Card, Card], category: DecisionContext['handAssessment']['category']): DecisionContext {
+  const callAmount = 1980
+  const totalPot = 2090
+  const legalActions: LegalActions = {
+    fold: true, check: false, callAmount, raise: null, allInAmount: callAmount,
+  }
+  const result = context(legalActions, {
+    totalPot, eligiblePot: totalPot, toCall: callAmount, callAmount,
+    potOdds: callAmount / (totalPot + callAmount),
+    toCallPotRatio: callAmount / totalPot,
+    playerStack: callAmount, playerStartingStack: 2000,
+    effectiveStack: callAmount, voluntaryHandContribution: 0,
+    spr: callAmount / totalPot,
+  })
+  result.gameView.phase = 'preflop'
+  result.gameView.myCards = holeCards
+  result.gameView.currentBet = 2000
+  result.gameView.bigBlind = 20
+  result.position = 'blinds'
+  result.tableSize = 6
+  result.botState = createBotState(LAG_PERSONALITY, 60, () => 0.5)
+  result.handAssessment = {
+    ...result.handAssessment,
+    category,
+    rank: 0,
+    made: false,
+    strength: category === 'premium' ? 95 : 82,
+    nutPotential: category === 'premium' ? 'near-nuts' : 'strong',
+  }
+  result.preflopRangeAction = category === 'premium' ? 'raise' : 'call'
+  result.streetAnalysis = postflopAnalysis({
+    street: 'preflop',
+    preflopRaiseCount: 2,
+    preflopAggressor: 'hero',
+    streetAggressor: { preflop: 'hero', flop: null, turn: null, river: null },
+    opponentLines: new Map(),
+  })
+  return result
+}
+
+describe('expensive first-hand preflop defense', () => {
+  const queenJack: [Card, Card] = [
+    { rank: 'Q', suit: 'diamonds' }, { rank: 'J', suit: 'hearts' },
+  ]
+
+  it('does not treat QJo as an automatic 100 BB call against an unknown three-bet shove', () => {
+    const decisionContext = firstHandDeepShoveContext(queenJack, 'strong')
+    const decision = decideAction(decisionContext, { random: () => 0.99 })
+    const fold = decision.allActions.find(candidate => candidate.action.type === 'fold')!
+    const passiveShove = decision.allActions.find(candidate => candidate.candidateId === 'all-in:passive-call')!
+
+    expect(decision.action.type).toBe('fold')
+    expect(fold.utility).toBeGreaterThan(passiveShove.utility)
+  })
+
+  it('retains a value continue with aces and avoids a deep-shove penalty after commitment', () => {
+    const aces = firstHandDeepShoveContext([
+      { rank: 'A', suit: 'diamonds' }, { rank: 'A', suit: 'hearts' },
+    ], 'premium')
+    expect(decideAction(aces, { random: () => 0.99 }).action.type).toBe('all-in')
+
+    const committed = firstHandDeepShoveContext(queenJack, 'strong')
+    committed.metrics.potCommitment = 0.3
+    expect(scoreActions(committed).every(candidate => candidate.contributions.every(
+      contribution => !contribution.label.includes('Deep preflop call pressure'),
+    ))).toBe(true)
+
+    const partiallyCommitted = firstHandDeepShoveContext(queenJack, 'strong')
+    partiallyCommitted.metrics.potCommitment = 0.1
+    const partialRisk = scoreActions(partiallyCommitted)
+      .find(candidate => candidate.action.type === 'call')!
+      .contributions.find(contribution => contribution.label === 'Deep preflop call pressure')!.value
+    const uncommittedRisk = scoreActions(firstHandDeepShoveContext(queenJack, 'strong'))
+      .find(candidate => candidate.action.type === 'call')!
+      .contributions.find(contribution => contribution.label === 'Deep preflop call pressure')!.value
+    expect(partialRisk).toBeGreaterThan(uncommittedRisk)
+    expect(partialRisk).toBeLessThan(0)
+  })
+
+  it('responds to a deep open shove too, but not a normal three-bet or a 40 BB stack', () => {
+    const pressure = (decisionContext: DecisionContext) => scoreActions(decisionContext)
+      .find(candidate => candidate.action.type === 'call')!
+      .contributions.find(contribution => contribution.label === 'Deep preflop call pressure')?.value ?? 0
+    const openShove = firstHandDeepShoveContext(queenJack, 'strong')
+    openShove.streetAnalysis!.preflopRaiseCount = 1
+    expect(pressure(openShove)).toBeLessThan(0)
+
+    const normalThreeBet = firstHandDeepShoveContext(queenJack, 'strong')
+    normalThreeBet.metrics.callAmount = 160
+    normalThreeBet.metrics.potOdds = 160 / 460
+    expect(pressure(normalThreeBet)).toBe(0)
+
+    const deepNonAllIn = firstHandDeepShoveContext(queenJack, 'strong')
+    deepNonAllIn.legalActions.callAmount = 1200
+    deepNonAllIn.metrics.callAmount = 1200
+    deepNonAllIn.metrics.potOdds = 0.48
+    expect(pressure(deepNonAllIn)).toBeLessThan(0)
+
+    const shortStack = firstHandDeepShoveContext(queenJack, 'strong')
+    shortStack.metrics.playerStartingStackBb = 40
+    expect(pressure(shortStack)).toBe(0)
+
+    const premiumBorder = firstHandDeepShoveContext([
+      { rank: 'A', suit: 'diamonds' }, { rank: 'K', suit: 'hearts' },
+    ], 'strong')
+    expect(pressure(premiumBorder)).toBeGreaterThan(pressure(firstHandDeepShoveContext(queenJack, 'strong')))
+  })
+
+  it('does not label an unchosen preflop medium-hand call as bluff-catching', () => {
+    const medium = firstHandDeepShoveContext([
+      { rank: 'Q', suit: 'spades' }, { rank: '7', suit: 'clubs' },
+    ], 'medium')
+    expect(scoreActions(medium).find(candidate => candidate.action.type === 'call')?.intent).toBe('pot-control')
+  })
+})
+
+function freshOpponentFlopBetContext(bet: number, holeCards: [Card, Card]): DecisionContext {
+  const startingPot = 100
+  const totalPot = startingPot + bet
+  const legalActions: LegalActions = {
+    fold: true, check: false, callAmount: bet, raise: null, allInAmount: null,
+  }
+  const result = context(legalActions, {
+    totalPot, eligiblePot: totalPot, toCall: bet, callAmount: bet,
+    potOdds: bet / (totalPot + bet), toCallPotRatio: bet / totalPot,
+    playerStack: 2000, playerStartingStack: 2000, effectiveStack: 2000,
+    voluntaryHandContribution: 0, spr: 2000 / totalPot,
+  })
+  result.gameView.myCards = holeCards
+  result.gameView.board = [
+    { rank: 'K', suit: 'diamonds' },
+    { rank: '7', suit: 'clubs' },
+    { rank: '2', suit: 'hearts' },
+  ]
+  result.handAssessment = assessHand(holeCards, result.gameView.board)
+  result.tableSize = 6
+  result.botState = createBotState(TAG_PERSONALITY, 80, () => 0.5)
+  result.streetAnalysis = postflopAnalysis({
+    preflopAggressor: 'villain',
+    streetAggressor: { preflop: 'villain', flop: 'villain', turn: null, river: null },
+    opponentLines: new Map(),
+  })
+  return result
+}
+
+describe('first-encounter overbet defense', () => {
+  const topPair: [Card, Card] = [
+    { rank: 'K', suit: 'spades' }, { rank: 'J', suit: 'hearts' },
+  ]
+  const set: [Card, Card] = [
+    { rank: 'K', suit: 'spades' }, { rank: 'K', suit: 'hearts' },
+  ]
+
+  it('reduces top-pair willingness as price rises even without prior sizing reads', () => {
+    const normal = freshOpponentFlopBetContext(50, topPair)
+    const doublePot = freshOpponentFlopBetContext(200, topPair)
+    const triplePot = freshOpponentFlopBetContext(300, topPair)
+    const callMargin = (decisionContext: DecisionContext) => {
+      const candidates = scoreActions(decisionContext)
+      return candidates.find(candidate => candidate.action.type === 'call')!.utility
+        - candidates.find(candidate => candidate.action.type === 'fold')!.utility
+    }
+
+    expect(callMargin(normal)).toBeGreaterThan(callMargin(doublePot))
+    expect(callMargin(doublePot)).toBeGreaterThan(callMargin(triplePot))
+    expect(decideAction(triplePot, { random: () => 0.99 }).action.type).toBe('fold')
+  })
+
+  it('keeps a set from auto-folding to a single overbet', () => {
+    const strongValue = freshOpponentFlopBetContext(300, set)
+    expect(decideAction(strongValue, { random: () => 0.99 }).action.type).toBe('call')
+  })
+
+  it('does not apply the made-hand overbet brake to a substantial combo draw', () => {
+    const comboDraw: [Card, Card] = [
+      { rank: 'J', suit: 'spades' }, { rank: 'T', suit: 'spades' },
+    ]
+    const decisionContext = freshOpponentFlopBetContext(300, comboDraw)
+    decisionContext.gameView.board = [
+      { rank: 'J', suit: 'diamonds' },
+      { rank: '9', suit: 'spades' },
+      { rank: '8', suit: 'spades' },
+    ]
+    decisionContext.handAssessment = assessHand(comboDraw, decisionContext.gameView.board)
+
+    expect(decisionContext.handAssessment.drawQuality).toBeGreaterThanOrEqual(65)
+    expect(scoreActions(decisionContext).find(candidate => candidate.action.type === 'call')!
+      .contributions.some(contribution => contribution.label.startsWith('Overbet price pressure'))).toBe(false)
+  })
+
+  it('starts continuously above a pot-sized bet and evaluates the effective call price', () => {
+    const pressure = (bet: number) => scoreActions(freshOpponentFlopBetContext(bet, topPair))
+      .find(candidate => candidate.action.type === 'call')!
+      .contributions.find(contribution => contribution.label.startsWith('Overbet price pressure'))?.value ?? 0
+
+    expect(pressure(99)).toBe(0)
+    expect(pressure(100)).toBe(0)
+    expect(pressure(101)).toBeLessThanOrEqual(0)
+    expect(pressure(200)).toBeGreaterThan(pressure(300))
+    expect(pressure(300)).toBeLessThan(0)
+
+    const cappedCall = freshOpponentFlopBetContext(300, topPair)
+    cappedCall.legalActions.callAmount = 20
+    cappedCall.legalActions.allInAmount = 20
+    cappedCall.metrics.callAmount = 20
+    cappedCall.metrics.potOdds = 20 / (400 + 20)
+    cappedCall.metrics.toCallPotRatio = 20 / 400
+    cappedCall.metrics.playerStack = 20
+    expect(scoreActions(cappedCall).find(candidate => candidate.action.type === 'call')!
+      .contributions.some(contribution => contribution.label.startsWith('Overbet price pressure'))).toBe(false)
+  })
+
+  it('carries the same price caution to turn and river without changing the hand category', () => {
+    for (const phase of ['turn', 'river'] as const) {
+      const decisionContext = freshOpponentFlopBetContext(300, topPair)
+      decisionContext.gameView.phase = phase
+      decisionContext.gameView.board.push({ rank: '4', suit: 'clubs' })
+      if (phase === 'river') decisionContext.gameView.board.push({ rank: '9', suit: 'spades' })
+      decisionContext.handAssessment = assessHand(topPair, decisionContext.gameView.board)
+      decisionContext.streetAnalysis = postflopAnalysis({
+        street: phase,
+        streetAggressor: {
+          preflop: 'villain', flop: null,
+          turn: phase === 'turn' ? 'villain' : null,
+          river: phase === 'river' ? 'villain' : null,
+        },
+      })
+
+      const call = scoreActions(decisionContext).find(candidate => candidate.action.type === 'call')!
+      expect(call.contributions.some(contribution => contribution.label.startsWith('Overbet price pressure'))).toBe(true)
+    }
+  })
+
+  it('does not transfer the NLHE price rule to PLO without separate evidence', () => {
+    const ploPair = freshOpponentFlopBetContext(300, topPair)
+    ploPair.variantId = 'omaha-high'
+    ploPair.gameView.myCards = [
+      ...topPair,
+      { rank: '8', suit: 'spades' },
+      { rank: '6', suit: 'hearts' },
+    ]
+    ploPair.categoryScores = getPloScores('tag', 'flop', 6)
+    ploPair.handAssessment = {
+      ...ploPair.handAssessment,
+      category: 'medium', rank: 2, made: true, nutPotential: 'medium', drawQuality: 0,
+    }
+    const call = scoreActions(ploPair).find(candidate => candidate.action.type === 'call')!
+    expect(call.contributions.some(contribution => contribution.label.startsWith('Overbet price pressure'))).toBe(false)
+
+    ploPair.gameView.phase = 'preflop'
+    ploPair.streetAnalysis!.preflopRaiseCount = 2
+    expect(scoreActions(ploPair).find(candidate => candidate.action.type === 'call')!
+      .contributions.some(contribution => contribution.label === 'Deep preflop call pressure')).toBe(false)
+  })
+})
+
 function riverBetFoldContext(response: boolean = false): DecisionContext {
   const callAmount = response ? 80 : null
   const legalActions: LegalActions = response
@@ -517,6 +773,54 @@ describe('bot utility candidates', () => {
     expect(escalationValue(nonPremium, 'fold')).toBeGreaterThan(0)
     expect(escalationValue(nonPremium, 'raise')).toBeLessThan(0)
     expect(scoreActions(nonPremium).find(candidate => candidate.action.type === 'raise')?.selectionEligible).toBe(false)
+  })
+
+  it('prices a first-hand deep PLO escalation without making a medium hand an automatic call', () => {
+    const legalActions: LegalActions = {
+      fold: true, check: false, callAmount: 1080, raise: null,
+      allInAmount: 2000,
+    }
+    const realisticPrice: BettingContext = {
+      playerId: 'bot', totalPot: 2160, eligiblePot: 2160,
+      toCall: 1080, callAmount: 1080,
+      potOdds: 1 / 3, toCallPotRatio: 0.5,
+      potRaiseTo: 2000, minRaiseTo: 2700, maxRaiseTo: 2000,
+      playerStack: 1460, playerStartingStack: 2000,
+      voluntaryHandContribution: 530,
+      effectiveStack: 380, spr: 380 / 2160, legalActions,
+    }
+    const makeSpot = (holeCards: Card[], category: DecisionContext['handAssessment']['category']) => {
+      const decisionContext = preflopEscalationContext({
+        raiseCount: 4, holeCards, category, variantId: 'omaha-high', skill: 77,
+      })
+      decisionContext.gameView.currentBet = 1620
+      decisionContext.gameView.myCards = holeCards
+      decisionContext.legalActions = legalActions
+      decisionContext.metrics = deriveDecisionMetrics(realisticPrice, 20)
+      decisionContext.categoryScores = getPloScores('tag', 'preflop', 2)
+      decisionContext.handAssessment.ploPreflopProfile = analyzePloPreflopFeatures(holeCards)
+      decisionContext.botState.memory.hand.raisedPreflop = true
+      decisionContext.preflopRangeAction = category === 'premium' ? 'raise' : 'call'
+      return decisionContext
+    }
+    const medium = makeSpot([
+      { rank: 'A', suit: 'hearts' }, { rank: 'J', suit: 'diamonds' },
+      { rank: '9', suit: 'spades' }, { rank: '2', suit: 'spades' },
+    ], 'medium')
+    const premium = makeSpot([
+      { rank: 'A', suit: 'hearts' }, { rank: 'A', suit: 'clubs' },
+      { rank: 'K', suit: 'hearts' }, { rank: 'Q', suit: 'clubs' },
+    ], 'premium')
+    const utility = (ctx: DecisionContext, type: PlayerAction['type']) => scoreActions(ctx)
+      .find(candidate => candidate.action.type === type)!.utility
+
+    expect(medium.metrics.potCommitment).toBeCloseTo(530 / 2000)
+    expect(medium.metrics.forcedAllInRatio).toBeCloseTo(1080 / 1460)
+    expect(utility(medium, 'fold')).toBeGreaterThan(utility(medium, 'call'))
+    expect(utility(premium, 'call')).toBeGreaterThan(utility(premium, 'fold'))
+    expect(scoreActions(medium).every(candidate => candidate.contributions.every(
+      contribution => contribution.label !== 'Deep preflop call pressure',
+    ))).toBe(true)
   })
 
   it('does not add escalation factors before a player faces a 3-bet', () => {

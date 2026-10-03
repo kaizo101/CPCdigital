@@ -11,6 +11,13 @@ import { HandReplayer } from './components/HandReplayer'
 import { createSessionHandHistoryFilename, type HandReplay } from './session/hand-replay'
 import { applyAndroidSystemUi, isAndroidRuntime } from './native-runtime'
 import { requestTextFileExport } from './utils/file-export'
+import { LegalNoticeDialog, type LegalNoticeKind } from './components/LegalNotice'
+import {
+  disableBrowserPersistence,
+  enableBrowserPersistence,
+  isPlainBrowserRuntime,
+  readBrowserPersistenceChoice,
+} from './browser-persistence'
 
 type Screen = 'setup' | 'table'
 
@@ -25,6 +32,7 @@ function readStoredDebugMode(): boolean {
 }
 
 export default function App() {
+  const [plainBrowser] = useState(isPlainBrowserRuntime)
   const [runner] = useState(() => new LocalGameRunner())
   const [, forceRender] = useState(0)
 
@@ -39,6 +47,27 @@ export default function App() {
   const [variantId, setVariantId] = useState('texas-holdem')
   const [debugMode, setDebugModeState] = useState(readStoredDebugMode)
   const [debugExporting, setDebugExporting] = useState(false)
+  const [legalNotice, setLegalNotice] = useState<LegalNoticeKind | null>(null)
+  const [browserPersistenceEnabled, setBrowserPersistenceEnabled] = useState(() => (
+    plainBrowser ? readBrowserPersistenceChoice() : true
+  ))
+  const [browserPersistenceError, setBrowserPersistenceError] = useState<string | null>(null)
+
+  function setBrowserPersistence(enabled: boolean) {
+    if (!plainBrowser) return
+    if (enabled) {
+      if (!enableBrowserPersistence()) {
+        setBrowserPersistenceError('Der Browser erlaubt die lokale Speicherung nicht.')
+        return
+      }
+      setBrowserPersistenceEnabled(true)
+      setBrowserPersistenceError(null)
+      return
+    }
+    const removed = disableBrowserPersistence()
+    setBrowserPersistenceEnabled(false)
+    setBrowserPersistenceError(removed ? null : 'Gespeicherte Daten konnten nicht vollständig gelöscht werden. Bitte den Browserspeicher prüfen.')
+  }
 
   function setDebugMode(enabled: boolean) {
     setDebugModeState(enabled)
@@ -113,7 +142,7 @@ export default function App() {
   function handleStartGame() {
     const tableOptions = { ...options, maxPlayers: botCount + 1 }
     setOptions(tableOptions)
-    runner.setupTable(tableOptions, botCount, rebuyEnabled, variantId)
+    runner.setupTable(tableOptions, botCount, rebuyEnabled, variantId, !plainBrowser || browserPersistenceEnabled)
     runner.startHand()
     setScreen('table')
   }
@@ -138,6 +167,10 @@ export default function App() {
     })
 
     void CapacitorApp.addListener('backButton', () => {
+      if (legalNotice) {
+        setLegalNotice(null)
+        return
+      }
       const replayOverlay = document.getElementById('replay-overlay')
       if (replayOverlay) {
         replayOverlay.dispatchEvent(new Event('cpc-request-close'))
@@ -158,7 +191,7 @@ export default function App() {
       if (removeResumeListener) void removeResumeListener()
       if (removeBackListener) void removeBackListener()
     }
-  }, [screen])
+  }, [screen, legalNotice])
 
   async function handleExportDebugRecord() {
     if (debugExporting) return
@@ -182,6 +215,7 @@ export default function App() {
           if (hn) localStorage.removeItem(`replay-${hn}`)
           localStorage.removeItem('replay-session')
           localStorage.removeItem('replay-start-index')
+          localStorage.removeItem('replay-debug')
           window.close()
         }}
       />
@@ -190,21 +224,30 @@ export default function App() {
 
   if (screen === 'setup') {
     return (
-      <SetupScreen
-        options={options}
-        setOptions={setOptions}
-        botCount={botCount}
-        setBotCount={setBotCount}
-        onStart={handleStartGame}
-        currency={currency}
-        setCurrency={setCurrency}
-        rebuyEnabled={rebuyEnabled}
-        setRebuyEnabled={setRebuyEnabled}
-        variantId={variantId}
-        setVariantId={setVariantId}
-        debugMode={debugMode}
-        setDebugMode={setDebugMode}
-      />
+      <>
+        <SetupScreen
+          options={options}
+          setOptions={setOptions}
+          botCount={botCount}
+          setBotCount={setBotCount}
+          onStart={handleStartGame}
+          currency={currency}
+          setCurrency={setCurrency}
+          rebuyEnabled={rebuyEnabled}
+          setRebuyEnabled={setRebuyEnabled}
+          variantId={variantId}
+          setVariantId={setVariantId}
+          debugMode={debugMode}
+          setDebugMode={setDebugMode}
+          browserPersistenceAvailable={plainBrowser}
+          browserPersistenceEnabled={browserPersistenceEnabled}
+          browserPersistenceError={browserPersistenceError}
+          onBrowserPersistenceChange={setBrowserPersistence}
+          onClearBrowserData={() => setBrowserPersistence(false)}
+          onOpenLegalNotice={setLegalNotice}
+        />
+        {legalNotice && <LegalNoticeDialog kind={legalNotice} onSelect={setLegalNotice} onClose={() => setLegalNotice(null)} />}
+      </>
     )
   }
 
@@ -213,41 +256,45 @@ export default function App() {
   )
 
   return (
-    <TableScreen
-      gameState={gameState}
-      myCards={localState.myCards}
-      lastResults={localState.lastResults}
-      isMyTurn={localState.isMyTurn}
-      playerAvatarKeys={localState.playerAvatarKeys}
-      playerActionLabels={localState.playerActionLabels}
-      showdownCards={localState.showdownCards}
-      botDebugDecisions={runner.getBotDebugDecisions()}
-      pendingRebuyPlayerIds={localState.pendingRebuyPlayerIds}
-      raiseAmount={raiseAmount}
-      setRaiseAmount={setRaiseAmount}
-      onAction={(action: PlayerAction) => runner.playerAction(action)}
-      onBack={handleBackToSetup}
-      options={options}
-      currency={currency}
-      onRebuy={playerId => runner.requestRebuy(playerId)}
-      onExportDebugRecord={handleExportDebugRecord}
-      debugExporting={debugExporting}
-      handReplays={localState.handReplays}
-      archivedHandReplays={localState.archivedHandReplays}
-      sessionStats={localState.sessionStats}
-      playerNames={playerNames}
-      debugMode={debugMode}
-      setDebugMode={setDebugMode}
-      onExportSessionLog={() => {
-        const log = runner.exportSessionLog()
-        requestTextFileExport({
-          data: log,
-          filename: createSessionHandHistoryFilename(localState.handReplays),
-          mimeType: 'text/plain',
-          title: 'CPCdigital Session',
-          dialogTitle: 'Session exportieren',
-        })
-      }}
-    />
+    <>
+      <TableScreen
+        gameState={gameState}
+        myCards={localState.myCards}
+        lastResults={localState.lastResults}
+        isMyTurn={localState.isMyTurn}
+        playerAvatarKeys={localState.playerAvatarKeys}
+        playerActionLabels={localState.playerActionLabels}
+        showdownCards={localState.showdownCards}
+        botDebugDecisions={runner.getBotDebugDecisions()}
+        pendingRebuyPlayerIds={localState.pendingRebuyPlayerIds}
+        raiseAmount={raiseAmount}
+        setRaiseAmount={setRaiseAmount}
+        onAction={(action: PlayerAction) => runner.playerAction(action)}
+        onBack={handleBackToSetup}
+        options={options}
+        currency={currency}
+        onRebuy={playerId => runner.requestRebuy(playerId)}
+        onExportDebugRecord={handleExportDebugRecord}
+        debugExporting={debugExporting}
+        handReplays={localState.handReplays}
+        archivedHandReplays={localState.archivedHandReplays}
+        sessionStats={localState.sessionStats}
+        playerNames={playerNames}
+        debugMode={debugMode}
+        setDebugMode={setDebugMode}
+        onExportSessionLog={() => {
+          const log = runner.exportSessionLog()
+          requestTextFileExport({
+            data: log,
+            filename: createSessionHandHistoryFilename(localState.handReplays),
+            mimeType: 'text/plain',
+            title: 'CPCdigital Session',
+            dialogTitle: 'Session exportieren',
+          })
+        }}
+        onOpenLegalNotice={setLegalNotice}
+      />
+      {legalNotice && <LegalNoticeDialog kind={legalNotice} onSelect={setLegalNotice} onClose={() => setLegalNotice(null)} />}
+    </>
   )
 }

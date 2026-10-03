@@ -44,10 +44,12 @@ import {
   loadPersistentRoster,
   recordSession,
   selectReturningSessionIdentities,
+  type SessionLogEntry,
 } from '../bot-roster-store'
 import type {
   BotIdentity,
 } from '../bot-identities'
+import { DEFAULT_BOT_ROSTER } from '../bot-identities'
 import { habitIdsToActiveHabits } from '../bot-habits'
 import type { ActiveHabit } from '../bot-habits'
 import type { BotArchetypeId } from '../bot-archetypes'
@@ -77,6 +79,7 @@ import {
   buildReplayFromSession,
   formatHandHistory,
   loadHandReplayArchive,
+  MAX_ARCHIVED_HANDS,
 } from './hand-replay'
 import type { HandReplay } from './hand-replay'
 import { BotRebuyManager } from './bot-rebuy-manager'
@@ -151,6 +154,9 @@ export class LocalGameRunner {
   )
   private handReplays: HandReplay[] = []
   private archivedHandReplays: HandReplay[] = []
+  private memoryArchivedHandReplays: HandReplay[] = []
+  private memorySessionLog: SessionLogEntry[] = []
+  private persistLocalHistory = true
   private playerNames = new Map<string, string>()
   private runoutStartCardCount: number | null = null
   private visibleCommunityCardCount: number | null = null
@@ -292,8 +298,15 @@ export class LocalGameRunner {
     return exportSessionLog(this.sessionStats, this.handReplays)
   }
 
-  setupTable(options: TableOptions, botCount: number, rebuyEnabled = true, variantId = 'texas-holdem'): Player[] {
+  setupTable(
+    options: TableOptions,
+    botCount: number,
+    rebuyEnabled = true,
+    variantId = 'texas-holdem',
+    persistLocalHistory = true,
+  ): Player[] {
     this.cleanup()
+    this.persistLocalHistory = persistLocalHistory
 
     if (!Number.isFinite(options.smallBlind) || options.smallBlind <= 0) throw new Error('Small blind must be positive')
     if (!Number.isFinite(options.bigBlind) || options.bigBlind <= 0) throw new Error('Big blind must be positive')
@@ -349,7 +362,9 @@ export class LocalGameRunner {
     this.previousSnapshotActionCountPerHand.clear()
     this.nextBotDebugSequence = 1
     this.handReplays = []
-    this.archivedHandReplays = loadHandReplayArchive()
+    this.archivedHandReplays = persistLocalHistory
+      ? loadHandReplayArchive()
+      : [...this.memoryArchivedHandReplays]
     this.playerNames.clear()
     this.playerNames.set(this.heroId, 'You')
     this.runoutStartCardCount = null
@@ -366,7 +381,9 @@ export class LocalGameRunner {
     this.sessionUtcOffsetMinutes = sessionTimestamp.utcOffsetMinutes
     this.currentHandStartedAt = null
 
-    const { roster, sessionLog } = loadPersistentRoster()
+    const { roster, sessionLog } = persistLocalHistory
+      ? loadPersistentRoster()
+      : { roster: DEFAULT_BOT_ROSTER, sessionLog: this.memorySessionLog }
     const sessionIdentities = selectReturningSessionIdentities(
       roster,
       effectiveBotCount,
@@ -401,7 +418,14 @@ export class LocalGameRunner {
       this.players.push(bot)
     }
 
-    recordSession(identityIds)
+    if (persistLocalHistory) {
+      recordSession(identityIds)
+    } else {
+      this.memorySessionLog = [
+        ...this.memorySessionLog,
+        { sessionStartedAt: this.sessionStartedAt, identityIds },
+      ].slice(-50)
+    }
 
     const variant = variantId === 'omaha-high' ? OMAHA_HIGH : TEXAS_HOLDEM
 
@@ -433,6 +457,7 @@ export class LocalGameRunner {
       rebuyEnabled,
       () => this.notify(),
       this.identityRandom,
+      roster,
     )
 
     this.notify()
@@ -851,7 +876,10 @@ export class LocalGameRunner {
     )
     if (replay) {
       this.handReplays.push(replay)
-      this.archivedHandReplays = appendHandReplayToArchive(replay)
+      this.archivedHandReplays = this.persistLocalHistory
+        ? appendHandReplayToArchive(replay)
+        : [...this.memoryArchivedHandReplays, replay].slice(-MAX_ARCHIVED_HANDS)
+      if (!this.persistLocalHistory) this.memoryArchivedHandReplays = this.archivedHandReplays
     }
   }
 

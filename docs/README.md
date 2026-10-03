@@ -1,20 +1,22 @@
 # Documentation
 
-This directory holds the in-depth project documentation in two languages:
+This directory holds in-depth project documentation:
 
-- **[Deutsch](de/README.md)** — the original documents, kept as the source of
-  truth for wording and status.
-- **[English](en/README.md)** — English versions of the same documents.
+- **[English](en/README.md)** — current documentation and entry points.
+- **[Deutsch](de/README.md)** — existing translations and historical material.
 
-Both versions describe the same state of the project; when they diverge, the
-German original is the authoritative one and the English version is to be
-corrected.
+The current root documents, including [ARCHITECTURE.md](../ARCHITECTURE.md)
+and [DEV.md](../DEV.md), are maintained in English. The German tree is not an
+independently updated source of truth; the English entry points identify
+historical drafts and the location of authoritative current guidance.
 
 Release-related measurements and baselines stay in
 [`calibration/`](../calibration/), device findings in
 [`testing/apk/`](../testing/apk/) and security checks in
-[`security/audits/`](../security/audits/). Those documents are currently
+[`security/audits/`](../security/audits/). The calibration index and new
+reports are in English; older reports and the other collections are currently
 German only.
 
-New documents should be added to both language trees: the German original
-first, then the English version with a matching file name.
+New documentation is written in English. Translate when there is a concrete
+audience need, and label historical or untranslated material rather than
+silently treating it as current.

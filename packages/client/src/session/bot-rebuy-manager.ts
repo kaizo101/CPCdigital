@@ -1,6 +1,6 @@
 import { createSeededRandom, PokerGame } from '@cpc/poker-engine'
 import type { Player } from '@cpc/shared'
-import type { BotIdentity, RebuyPolicy } from '../bot-identities'
+import type { BotIdentity, BotRoster, RebuyPolicy } from '../bot-identities'
 import { createBotStateFromIdentity } from '../bot-state'
 import { getBotArchetype } from '../bot-archetypes'
 import { habitIdsToActiveHabits } from '../bot-habits'
@@ -65,6 +65,7 @@ export class BotRebuyManager {
   private playerNames: Map<string, string>
   private onChanged: (() => void) | null
   private random: () => number
+  private roster: BotRoster | null
 
   constructor(
     game: PokerGame | null,
@@ -80,6 +81,7 @@ export class BotRebuyManager {
     rebuyEnabled: boolean,
     onChanged?: () => void,
     random: () => number = Math.random,
+    roster: BotRoster | null = null,
   ) {
     this.game = game
     this.players = players
@@ -94,6 +96,7 @@ export class BotRebuyManager {
     this._rebuyEnabled = rebuyEnabled
     this.onChanged = onChanged ?? null
     this.random = random
+    this.roster = roster
   }
 
   get rebuyEnabled(): boolean {
@@ -277,7 +280,7 @@ export class BotRebuyManager {
     const oldIdentity = this.botIdentities.get(botId)
     if (!oldIdentity) return
 
-    const { roster } = loadPersistentRoster()
+    const roster = this.roster ?? loadPersistentRoster().roster
     const usedIds = new Set([...this.botIdentities.values()].map((id: BotIdentity) => id.id))
     const candidates = roster.identities.filter(id => !usedIds.has(id.id))
     const freshIdentity = candidates[Math.floor(this.random() * candidates.length)]

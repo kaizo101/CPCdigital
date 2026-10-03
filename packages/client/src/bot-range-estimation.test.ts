@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { estimateRangeFromLine, rangeStrengthModifier } from './bot-range-estimation'
+import { estimateRangeFromLine, rangeScoreModifier, rangeStrengthModifier } from './bot-range-estimation'
 import type { OpponentLine } from './bot-street-analysis'
 
 const card = (rank: '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'T' | 'J' | 'Q' | 'K' | 'A', suit: 'clubs' | 'diamonds' | 'hearts' | 'spades') => ({ rank, suit })
@@ -61,6 +61,20 @@ describe('range estimation', () => {
     const mods = rangeStrengthModifier('weak')
     expect(mods.raise).toBeGreaterThan(0)
     expect(mods.fold).toBeLessThan(0)
+  })
+
+  it('keeps score-based action modifiers continuous at all range-label boundaries', () => {
+    for (const boundary of [30, 45, 60, 75]) {
+      const below = rangeScoreModifier(boundary - 0.001)
+      const at = rangeScoreModifier(boundary)
+      const above = rangeScoreModifier(boundary + 0.001)
+      for (const action of ['fold', 'call', 'raise'] as const) {
+        expect(Math.abs(at[action] - below[action])).toBeLessThan(0.001)
+        expect(Math.abs(above[action] - at[action])).toBeLessThan(0.001)
+      }
+    }
+    expect(rangeScoreModifier(58.74).raise).toBeCloseTo(-4.58, 2)
+    expect(rangeScoreModifier(60).raise).toBe(-5)
   })
 
   it('keeps low paired cards less represented in an early open than a button open or limp', () => {

@@ -10,6 +10,7 @@ const SUIT_COLOR: Record<string, string> = {
 export function CardView({ card, large }: { card: Card; large?: boolean }) {
   const color = SUIT_COLOR[card.suit]
   const suit = SUIT_SYMBOL[card.suit]
+  const displayRank = card.rank === 'T' ? '10' : card.rank
   const w = large ? 'clamp(44px, 4.2vw + 0.4vh, 98px)' : 'clamp(36px, 3.2vw + 0.4vh, 82px)'
   const h = large ? 'clamp(62px, 5.9vw + 0.6vh, 138px)' : 'clamp(50px, 4.5vw + 0.6vh, 115px)'
   const rankSize = large ? 'clamp(18px, 2vw, 34px)' : 'clamp(15px, 1.65vw, 28px)'
@@ -32,13 +33,13 @@ export function CardView({ card, large }: { card: Card; large?: boolean }) {
       position: 'relative',
     }}>
       <div className="playing-card-corner playing-card-corner--top" style={{ color, lineHeight: 1, textAlign: 'left' }}>
-        <div className="playing-card-rank" style={{ fontSize: rankSize, fontWeight: 800 }}>{card.rank}{suit}</div>
+        <div className="playing-card-rank" style={{ fontSize: rankSize, fontWeight: 800 }}>{displayRank}{suit}</div>
       </div>
       <div className="playing-card-suit" style={{ color, fontSize: suitCenter, textAlign: 'center', lineHeight: 1, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
         {suit}
       </div>
       <div className="playing-card-corner playing-card-corner--bottom" style={{ color, lineHeight: 1, textAlign: 'right', transform: 'rotate(180deg)', position: 'absolute', bottom: 2, right: 3 }}>
-        <div className="playing-card-rank" style={{ fontSize: rankSize, fontWeight: 800 }}>{card.rank}{suit}</div>
+        <div className="playing-card-rank" style={{ fontSize: rankSize, fontWeight: 800 }}>{displayRank}{suit}</div>
       </div>
     </div>
   )

@@ -8,6 +8,8 @@ import { CALLING_STATION_PERSONALITY, TAG_PERSONALITY } from './bot-tag'
 import { getNlheScores, getPloScores } from './bot-category-scores'
 import { assessHand } from './nlhe-hand-evaluation'
 import { selectionDiagnostics } from './bot-action-selection'
+import { analyzePloPreflopFeatures } from './plo-preflop-features'
+import { rangeFromScore } from './bot-range-estimation'
 
 function makeCtx(overrides: Partial<DecisionContext> = {}): DecisionContext {
   return {
@@ -731,6 +733,28 @@ describe('pot commitment versus forced all-in risk', () => {
       contribution => contribution.label.includes('Forced all-in'),
     )).toBe(false)
     expect(action(context, 'call').utility).toBeGreaterThan(action(context, 'fold').utility)
+
+    const ploContext: DecisionContext = {
+      ...context,
+      variantId: 'omaha-high',
+      tableSize: 6,
+      categoryScores: getPloScores('calling-station', 'river', 6),
+      gameView: {
+        ...context.gameView,
+        myCards: [
+          { rank: 'A', suit: 'clubs' }, { rank: 'J', suit: 'clubs' },
+          { rank: '9', suit: 'hearts' }, { rank: '8', suit: 'diamonds' },
+        ],
+        board: [
+          { rank: 'K', suit: 'clubs' }, { rank: 'Q', suit: 'clubs' },
+          { rank: '7', suit: 'diamonds' }, { rank: '3', suit: 'hearts' },
+          { rank: '2', suit: 'spades' },
+        ],
+      },
+    }
+    expect(action(ploContext, 'call').contributions.some(
+      contribution => contribution.label.includes('Forced all-in'),
+    )).toBe(false)
   })
 
   it('uses inclusive zero and full boundaries for forced-all-in risk', () => {
@@ -1369,6 +1393,110 @@ describe('PLO preflop reraise calibration', () => {
     expect(contribution('omaha-high', 2)).toBe(5)
     expect(contribution('omaha-high', 6)).toBeUndefined()
     expect(contribution('texas-holdem', 2)).toBeUndefined()
+  })
+
+  it('does not turn a weakly structured TAG button limp into routine PLO reraises', () => {
+    const base = makeCtx()
+    const cards: Card[] = [
+      { rank: 'A', suit: 'hearts' }, { rank: 'J', suit: 'diamonds' },
+      { rank: '9', suit: 'spades' }, { rank: '2', suit: 'spades' },
+    ]
+    const context = makeCtx({
+      variantId: 'omaha-high', position: 'late', tableSize: 2,
+      gameView: { ...base.gameView, myCards: cards, currentBet: 60 },
+      handAssessment: {
+        ...base.handAssessment,
+        category: 'medium',
+        ploPreflopProfile: analyzePloPreflopFeatures(cards),
+      },
+      botState: {
+        ...base.botState,
+        memory: { ...base.botState.memory, hand: {
+          ...base.botState.memory.hand, lastAction: 'call', lastStreet: 'preflop',
+        } },
+      },
+      legalActions: {
+        fold: true, check: false, callAmount: 50,
+        raise: { minAmount: 110, maxAmount: 1000 }, allInAmount: 1000,
+      },
+      preflopRangeAction: 'call',
+      categoryScores: getPloScores('tag', 'preflop', 2),
+      streetAnalysis: {
+        preflopAggressor: 'opp', preflopRaiseCount: 1,
+        streetAggressor: { preflop: 'opp', flop: null, turn: null, river: null },
+        iAmPreflopAggressor: false, opponentLines: new Map(), activeOpponents: 1,
+        opponentShowedWeakness: false, opponentCheckRaised: false,
+        street: 'preflop', actionCountThisStreet: 2,
+      },
+    })
+    const lateBonus = (ctx: DecisionContext) => scoreActions(ctx)
+      .find(candidate => candidate.action.type === 'raise')!.contributions
+      .find(item => item.label === 'Late-position leverage')!.value
+
+    expect(lateBonus(context)).toBe(3)
+    for (const weakCards of [
+      [
+        { rank: 'Q', suit: 'hearts' }, { rank: 'J', suit: 'spades' },
+        { rank: '5', suit: 'hearts' }, { rank: '5', suit: 'diamonds' },
+      ],
+      [
+        { rank: '9', suit: 'diamonds' }, { rank: '5', suit: 'diamonds' },
+        { rank: '4', suit: 'hearts' }, { rank: '3', suit: 'spades' },
+      ],
+    ] as Card[][]) {
+      expect(lateBonus({
+        ...context,
+        gameView: { ...context.gameView, myCards: weakCards },
+        handAssessment: {
+          ...context.handAssessment,
+          ploPreflopProfile: analyzePloPreflopFeatures(weakCards),
+        },
+      })).toBe(3)
+    }
+    expect(lateBonus({ ...context, variantId: 'texas-holdem' })).toBe(15)
+    expect(lateBonus({ ...context, tableSize: 6 })).toBe(15)
+    expect(lateBonus({ ...context, botState: {
+      ...context.botState, memory: { ...context.botState.memory, hand: {
+        ...context.botState.memory.hand, lastAction: null,
+      } },
+    } })).toBe(15)
+
+    const valueCards: Card[] = [
+      { rank: 'A', suit: 'clubs' }, { rank: 'Q', suit: 'clubs' },
+      { rank: 'Q', suit: 'hearts' }, { rank: '5', suit: 'spades' },
+    ]
+    expect(lateBonus({
+      ...context,
+      gameView: { ...context.gameView, myCards: valueCards },
+      handAssessment: {
+        ...context.handAssessment, category: 'good',
+        ploPreflopProfile: analyzePloPreflopFeatures(valueCards),
+      },
+    })).toBe(15)
+
+    const coordinatedCards: Card[] = [
+      { rank: '9', suit: 'hearts' }, { rank: '8', suit: 'diamonds' },
+      { rank: '7', suit: 'clubs' }, { rank: '6', suit: 'spades' },
+    ]
+    expect(lateBonus({
+      ...context,
+      gameView: { ...context.gameView, myCards: coordinatedCards },
+      handAssessment: {
+        ...context.handAssessment,
+        ploPreflopProfile: analyzePloPreflopFeatures(coordinatedCards),
+      },
+    })).toBe(15)
+
+    const opponentRead = (score: number) => scoreActions({
+      ...context,
+      opponentRanges: [rangeFromScore({
+        playerId: 'opp', score, lineScore: 60,
+        positionAdjustment: score - 60, roleAdjustment: 0, boardFitAdjustment: 0,
+      })],
+    }).find(candidate => candidate.action.type === 'raise')!.contributions
+      .find(item => item.category === 'opponent-read' && item.label.includes('opp'))!.value
+    expect(Math.abs(opponentRead(60) - opponentRead(59.99))).toBeLessThan(0.01)
+    expect(opponentRead(58.74)).toBeCloseTo(-4.58, 2)
   })
 
   it('preserves TAG preflop initiative only in NLHE six-max', () => {

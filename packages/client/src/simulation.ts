@@ -44,6 +44,7 @@ const SMALL_BLIND = Number(process.env.CALIB_SMALL_BLIND) || BIG_BLIND / 2
 const STARTING_CHIPS = Number(process.env.CALIB_STARTING_CHIPS) || BIG_BLIND * 100
 const PRINT_CALIBRATION_DETAIL = process.env.CALIB_DETAIL === '1'
 const PRINT_CALIBRATION_SNAPSHOT = process.env.CALIB_JSON === '1'
+const PRINT_CALIBRATION_PROGRESS = process.env.CALIB_PROGRESS === '1'
 const PRINT_WTSD_DETAIL = process.env.CALIB_WTSD_DETAIL === '1'
 const HAND_STRENGTH_CATEGORIES: HandStrengthCategory[] = [
   'air',
@@ -305,8 +306,13 @@ interface PostflopStats {
   handsSeenRiver: number
   foldToCBetOpps: number
   foldToCBets: number
+  foldToCBetByAggressionDepth: Record<string, { opportunities: number; folds: number }>
+  foldToCBetByCategory: Record<string, { opportunities: number; folds: number }>
+  foldToCBetByHandShape: Record<string, { opportunities: number; folds: number }>
+  foldToCBetByPrice: Record<string, { opportunities: number; folds: number }>
   turnCBetOpps: number
   turnCBets: number
+  turnCBetByCategory: Record<HandStrengthCategory, { opportunities: number; bets: number }>
   aggressionByStreet: Record<'flop' | 'turn' | 'river', { aggressive: number; calls: number }>
   aggressionByRole: Record<'pfa' | 'non-pfa', { aggressive: number; calls: number }>
   aggressionByPressure: Record<'facing-bet' | 'open-action', { aggressive: number; calls: number }>
@@ -325,6 +331,7 @@ interface SimulationStats {
     opportunities: number
     threeBets: number
   }>
+  threeBetByPosition: Record<string, { opportunities: number; threeBets: number }>
   positions: Record<Position, PositionStats>
   postflop: PostflopStats
   actions: Record<PlayerAction['type'], number>
@@ -371,6 +378,7 @@ function createStats(): SimulationStats {
         { opportunities: 0, threeBets: 0 },
       ]),
     ) as SimulationStats['threeBetByCategory'],
+    threeBetByPosition: {},
     positions: {
       early: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
       middle: { hands: 0, vpipHands: 0, pfrHands: 0, cBetOpps: 0, cBets: 0 },
@@ -387,8 +395,15 @@ function createStats(): SimulationStats {
       handsSeenRiver: 0,
       foldToCBetOpps: 0,
       foldToCBets: 0,
+      foldToCBetByAggressionDepth: {},
+      foldToCBetByCategory: {},
+      foldToCBetByHandShape: {},
+      foldToCBetByPrice: {},
       turnCBetOpps: 0,
       turnCBets: 0,
+      turnCBetByCategory: Object.fromEntries(
+        HAND_STRENGTH_CATEGORIES.map(category => [category, { opportunities: 0, bets: 0 }]),
+      ) as PostflopStats['turnCBetByCategory'],
       aggressionByStreet: {
         flop: { aggressive: 0, calls: 0 },
         turn: { aggressive: 0, calls: 0 },
@@ -424,6 +439,7 @@ function simulateFormat(
   profile: CalibrationProfile,
   format: FormatConfig,
   numHands = HANDS_PER_FORMAT,
+  onProgress?: (completedHands: number) => void,
 ): SimulationStats {
   const players = createPlayers(format.playerCount)
   const seedNamespace = `${profile.seed}:${format.name}${SEED_SALT ? `:${SEED_SALT}` : ''}`
@@ -444,6 +460,8 @@ function simulateFormat(
   const stats = createStats()
   const startedAt = Date.now()
   const observationCursors = new Map<string, OpponentObservationCursor>()
+  onProgress?.(0)
+  let lastProgressAt = Date.now()
 
   for (let handNumber = 0; handNumber < numHands; handNumber++) {
     for (const player of players) resetBotForHand(botStates.get(player.id)!)
@@ -508,6 +526,7 @@ function simulateFormat(
 
       let action: PlayerAction
       let handCategory: HandStrengthCategory | null = null
+      let handShape = 'unknown'
       let decisionMetrics: DecisionMetrics | null = null
       let nutPotential: string | null = null
       let selection: ReturnType<typeof decideBotDecision>['decisionResult']['selectionDiagnostics'] | null = null
@@ -517,6 +536,7 @@ function simulateFormat(
         const decision = decideBotDecision(botContext, botState, decisionRandom)
         action = decision.action
         handCategory = decision.evaluation.handAssessment.category
+        handShape = `${handCategory}:${decision.evaluation.handAssessment.made ? 'made' : 'unmade'}:${decision.evaluation.handAssessment.drawTypes.length > 0 ? 'draw' : 'no-draw'}`
         nutPotential = decision.evaluation.handAssessment.nutPotential
         decisionMetrics = decision.metrics
         selection = decision.decisionResult.selectionDiagnostics
@@ -605,6 +625,13 @@ function simulateFormat(
       if (metricDelta.threeBet && handCategory) {
         stats.threeBetByCategory[handCategory].threeBets++
       }
+      if (process.env.CALIB_TRACE === '1' && metricDelta.threeBetOpportunity) {
+        const position = positions.get(botId) ?? 'unknown'
+        const values = stats.threeBetByPosition[position]
+          ?? (stats.threeBetByPosition[position] = { opportunities: 0, threeBets: 0 })
+        values.opportunities++
+        if (metricDelta.threeBet) values.threeBets++
+      }
 
       if (process.env.CALIB_TRACE === '1') {
         const streetKey = state.phase as string
@@ -678,13 +705,37 @@ function simulateFormat(
         if (metricDelta.foldToCBetOpportunity) {
           stats.postflop.foldToCBetOpps++
           if (metricDelta.foldToCBet) stats.postflop.foldToCBets++
+          if (process.env.CALIB_TRACE === '1') {
+            const depthKey = String(aggressionDepth)
+            const depth = stats.postflop.foldToCBetByAggressionDepth[depthKey]
+              ?? (stats.postflop.foldToCBetByAggressionDepth[depthKey] = { opportunities: 0, folds: 0 })
+            depth.opportunities++
+            if (metricDelta.foldToCBet) depth.folds++
+            const categoryKey = handCategory ?? 'unknown'
+            const category = stats.postflop.foldToCBetByCategory[categoryKey]
+              ?? (stats.postflop.foldToCBetByCategory[categoryKey] = { opportunities: 0, folds: 0 })
+            category.opportunities++
+            if (metricDelta.foldToCBet) category.folds++
+            const shape = stats.postflop.foldToCBetByHandShape[handShape]
+              ?? (stats.postflop.foldToCBetByHandShape[handShape] = { opportunities: 0, folds: 0 })
+            shape.opportunities++
+            if (metricDelta.foldToCBet) shape.folds++
+            const price = decisionMetrics?.toCallPotRatio ?? 0
+            const priceKey = price < 0.25 ? '<25%' : price < 0.4 ? '25-40%' : price < 0.6 ? '40-60%' : '>=60%'
+            const priceBand = stats.postflop.foldToCBetByPrice[priceKey]
+              ?? (stats.postflop.foldToCBetByPrice[priceKey] = { opportunities: 0, folds: 0 })
+            priceBand.opportunities++
+            if (metricDelta.foldToCBet) priceBand.folds++
+          }
         }
 
         // Turn C-Bet: the flop c-bettor can continue on an unled turn.
         if (metricDelta.turnCBetOpportunity) {
           stats.postflop.turnCBetOpps++
+          if (handCategory) stats.postflop.turnCBetByCategory[handCategory].opportunities++
           if (metricDelta.turnCBet) {
             stats.postflop.turnCBets++
+            if (handCategory) stats.postflop.turnCBetByCategory[handCategory].bets++
           }
         }
 
@@ -764,6 +815,10 @@ function simulateFormat(
       stats.postflop.wonAtShowdown += new Set(
         results.filter(result => result.amount > 0).map(result => result.playerId),
       ).size
+    }
+    if (onProgress && (handNumber + 1 === numHands || Date.now() - lastProgressAt >= 10_000)) {
+      onProgress(handNumber + 1)
+      lastProgressAt = Date.now()
     }
   }
 
@@ -1012,6 +1067,31 @@ function printStats(
   }
 
   if (process.env.CALIB_TRACE === '1' && stats.decisionTrace) {
+    console.log('\n  3-Bet opportunities by acting position:')
+    for (const [position, values] of Object.entries(stats.threeBetByPosition)) {
+      console.log(`    ${position}: ${values.threeBets}/${values.opportunities}`)
+    }
+    console.log('\n  Fold-to-C-Bet opportunities by flop aggression depth:')
+    for (const [depth, values] of Object.entries(pf.foldToCBetByAggressionDepth)) {
+      console.log(`    depth ${depth}: ${values.folds}/${values.opportunities}`)
+    }
+    console.log('  Fold-to-C-Bet opportunities by objective hand category:')
+    for (const [category, values] of Object.entries(pf.foldToCBetByCategory)) {
+      console.log(`    ${category}: ${values.folds}/${values.opportunities}`)
+    }
+    console.log('  Fold-to-C-Bet opportunities by objective hand shape:')
+    for (const [shape, values] of Object.entries(pf.foldToCBetByHandShape)) {
+      console.log(`    ${shape}: ${values.folds}/${values.opportunities}`)
+    }
+    console.log('  Fold-to-C-Bet opportunities by call-to-pot price:')
+    for (const [price, values] of Object.entries(pf.foldToCBetByPrice)) {
+      console.log(`    ${price}: ${values.folds}/${values.opportunities}`)
+    }
+    console.log('\n  Turn C-Bet opportunities by objective hand category:')
+    for (const category of HAND_STRENGTH_CATEGORIES) {
+      const { opportunities, bets } = pf.turnCBetByCategory[category]
+      if (opportunities > 0) console.log(`    ${category}: ${bets}/${opportunities}`)
+    }
     for (const streetKey of ['preflop', 'flop', 'turn', 'river']) {
       const byCat = stats.decisionTrace[streetKey]
       if (!byCat) continue
@@ -1058,15 +1138,25 @@ function printStats(
 
 let structurallyFailed = false
 const regressionEntries: CalibrationRunEntry[] = []
-console.log(`\n=== CPCdigital Calibration — ${CALIB_VARIANT === 'omaha-high' ? 'Omaha High (PLO)' : 'Texas Hold\'em (NLHE)'} · metric schema v${CALIBRATION_METRIC_SCHEMA_VERSION} ===`)
-for (const profile of CALIBRATION_PROFILES.filter(
+const selectedProfiles = CALIBRATION_PROFILES.filter(
   profile => !CALIB_PROFILE || profile.archetypeId === CALIB_PROFILE || profile.name.toLowerCase().includes(CALIB_PROFILE),
-)) {
+)
+const cellCount = selectedProfiles.reduce((count, profile) => count + profile.formats.filter(
+  format => !CALIB_FORMAT || format.name.toLowerCase().includes(CALIB_FORMAT),
+).length, 0)
+let cellIndex = 0
+console.log(`\n=== CPCdigital Calibration — ${CALIB_VARIANT === 'omaha-high' ? 'Omaha High (PLO)' : 'Texas Hold\'em (NLHE)'} · metric schema v${CALIBRATION_METRIC_SCHEMA_VERSION} ===`)
+for (const profile of selectedProfiles) {
   console.log(`\n${profile.name} simulation · ${HANDS_PER_FORMAT.toLocaleString('en-US')} hands per format`)
   for (const format of profile.formats.filter(
     format => !CALIB_FORMAT || format.name.toLowerCase().includes(CALIB_FORMAT),
   )) {
-    const stats = simulateFormat(profile, format)
+    cellIndex++
+    const stats = simulateFormat(profile, format, HANDS_PER_FORMAT, PRINT_CALIBRATION_PROGRESS
+      ? completedHands => console.error(
+        `[calibration] Cell ${cellIndex}/${cellCount} · ${profile.name} / ${format.name}: ${completedHands.toLocaleString('en-US')}/${HANDS_PER_FORMAT.toLocaleString('en-US')} hands (${Math.round(completedHands / HANDS_PER_FORMAT * 100)}%)`,
+      )
+      : undefined)
     const regressionEntry = createRegressionEntry(profile, format, stats)
     // Test-only CLI hook: verify that a real process exits nonzero on structural failures.
     if (process.env.NODE_ENV === 'test' && process.env.CALIB_TEST_INJECT_STRUCTURAL === '1') {

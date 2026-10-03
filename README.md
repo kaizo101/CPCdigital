@@ -39,7 +39,7 @@ work is governed by the [Roadmap](ROADMAP.md); changes that are actually
 released are listed in the [Changelog](CHANGELOG.md).
 
 Version 0.8.1 passed all technical and unchanged calibration gates. The final
-10k/3k raw values and security invariants are documented in the
+10k/3k raw values and engine safety invariants are documented in the
 [0.8.1 release gate report](calibration/v0.8.1-release-gate.md).
 
 The official **[browser demo](https://kaizo101.github.io/CPCdigital/)** is built
@@ -48,8 +48,9 @@ desktop remains the primary development platform.
 
 ### Known limitations
 
-- There are no finished platform-specific installers or signed release packages
-  yet.
+- There are no public, validated platform-specific installers or signed release
+  packages yet. An internal Linux AppImage packaging probe is available for
+  developers, but is not a release.
 - Bot balance and in particular complex PLO/heads-up postflop situations are
   still being calibrated.
 - The hand history is a custom text format; common external replayers do not
@@ -69,6 +70,13 @@ Concrete bugs and technical follow-up findings are not maintained in this list
 permanently, but are documented in the roadmap, the changelog and the
 respective test reports.
 
+## Contact
+
+For project questions, collaboration or non-sensitive feedback, write to
+[kaizo101.poker@gmail.com](mailto:kaizo101.poker@gmail.com). Please report
+security vulnerabilities or exposed private data through the confidential
+channel described in the [Security Policy](SECURITY.md).
+
 ## Local development
 
 [Node.js 24 LTS](.nvmrc), npm and, for the desktop app, a graphical environment
@@ -80,10 +88,14 @@ npm run dev
 ```
 
 On Linux, the built offline app can alternatively be started via `./start.sh`.
+For an internal Linux x64 AppImage probe, run `npm run package:linux:internal`;
+see the [desktop packaging notes](docs/en/guides/desktop-packaging-smoke.md)
+before using the resulting artifact. This is not a public release build.
 
 The Android prototype additionally requires Android Studio and SDK 36. The
-complete workflow as well as architecture, calibration and debugging notes are
-in the [developer documentation](DEV.md).
+complete workflow, calibration and debugging notes are in the
+[developer documentation](DEV.md); current module boundaries are in
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Tests and build
 
@@ -104,10 +116,11 @@ reproduction and baselines are documented in the
   the in-depth documents
 - [Roadmap](ROADMAP.md) — development phases and long-term vision
 - [Changelog](CHANGELOG.md) — released changes per version
-- [Developer documentation](DEV.md) — architecture, Android, calibration and
-  debugging
-- [Calibration reports](calibration/README.md) — reproducible bot baselines
-  (German)
+- [Architecture](ARCHITECTURE.md) — current offline runtime, state ownership and
+  bot information flow
+- [Developer documentation](DEV.md) — setup, Android, calibration and debugging
+- [Calibration reports](calibration/README.md) — reproducible bot baselines;
+  older reports remain in German
 - [Testing and distribution strategy](testing/TESTING_STRATEGY.md) — test
   levels, roles and release communication (German)
 - [Tester forms](testing/TESTER_FORMS.md) — templates for realism, usability,

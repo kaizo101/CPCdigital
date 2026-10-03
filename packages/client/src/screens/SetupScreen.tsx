@@ -3,6 +3,7 @@ import type { TableOptions } from '@cpc/shared'
 import { calculateStartingStack, clamp, type DisplayCurrency } from '../utils/format'
 import { APP_SOURCE_URL, APP_VERSION } from '../app-version'
 import { getAppRuntime, type AppRuntime } from '../native-runtime'
+import { LegalNoticeLink, type LegalNoticeKind } from '../components/LegalNotice'
 
 const BLIND_PRESETS = [
   { smallBlind: 0.01, bigBlind: 0.02 },
@@ -63,6 +64,12 @@ export function SetupScreen({
   setVariantId,
   debugMode = false,
   setDebugMode = () => {},
+  browserPersistenceAvailable = false,
+  browserPersistenceEnabled = false,
+  browserPersistenceError = null,
+  onBrowserPersistenceChange = () => {},
+  onClearBrowserData = () => {},
+  onOpenLegalNotice,
   runtime = getAppRuntime(),
 }: {
   options: TableOptions
@@ -78,6 +85,12 @@ export function SetupScreen({
   setVariantId: (id: string) => void
   debugMode?: boolean
   setDebugMode?: (enabled: boolean) => void
+  browserPersistenceAvailable?: boolean
+  browserPersistenceEnabled?: boolean
+  browserPersistenceError?: string | null
+  onBrowserPersistenceChange?: (enabled: boolean) => void
+  onClearBrowserData?: () => void
+  onOpenLegalNotice: (kind: LegalNoticeKind) => void
   runtime?: AppRuntime
 }) {
   const maxBots = 8
@@ -205,6 +218,14 @@ export function SetupScreen({
           white-space: nowrap;
         }
         html[data-runtime="android"] .setup-license {
+          display: none;
+        }
+        html[data-runtime="android"] .setup-legal-android {
+          display: block;
+          flex: 0 0 auto;
+          font-size: 10px;
+        }
+        .setup-legal-android {
           display: none;
         }
         html[data-runtime="android"] .setup-grid {
@@ -414,6 +435,15 @@ export function SetupScreen({
                 </a>
               </>
             )}
+            {' '}·{' '}
+            <LegalNoticeLink kind="imprint" onOpen={() => onOpenLegalNotice('imprint')} style={{ color: '#a5dff5' }} />
+            {' '}·{' '}
+            <LegalNoticeLink kind="privacy" onOpen={() => onOpenLegalNotice('privacy')} style={{ color: '#a5dff5' }} />
+          </div>
+          <div className="setup-legal-android">
+            <LegalNoticeLink kind="imprint" onOpen={() => onOpenLegalNotice('imprint')} style={{ color: '#a5dff5' }} />
+            {' '}·{' '}
+            <LegalNoticeLink kind="privacy" onOpen={() => onOpenLegalNotice('privacy')} style={{ color: '#a5dff5' }} />
           </div>
         </header>
 
@@ -638,6 +668,32 @@ export function SetupScreen({
                 Nits verlassen den Tisch, LAGs kaufen aggressiv nach.
               </p>
             </section>
+
+            {browserPersistenceAvailable && (
+              <section className="setup-option-card" style={{ background: 'rgba(255,255,255,0.04)', padding: 18, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="setup-section-title" style={{ fontSize: 11, color: '#8f98a4', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Lokale Daten</div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={browserPersistenceEnabled}
+                    onChange={e => onBrowserPersistenceChange(e.target.checked)}
+                    style={{ width: 18, height: 18, accentColor: '#0e7490' }}
+                  />
+                  <span style={{ fontSize: 13, color: '#cbd5e1' }}>
+                    Bots und Hände für spätere Besuche speichern
+                  </span>
+                </label>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: '8px 0 0 28px', lineHeight: 1.5 }}>
+                  Optional: Bot-Identitäten, die letzten 50 Session-Zuordnungen und bis zu 200 Hand-Replays bleiben in diesem Browser erhalten.
+                  Ohne Haken werden diese Daten nicht dauerhaft gespeichert; Replays bleiben nur während der geöffneten App verfügbar. Abwählen löscht die gespeicherten Daten.
+                  Details in den <a href="./datenschutz.html" target="_blank" rel="noopener noreferrer" style={{ color: '#a5dff5' }}>Datenschutzhinweisen</a>.
+                </p>
+                <button type="button" onClick={onClearBrowserData} style={{ margin: '10px 0 0 28px', padding: 0, border: 0, background: 'none', color: '#a5dff5', fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}>
+                  Gespeicherte Bot- und Handdaten löschen
+                </button>
+                {browserPersistenceError && <p role="alert" style={{ color: '#fca5a5', fontSize: 11 }}>{browserPersistenceError}</p>}
+              </section>
+            )}
 
             <button className="setup-start-button" onClick={onStart} disabled={!!validationError} style={{
               width: '100%',

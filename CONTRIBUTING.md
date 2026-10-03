@@ -25,6 +25,9 @@ used in CI is suitable for tests and builds, but does not install a runnable
 Electron binary. Further prerequisites and start commands are in
 [DEV.md](DEV.md#quick-start).
 
+Before changing module boundaries, read the current ownership and information
+flow in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 Before a pull request, please run at least the following checks locally:
 
 ```bash

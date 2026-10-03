@@ -73,64 +73,14 @@ deliberately deferred to TableGeometry and responsive UI. As far as can be
 assessed, the Android replayer is functional; its too small and squeezed table
 geometry remains documented for v0.9.1.
 
-## Architecture overview
+## System architecture
 
-### Packages
+The current offline runtime, state ownership, bot information boundary and
+game loop are described in [ARCHITECTURE.md](ARCHITECTURE.md). The older
+[architecture target state](docs/en/plans/architecture-target-state.md) is a
+historical planning document, not an alternative description of current code.
 
-```
-.
-├── packages/
-│   ├── client/src/           React UI + bot AI + session management
-│   │   ├── session/          LocalGameRunner, rebuys, replay, debug export
-│   │   ├── components/       PokerTable, PlayerSeat, Cards, HandReplayer
-│   │   ├── screens/          SetupScreen, TableScreen
-│   │   └── utils/            format, positions
-│   ├── poker-engine/src/     rules, state machine, hand evaluator
-│   ├── shared/src/           types (Player, Card, GameState, Events)
-│   ├── electron/src/         desktop wrapper (main, preload)
-│   └── server/src/           dormant online prototype, not part of the v1 runtime path
-├── android/                  native Capacitor debug prototype
-└── capacitor.config.ts       native app and system bar configuration
-```
-
-### Important files
-
-| File | Responsibility |
-|-------|---------------|
-| `session/LocalGameRunner.ts` | game loop, bot management, event capture |
-| `session/bot-rebuy-manager.ts` | rebuys, replacements, leave-on-bust |
-| `session/hand-replay.ts` | replay builder, archive, readable hand history text export |
-| `bot-action-scoring.ts` | fold/check/call/raise/all-in scoring |
-| `bot-action-modifiers.ts` | personality, stack, tilt modifiers |
-| `bot-decision-metrics.ts` | SPR, pot odds, bet sizing |
-| `bot-params.ts` | centralised tuning constants |
-| `bot-pipeline.ts` | decision pipeline (variant→scoring→selection) |
-| `nlhe-hand-evaluation.ts` | hand categories, draws, vulnerability |
-| `omaha-hand-evaluation.ts` | PLO hand evaluation, physical draw outs |
-| `bot-identities.ts` | identity generator, rebuy policies |
-| `bot-habits.ts` | archetype-specific behaviour preferences |
-| `poker-engine/src/game.ts` | engine: state machine, betting, showdown |
-
-### Decision flow (bot)
-
-```
-1. PokerEngine → getPlayerView(botId) → BotGameView
-2. BotGameView + HandHistory → BotContext
-3. BotContext → VariantEvaluator.evaluate() → objective VariantEvaluation
-4. Decision context → applySkillPerception() → perceived context
-5. Perceived context → scoring + personality modifiers
-6. ScoredAction[] → weighted candidate selection → action
-```
-
-Scoring and the subsequent modifiers combine, among others:
-```
-Base(hand category) + Position + Board texture + Opponent reads
-+ Stack depth + SPR + Preflop strategy + Street initiative
-+ Range estimation + Habits + Mental state + Line planning
-→ Utility score (0-100)
-```
-
-### Adding a new variant
+## Adding a new variant
 
 The existing variants are NLHE and PLO; `omaha-hand-evaluation.ts` is already
 the PLO implementation, not a template for a file to be newly created. A
@@ -162,7 +112,7 @@ currently only runs community card variants with two or four hole cards. Draw
 phases are reserved in the type model, but not yet implemented in `PokerGame`;
 draw and stud games therefore require more than new configuration.
 
-### Starting the dormant server prototype locally
+## Starting the dormant server prototype locally
 
 The server is not part of the v1 runtime path and is not started by
 `npm run dev`. For a deliberate local run, at least a strong JWT secret and a
@@ -179,16 +129,6 @@ network release, `HOST`, `CLIENT_ORIGIN`, TLS on the upstream proxy and
 persistence must be deliberately configured. History and statistics endpoints
 require a valid bearer token. The example variables are in
 [`.env.example`](.env.example).
-
-### Game loop
-
-```
-Setup → startHand() → postBlinds() → scheduleBotAction()
-  → Bot decides → applyAction() → syncChips() → notify()
-  → next player or checkHandEnd()
-  → show result → finishHandPresentation()
-  → setTimeout → startHand() (next hand)
-```
 
 ## Calibration
 
@@ -283,17 +223,6 @@ Categories concerned:
 
 The auto-calibrator (`scripts/calibrate.ts`) varies only the archetype means.
 Scoring weights and betting factors are tuned manually.
-
-## Bot architecture
-
-The flow sketched above is deliberately abbreviated: variant evaluation and
-further analysis provide the objective decision context. `bot-pipeline.ts`
-first applies `applySkillPerception()` to it, then evaluates the legal actions
-and their personality modifiers and selects at random with weighting among
-positive, admissible candidates with at least 85 % of the best utility score.
-Only if there is no positive candidate does the fallback apply. A complete,
-example-based description of the information limits follows with the
-[0.8.3 module separation](docs/de/plans/refactoring-v0.8.3.md).
 
 ## Tests
 

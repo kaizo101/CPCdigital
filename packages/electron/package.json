@@ -1,5 +1,7 @@
 {
   "name": "@cpc/electron",
+  "description": "Offline CPCdigital desktop shell",
+  "desktopName": "cpcdigital",
   "version": "0.1.0",
   "license": "AGPL-3.0-only",
   "private": true,

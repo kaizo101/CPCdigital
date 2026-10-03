@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { join } from 'node:path'
 import {
   CALIBRATION_SNAPSHOT_MARKER,
   type CalibrationRegressionEntry,
@@ -15,8 +16,11 @@ function run(
   variant: 'texas-holdem' | 'omaha-high',
   stake: typeof STAKES[number],
 ): CalibrationRegressionEntry {
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-  const result = spawnSync(npmCommand, ['run', 'calibrate:bots'], {
+  const result = spawnSync(process.execPath, [
+    '--import',
+    'tsx',
+    join(process.cwd(), 'packages/client/src/simulation.ts'),
+  ], {
     cwd: process.cwd(),
     encoding: 'utf8',
     maxBuffer: 10 * 1024 * 1024,

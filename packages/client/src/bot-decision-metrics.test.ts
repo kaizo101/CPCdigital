@@ -51,6 +51,28 @@ describe('bot decision metrics', () => {
     expect(metrics.toCallPotRatio).toBeCloseTo(2.53 / 6.75)
   })
 
+  it('preserves the PLO short-stack eligible-pot price and separates all-in risk', () => {
+    const callAmount = 0.8
+    const eligiblePot = 2.62
+    const metrics = deriveDecisionMetrics(bettingContext({
+      totalPot: 3.02,
+      eligiblePot,
+      toCall: 1.2,
+      callAmount,
+      potOdds: callAmount / (eligiblePot + callAmount),
+      toCallPotRatio: callAmount / eligiblePot,
+      playerStack: callAmount,
+      playerStartingStack: 1.11,
+      voluntaryHandContribution: 0.31,
+      effectiveStack: callAmount,
+    }), 0.02)
+
+    expect(metrics.potOdds).toBeCloseTo(0.8 / 3.42)
+    expect(metrics.potOdds).toBeGreaterThan(0.8 / 3.82)
+    expect(metrics.forcedAllInRatio).toBe(1)
+    expect(metrics.potCommitment).toBeCloseTo(0.31 / 1.11)
+  })
+
   it('separates voluntary pot commitment from the forced-all-in ratio', () => {
     const metrics = deriveDecisionMetrics(bettingContext({
       callAmount: 300,

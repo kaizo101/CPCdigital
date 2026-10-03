@@ -59,8 +59,9 @@ describe('BotRebuyManager replacements', () => {
   })
 
   it('cashes out every bot at its hard stack limit and replaces an urgent seat', () => {
+    const getItem = vi.fn(() => { throw new Error('Replacement must use the session roster') })
     vi.stubGlobal('localStorage', {
-      getItem: () => null,
+      getItem,
       setItem: () => undefined,
     })
 
@@ -91,6 +92,7 @@ describe('BotRebuyManager replacements', () => {
       true,
       undefined,
       () => 0.99,
+      DEFAULT_BOT_ROSTER,
     )
 
     expect(manager.processCashOuts(1)).toBe('bot-0')
@@ -102,6 +104,7 @@ describe('BotRebuyManager replacements', () => {
     expect(players[1].chips).toBe(2_000)
     expect(players[1].isSittingOut).toBe(false)
     expect(manager.leftTableBots.has('bot-0')).toBe(false)
+    expect(getItem).not.toHaveBeenCalled()
   })
 
   it('keeps a soft-threshold winner until the minimum table stay is reached', () => {

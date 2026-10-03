@@ -1,154 +1,149 @@
-# Calibration History
+# Calibration history
 
-Kalibrierungsergebnisse pro Release als Vergleichsbasis.
+Calibration results are retained per release as reproducible comparison data.
 
-## Release-Gate: Pflichtmessung, keine Korridor-Pflicht
+## Release gate: required measurements, not mandatory corridor compliance
 
-Vor einem botrelevanten Release werden deterministische NLHE-/PLO-Läufe für
-alle betroffenen Archetypen und Formate durchgeführt und mit Version/Commit,
-Handzahl, Seed-Verfahren, Metrikdefinition sowie Rohzählern und Nennern
-dokumentiert. Zielkorridore sind **diagnostische Leitplanken**: Ein Wert
-außerhalb des Korridors beendet den Lauf nicht automatisch. Kleine Abweichungen
-werden begründet akzeptiert oder als Beobachtung notiert; große, systematische
-oder spielerisch auffällige Abweichungen erfordern eine Ursachenprüfung und
-eine explizite Release-Entscheidung. Korridore werden nicht passend zum Lauf
-geändert.
+Before a release that changes bot behaviour, run deterministic NLHE and PLO
+calibrations for every affected archetype and table format. Record the app
+version and commit, hand count, seed procedure, metric definitions, and raw
+numerators and denominators. Target corridors are **diagnostic guardrails**,
+not automatic release blockers. Small deviations may be accepted with a
+reason or recorded for follow-up; large, systematic, or gameplay-relevant
+deviations need causal triage and an explicit release decision. Never adjust
+corridors merely to fit a run.
 
-**Blockierend** bleiben ungültige Aktionen, verletzte Metrik-/Showdown-
-Invarianten (einschließlich Widersprüchen zwischen Rate und Rohzählern),
-nicht endliche Messwerte und die gesicherten Deep-Shove-Fälle.
-Eine Rate ohne Gelegenheit (Nenner 0) ist `n/a`, nicht 0 % oder ein
-Korridorverstoß; AF ohne Calls ist ebenfalls nicht auswertbar. Der
-300-Hand-Snapshot ist ein separater Drift-Alarm: Nach beabsichtigten
-Strategieänderungen wird ein Fehler analysiert und die Baseline erst nach
-Review bewusst aktualisiert, nicht durch Aufweichen der Zielkorridore.
+Invalid actions, broken metric or showdown invariants (including a mismatch
+between a rate and its raw counts), non-finite measurements, and the protected
+deep-shove cases remain **blocking**. A rate with zero opportunities is `n/a`,
+not 0% or a corridor violation. AF without calls is likewise not evaluable.
+The 300-hand snapshot is a separate drift alarm: investigate failures after
+intentional strategy changes and update the baseline only after review, not
+by widening target corridors.
 
-Die Berichte enthalten je nach Release:
+Depending on the release, reports contain:
 
-- VPIP, PFR, 3-Bet, C-Bet, AF und WTSD für die kalibrierten Archetypen und Formate
-- deterministische Entwicklungs- und 10.000-Hand-Bestätigungsläufe
-- die verwendete Metrikdefinition sowie begründete Änderungen an Zielkorridoren
-- strukturelle Invarianten wie Invalid Actions, Deep-Stack-Open-Shoves und
-  uncommitted Deep-Shoves
-- anschließende 100–150-Hände-Web-Probe-Sessions mit Triage auffälliger Hände
-- die Reproduktion über `npm run calibrate:bots`
+- VPIP, PFR, 3-bet, C-bet, AF, and WTSD for calibrated archetypes and formats
+- deterministic development runs and 10,000-hand confirmation runs
+- metric definitions and reasons for any change to a target corridor
+- structural invariants such as invalid actions, deep-stack open shoves, and
+  uncommitted deep shoves
+- documented, finding-driven manual trial sessions without a fixed hand quota;
+  triage conspicuous hands and expand the sample when warranted
+- reproduction instructions using `npm run calibrate:bots`
 
-Der kurze Layer-2-Regressionslauf wird mit `npm run test:calibration`
-ausgeführt. Er simuliert deterministisch 300 Hände für alle 24 Kombinationen
-aus NLHE/PLO, vier Archetypen und drei Formaten und vergleicht sie mit dem
-[v0.8.2-Foundation-Snapshot](v0.8.2-foundation-300-hand.json). Abweichungen von mehr als 2
-Prozentpunkten werden gemeldet, mehr als 5 Prozentpunkte sowie strukturelle
-Verstöße schlagen fehl. Für den nichtprozentualen Aggressionsfaktor gelten
-0,2 als Warn- und 0,5 als Fehlergrenze.
+Run the short Layer-2 regression with `npm run test:calibration`. It simulates
+300 hands for all 24 combinations of NLHE/PLO, four archetypes, and three
+formats, then compares them with the
+[v0.8.2 foundation snapshot](v0.8.2-foundation-300-hand.json). Changes of more
+than 2 percentage points warn; changes of more than 5 percentage points or
+structural violations fail. For the non-percentage aggression factor, the
+warning and failure thresholds are 0.2 and 0.5.
 
-`npm run test:stakes` vergleicht zusätzlich deterministische NLHE- und
-PLO-6-max-Läufe bei proportional identischen `0,01/0,02`- und
-`10/20`-Tischen mit jeweils 100 BB. Bei gleicher Identität, Skillstufe und
-Situation müssen die normalisierten Statistiken und strukturellen Invarianten
-übereinstimmen. Unterschiedliche reale Stacktiefen oder Chip-Units bleiben
-bewusst außerhalb dieser Invariante.
+`npm run test:stakes` also compares deterministic NLHE and PLO 6-max runs at
+proportionally identical `0.01/0.02` and `10/20` tables, each with 100 BB.
+Given the same identity, skill, and situation, normalized statistics and
+structural invariants must agree. Different real stack depths or chip units
+are intentionally outside this invariant.
 
-Der Snapshot wird nicht während eines normalen Tests verändert. Nach einer
-bewusst freigegebenen strategischen Änderung kann er mit
-`npm run calibrate:baseline` neu erzeugt und anschließend im Diff geprüft
-werden.
+Normal tests do not modify the snapshot. After an intentionally approved
+strategy change, regenerate it with `npm run calibrate:baseline` and inspect
+the diff.
 
-### Maschinenprüfbarer Releasebericht
+### Machine-verifiable release report
 
-`npm run calibrate:release -- --output calibration/evidence/<eindeutiger-name>.json`
-führt standardmäßig 10.000 Hände je Kombination für NLHE und PLO aus. Die
-Ausgabedatei muss neu sein (kein Überschreiben). `--hands N` ist nur für
-Entwicklung und Smoke-Läufe vorgesehen. Ein vorhandener Bericht wird mit
-`npm run calibrate:release -- --validate <pfad>` erneut geprüft.
+`npm run calibrate:release -- --output calibration/evidence/<unique-name>.json`
+runs 10,000 hands per combination for NLHE and PLO by default. The output
+file must be new; the command will not overwrite an existing report.
+`--hands N` is only for development and smoke runs. Validate an existing
+report with `npm run calibrate:release -- --validate <path>`.
+The command prints the current primary or independent-seed confirmation run,
+each cell's completed hand count at roughly ten-second intervals, and a
+30-second heartbeat if a run is still active. These messages are diagnostic
+only; seeds, metrics, and the final report schema are unchanged. The report is
+written only after all runs complete and validation passes, so this does not
+provide checkpoint/resume support.
 
-Der Bericht enthält App-Version, Commit, Dirty-Worktree-Status, Zeitpunkt,
-Metrikschema, Handzahl, Seed-Salts sowie alle 24 Varianten-/Archetyp-/Format-
-Kombinationen mit Kennzahlen, Zielbereichen und Rohzählern/Nennern. Die
-Validierung verlangt genau diese 24 Kombinationen, plausible Rohwerte,
-strukturelle Invarianten und alle vorgesehenen Bestätigungsläufe. Der kurze
-300-Hand-Snapshot bleibt eine separate Regression und wird dadurch nicht
-ersetzt.
+The report contains app version, commit, dirty-worktree status, timestamp,
+metric schema, hand count, seed salts, and all 24 variant/archetype/format
+combinations with metrics, target ranges, and raw numerators/denominators.
+Validation requires exactly those 24 combinations, plausible raw counts,
+structural invariants, and all required confirmation runs. The short 300-hand
+snapshot remains a separate regression and is not replaced by this report.
 
-Eine zweite, unabhängige Seed-Serie wird **nur** für Kombinationen gestartet,
-in denen mindestens eine Zielmetrik außerhalb des Korridors liegt oder eine
-Metrik weniger als 50 Gelegenheiten hat (einschließlich Nenner 0). Die
-Bestätigung verwendet dieselbe Handzahl und dokumentiert die betroffenen
-Metriken samt vollständigen Rohwerten. Sie entscheidet nicht automatisch über
-eine Freigabe: Persistenz, Stichprobengröße und Spielwirkung werden im
-Releasebericht fachlich triagiert. Ein Bericht aus einem schmutzigen Worktree
-ist als solcher markiert und vor einer Freigabe einem Commit zuzuordnen.
+A second, independent seed series is run **only** for combinations with at
+least one metric outside its corridor or fewer than 50 opportunities,
+including a zero denominator. Confirmations use the same hand count and
+record the affected metrics and full raw values. They do not automatically
+decide release approval: persistence, sample size, and gameplay impact must
+be assessed in the release report. A dirty-worktree report is marked as such
+and must be matched to a commit before release.
 
-Deck- und Entscheidungs-Seeds werden für jede Hand separat aus Profil, Format
-und Handnummer abgeleitet; der Dealer rotiert dabei explizit. Eine Änderung,
-die einen Runout früher oder später beendet, verändert deshalb nicht mehr die
-Karten oder den Zufallsstrom aller nachfolgenden Hände. Sessionzustände bleiben
-bewusst erhalten, damit echte strategische Folgewirkungen weiterhin sichtbar
-sind.
+Deck and decision seeds are derived separately for each hand from profile,
+format, and hand number; the dealer rotates explicitly. Ending a runout
+earlier or later therefore no longer changes the cards or random streams of
+all subsequent hands. Session state remains intentionally persistent so
+genuine strategic follow-on effects stay visible.
 
-## Herkunft und Status der Zielkorridore
+## Origin and status of target corridors
 
-Forschungsarbeiten, Datengrundlagen und deren bisheriger Prüfstatus stehen im
-[Literatur- und Evidenzregister](../docs/de/concepts/literatur-und-evidenz.md). Dort
-aufgeführte Arbeiten ändern für sich genommen keinen Zielkorridor.
+Research, data sources, and their review status are recorded in the
+[literature and evidence register](../docs/en/concepts/literature-and-evidence.md).
+A paper listed there does not, by itself, change a target corridor.
 
-Die hinterlegten Zielkorridore (VPIP, PFR, 3-Bet, C-Bet, AF, WTSD etc.) sind
-keine empirisch exakten Einzelwerte, sondern eine plausibilitätsgeprüfte
-Synthese aus öffentlich diskutierter Poker-Literatur, Forenwissen und
-wiederholtem Abgleich über mehrere KI-Modelle. Vergleichende Bewertungen durch
-KI-Modelle dienen dabei ausschließlich der Plausibilitätsprüfung und ersetzen
-keine belastbare Quelle oder fachliche Begründung.
+The target corridors (VPIP, PFR, 3-bet, C-bet, AF, WTSD, and others) are not
+empirically exact point estimates. They are a plausibility-checked synthesis
+of publicly discussed poker literature, forum knowledge, and repeated
+cross-checks with several AI models. AI-model comparisons are used only as
+plausibility checks, not as substitutes for reliable sources or expert
+reasoning.
 
-Die Korridore beanspruchen nicht, „die eine richtige“ Zahl für einen Archetyp
-zu treffen — bei einem Thema wie Poker-Statistiken gibt es diese ohnehin nicht:
-Der plausible Wertebereich für beispielsweise LAG-VPIP hängt stark von Stakes,
-Ära, Format und Spielerpool ab. Insbesondere die PLO-Theorie hat sich in den
-letzten zwei Jahrzehnten bei Aggression, Range-Konstruktion und
-3-Bet-Häufigkeiten spürbar verschoben.
+The corridors do not claim to define *the one correct number* for an
+archetype. Plausible values for a LAG's VPIP, for example, depend heavily on
+stakes, era, format, and player pool. PLO theory in particular has shifted
+noticeably over the past two decades in aggression, range construction, and
+3-bet frequency.
 
-Die Korridore sind deshalb als **aktuelle, begründbare Einschätzung**, nicht als
-zeitlose Wahrheit zu verstehen. Sie sind explizit nicht in Stein gemeißelt.
+Corridors are therefore a **current, defensible assessment**, not timeless
+truth. They are explicitly open to revision.
 
-### Wann sich ein Korridor ändert
+### When a corridor changes
 
-Änderungsvorschläge sind willkommen, folgen aber einer klaren Eingangshürde,
-damit aus einer Meinungsverschiedenheit ein bewertbarer Vorschlag statt einer
-offenen Debatte wird. Ein Änderungsvorschlag sollte enthalten:
+Proposals are welcome but must meet a clear entry threshold so a difference
+of opinion becomes assessable rather than an open-ended debate. A proposal
+should include:
 
-1. **Eine nachvollziehbare Begründung** — eine Quelle, ein Rechenweg oder ein
-   plausibles Argument, nicht nur ein Eindruck („fühlt sich zu tight/loose
-   an“).
-2. **Eine konkrete Zielgröße** — welcher Korridor soll sich wie stark in
-   welche Richtung verschieben, nicht nur „das stimmt nicht“.
-3. **Idealerweise einen Pull Request**, der Begründung und vorgeschlagene
-   Werte zusammen enthält, damit die Änderung wie jeder andere Beitrag
-   bewertet werden kann.
+1. **A traceable rationale:** a source, calculation, or plausible argument,
+   not merely an impression that something feels too tight or loose.
+2. **A concrete target:** identify which corridor should move, by how much,
+   and in which direction.
+3. **Ideally, a pull request** containing both the rationale and proposed
+   values so it can be reviewed like any other contribution.
 
-Wie im Hauptteil dieser Dokumentation beschrieben, werden Korridoränderungen
-nie still an einzelne Laufergebnisse angepasst, sondern im jeweiligen
-Kalibrierungsbericht explizit begründet und dokumentiert — unabhängig davon, ob
-der Anstoß aus einem eigenen Fund oder einem externen Vorschlag stammt.
+Corridor changes are never silently tailored to individual run results.
+Whether a proposal originates internally or externally, justify and document
+it in the relevant calibration report.
 
-Ein Regression-Snapshot ist dabei kein Zielkorridor, sondern dokumentiert einen
-konkreten Softwarestand. Eine Abweichung davon begründet für sich weder eine
-Strategie- noch eine Korridoränderung. Vor jeder Anpassung ist außerdem zu
-prüfen, ob sich lediglich Definition oder Nenner der betroffenen Metrik
-verändert haben.
+A regression snapshot is not a target corridor; it records a specific
+software state. A deviation from it alone justifies neither a strategic nor
+a corridor change. Before any adjustment, also check whether only the
+definition or denominator of a metric has changed.
 
-### Was das nicht bedeutet
+### What this does not mean
 
-Diese Offenheit ist keine Einladung zu endlosen Grundsatzdebatten ohne
-Entscheidung. Vorschläge ohne nachvollziehbare Begründung oder konkrete
-Zielgröße werden nicht aufgenommen. Die Maintainer-Entscheidung im Rahmen
-dieses Projekts bleibt final.
+Openness is not an invitation to endless fundamental debates without a
+decision. Proposals without a traceable rationale or concrete target will
+not be adopted. The maintainers retain the final decision for this project.
 
-## Berichte
+## Reports
 
-- [v0.8.2 — Checkpoint der gewählten Flop→Turn-Linie und Drift-Eingrenzung](v0.8.2-flop-turn-line-checkpoint.md)
-- [v0.8.2 — Sessiondiagnose: Shove-Tiefensicherung und Calling-Station-C-Bet-Defense](v0.8.2-session-diagnostics-2026-08-12.md)
-- [v0.8.2 — Foundation-Snapshot nach Kontext-, Auswahl- und Diagnostikumbau](v0.8.2-foundation-300-hand.json)
-- [v0.8.1 — bestandenes Release-Gate und finale Rohwerte](v0.8.1-release-gate.md)
-- [v0.8.0 — Format-Isolation und strukturelle NLHE-/PLO-Baseline](v0.8.0.md)
-- [v0.7.8 — NLHE-C-Bet-Metrik und Regression](v0.7.8.md)
-- [v0.7.8 — PLO-Abschluss nach Metrik-Audit](plo-nit-kalibrierung.md)
-- [v0.7.9 — Opponent-Evidenz und Metrikschema v2](v0.7.9.md)
-- [v0.7.6 — PLO-Baseline](v0.7.6.md)
+- [v0.8.2 — release preflight and four-cell regression triage](v0.8.2-release-preflight-2026-10-02.md)
+- [v0.8.2 — selected flop-to-turn line checkpoint and drift analysis](v0.8.2-flop-turn-line-checkpoint.md) (German, historical)
+- [v0.8.2 — shove-depth protection and Calling Station C-bet defence](v0.8.2-session-diagnostics-2026-08-12.md) (German, historical)
+- [v0.8.2 — foundation snapshot after context, selection, and diagnostic changes](v0.8.2-foundation-300-hand.json)
+- [v0.8.1 — passed release gate and final raw values](v0.8.1-release-gate.md) (German, historical)
+- [v0.8.0 — format isolation and structural NLHE/PLO baseline](v0.8.0.md) (German, historical)
+- [v0.7.8 — NLHE C-bet metric and regression](v0.7.8.md) (German, historical)
+- [v0.7.8 — PLO conclusion after metric audit](plo-nit-kalibrierung.md) (German, historical)
+- [v0.7.9 — opponent evidence and metric schema v2](v0.7.9.md) (German, historical)
+- [v0.7.6 — PLO baseline](v0.7.6.md) (German, historical)

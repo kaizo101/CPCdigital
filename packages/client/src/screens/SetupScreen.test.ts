@@ -15,6 +15,7 @@ describe('SetupScreen', () => {
       botCount: 5,
       setBotCount: vi.fn(),
       onStart: vi.fn(),
+      onOpenLegalNotice: vi.fn(),
       currency: 'EUR' as const,
       setCurrency: vi.fn(),
       rebuyEnabled: true,
@@ -34,6 +35,28 @@ describe('SetupScreen', () => {
     expect(markup).toContain('.setup-blind-preset option')
     expect(markup).toContain('background: #16191e')
     expect(markup).toContain('color: #f3f4f6')
+    expect(markup).toContain('href="./impressum.html"')
+    expect(markup).toContain('Impressum')
+    expect(markup).toContain('href="./datenschutz.html"')
+    expect(markup).toContain('Datenschutz')
+  })
+
+  it('offers browser-only, unchecked persistent history with a delete control', () => {
+    const browser = renderToStaticMarkup(createElement(SetupScreen, {
+      ...props,
+      runtime: 'web',
+      browserPersistenceAvailable: true,
+      browserPersistenceEnabled: false,
+    }))
+    const android = renderToStaticMarkup(createElement(SetupScreen, {
+      ...props,
+      runtime: 'android',
+    }))
+
+    expect(browser).toContain('Bots und Hände für spätere Besuche speichern')
+    expect(browser).toContain('Gespeicherte Bot- und Handdaten löschen')
+    expect(browser).toMatch(/<input type="checkbox"[^>]*\/><span[^>]*>Bots und Hände für spätere Besuche speichern/)
+    expect(android).not.toContain('Bots und Hände für spätere Besuche speichern')
   })
 
   it('uses an app-controlled blind picker instead of the unreadable native Android select', () => {
@@ -45,6 +68,7 @@ describe('SetupScreen', () => {
     expect(markup).toContain('class="setup-blind-picker"')
     expect(markup).toContain('aria-haspopup="listbox"')
     expect(markup).not.toContain('<select')
+    expect(markup).toContain('href="./datenschutz.html"')
   })
 
   it('exposes a touch-friendly Android debug activation on the version badge', () => {

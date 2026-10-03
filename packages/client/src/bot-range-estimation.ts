@@ -221,3 +221,26 @@ export function rangeStrengthModifier(strength: PerceivedOpponentRange['strength
       return { fold: 0, call: 0, raise: 0 }
   }
 }
+
+/** Smooth action modifiers across the diagnostic range-label boundaries. */
+export function rangeScoreModifier(score: number): { fold: number; call: number; raise: number } {
+  const anchors = [
+    { score: 15, mods: rangeStrengthModifier('very-weak') },
+    { score: 30, mods: rangeStrengthModifier('weak') },
+    { score: 45, mods: rangeStrengthModifier('moderate') },
+    { score: 60, mods: rangeStrengthModifier('strong') },
+    { score: 75, mods: rangeStrengthModifier('very-strong') },
+  ]
+  if (score <= anchors[0].score) return anchors[0].mods
+  if (score >= anchors[anchors.length - 1].score) return anchors[anchors.length - 1].mods
+
+  const upperIndex = anchors.findIndex(anchor => score < anchor.score)
+  const lower = anchors[upperIndex - 1]
+  const upper = anchors[upperIndex]
+  const weight = (score - lower.score) / (upper.score - lower.score)
+  return {
+    fold: lower.mods.fold + (upper.mods.fold - lower.mods.fold) * weight,
+    call: lower.mods.call + (upper.mods.call - lower.mods.call) * weight,
+    raise: lower.mods.raise + (upper.mods.raise - lower.mods.raise) * weight,
+  }
+}

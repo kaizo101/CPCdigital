@@ -17,8 +17,11 @@ const BASELINE_PATH = join(
 const UPDATE_BASELINE = process.argv.includes('--update')
 
 function runVariant(variant: 'texas-holdem' | 'omaha-high'): CalibrationRegressionSnapshot {
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-  const result = spawnSync(npmCommand, ['run', 'calibrate:bots'], {
+  const result = spawnSync(process.execPath, [
+    '--import',
+    'tsx',
+    join(process.cwd(), 'packages/client/src/simulation.ts'),
+  ], {
     cwd: process.cwd(),
     encoding: 'utf8',
     maxBuffer: 20 * 1024 * 1024,
