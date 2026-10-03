@@ -8,9 +8,11 @@ exclusively in the [Roadmap](ROADMAP.md).
 
 ## [Unreleased]
 
+## [0.8.2] — 2026-10-04
+
 ### Added
 
--  **Privacy notice draft:** A concise German notice for the public browser
+-  **Privacy notice:** A concise German notice for the public browser
   demo covers GitHub Pages hosting, browser-local game/replay storage and
   project-email contact. Both notices are linked directly in setup and share
   a small legal-info dialog at the table, separate from the session statistics.
@@ -47,7 +49,7 @@ exclusively in the [Roadmap](ROADMAP.md).
   cautiously shift blind defence for playable hands; limps, reraises, heads-up
   opens, short-stack shoves and unsuitable hands do not trigger an anti-steal
   counter. Success/failure and opponent adjustments across multiple hands remain
-  part of the open 0.8.2 block.
+  part of the unscheduled post-0.8.2 dynamics backlog.
 -  **PLO4 preflop pilot:** Separate structural profiles for pair strength,
   four-card coordination and usable suit strength; coordination and A-high suit
   only apply in a skill-dependent, limited way in later positions with small
@@ -84,11 +86,11 @@ exclusively in the [Roadmap](ROADMAP.md).
 
 ### Changed
 
--  **0.8.2 release-candidate validation:** The clean-commit 10k NLHE/PLO run
+-  **0.8.2 release validation:** The clean-commit 10k NLHE/PLO run
   and 21 independent-seed confirmations passed all structural invariants.
-  The [release-candidate report](calibration/v0.8.2-release-gate.md) keeps
-  diagnostic corridor deviations visible; publication still awaits the
-  focused manual Android check and live-demo verification.
+  The [release report](calibration/v0.8.2-release-gate.md) keeps diagnostic
+  corridor deviations visible. The focused manual Android check and live-demo
+  verification passed before publication.
 -  **Calibration script execution:** The stake and 300-hand regression checks
   invoke the simulation directly through Node's TypeScript import hook. The
   npm commands use the same entry path, avoiding the `tsx` CLI's local IPC
@@ -1136,7 +1138,8 @@ exclusively in the [Roadmap](ROADMAP.md).
   v1.0
 - Client split into setup, table, actions, cards and local game control
 
-[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/kaizo101/CPCdigital/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/kaizo101/CPCdigital/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/kaizo101/CPCdigital/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/kaizo101/CPCdigital/compare/v0.7.9...v0.8.0
 [0.7.9]: https://github.com/kaizo101/CPCdigital/compare/v0.7.8...v0.7.9

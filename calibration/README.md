@@ -137,7 +137,7 @@ not be adopted. The maintainers retain the final decision for this project.
 
 ## Reports
 
-- [v0.8.2 — release-candidate gate and final 10k raw report](v0.8.2-release-gate.md)
+- [v0.8.2 — passed release gate and final 10k raw report](v0.8.2-release-gate.md)
 - [v0.8.2 — release preflight and four-cell regression triage](v0.8.2-release-preflight-2026-10-02.md)
 - [v0.8.2 — selected flop-to-turn line checkpoint and drift analysis](v0.8.2-flop-turn-line-checkpoint.md) (German, historical)
 - [v0.8.2 — shove-depth protection and Calling Station C-bet defence](v0.8.2-session-diagnostics-2026-08-12.md) (German, historical)

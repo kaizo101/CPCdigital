@@ -2,7 +2,7 @@
 
 **Offline Poker App · Electron Desktop · Single-player against credible bots · future learning and training platform for poker variants**
 
-**As of:** 0.8.1 has been released, 0.8.2 is in progress. Later version numbers
+**As of:** 0.8.2 has been released. Later version numbers
 describe planning, not a release commitment.
 
 ---
@@ -65,27 +65,26 @@ completed and what still needs to be done for the next release.
 
 ---
 
-## Review up to 0.8.1
+## Released baseline through 0.8.2
 
 The completed milestones from 0.1.0 to 0.8.1 are listed in the
 [Roadmap archive](docs/en/plans/roadmap-archive-through-0.8.1.md). For published
 changes, the [Changelog](CHANGELOG.md) remains the authoritative source;
-calibration raw values and release reports are available under
+the 0.8.2 cut is recorded in the [release gate](calibration/v0.8.2-release-gate.md).
+Calibration raw values and earlier release reports are available under
 [calibration/](calibration/README.md).
 
 ---
 
 ## Phase 4 — Stabilisation & release preparation
 
-### 0.8.2 — Bot foundation & stabilisation
+### 0.8.2 — Bot foundation & stabilisation (released)
 
-**Goal of the planned interim release:** Complete and verify the engine,
+**Released on 4 October 2026.** The interim cut completed and verified the engine,
 perception, diagnostics and initial dynamics building blocks that have already
 been implemented. Since the scope freeze on 2 October 2026, no further bot
-features will be added before the release. The open dynamics and mental features
-listed below are **not** prerequisites for this cut; their version assignment
-will be clarified separately before the release. The release gate remains
-binding.
+features were added. The remaining dynamics and mental features are kept in an
+unscheduled post-0.8.2 backlog below; they are not retroactive release work.
 
 #### Completed foundation
 
@@ -109,41 +108,16 @@ The retrospective offline engine correctness block is separately documented in
 the [Review addendum of 29 September 2026](docs/en/reviews/offline-core-review-2026-09-29.md);
 the server is excluded from this.
 
-#### Implemented functional scope and downstream dynamics
+#### Implemented functional scope
 
 - [x] Secure deep 4-bet/5-bet chains according to the actual aggression level
   so that generic bonuses do not structurally override a clear fold preference.
 - [x] Initial anti-steal basis: count public, unopened button/cutoff
   opportunities per opponent and position; allow blind reaction only with
   sufficient sample size, skill weighting and a playable range.
-- [ ] Observe and respond to button/cutoff steals and blind defence depending
-  on opponent, position, sample size and confidence; next, check
-  success/failure and counter-adjustment over multiple hands.
 - [x] Initial flop→turn line cut: retain the chosen bluff/semi-bluff bet in
   hand memory rather than inventing a retrospective intention; selectively
   continue or abort with a debug reason without creating an all-in incentive.
-- [ ] Street-to-street hand lines: remember the actual chosen intention for the
-  current hand (value, protection, semi-bluff, bluff, pot control) and at
-  turn/river, based on board, public opponent reaction and cost, either
-  continue, replan or abandon the line with a stated reason. Evaluate NLHE/PLO
-  separately; do not barrel automatically just because chips were already
-  invested. Add further multi-street tests and debug reasons for plan changes;
-  value/protection/pot control lines and river continuation are still open.
-- [ ] Clearly separate strategic adjustment from emotional overreaction; skill
-  governs detection, quality, regulation and recovery without smoothing
-  archetypes into solver bots.
-- [ ] Use publicly shown showdown cards only as evidence for future opponent
-  reads that is skill-, sample- and variant-dependent; low skill may ignore
-  them (see [Information flow audit](docs/en/reviews/opponent-reads-information-flow-audit-2026-09-30.md)).
-- [ ] Prepare `generalSkill` and deterministically correlated
-  `variantProficiency` as the basis for later variant families.
-- [ ] Actually use `params.mental` and connect bad beat, cooler, recognised
-  bluffs, successful bluffs and suckouts as weighted mental events.
-- [ ] Limit frustration, momentum, tilt and confidence and reliably return them
-  to the archetypal baseline with hysteresis/decay.
-
-The technical vision and order are detailed in
-[Bot dynamics, stake roster and player notes](docs/en/concepts/bot-dynamics-roster-and-notes.md).
 
 #### Release gate for the 0.8.2 cut
 
@@ -153,9 +127,10 @@ The technical vision and order are detailed in
   [browser storage inventory](docs/en/reviews/browser-storage-audit-2026-10-03.md)
   records the technical assessment under Section 25 TDDDG without claiming a
   legal guarantee.
-- [ ] Before public deployment, check the notice's factual details against the
-  deployed GitHub Pages demo and project mailbox, and spot-check the opt-in,
-  opt-out and replay-window paths in the published build.
+- [x] Check the notice's factual details against the deployed GitHub Pages
+  demo and project mailbox. The published build's opt-in, opt-out and table
+  start were spot-checked; replay remains covered by the local responsive
+  smoke test rather than a separate live replay interaction.
 - [x] Triage the four formal reports from the 300-hand foundation regression
   with raw denominators and targeted counter-samples; only update the snapshot
   after a conscious review decision, not silently to fit
@@ -196,12 +171,42 @@ The technical vision and order are detailed in
 - [x] Final NLHE/PLO validation for full ring, 6-max and heads-up with
   structural invariants, raw counts and independent-seed confirmations on a
   clean 0.8.2 commit; browser/Electron smokes and Android build/start checks
-  passed ([release-candidate gate](calibration/v0.8.2-release-gate.md)).
-- [ ] Owner's focused Android gameplay/replayer check on the installed 0.8.2
-  candidate, followed by explicit release sign-off. The device blocks ADB
-  input injection, so automated installation/setup checks do not replace this.
+  passed ([release gate](calibration/v0.8.2-release-gate.md)).
+- [x] Owner's focused Android gameplay/replayer check on the installed 0.8.2
+  candidate passed on 4 October 2026. The device blocks ADB input injection,
+  so automated installation/setup checks did not replace this.
 
-#### Downstream dynamics gate (not part of the 0.8.2 cut)
+### Unscheduled post-0.8.2 bot dynamics backlog
+
+#### Functional scope
+
+- [ ] Observe and respond to button/cutoff steals and blind defence depending
+  on opponent, position, sample size and confidence; next, check
+  success/failure and counter-adjustment over multiple hands.
+- [ ] Street-to-street hand lines: remember the actual chosen intention for the
+  current hand (value, protection, semi-bluff, bluff, pot control) and at
+  turn/river, based on board, public opponent reaction and cost, either
+  continue, replan or abandon the line with a stated reason. Evaluate NLHE/PLO
+  separately; do not barrel automatically just because chips were already
+  invested. Add further multi-street tests and debug reasons for plan changes;
+  value/protection/pot control lines and river continuation are still open.
+- [ ] Clearly separate strategic adjustment from emotional overreaction; skill
+  governs detection, quality, regulation and recovery without smoothing
+  archetypes into solver bots.
+- [ ] Use publicly shown showdown cards only as evidence for future opponent
+  reads that is skill-, sample- and variant-dependent; low skill may ignore
+  them (see [Information flow audit](docs/en/reviews/opponent-reads-information-flow-audit-2026-09-30.md)).
+- [ ] Prepare `generalSkill` and deterministically correlated
+  `variantProficiency` as the basis for later variant families.
+- [ ] Actually use `params.mental` and connect bad beat, cooler, recognised
+  bluffs, successful bluffs and suckouts as weighted mental events.
+- [ ] Limit frustration, momentum, tilt and confidence and reliably return them
+  to the archetypal baseline with hysteresis/decay.
+
+The technical vision and order are detailed in
+[Bot dynamics, stake roster and player notes](docs/en/concepts/bot-dynamics-roster-and-notes.md).
+
+#### Future validation gate
 
 - [ ] Separate scenario, sequence and session tests for bet levels, repeated
   steals, high-skill defence, low-skill overreaction and return to baseline;

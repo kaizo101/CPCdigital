@@ -8,8 +8,7 @@ browser demo has to be loaded online first.
 The focus is human-like casual poker rather than simulated solver perfection.
 Bots only receive information that a real player could know as well.
 
-The latest published release is **v0.8.1**; the repository currently contains
-the **v0.8.2 release candidate**. `CPCdigital` is still the internal working
+The latest release is **v0.8.2**. `CPCdigital` is still the internal working
 title; the final product name is not required for this stabilisation cut.
 
 ## Highlights
@@ -41,9 +40,10 @@ released are listed in the [Changelog](CHANGELOG.md).
 Version 0.8.1 passed all technical and unchanged calibration gates. The final
 10k/3k raw values and engine safety invariants are documented in the
 [0.8.1 release gate report](calibration/v0.8.1-release-gate.md).
-The [0.8.2 release-candidate gate](calibration/v0.8.2-release-gate.md) records
-the clean-commit 10k validation; a focused manual Android gameplay/replayer
-check and a live browser-demo check remain before publication.
+The [0.8.2 release gate](calibration/v0.8.2-release-gate.md) records the
+clean-commit 10k validation, manual Android sign-off and live browser-demo
+check. Diagnostic bot corridors remain guide rails rather than automatic
+release blockers.
 
 The official **[browser demo](https://kaizo101.github.io/CPCdigital/)** is built
 directly from this public repository. It is suitable for a quick try-out;
