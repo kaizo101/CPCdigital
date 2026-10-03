@@ -8,9 +8,9 @@ browser demo has to be loaded online first.
 The focus is human-like casual poker rather than simulated solver perfection.
 Bots only receive information that a real player could know as well.
 
-The latest released state is **v0.8.1**; the repository is being developed
-towards **v0.8.2** (`0.8.2-dev`). `CPCdigital` is still the internal working
-title; the final product name will be decided before the release candidate.
+The latest published release is **v0.8.1**; the repository currently contains
+the **v0.8.2 release candidate**. `CPCdigital` is still the internal working
+title; the final product name is not required for this stabilisation cut.
 
 ## Highlights
 
@@ -21,8 +21,8 @@ title; the final product name will be decided before the release candidate.
   personalities, skills, reads and habits
 - **Recurring identities:** 44 bots with their own behaviour; 40 have
   individual portraits
-- **Traceable hands:** hand replay, local archive, readable hand history as a
-  text file and a compact debug export
+- **Traceable hands:** hand replay, optional browser-local archive, readable
+  hand history as a text file and a compact debug export
 - **Shared rules engine:** it handles side pots, split pots, all-ins, min-raises
   and staged runouts
 - **Diagnostics and reproduction:** structured decision records and an optional
@@ -41,6 +41,9 @@ released are listed in the [Changelog](CHANGELOG.md).
 Version 0.8.1 passed all technical and unchanged calibration gates. The final
 10k/3k raw values and engine safety invariants are documented in the
 [0.8.1 release gate report](calibration/v0.8.1-release-gate.md).
+The [0.8.2 release-candidate gate](calibration/v0.8.2-release-gate.md) records
+the clean-commit 10k validation; a focused manual Android gameplay/replayer
+check and a live browser-demo check remain before publication.
 
 The official **[browser demo](https://kaizo101.github.io/CPCdigital/)** is built
 directly from this public repository. It is suitable for a quick try-out;

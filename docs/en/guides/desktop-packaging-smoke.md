@@ -1,6 +1,6 @@
 # Internal desktop packaging probe
 
-Status: local 0.8.2-dev experiment, 3 October 2026. This is **not** a public
+Status: historical local 0.8.2-dev experiment, 3 October 2026. This is **not** a public
 release or a replacement for the 0.9.5 packaging gate.
 
 ## Build
@@ -23,7 +23,7 @@ until the final product identity is chosen.
 
 ## What was verified
 
-- The Linux x64 AppImage built successfully from the current dirty 0.8.2-dev
+- The Linux x64 AppImage built successfully from the then-current dirty 0.8.2-dev
   working tree. Its `app.asar` contains `dist/main.js`, `dist/preload.js` and
   the Electron package metadata; the built client and licence notices are
   present in `resources/`.
@@ -35,10 +35,12 @@ until the final product identity is chosen.
   unavailable in the test sandbox, and the extraction fallback hit a GPU
   process failure in this environment. The unpacked start above checks the
   packaged application files, but not AppImage mounting on a normal system.
-- A workspace-wide `npm audit --omit=dev` on 3 October reported one high and
-  four moderate advisories, all under the dormant server dependency tree
-  (`engine.io`, `ip-address` and `qs`). Those modules are not in the AppImage;
-  the finding still needs separate triage before the server is ever shipped.
+- A workspace-wide `npm audit --omit=dev` at the time reported one high and
+  four moderate advisories under the dormant server dependency tree
+  (`engine.io`, `ip-address` and `qs`). Compatible lockfile updates resolved
+  these later; the 0.8.2 release-candidate production audit found zero
+  vulnerabilities. This historical packaging probe has not been repeated on
+  the clean release candidate.
 
 ## Still required before sharing builds
 

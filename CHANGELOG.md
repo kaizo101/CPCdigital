@@ -84,6 +84,11 @@ exclusively in the [Roadmap](ROADMAP.md).
 
 ### Changed
 
+-  **0.8.2 release-candidate validation:** The clean-commit 10k NLHE/PLO run
+  and 21 independent-seed confirmations passed all structural invariants.
+  The [release-candidate report](calibration/v0.8.2-release-gate.md) keeps
+  diagnostic corridor deviations visible; publication still awaits the
+  focused manual Android check and live-demo verification.
 -  **Calibration script execution:** The stake and 300-hand regression checks
   invoke the simulation directly through Node's TypeScript import hook. The
   npm commands use the same entry path, avoiding the `tsx` CLI's local IPC

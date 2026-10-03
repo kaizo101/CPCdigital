@@ -193,9 +193,13 @@ The technical vision and order are detailed in
   all-in risk from commitment and keep a very cheap PLO all-in call unpenalized.
   No NLHE overbet rule was transferred
   ([preflight check](calibration/v0.8.2-release-preflight-2026-10-02.md)).
-- [ ] Final NLHE/PLO validation for full ring, 6-max and heads-up with
-  structural invariants and documented raw counts; short web, Electron and
-  Android smokes on the release candidate.
+- [x] Final NLHE/PLO validation for full ring, 6-max and heads-up with
+  structural invariants, raw counts and independent-seed confirmations on a
+  clean 0.8.2 commit; browser/Electron smokes and Android build/start checks
+  passed ([release-candidate gate](calibration/v0.8.2-release-gate.md)).
+- [ ] Owner's focused Android gameplay/replayer check on the installed 0.8.2
+  candidate, followed by explicit release sign-off. The device blocks ADB
+  input injection, so automated installation/setup checks do not replace this.
 
 #### Downstream dynamics gate (not part of the 0.8.2 cut)
 
