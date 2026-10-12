@@ -11,10 +11,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor/app": "8.1.1",
-    "@capacitor/core": "8.5.0",
-    "@capacitor/filesystem": "8.1.2",
-    "@capacitor/share": "8.0.1",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/share": "8.0.3",
     "@cpc/poker-engine": "*",
     "@cpc/shared": "*",
     "react": "^18.3.0",
